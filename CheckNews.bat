@@ -1,1 +1,0 @@
-python "C:\Python JW News\jw_news_parser.py"
