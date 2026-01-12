@@ -35,15 +35,20 @@ JW-News/
 
 ## 🎯 Deploy to Hostinger - Step by Step
 
-### Step 1: Push to GitHub (Already Done! ✅)
+### Step 1: Push to GitHub
 
-Your clean repository is already pushed to:
+Push your clean repository to GitHub:
+```bash
+git add .
+git commit -m "Initial commit: Clean Node.js PWA"
+git push origin main
+```
+
+Repository URL:
 ```
 https://github.com/camster91/JW-News
 Branch: claude/convert-to-nodejs-2q51O
 ```
-
-**Next:** Merge this branch to `main` or deploy directly from this branch.
 
 ### Step 2: Connect to Hostinger
 
@@ -61,7 +66,7 @@ Branch: claude/convert-to-nodejs-2q51O
    **Repository Settings:**
    ```
    Repository URL: https://github.com/camster91/JW-News
-   Branch: claude/convert-to-nodejs-2q51O (or main after merge)
+   Branch: main (or main after merge)
    ```
 
    **Application Settings:**
@@ -294,7 +299,7 @@ Final Steps:
    ```bash
    git add .
    git commit -m "Your changes"
-   git push origin claude/convert-to-nodejs-2q51O
+   git push origin main
    ```
 3. **Hostinger auto-deploys!**
    - If auto-deploy enabled, changes deploy automatically
@@ -351,4 +356,4 @@ Share the link with your congregation and enjoy the PWA! 🎉
 
 ---
 
-**🎊 Congratulations on deploying your JW News PWA!**
+**🎊 Congratulations on deploying your Study Helper PWA!**

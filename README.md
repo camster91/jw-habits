@@ -68,7 +68,7 @@ JW-News/
 │   ├── PWA-FEATURES.md
 │   ├── TECH-STACK.md
 │   ├── TESTING-GUIDE.md
-│   └── DEPLOYMENT.md
+│   └── PROGRESS-SUMMARY.md
 │
 ├── Data files
 │   ├── bible.txt         # 365-day Bible reading schedule
@@ -107,10 +107,12 @@ npm start              # Start server
 
 ### Option 1: Hostinger (Recommended)
 
+See [HOSTINGER-DEPLOY.md](./HOSTINGER-DEPLOY.md) for detailed step-by-step instructions.
+
 1. **Push to GitHub:**
    ```bash
    git add .
-   git commit -m "Clean deployment-ready structure"
+   git commit -m "Initial deployment"
    git push origin main
    ```
 
@@ -141,19 +143,6 @@ npm start              # Start server
 - Deploy from `backend/` directory
 - Start command: `npm start`
 - Set `FRONTEND_URL` environment variable
-
-### Option 3: Docker
-
-```bash
-# Build images
-docker-compose build
-
-# Start containers
-docker-compose up -d
-
-# Stop containers
-docker-compose down
-```
 
 ## 📊 API Endpoints
 
@@ -203,7 +192,7 @@ FRONTEND_URL=http://localhost:5173
 
 ## 🧪 Testing
 
-See [TESTING-GUIDE.md](./TESTING-GUIDE.md) for comprehensive testing instructions.
+See [docs/TESTING-GUIDE.md](./docs/TESTING-GUIDE.md) for comprehensive testing instructions.
 
 ```bash
 # Quick test checklist:
@@ -237,11 +226,11 @@ See [TESTING-GUIDE.md](./TESTING-GUIDE.md) for comprehensive testing instruction
 
 ## 📖 Documentation
 
-- [PWA Features](./PWA-FEATURES.md) - Complete feature specifications
-- [Technical Stack](./TECH-STACK.md) - Architecture details
-- [Testing Guide](./TESTING-GUIDE.md) - How to test the application
-- [Deployment Guide](./DEPLOYMENT.md) - Deployment instructions
-- [Progress Summary](./PROGRESS-SUMMARY.md) - Development journey
+- [PWA Features](./docs/PWA-FEATURES.md) - Complete feature specifications
+- [Technical Stack](./docs/TECH-STACK.md) - Architecture details
+- [Testing Guide](./docs/TESTING-GUIDE.md) - How to test the application
+- [Deployment Guide](./HOSTINGER-DEPLOY.md) - Hostinger deployment instructions
+- [Progress Summary](./docs/PROGRESS-SUMMARY.md) - Development journey
 
 ## 🤝 Contributing
 
