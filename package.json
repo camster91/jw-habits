@@ -1,39 +1,45 @@
 {
-  "name": "jw-news-parser",
+  "name": "jw-news-pwa",
   "version": "2.0.0",
-  "description": "JW.org news scraper and email notification service",
-  "main": "index.js",
+  "description": "Progressive Web App for tracking daily spiritual activities from JW.org",
+  "private": true,
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js",
-    "test": "node --test",
-    "postinstall": "echo 'Puppeteer installed successfully'",
-    "deploy": "pm2 start ecosystem.config.cjs",
-    "deploy:stop": "pm2 stop jw-news-parser",
-    "deploy:restart": "pm2 restart jw-news-parser",
-    "deploy:logs": "pm2 logs jw-news-parser",
-    "docker:build": "docker build -t jw-news-parser .",
-    "docker:run": "docker-compose up -d"
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "echo 'Start backend: npm run dev:backend' && echo 'Start frontend: npm run dev:frontend'",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:frontend",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run preview",
+    "start": "npm run start:backend",
+    "postinstall": "npm run install:all",
+    "deploy": "npm run build && npm run start",
+    "test": "echo 'Run tests'"
   },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "keywords": [
     "jw",
-    "scraper",
-    "news",
-    "email"
+    "pwa",
+    "progressive-web-app",
+    "spiritual-tracking",
+    "bible-reading",
+    "meetings",
+    "daily-text"
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "puppeteer": "^21.7.0",
-    "rss-parser": "^3.13.0",
-    "nodemailer": "^6.9.7",
-    "dotenv": "^16.3.1"
-  },
-  "optionalDependencies": {
-    "pm2": "^5.3.0"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/camster91/JW-News"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }

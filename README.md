@@ -1,257 +1,276 @@
-# JW News Parser - Node.js Edition
+# JW News PWA 📱
 
-An automated web scraper that collects the latest videos, books, and news from JW.org and sends daily email updates with Bible reading schedules.
+A Progressive Web App for tracking daily spiritual activities from JW.org.
 
-## Features
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-- 🔍 Scrapes latest videos, books, and news from JW.org
-- 📧 Sends beautiful HTML email notifications
-- 📖 Includes daily Bible reading schedule
-- 🔄 Tracks history to avoid duplicate notifications
-- ⚡ Built with modern Node.js and ES modules
-- 🚀 Easy deployment with PM2
+## ✨ Features
 
-## Prerequisites
+- 📖 **Daily Text Tracker** - Read and track Examining the Scriptures Daily
+- 📚 **Bible Reading Schedule** - Follow the "Read Bible in One Year" program
+- 🎤 **Weekly Meetings** - Prepare for midweek and weekend meetings
+- 📊 **Progress Statistics** - Track streaks, completion rates, and achievements
+- 🔔 **Smart Reminders** - Get notified for daily reading and meeting preparation
+- 📴 **Offline Support** - Works without internet connection
+- 📱 **Install as App** - Add to home screen for native-like experience
 
-- Node.js 18.x or higher
-- npm or yarn
-- SMTP credentials (for sending emails)
+## 🚀 Quick Start
 
-## Installation
+### Prerequisites
 
-1. Clone the repository:
+- Node.js 18+ and npm 9+
+- Git
+
+### Installation
+
 ```bash
-git clone <your-repo-url>
+# Clone the repository
+git clone https://github.com/camster91/JW-News.git
 cd JW-News
-```
 
-2. Install dependencies:
-```bash
+# Install all dependencies (frontend + backend)
 npm install
+
+# Start development servers
+npm run dev:backend  # Terminal 1
+npm run dev:frontend # Terminal 2
 ```
 
-3. Configure environment variables:
-```bash
-cp .env.example .env
-```
+Visit:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001
 
-Edit `.env` and add your SMTP credentials:
-```env
-SMTP_HOST=smtp-relay.sendinblue.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-smtp-password
-
-FROM_EMAIL=JW Newsfeed <jworgnewsfeed@gmail.com>
-TO_EMAIL=jworgnewsfeed@gmail.com
-
-NODE_ENV=production
-HEADLESS=true
-```
-
-4. Update the email list:
-Edit `email_list.txt` and add recipient email addresses (one per line).
-
-## Usage
-
-### Run Once
-
-To run the scraper immediately:
-```bash
-npm start
-```
-
-### Development Mode
-
-Run with auto-reload on file changes:
-```bash
-npm run dev
-```
-
-### Scheduled Execution with PM2
-
-For production deployment with scheduled daily runs:
-
-1. Install PM2 globally:
-```bash
-npm install -g pm2
-```
-
-2. Start the application:
-```bash
-pm2 start ecosystem.config.cjs
-```
-
-3. Save the PM2 process list:
-```bash
-pm2 save
-```
-
-4. Setup PM2 to start on system boot:
-```bash
-pm2 startup
-```
-
-The application will now run automatically every day at 8 AM.
-
-### PM2 Management Commands
-
-```bash
-# View logs
-pm2 logs jw-news-parser
-
-# Stop the application
-pm2 stop jw-news-parser
-
-# Restart the application
-pm2 restart jw-news-parser
-
-# Delete the application
-pm2 delete jw-news-parser
-
-# Monitor
-pm2 monit
-```
-
-## Deployment Options
-
-### 1. Traditional Server (VPS, EC2, etc.)
-
-1. SSH into your server
-2. Install Node.js and PM2
-3. Clone the repository
-4. Follow installation steps above
-5. Use PM2 for process management
-
-### 2. Docker
-
-Create a `Dockerfile`:
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-CMD ["node", "index.js"]
-```
-
-Build and run:
-```bash
-docker build -t jw-news-parser .
-docker run -d --env-file .env jw-news-parser
-```
-
-### 3. Cloud Functions (AWS Lambda, Google Cloud Functions)
-
-The application can be adapted for serverless deployment:
-- Set up a scheduled trigger (CloudWatch Events, Cloud Scheduler)
-- Deploy the function with necessary dependencies
-- Configure environment variables
-
-### 4. Cron Job (Simple Server)
-
-Add to crontab:
-```bash
-0 8 * * * cd /path/to/JW-News && /usr/bin/node index.js >> logs.txt 2>&1
-```
-
-## File Structure
+## 📁 Project Structure
 
 ```
 JW-News/
-├── index.js              # Main application file
-├── package.json          # Dependencies and scripts
-├── ecosystem.config.cjs  # PM2 configuration
-├── .env.example          # Environment variables template
-├── .env                  # Your environment variables (not in git)
-├── history.json          # Tracks sent content
-├── email_list.txt        # Email recipients
-├── bible.txt             # Bible reading schedule
-├── days.txt              # Daily reading links
-├── main.html             # Email template header
-├── reading.html          # Reading section template
-├── video.html            # Video item template
-├── news.html             # News item template
-├── books.html            # Book item template
-└── end.html              # Email template footer
+├── frontend/          # React PWA application
+│   ├── src/
+│   │   ├── components/   # React components
+│   │   ├── pages/        # Page components
+│   │   ├── stores/       # Zustand state management
+│   │   ├── api/          # API client
+│   │   └── utils/        # Helper functions
+│   ├── public/           # Static assets
+│   └── package.json
+│
+├── backend/           # Express API server
+│   ├── src/
+│   │   ├── routes/       # API endpoints
+│   │   ├── scrapers/     # WOL web scrapers
+│   │   ├── services/     # Business logic
+│   │   └── server.js     # Main server file
+│   └── package.json
+│
+├── docs/              # Documentation
+│   ├── PWA-FEATURES.md
+│   ├── TECH-STACK.md
+│   ├── TESTING-GUIDE.md
+│   └── DEPLOYMENT.md
+│
+├── Data files
+│   ├── bible.txt         # 365-day Bible reading schedule
+│   └── days.txt          # Daily scriptures
+│
+└── package.json       # Root monorepo config
 ```
 
-## Configuration
+## 🛠 Development
 
-### Environment Variables
+### Available Scripts
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SMTP_HOST` | SMTP server hostname | smtp-relay.sendinblue.com |
-| `SMTP_PORT` | SMTP server port | 587 |
-| `SMTP_USER` | SMTP username | - |
-| `SMTP_PASS` | SMTP password | - |
-| `FROM_EMAIL` | Sender email address | JW Newsfeed <jworgnewsfeed@gmail.com> |
-| `TO_EMAIL` | Primary recipient | jworgnewsfeed@gmail.com |
-| `HEADLESS` | Run browser in headless mode | true |
-| `NODE_ENV` | Environment | production |
-
-### Customizing Schedule
-
-Edit `ecosystem.config.cjs` to change the cron schedule:
-```javascript
-cron_restart: '0 8 * * *', // Run daily at 8 AM
-```
-
-Cron format: `minute hour day month weekday`
-
-Examples:
-- `0 8 * * *` - Every day at 8 AM
-- `0 */6 * * *` - Every 6 hours
-- `0 8 * * 1` - Every Monday at 8 AM
-
-## Troubleshooting
-
-### Puppeteer Issues
-
-If Puppeteer fails to launch:
+**Root level:**
 ```bash
-# Install required dependencies (Ubuntu/Debian)
-sudo apt-get install -y chromium-browser
-
-# Or use puppeteer's bundled Chromium
-npm install puppeteer
+npm install            # Install all dependencies (runs postinstall automatically)
+npm run dev:backend    # Start backend server (port 3001)
+npm run dev:frontend   # Start frontend dev server (port 5173)
+npm run build          # Build frontend for production
+npm start              # Start backend in production mode
 ```
 
-### Email Not Sending
-
-- Verify SMTP credentials in `.env`
-- Check firewall/security group allows outbound traffic on port 587
-- Enable "Less secure app access" or use app-specific passwords for Gmail
-
-### Permission Errors
-
-Ensure the application has write permissions:
+**Frontend (cd frontend):**
 ```bash
-chmod +w history.json
+npm run dev            # Start Vite dev server
+npm run build          # Build for production
+npm run preview        # Preview production build
 ```
 
-## Security Notes
+**Backend (cd backend):**
+```bash
+npm run dev            # Start with auto-reload
+npm start              # Start server
+```
 
-- Never commit `.env` file to version control
-- Use app-specific passwords for email services
-- Keep SMTP credentials secure
-- Consider using a secrets manager for production
+## 🌐 Deployment
 
-## Migration from Python
+### Option 1: Hostinger (Recommended)
 
-This is a complete rewrite of the original Python application with the following improvements:
-- ✅ Cross-platform file paths
-- ✅ Modern async/await syntax
-- ✅ Better error handling
-- ✅ Environment variable configuration
-- ✅ Easier deployment options
-- ✅ No hardcoded Windows paths
+1. **Push to GitHub:**
+   ```bash
+   git add .
+   git commit -m "Clean deployment-ready structure"
+   git push origin main
+   ```
 
-## License
+2. **Connect to Hostinger:**
+   - Go to Hostinger control panel
+   - Create new Node.js application
+   - Connect GitHub repository: `camster91/JW-News`
+   - Set Node.js version: **18.x or higher**
+   - Build command: `npm run build`
+   - Start command: `npm start`
+   - Port: `3001`
 
-MIT
+3. **Set Environment Variables:**
+   ```env
+   NODE_ENV=production
+   PORT=3001
+   FRONTEND_URL=https://your-domain.com
+   ```
 
-## Support
+### Option 2: Separate Deployments
 
-For issues or questions, contact: jworgnewsfeed@gmail.com
+**Frontend (Vercel/Netlify):**
+- Deploy from `frontend/` directory
+- Build command: `npm run build`
+- Output directory: `dist`
+
+**Backend (Railway/Render):**
+- Deploy from `backend/` directory
+- Start command: `npm start`
+- Set `FRONTEND_URL` environment variable
+
+### Option 3: Docker
+
+```bash
+# Build images
+docker-compose build
+
+# Start containers
+docker-compose up -d
+
+# Stop containers
+docker-compose down
+```
+
+## 📊 API Endpoints
+
+Base URL: `http://localhost:3001/api`
+
+### Daily Text
+- `GET /daily-text/today` - Get today's daily text
+- `GET /daily-text/:date` - Get specific date (YYYY-MM-DD)
+
+### Bible Reading
+- `GET /bible-reading/today` - Get today's reading
+- `GET /bible-reading/day/:dayOfYear` - Get specific day (1-366)
+- `GET /bible-reading/progress` - Get yearly progress
+
+### Meetings
+- `GET /meetings/current` - Get current week's meetings
+- `GET /meetings/week/:year/:week` - Get specific week
+
+### System
+- `GET /health` - Server health check
+
+## 🔧 Configuration
+
+### Frontend (.env)
+```env
+VITE_API_URL=http://localhost:3001/api
+```
+
+### Backend (.env)
+```env
+NODE_ENV=development
+PORT=3001
+FRONTEND_URL=http://localhost:5173
+```
+
+## 📱 PWA Installation
+
+### Mobile (Chrome/Safari)
+1. Open the app in browser
+2. Tap "Share" or "Menu"
+3. Select "Add to Home Screen"
+4. Enjoy native-like experience!
+
+### Desktop (Chrome/Edge)
+1. Click install icon in address bar
+2. Or use browser menu: "Install app"
+
+## 🧪 Testing
+
+See [TESTING-GUIDE.md](./TESTING-GUIDE.md) for comprehensive testing instructions.
+
+```bash
+# Quick test checklist:
+✅ Backend starts: npm run dev:backend
+✅ Frontend starts: npm run dev:frontend
+✅ Health check: curl http://localhost:3001/health
+✅ Daily text loads in browser
+✅ Bible reading loads
+✅ Meetings load
+✅ Progress persists after refresh
+```
+
+## 🏗 Technology Stack
+
+### Frontend
+- **React 18** - UI framework
+- **Vite 5** - Build tool
+- **Tailwind CSS** - Styling
+- **DaisyUI** - Component library
+- **Zustand** - State management
+- **React Router** - Navigation
+- **date-fns** - Date utilities
+
+### Backend
+- **Node.js 18+** - Runtime
+- **Express 4** - Web framework
+- **Puppeteer** - Web scraping
+- **node-cache** - In-memory caching
+- **Helmet** - Security
+- **CORS** - Cross-origin support
+
+## 📖 Documentation
+
+- [PWA Features](./PWA-FEATURES.md) - Complete feature specifications
+- [Technical Stack](./TECH-STACK.md) - Architecture details
+- [Testing Guide](./TESTING-GUIDE.md) - How to test the application
+- [Deployment Guide](./DEPLOYMENT.md) - Deployment instructions
+- [Progress Summary](./PROGRESS-SUMMARY.md) - Development journey
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+
+## ⚠️ Disclaimer
+
+This is an **unofficial** application and is not affiliated with, endorsed by, or connected to the Watch Tower Bible and Tract Society of Pennsylvania or any of its affiliates. All content from JW.org is property of its respective owners.
+
+## 🙏 Acknowledgments
+
+- Data source: [JW.org](https://wol.jw.org/)
+- Icons: [Lucide Icons](https://lucide.dev/)
+- UI Components: [DaisyUI](https://daisyui.com/)
+
+## 📧 Support
+
+For questions or issues:
+- Email: jworgnewsfeed@gmail.com
+- GitHub Issues: [Report a bug](https://github.com/camster91/JW-News/issues)
+
+---
+
+**Made with ❤️ for the worldwide brotherhood**
