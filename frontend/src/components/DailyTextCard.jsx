@@ -1,28 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { BookOpen, Check } from 'lucide-react';
+import { BookOpen, Check, Loader2, AlertCircle } from 'lucide-react';
 import useProgressStore from '../stores/progressStore';
+import { dailyTextAPI } from '../api/client';
 
 function DailyTextCard() {
   const [isExpanded, setIsExpanded] = useState(false);
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const todayFormatted = format(new Date(), 'EEEE, MMMM d, yyyy');
+  const [dailyText, setDailyText] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  const today = format(new Date(), 'yyyy-MM-dd');
   const { isDailyTextRead, markDailyTextRead } = useProgressStore();
   const isRead = isDailyTextRead(today);
 
-  // Sample daily text data - in production, fetch from API
-  const dailyText = {
-    date: todayFormatted,
-    scripture: 'Zephaniah 2:3',
-    theme: 'Keep Seeking Jehovah',
-    text: 'Seek Jehovah, all you meek ones of the earth, who observe his righteous decrees. Seek righteousness, seek meekness. Probably you will be concealed on the day of Jehovah's anger.',
-    comment: 'In these critical times, it is more important than ever to seek Jehovah through prayer, Bible study, and association with fellow believers. By cultivating meekness and righteousness, we prepare ourselves for Jehovah\'s day.'
-  };
+  // Fetch daily text from API
+  useEffect(() => {
+    async function fetchDailyText() {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await dailyTextAPI.getToday();
+        setDailyText(data);
+      } catch (err) {
+        console.error('Failed to fetch daily text:', err);
+        setError(err.message);
+        // Set fallback data
+        setDailyText({
+          dateFormatted: format(new Date(), 'EEEE, MMMM d, yyyy'),
+          scripture: 'Zephaniah 2:3',
+          theme: 'Keep Seeking Jehovah',
+          scriptureText: 'Seek Jehovah, all you meek ones of the earth...',
+          text: 'Daily text currently unavailable. Please check back later.',
+          commentary: ''
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchDailyText();
+  }, []);
 
   const handleMarkRead = () => {
     markDailyTextRead(today);
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body items-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-base-content/70">Loading daily text...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="card bg-base-100 shadow-xl">
@@ -40,20 +74,32 @@ function DailyTextCard() {
           )}
         </div>
 
-        <p className="text-sm text-base-content/70">{dailyText.date}</p>
+        <p className="text-sm text-base-content/70">{dailyText?.dateFormatted}</p>
+
+        {error && (
+          <div className="alert alert-warning">
+            <AlertCircle className="w-4 h-4" />
+            <span className="text-xs">Using offline data</span>
+          </div>
+        )}
 
         <div className="divider my-2"></div>
 
         <div className="space-y-3">
           <div>
-            <p className="font-semibold text-primary">"{dailyText.theme}"</p>
-            <p className="text-sm italic">— {dailyText.scripture}</p>
+            <p className="font-semibold text-primary">"{dailyText?.theme}"</p>
+            <p className="text-sm italic">— {dailyText?.scripture}</p>
           </div>
 
           {isExpanded && (
             <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-              <p className="text-sm">{dailyText.text}</p>
-              <p className="text-sm text-base-content/80">{dailyText.comment}</p>
+              {dailyText?.scriptureText && (
+                <p className="text-sm font-medium">{dailyText.scriptureText}</p>
+              )}
+              {dailyText?.text && <p className="text-sm">{dailyText.text}</p>}
+              {dailyText?.commentary && (
+                <p className="text-sm text-base-content/80">{dailyText.commentary}</p>
+              )}
             </div>
           )}
 
