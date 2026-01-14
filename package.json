@@ -1,57 +1,41 @@
 {
-  "name": "jw-news-pwa",
-  "version": "2.0.0",
-  "description": "Progressive Web App for tracking daily spiritual activities from JW.org",
+  "name": "jw-progress-tracker",
   "private": true,
+  "version": "1.0.0",
   "type": "module",
-  "main": "server.js",
+  "description": "Track daily text, Bible reading, and meeting preparation with JW Library links",
   "scripts": {
-    "install:all": "npm install --prefix backend && npm install --prefix frontend",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev": "echo 'Start backend: npm run dev:backend' && echo 'Start frontend: npm run dev:frontend'",
-    "build:backend": "cd backend && npm run build",
-    "build:frontend": "cd frontend && npm run build",
-    "build": "npm run build:frontend",
-    "start:backend": "cd backend && npm start",
-    "start:frontend": "cd frontend && npm run preview",
-    "start": "node server.js",
-    "postinstall": "npm run install:all",
-    "deploy": "npm run build && npm run start",
-    "test": "echo 'Run tests'"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "compression": "^1.7.4",
-    "cors": "^2.8.5",
+    "@heroicons/react": "^2.2.0",
     "date-fns": "^4.1.0",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-rate-limit": "^7.1.5",
-    "helmet": "^7.1.0",
-    "node-cache": "^5.1.2",
-    "puppeteer": "^21.7.0"
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.12.0",
+    "zustand": "^5.0.9"
   },
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
-  "keywords": [
-    "jw",
-    "pwa",
-    "progressive-web-app",
-    "spiritual-tracking",
-    "bible-reading",
-    "meetings",
-    "daily-text"
-  ],
-  "author": "",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/camster91/JW-News"
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.23",
+    "daisyui": "^4.12.24",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "vite": "^7.2.4",
+    "vite-plugin-pwa": "^1.2.0"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "node": ">=18.0.0"
   }
 }
