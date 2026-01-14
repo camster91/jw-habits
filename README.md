@@ -1,265 +1,120 @@
-# JW News PWA 📱
+# JW Progress Tracker
 
-A Progressive Web App for tracking daily spiritual activities from JW.org.
+A Progressive Web App for tracking daily spiritual activities with direct links to JW Library.
 
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18-blue.svg)](https://react.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## Features
 
-## ✨ Features
+- **Daily Text** - Track daily text reading with JW Library links
+- **Bible Reading** - Follow the "Read Bible in One Year" schedule
+- **Meeting Preparation** - Prepare for midweek and weekend meetings
+- **Progress Statistics** - Track streaks and completion rates
+- **PWA Notifications** - Get reminders for daily reading
+- **Offline Support** - Works without internet connection
+- **Install as App** - Add to home screen for native experience
 
-- 📖 **Daily Text Tracker** - Read and track Examining the Scriptures Daily
-- 📚 **Bible Reading Schedule** - Follow the "Read Bible in One Year" program
-- 🎤 **Weekly Meetings** - Prepare for midweek and weekend meetings
-- 📊 **Progress Statistics** - Track streaks, completion rates, and achievements
-- 🔔 **Smart Reminders** - Get notified for daily reading and meeting preparation
-- 📴 **Offline Support** - Works without internet connection
-- 📱 **Install as App** - Add to home screen for native-like experience
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+ and npm 9+
-- Git
-
-### Installation
+## Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/camster91/JW-News.git
-cd JW-News
-
-# Install all dependencies (frontend + backend)
+# Install dependencies
 npm install
 
-# Start development servers
-npm run dev:backend  # Terminal 1
-npm run dev:frontend # Terminal 2
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-Visit:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001
+Visit: http://localhost:5173
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-JW-News/
-├── frontend/          # React PWA application
-│   ├── src/
-│   │   ├── components/   # React components
-│   │   ├── pages/        # Page components
-│   │   ├── stores/       # Zustand state management
-│   │   ├── api/          # API client
-│   │   └── utils/        # Helper functions
-│   ├── public/           # Static assets
-│   └── package.json
-│
-├── backend/           # Express API server
-│   ├── src/
-│   │   ├── routes/       # API endpoints
-│   │   ├── scrapers/     # WOL web scrapers
-│   │   ├── services/     # Business logic
-│   │   └── server.js     # Main server file
-│   └── package.json
-│
-├── docs/              # Documentation
-│   ├── PWA-FEATURES.md
-│   ├── TECH-STACK.md
-│   ├── TESTING-GUIDE.md
-│   └── PROGRESS-SUMMARY.md
-│
-├── Data files
-│   ├── bible.txt         # 365-day Bible reading schedule
-│   └── days.txt          # Daily scriptures
-│
-└── package.json       # Root monorepo config
+jw-progress-tracker/
+├── index.html
+├── package.json
+├── vite.config.js
+├── tailwind.config.js
+├── public/
+│   ├── pwa-192x192.png
+│   ├── pwa-512x512.png
+│   └── data/
+│       ├── bible-reading.json      # 365-day reading schedule
+│       └── meeting-workbooks.json  # Weekly meeting docids
+└── src/
+    ├── main.jsx
+    ├── App.jsx
+    ├── index.css
+    ├── components/
+    │   ├── DailyTextCard.jsx
+    │   ├── BibleReadingCard.jsx
+    │   ├── MeetingCard.jsx
+    │   ├── StreakCard.jsx
+    │   ├── BottomNav.jsx
+    │   └── QuickLinks.jsx
+    ├── pages/
+    │   ├── Home.jsx
+    │   ├── Stats.jsx
+    │   ├── Settings.jsx
+    │   └── Links.jsx
+    ├── stores/
+    │   ├── progressStore.js
+    │   └── settingsStore.js
+    └── utils/
+        ├── jwLibraryLinks.js
+        └── notifications.js
 ```
 
-## 🛠 Development
+## Deployment (Hostinger Static)
 
-### Available Scripts
-
-**Root level:**
-```bash
-npm install            # Install all dependencies (runs postinstall automatically)
-npm run dev:backend    # Start backend server (port 3001)
-npm run dev:frontend   # Start frontend dev server (port 5173)
-npm run build          # Build frontend for production
-npm start              # Start backend in production mode
+```
+Build Command: npm run build
+Publish Directory: dist
 ```
 
-**Frontend (cd frontend):**
-```bash
-npm run dev            # Start Vite dev server
-npm run build          # Build for production
-npm run preview        # Preview production build
+No Node.js server needed - just serves the built static files.
+
+## Updating Meeting Workbooks
+
+The meeting workbook links use docids from `public/data/meeting-workbooks.json`. Update this file with new weeks as needed:
+
+```json
+{
+  "2026-W02": {
+    "docid": "2025642",
+    "weekOf": "January 5-11, 2026",
+    "bibleReading": "Genesis 4-7"
+  }
+}
 ```
 
-**Backend (cd backend):**
-```bash
-npm run dev            # Start with auto-reload
-npm start              # Start server
-```
+## Technology Stack
 
-## 🌐 Deployment
+- **React 19** - UI framework
+- **Vite 7** - Build tool
+- **Tailwind CSS 4** - Styling
+- **DaisyUI 5** - Component library
+- **Zustand 5** - State management
+- **vite-plugin-pwa** - PWA support
 
-### Option 1: Hostinger (Recommended)
-
-See [HOSTINGER-DEPLOY.md](./HOSTINGER-DEPLOY.md) for detailed step-by-step instructions.
-
-1. **Push to GitHub:**
-   ```bash
-   git add .
-   git commit -m "Initial deployment"
-   git push origin main
-   ```
-
-2. **Connect to Hostinger:**
-   - Go to Hostinger control panel
-   - Create new Node.js application
-   - Connect GitHub repository: `camster91/JW-News`
-   - Set Node.js version: **18.x or higher**
-   - Build command: `npm run build`
-   - Start command: `npm start`
-   - Port: `3001`
-
-3. **Set Environment Variables:**
-   ```env
-   NODE_ENV=production
-   PORT=3001
-   FRONTEND_URL=https://your-domain.com
-   ```
-
-### Option 2: Separate Deployments
-
-**Frontend (Vercel/Netlify):**
-- Deploy from `frontend/` directory
-- Build command: `npm run build`
-- Output directory: `dist`
-
-**Backend (Railway/Render):**
-- Deploy from `backend/` directory
-- Start command: `npm start`
-- Set `FRONTEND_URL` environment variable
-
-## 📊 API Endpoints
-
-Base URL: `http://localhost:3001/api`
-
-### Daily Text
-- `GET /daily-text/today` - Get today's daily text
-- `GET /daily-text/:date` - Get specific date (YYYY-MM-DD)
-
-### Bible Reading
-- `GET /bible-reading/today` - Get today's reading
-- `GET /bible-reading/day/:dayOfYear` - Get specific day (1-366)
-- `GET /bible-reading/progress` - Get yearly progress
-
-### Meetings
-- `GET /meetings/current` - Get current week's meetings
-- `GET /meetings/week/:year/:week` - Get specific week
-
-### System
-- `GET /health` - Server health check
-
-## 🔧 Configuration
-
-### Frontend (.env)
-```env
-VITE_API_URL=http://localhost:3001/api
-```
-
-### Backend (.env)
-```env
-NODE_ENV=development
-PORT=3001
-FRONTEND_URL=http://localhost:5173
-```
-
-## 📱 PWA Installation
+## PWA Installation
 
 ### Mobile (Chrome/Safari)
 1. Open the app in browser
-2. Tap "Share" or "Menu"
+2. Tap "Share" or menu button
 3. Select "Add to Home Screen"
-4. Enjoy native-like experience!
 
 ### Desktop (Chrome/Edge)
 1. Click install icon in address bar
 2. Or use browser menu: "Install app"
 
-## 🧪 Testing
+## Disclaimer
 
-See [docs/TESTING-GUIDE.md](./docs/TESTING-GUIDE.md) for comprehensive testing instructions.
+This is an **unofficial** application and is not affiliated with, endorsed by, or connected to Jehovah's Witnesses or the Watch Tower Bible and Tract Society. All content links direct to JW.org and JW Library.
 
-```bash
-# Quick test checklist:
-✅ Backend starts: npm run dev:backend
-✅ Frontend starts: npm run dev:frontend
-✅ Health check: curl http://localhost:3001/health
-✅ Daily text loads in browser
-✅ Bible reading loads
-✅ Meetings load
-✅ Progress persists after refresh
-```
+## License
 
-## 🏗 Technology Stack
-
-### Frontend
-- **React 18** - UI framework
-- **Vite 5** - Build tool
-- **Tailwind CSS** - Styling
-- **DaisyUI** - Component library
-- **Zustand** - State management
-- **React Router** - Navigation
-- **date-fns** - Date utilities
-
-### Backend
-- **Node.js 18+** - Runtime
-- **Express 4** - Web framework
-- **Puppeteer** - Web scraping
-- **node-cache** - In-memory caching
-- **Helmet** - Security
-- **CORS** - Cross-origin support
-
-## 📖 Documentation
-
-- [PWA Features](./docs/PWA-FEATURES.md) - Complete feature specifications
-- [Technical Stack](./docs/TECH-STACK.md) - Architecture details
-- [Testing Guide](./docs/TESTING-GUIDE.md) - How to test the application
-- [Deployment Guide](./HOSTINGER-DEPLOY.md) - Hostinger deployment instructions
-- [Progress Summary](./docs/PROGRESS-SUMMARY.md) - Development journey
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
-
-## ⚠️ Disclaimer
-
-This is an **unofficial** application and is not affiliated with, endorsed by, or connected to the Watch Tower Bible and Tract Society of Pennsylvania or any of its affiliates. All content from JW.org is property of its respective owners.
-
-## 🙏 Acknowledgments
-
-- Data source: [JW.org](https://wol.jw.org/)
-- Icons: [Lucide Icons](https://lucide.dev/)
-- UI Components: [DaisyUI](https://daisyui.com/)
-
-## 📧 Support
-
-For questions or issues:
-- Email: jworgnewsfeed@gmail.com
-- GitHub Issues: [Report a bug](https://github.com/camster91/JW-News/issues)
-
----
-
-**Made with ❤️ for the worldwide brotherhood**
+MIT License
