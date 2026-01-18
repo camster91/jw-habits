@@ -2,6 +2,7 @@ import { Trash2, Download, Moon, Sun, Bell, BellOff, Clock } from 'lucide-react'
 import { useState, useEffect } from 'react';
 import useProgressStore from '../stores/progressStore';
 import useSettingsStore from '../stores/settingsStore';
+import { useToast } from '../components/Toast';
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -11,6 +12,7 @@ import {
 } from '../utils/notifications';
 
 function Settings() {
+  const toast = useToast();
   const { clearAll } = useProgressStore();
   const {
     notificationsEnabled,
@@ -41,7 +43,7 @@ function Settings() {
 
   const handleEnableNotifications = async () => {
     if (!notificationSupported) {
-      alert('Notifications are not supported in this browser.');
+      toast.warning('Notifications are not supported in this browser.');
       return;
     }
 
@@ -59,7 +61,7 @@ function Settings() {
         bibleReadingReminderTime,
       });
     } else if (permission === 'denied') {
-      alert('Notification permission was denied. Please enable it in your browser settings.');
+      toast.error('Notification permission was denied. Please enable it in your browser settings.');
     }
   };
 
@@ -70,7 +72,7 @@ function Settings() {
   const handleClearData = () => {
     if (confirm('Are you sure you want to clear all progress data? This cannot be undone.')) {
       clearAll();
-      alert('All data has been cleared successfully.');
+      toast.success('All data has been cleared successfully.');
     }
   };
 
