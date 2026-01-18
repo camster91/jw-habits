@@ -107,7 +107,7 @@ export function getDailyTextLink(date = new Date(), locale = 'E') {
   const day = String(date.getDate()).padStart(2, '0');
   const dateStr = `${year}${month}${day}`;
 
-  return `${FINDER_BASE}?srcid=jwlshare&wtlocale=${locale}&prefer=lang&alias=daily-text&date=${dateStr}`;
+  return `${FINDER_BASE}?srcid=jwlshare&alias=daily-text&date=${dateStr}&wtlocale=${locale}`;
 }
 
 /**
@@ -124,7 +124,7 @@ export function getBibleReadingLink(bookNum, startChapter, endChapter = startCha
   const startRef = `${bookStr}${String(startChapter).padStart(3, '0')}001`;
   const endRef = `${bookStr}${String(endChapter).padStart(3, '0')}999`;
 
-  return `${FINDER_BASE}?srcid=jwlshare&wtlocale=${locale}&prefer=lang&bible=${startRef}-${endRef}&pub=nwtsty`;
+  return `${FINDER_BASE}?srcid=jwlshare&bible=${startRef}-${endRef}&pub=nwtsty&wtlocale=${locale}`;
 }
 
 /**
@@ -134,7 +134,7 @@ export function getBibleReadingLink(bookNum, startChapter, endChapter = startCha
  * @returns {string} JW Library finder URL
  */
 export function getMeetingWorkbookLink(docid, locale = 'E') {
-  return `${FINDER_BASE}?srcid=jwlshare&wtlocale=${locale}&prefer=lang&docid=${docid}`;
+  return `${FINDER_BASE}?srcid=jwlshare&docid=${docid}&wtlocale=${locale}`;
 }
 
 /**
