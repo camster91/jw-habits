@@ -4,7 +4,8 @@
  */
 
 // Base finder URL for JW Library deep links
-const FINDER_BASE = 'https://www.jw.org/finder';
+// Uses jwlibrary:// custom URL scheme to open directly in the app
+const FINDER_BASE = 'jwlibrary:///finder';
 
 // Bible book number mapping (1-66)
 export const BIBLE_BOOKS = {
@@ -107,7 +108,7 @@ export function getDailyTextLink(date = new Date(), locale = 'E') {
   const day = String(date.getDate()).padStart(2, '0');
   const dateStr = `${year}${month}${day}`;
 
-  return `${FINDER_BASE}?srcid=jwlshare&wtlocale=${locale}&prefer=lang&alias=daily-text&date=${dateStr}`;
+  return `${FINDER_BASE}?wtlocale=${locale}&alias=daily-text&date=${dateStr}`;
 }
 
 /**
@@ -124,7 +125,7 @@ export function getBibleReadingLink(bookNum, startChapter, endChapter = startCha
   const startRef = `${bookStr}${String(startChapter).padStart(3, '0')}001`;
   const endRef = `${bookStr}${String(endChapter).padStart(3, '0')}999`;
 
-  return `${FINDER_BASE}?srcid=jwlshare&wtlocale=${locale}&prefer=lang&bible=${startRef}-${endRef}&pub=nwtsty`;
+  return `${FINDER_BASE}?wtlocale=${locale}&bible=${startRef}-${endRef}&pub=nwtsty`;
 }
 
 /**
@@ -134,7 +135,7 @@ export function getBibleReadingLink(bookNum, startChapter, endChapter = startCha
  * @returns {string} JW Library finder URL
  */
 export function getMeetingWorkbookLink(docid, locale = 'E') {
-  return `${FINDER_BASE}?srcid=jwlshare&wtlocale=${locale}&prefer=lang&docid=${docid}`;
+  return `${FINDER_BASE}?wtlocale=${locale}&docid=${docid}`;
 }
 
 /**
