@@ -31,6 +31,29 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'any maskable'
           }
+        ],
+        shortcuts: [
+          {
+            name: 'View Stats',
+            short_name: 'Stats',
+            description: 'View your progress statistics',
+            url: '/stats',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Quick Links',
+            short_name: 'Links',
+            description: 'Access JW Library and jw.org links',
+            url: '/links',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Settings',
+            short_name: 'Settings',
+            description: 'Configure app settings',
+            url: '/settings',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+          }
         ]
       },
       workbox: {

@@ -13,18 +13,23 @@ function BottomNav() {
   ];
 
   return (
-    <div className="btm-nav btm-nav-lg bg-base-200 border-t">
-      {navItems.map((item) => (
-        <button
-          key={item.path}
-          className={location.pathname === item.path ? 'active' : ''}
-          onClick={() => navigate(item.path)}
-        >
-          <item.icon className="w-5 h-5" />
-          <span className="btm-nav-label text-xs">{item.label}</span>
-        </button>
-      ))}
-    </div>
+    <nav className="btm-nav btm-nav-lg bg-base-200 border-t" aria-label="Main navigation">
+      {navItems.map((item) => {
+        const isActive = location.pathname === item.path;
+        return (
+          <button
+            key={item.path}
+            className={isActive ? 'active' : ''}
+            onClick={() => navigate(item.path)}
+            aria-label={item.label}
+            aria-current={isActive ? 'page' : undefined}
+          >
+            <item.icon className="w-5 h-5" aria-hidden="true" />
+            <span className="btm-nav-label text-xs">{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
