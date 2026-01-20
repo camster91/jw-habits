@@ -9,8 +9,15 @@ function BibleReadingCard() {
   const [loading, setLoading] = useState(true);
 
   const dayOfYear = getDayOfYear(new Date());
-  const { isBibleReadingComplete, markBibleReadingComplete } = useProgressStore();
+  const {
+    isBibleReadingComplete,
+    markBibleReadingComplete,
+    getBibleReadingProgress,
+    updateBibleReadingProgress
+  } = useProgressStore();
+
   const isComplete = isBibleReadingComplete(dayOfYear);
+  const currentProgress = getBibleReadingProgress(dayOfYear);
 
   // Load Bible reading from static JSON
   useEffect(() => {
@@ -38,14 +45,45 @@ function BibleReadingCard() {
     markBibleReadingComplete(dayOfYear);
   };
 
+  const handleProgressChange = (e) => {
+    const progress = parseInt(e.target.value);
+    updateBibleReadingProgress(dayOfYear, progress);
+  };
+
+  // Parse chapters from reading text (e.g., "Genesis 1-3" -> [1, 2, 3])
+  const parseChapters = (readingText) => {
+    if (!readingText) return [];
+    const match = readingText.match(/(\d+)-?(\d+)?/);
+    if (!match) return [];
+    const start = parseInt(match[1]);
+    const end = match[2] ? parseInt(match[2]) : start;
+    const chapters = [];
+    for (let i = start; i <= end; i++) {
+      chapters.push(i);
+    }
+    return chapters;
+  };
+
   // Estimate reading time (~4 min per chapter)
   const estimateReadingTime = (readingText) => {
     if (!readingText) return 10;
-    const match = readingText.match(/(\d+)-?(\d+)?/);
-    if (!match) return 10;
-    const start = parseInt(match[1]);
-    const end = match[2] ? parseInt(match[2]) : start;
-    return (end - start + 1) * 4;
+    const chapters = parseChapters(readingText);
+    return chapters.length * 4 || 10;
+  };
+
+  // Get progress color
+  const getProgressColor = () => {
+    if (currentProgress === 100) return 'range-success';
+    if (currentProgress > 50) return 'range-warning';
+    if (currentProgress > 0) return 'range-info';
+    return 'range-primary';
+  };
+
+  const getProgressBgColor = () => {
+    if (currentProgress === 100) return 'bg-success';
+    if (currentProgress > 50) return 'bg-warning';
+    if (currentProgress > 0) return 'bg-info';
+    return 'bg-base-300';
   };
 
   if (loading) {
@@ -59,6 +97,8 @@ function BibleReadingCard() {
     );
   }
 
+  const chapters = parseChapters(reading?.reading);
+
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body">
@@ -67,12 +107,16 @@ function BibleReadingCard() {
             <Book className="w-6 h-6 text-secondary" />
             <h2 className="card-title text-lg">Bible Reading</h2>
           </div>
-          {isComplete && (
+          {isComplete ? (
             <div className="badge badge-success gap-2">
               <Check className="w-4 h-4" />
               Complete
             </div>
-          )}
+          ) : currentProgress > 0 ? (
+            <div className="badge badge-warning gap-1">
+              {currentProgress}%
+            </div>
+          ) : null}
         </div>
 
         <p className="text-sm text-base-content/70">Day {dayOfYear} of 365</p>
@@ -89,6 +133,46 @@ function BibleReadingCard() {
               </p>
             </div>
           </div>
+
+          {/* Progress Slider */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-base-content/70">Progress</span>
+              <span className="text-sm font-medium">{currentProgress}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="10"
+              value={currentProgress}
+              onChange={handleProgressChange}
+              className={`range range-sm ${getProgressColor()}`}
+            />
+            <div className="flex justify-between text-xs text-base-content/50 px-1">
+              <span>Not started</span>
+              <span>Half done</span>
+              <span>Complete</span>
+            </div>
+          </div>
+
+          {/* Chapter Pills */}
+          {chapters.length > 1 && (
+            <div className="flex flex-wrap gap-1">
+              {chapters.map((chapter, index) => {
+                const chapterProgress = (index / chapters.length) * 100;
+                const isRead = currentProgress > chapterProgress;
+                return (
+                  <span
+                    key={chapter}
+                    className={`badge badge-sm ${isRead ? 'badge-success' : 'badge-ghost'}`}
+                  >
+                    Ch. {chapter}
+                  </span>
+                );
+              })}
+            </div>
+          )}
 
           {reading?.link && (
             <a

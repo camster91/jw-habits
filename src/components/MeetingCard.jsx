@@ -3,6 +3,30 @@ import { Calendar, Check, Clock, ExternalLink } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 import useProgressStore from '../stores/progressStore';
 import { getWorkbookForWeek, getMeetingWorkbookLink, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
+import MeetingSection from './MeetingSection';
+
+// Standard meeting parts structure (fallback if not in JSON)
+const DEFAULT_MIDWEEK_PARTS = {
+  treasures: {
+    talk: { title: 'Talk', duration: 10 },
+    spiritualGems: { title: 'Spiritual Gems', duration: 10 },
+    bibleReading: { title: 'Bible Reading', duration: 4 }
+  },
+  ministry: {
+    assignment1: { type: 'Starting a Conversation', duration: 3 },
+    assignment2: { type: 'Following Up', duration: 4 },
+    assignment3: { type: 'Making Disciples', duration: 5 }
+  },
+  living: {
+    part1: { title: 'Talk/Discussion', duration: 15 },
+    cbs: { title: 'Congregation Bible Study', duration: 30 }
+  }
+};
+
+const DEFAULT_WEEKEND_PARTS = {
+  publicTalk: { title: 'Public Talk', duration: 30 },
+  watchtower: { title: 'Watchtower Study', duration: 60 }
+};
 
 function MeetingCard() {
   const [activeTab, setActiveTab] = useState('midweek');
@@ -17,7 +41,16 @@ function MeetingCard() {
   const midweekDate = format(addDays(weekStart, 2), 'EEEE, MMMM d'); // Wednesday
   const weekendDate = format(addDays(weekStart, 5), 'EEEE, MMMM d'); // Saturday
 
-  const { isMeetingPrepared, markMeetingPrepared } = useProgressStore();
+  const {
+    getMeetingProgress,
+    updateMeetingPartProgress,
+    initMeetingParts,
+    isMeetingPrepared,
+    markMeetingPrepared
+  } = useProgressStore();
+
+  const midweekProgress = getMeetingProgress(weekOf, 'midweek');
+  const weekendProgress = getMeetingProgress(weekOf, 'weekend');
   const isMidweekPrepared = isMeetingPrepared(weekOf, 'midweek');
   const isWeekendPrepared = isMeetingPrepared(weekOf, 'weekend');
 
@@ -28,6 +61,25 @@ function MeetingCard() {
         setLoading(true);
         const data = await getWorkbookForWeek(new Date());
         setWorkbookData(data);
+
+        // Initialize meeting parts in store
+        if (data?.midweek) {
+          const midweekPartKeys = [
+            'treasures_talk',
+            'treasures_spiritualGems',
+            'treasures_bibleReading',
+            'ministry_assignment1',
+            'ministry_assignment2',
+            'ministry_assignment3',
+            'living_part1',
+            'living_cbs'
+          ];
+          initMeetingParts(weekOf, 'midweek', midweekPartKeys);
+        }
+
+        // Initialize weekend parts
+        const weekendPartKeys = ['publicTalk', 'watchtower'];
+        initMeetingParts(weekOf, 'weekend', weekendPartKeys);
       } catch (err) {
         console.error('Failed to load workbook data:', err);
       } finally {
@@ -36,9 +88,13 @@ function MeetingCard() {
     }
 
     loadWorkbook();
-  }, []);
+  }, [weekOf, initMeetingParts]);
 
-  const handleMarkPrepared = (meetingType) => {
+  const handlePartToggle = (meetingType, partKey, completed) => {
+    updateMeetingPartProgress(weekOf, meetingType, partKey, completed);
+  };
+
+  const handleMarkAllComplete = (meetingType) => {
     markMeetingPrepared(weekOf, meetingType, 30);
   };
 
@@ -57,6 +113,89 @@ function MeetingCard() {
     ? getMeetingWorkbookLink(workbookData.docid)
     : JW_ORG_SECTIONS.meetingWorkbooks;
 
+  // Build parts arrays from workbook data
+  const getMidweekParts = () => {
+    const midweek = workbookData?.midweek || DEFAULT_MIDWEEK_PARTS;
+    const parts = midweekProgress.parts || {};
+
+    return {
+      treasures: [
+        {
+          key: 'treasures_talk',
+          title: midweek.treasures?.talk?.title || 'Talk',
+          duration: midweek.treasures?.talk?.duration || 10,
+          completed: parts['treasures_talk'] || false
+        },
+        {
+          key: 'treasures_spiritualGems',
+          title: 'Spiritual Gems',
+          duration: midweek.treasures?.spiritualGems?.duration || 10,
+          completed: parts['treasures_spiritualGems'] || false
+        },
+        {
+          key: 'treasures_bibleReading',
+          title: 'Bible Reading',
+          subtitle: midweek.treasures?.bibleReading?.scripture,
+          duration: midweek.treasures?.bibleReading?.duration || 4,
+          completed: parts['treasures_bibleReading'] || false
+        }
+      ],
+      ministry: [
+        {
+          key: 'ministry_assignment1',
+          title: midweek.ministry?.assignment1?.type || 'Starting a Conversation',
+          duration: midweek.ministry?.assignment1?.duration || 3,
+          completed: parts['ministry_assignment1'] || false
+        },
+        {
+          key: 'ministry_assignment2',
+          title: midweek.ministry?.assignment2?.type || 'Following Up',
+          duration: midweek.ministry?.assignment2?.duration || 4,
+          completed: parts['ministry_assignment2'] || false
+        },
+        {
+          key: 'ministry_assignment3',
+          title: midweek.ministry?.assignment3?.type || 'Making Disciples',
+          duration: midweek.ministry?.assignment3?.duration || 5,
+          completed: parts['ministry_assignment3'] || false
+        }
+      ],
+      living: [
+        {
+          key: 'living_part1',
+          title: midweek.living?.part1?.title || 'Talk/Discussion',
+          duration: midweek.living?.part1?.duration || 15,
+          completed: parts['living_part1'] || false
+        },
+        {
+          key: 'living_cbs',
+          title: 'Congregation Bible Study',
+          subtitle: midweek.living?.cbs?.publication,
+          duration: midweek.living?.cbs?.duration || 30,
+          completed: parts['living_cbs'] || false
+        }
+      ]
+    };
+  };
+
+  const getWeekendParts = () => {
+    const parts = weekendProgress.parts || {};
+    return [
+      {
+        key: 'publicTalk',
+        title: 'Public Talk',
+        duration: 30,
+        completed: parts['publicTalk'] || false
+      },
+      {
+        key: 'watchtower',
+        title: 'Watchtower Study',
+        duration: 60,
+        completed: parts['watchtower'] || false
+      }
+    ];
+  };
+
   if (loading) {
     return (
       <div className="card bg-base-100 shadow-xl">
@@ -67,6 +206,9 @@ function MeetingCard() {
       </div>
     );
   }
+
+  const midweekParts = getMidweekParts();
+  const weekendParts = getWeekendParts();
 
   return (
     <div className="card bg-base-100 shadow-xl">
@@ -123,10 +265,44 @@ function MeetingCard() {
               )}
             </div>
 
-            <div>
-              <p className="text-sm text-base-content/70">
-                Bible Reading: {workbookData?.bibleReading || 'See workbook'}
-              </p>
+            {/* Overall Progress */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-base-content/60">Overall:</span>
+              <div className="flex-1 h-2 bg-base-300 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    midweekProgress.progress === 100 ? 'bg-success' :
+                    midweekProgress.progress > 0 ? 'bg-warning' : 'bg-base-300'
+                  }`}
+                  style={{ width: `${midweekProgress.progress || 0}%` }}
+                />
+              </div>
+              <span className="text-xs font-medium">{midweekProgress.progress || 0}%</span>
+            </div>
+
+            {/* Collapsible Sections */}
+            <div className="space-y-2">
+              <MeetingSection
+                title="Treasures From God's Word"
+                color="bg-amber-500"
+                parts={midweekParts.treasures}
+                onPartToggle={(key, completed) => handlePartToggle('midweek', key, completed)}
+                defaultExpanded={true}
+              />
+
+              <MeetingSection
+                title="Apply Yourself to the Ministry"
+                color="bg-emerald-500"
+                parts={midweekParts.ministry}
+                onPartToggle={(key, completed) => handlePartToggle('midweek', key, completed)}
+              />
+
+              <MeetingSection
+                title="Living as Christians"
+                color="bg-rose-500"
+                parts={midweekParts.living}
+                onPartToggle={(key, completed) => handlePartToggle('midweek', key, completed)}
+              />
             </div>
 
             <a
@@ -139,13 +315,13 @@ function MeetingCard() {
               Open Workbook in JW Library
             </a>
 
-            {!isMidweekPrepared && (
+            {!isMidweekPrepared && midweekProgress.progress < 100 && (
               <button
-                onClick={() => handleMarkPrepared('midweek')}
+                onClick={() => handleMarkAllComplete('midweek')}
                 className="btn btn-primary btn-sm w-full"
               >
                 <Check className="w-4 h-4" />
-                Mark as Prepared
+                Mark All Complete
               </button>
             )}
           </div>
@@ -174,15 +350,43 @@ function MeetingCard() {
               )}
             </div>
 
+            {/* Overall Progress */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-base-content/60">Overall:</span>
+              <div className="flex-1 h-2 bg-base-300 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    weekendProgress.progress === 100 ? 'bg-success' :
+                    weekendProgress.progress > 0 ? 'bg-warning' : 'bg-base-300'
+                  }`}
+                  style={{ width: `${weekendProgress.progress || 0}%` }}
+                />
+              </div>
+              <span className="text-xs font-medium">{weekendProgress.progress || 0}%</span>
+            </div>
+
+            {/* Weekend Parts */}
             <div className="space-y-2">
-              <div>
-                <p className="text-xs text-base-content/60">Public Talk</p>
-                <p className="text-sm">30 minutes</p>
-              </div>
-              <div>
-                <p className="text-xs text-base-content/60">Watchtower Study</p>
-                <p className="text-sm">60 minutes</p>
-              </div>
+              {weekendParts.map((part) => (
+                <label
+                  key={part.key}
+                  className="flex items-center gap-3 p-3 border border-base-300 rounded-lg hover:bg-base-200 cursor-pointer transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={part.completed}
+                    onChange={(e) => handlePartToggle('weekend', part.key, e.target.checked)}
+                    className="checkbox checkbox-primary"
+                  />
+                  <div className="flex-1">
+                    <p className={`font-medium ${part.completed ? 'line-through text-base-content/50' : ''}`}>
+                      {part.title}
+                    </p>
+                    <p className="text-xs text-base-content/60">{part.duration} minutes</p>
+                  </div>
+                  {part.completed && <Check className="w-5 h-5 text-success" />}
+                </label>
+              ))}
             </div>
 
             <a
@@ -195,13 +399,13 @@ function MeetingCard() {
               View Watchtower Study
             </a>
 
-            {!isWeekendPrepared && (
+            {!isWeekendPrepared && weekendProgress.progress < 100 && (
               <button
-                onClick={() => handleMarkPrepared('weekend')}
+                onClick={() => handleMarkAllComplete('weekend')}
                 className="btn btn-primary btn-sm w-full"
               >
                 <Check className="w-4 h-4" />
-                Mark as Prepared
+                Mark All Complete
               </button>
             )}
           </div>
