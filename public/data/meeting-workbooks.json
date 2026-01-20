@@ -2,21 +2,177 @@
   "2026-W02": {
     "docid": "2025642",
     "weekOf": "January 5-11, 2026",
-    "bibleReading": "Genesis 4-7"
+    "bibleReading": "Genesis 4-7",
+    "midweek": {
+      "treasures": {
+        "talk": {
+          "title": "Cain's Bad Example",
+          "duration": 10
+        },
+        "spiritualGems": {
+          "duration": 10
+        },
+        "bibleReading": {
+          "scripture": "Genesis 4:1-16",
+          "duration": 4
+        }
+      },
+      "ministry": {
+        "assignment1": {
+          "type": "Starting a Conversation",
+          "duration": 3
+        },
+        "assignment2": {
+          "type": "Following Up",
+          "duration": 4
+        },
+        "assignment3": {
+          "type": "Making Disciples",
+          "duration": 5
+        }
+      },
+      "living": {
+        "part1": {
+          "title": "Local Needs / Talk",
+          "duration": 15
+        },
+        "cbs": {
+          "publication": "Enjoy Life Forever",
+          "duration": 30
+        }
+      }
+    }
   },
   "2026-W03": {
     "docid": "2025643",
     "weekOf": "January 12-18, 2026",
-    "bibleReading": "Genesis 8-11"
+    "bibleReading": "Genesis 8-11",
+    "midweek": {
+      "treasures": {
+        "talk": {
+          "title": "The Flood—A Lesson for Us",
+          "duration": 10
+        },
+        "spiritualGems": {
+          "duration": 10
+        },
+        "bibleReading": {
+          "scripture": "Genesis 8:1-19",
+          "duration": 4
+        }
+      },
+      "ministry": {
+        "assignment1": {
+          "type": "Starting a Conversation",
+          "duration": 3
+        },
+        "assignment2": {
+          "type": "Following Up",
+          "duration": 4
+        },
+        "assignment3": {
+          "type": "Making Disciples",
+          "duration": 5
+        }
+      },
+      "living": {
+        "part1": {
+          "title": "Organizational Accomplishments",
+          "duration": 15
+        },
+        "cbs": {
+          "publication": "Enjoy Life Forever",
+          "duration": 30
+        }
+      }
+    }
   },
   "2026-W04": {
     "docid": "2025644",
     "weekOf": "January 19-25, 2026",
-    "bibleReading": "Genesis 12-15"
+    "bibleReading": "Genesis 12-15",
+    "midweek": {
+      "treasures": {
+        "talk": {
+          "title": "Abraham's Faith",
+          "duration": 10
+        },
+        "spiritualGems": {
+          "duration": 10
+        },
+        "bibleReading": {
+          "scripture": "Genesis 12:1-9",
+          "duration": 4
+        }
+      },
+      "ministry": {
+        "assignment1": {
+          "type": "Starting a Conversation",
+          "duration": 3
+        },
+        "assignment2": {
+          "type": "Following Up",
+          "duration": 4
+        },
+        "assignment3": {
+          "type": "Making Disciples",
+          "duration": 5
+        }
+      },
+      "living": {
+        "part1": {
+          "title": "How Can We Strengthen Our Faith?",
+          "duration": 15
+        },
+        "cbs": {
+          "publication": "Enjoy Life Forever",
+          "duration": 30
+        }
+      }
+    }
   },
   "2026-W05": {
     "docid": "2025647",
     "weekOf": "January 26 - February 1, 2026",
-    "bibleReading": "Genesis 16-19"
+    "bibleReading": "Genesis 16-19",
+    "midweek": {
+      "treasures": {
+        "talk": {
+          "title": "Lot's Example—A Warning",
+          "duration": 10
+        },
+        "spiritualGems": {
+          "duration": 10
+        },
+        "bibleReading": {
+          "scripture": "Genesis 18:20-33",
+          "duration": 4
+        }
+      },
+      "ministry": {
+        "assignment1": {
+          "type": "Starting a Conversation",
+          "duration": 3
+        },
+        "assignment2": {
+          "type": "Following Up",
+          "duration": 4
+        },
+        "assignment3": {
+          "type": "Explaining Your Beliefs",
+          "duration": 5
+        }
+      },
+      "living": {
+        "part1": {
+          "title": "Be No Part of the World",
+          "duration": 15
+        },
+        "cbs": {
+          "publication": "Enjoy Life Forever",
+          "duration": 30
+        }
+      }
+    }
   }
 }
