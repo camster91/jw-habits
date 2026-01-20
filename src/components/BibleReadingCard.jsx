@@ -79,13 +79,6 @@ function BibleReadingCard() {
     return 'range-primary';
   };
 
-  const getProgressBgColor = () => {
-    if (currentProgress === 100) return 'bg-success';
-    if (currentProgress > 50) return 'bg-warning';
-    if (currentProgress > 0) return 'bg-info';
-    return 'bg-base-300';
-  };
-
   if (loading) {
     return (
       <div className="card bg-base-100 shadow-xl">

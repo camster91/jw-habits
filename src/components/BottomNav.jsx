@@ -14,14 +14,14 @@ function BottomNav() {
 
   return (
     <div className="btm-nav btm-nav-lg bg-base-200 border-t">
-      {navItems.map(({ path, icon: Icon, label }) => (
+      {navItems.map((item) => (
         <button
-          key={path}
-          className={location.pathname === path ? 'active' : ''}
-          onClick={() => navigate(path)}
+          key={item.path}
+          className={location.pathname === item.path ? 'active' : ''}
+          onClick={() => navigate(item.path)}
         >
-          <Icon className="w-5 h-5" />
-          <span className="btm-nav-label text-xs">{label}</span>
+          <item.icon className="w-5 h-5" />
+          <span className="btm-nav-label text-xs">{item.label}</span>
         </button>
       ))}
     </div>

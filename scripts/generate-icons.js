@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { Buffer } from 'node:buffer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
