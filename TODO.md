@@ -3,12 +3,12 @@
 ## High Priority
 
 ### Testing Infrastructure
-- [ ] Add Vitest for unit testing (integrates well with Vite)
-- [ ] Add React Testing Library for component tests
-- [ ] Write tests for Zustand stores (`progressStore`, `settingsStore`)
-- [ ] Write tests for utility functions (`jwLibraryLinks`, `notifications`)
-- [ ] Add test coverage reporting
-- [ ] Add `npm test` script to package.json
+- [x] Add Vitest for unit testing (integrates well with Vite)
+- [x] Add React Testing Library for component tests
+- [x] Write tests for Zustand stores (`progressStore`, `settingsStore`)
+- [x] Write tests for utility functions (`jwLibraryLinks`, `notifications`)
+- [x] Add test coverage reporting
+- [x] Add `npm test` script to package.json
 
 ### Code Quality
 - [ ] Migrate to TypeScript for better type safety
@@ -17,10 +17,10 @@
 - [ ] Add PropTypes as interim solution if TypeScript migration is delayed
 
 ### CI/CD Pipeline
-- [ ] Add GitHub Actions workflow for:
-  - [ ] Running lint on PR
-  - [ ] Running tests on PR
-  - [ ] Building production bundle
+- [x] Add GitHub Actions workflow for:
+  - [x] Running lint on PR
+  - [x] Running tests on PR
+  - [x] Building production bundle
   - [ ] Deploying to hosting (Hostinger)
 
 ## Medium Priority
@@ -94,8 +94,8 @@
 
 ## Quick Wins (Can be done immediately)
 
-1. **Add Vitest** - Minimal setup with Vite integration
-2. **Add GitHub Actions** - Basic lint/build workflow
+1. ~~**Add Vitest** - Minimal setup with Vite integration~~ ✅
+2. ~~**Add GitHub Actions** - Basic lint/build workflow~~ ✅
 3. **Add PropTypes** - Quick type checking without TypeScript migration
 4. **Run npm audit** - Check for vulnerable dependencies
 5. **Add Prettier** - Consistent code formatting
