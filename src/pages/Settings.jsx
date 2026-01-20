@@ -1,4 +1,4 @@
-import { Trash2, Download, Moon, Sun, Bell, BellOff, Clock } from 'lucide-react';
+import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import useProgressStore from '../stores/progressStore';
 import useSettingsStore from '../stores/settingsStore';
@@ -92,6 +92,50 @@ function Settings() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleImportData = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        // Validate the data structure
+        if (!data.progress && !data.settings) {
+          toast.error('Invalid backup file format');
+          return;
+        }
+
+        // Confirm before importing
+        if (!confirm('This will replace your current data. Continue?')) {
+          return;
+        }
+
+        // Import progress data
+        if (data.progress) {
+          localStorage.setItem('jw-progress-storage', JSON.stringify(data.progress));
+        }
+
+        // Import settings data
+        if (data.settings) {
+          localStorage.setItem('jw-progress-settings', JSON.stringify(data.settings));
+        }
+
+        toast.success('Data imported successfully! Refreshing...');
+
+        // Reload to apply imported data
+        setTimeout(() => window.location.reload(), 1000);
+      } catch {
+        toast.error('Failed to import data. Please check the file format.');
+      }
+    };
+    input.click();
   };
 
   return (
@@ -254,6 +298,14 @@ function Settings() {
               >
                 <Download className="w-5 h-5" />
                 Export Progress Data
+              </button>
+
+              <button
+                onClick={handleImportData}
+                className="btn btn-outline w-full justify-start"
+              >
+                <Upload className="w-5 h-5" />
+                Import Progress Data
               </button>
 
               <div className="alert alert-warning">
