@@ -32,7 +32,12 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={toast}>
       {children}
-      <div className="toast toast-top toast-center z-50">
+      <div
+        className="toast toast-top toast-center z-50"
+        role="region"
+        aria-label="Notifications"
+        aria-live="polite"
+      >
         {toasts.map(t => (
           <Toast key={t.id} {...t} onClose={() => removeToast(t.id)} />
         ))}
@@ -65,11 +70,19 @@ function Toast({ message, type, onClose }) {
   };
 
   return (
-    <div className={`alert ${alertClass[type]} shadow-lg`}>
+    <div
+      className={`alert ${alertClass[type]} shadow-lg`}
+      role="alert"
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
+    >
       {icons[type]}
       <span>{message}</span>
-      <button onClick={onClose} className="btn btn-ghost btn-xs">
-        <X className="w-4 h-4" />
+      <button
+        onClick={onClose}
+        className="btn btn-ghost btn-xs"
+        aria-label="Dismiss notification"
+      >
+        <X className="w-4 h-4" aria-hidden="true" />
       </button>
     </div>
   );
