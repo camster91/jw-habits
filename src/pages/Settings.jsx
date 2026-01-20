@@ -27,12 +27,10 @@ function Settings() {
     setTheme,
   } = useSettingsStore();
 
-  const [notificationPermission, setNotificationPermission] = useState('default');
-  const [notificationSupported, setNotificationSupported] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState(() => getNotificationPermission());
+  const [notificationSupported] = useState(() => isNotificationSupported());
 
   useEffect(() => {
-    setNotificationSupported(isNotificationSupported());
-    setNotificationPermission(getNotificationPermission());
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
