@@ -289,8 +289,231 @@ Based on official JW.org guidelines, the meeting has these sections:
 
 ---
 
+---
+
+## Feature 4: JW.org News Feed
+
+### Overview
+
+Add a live news feed that aggregates content from JW.org's "What's New" page and Latest Videos section, keeping users informed of new releases without leaving the app.
+
+### Data Sources
+
+| Source | URL | Content Type |
+|--------|-----|--------------|
+| What's New | https://www.jw.org/en/whats-new/ | Articles, magazines, news releases, life stories |
+| Latest Videos | https://www.jw.org/en/library/videos/#en/categories/LatestVideos | New video releases |
+
+### Content Types to Display
+
+From **What's New**:
+- News Releases (imprisoned members, regional activities)
+- Magazine Issues (Watchtower, Awake!)
+- Life Stories
+- Educational Content ("Was It Designed?" series)
+- Meeting Workbooks
+- Children's Activities
+
+From **Latest Videos**:
+- New video releases with thumbnails
+- Video duration and category
+- Direct links to JW Library or streaming
+
+### Proposed UI Design
+
+#### 4.1 News Feed Page/Tab
+
+```
+┌─────────────────────────────────────────┐
+│ 📰 What's New                    [⟳]   │
+├─────────────────────────────────────────┤
+│ Filter: [All ▼] [Articles] [Videos]     │
+├─────────────────────────────────────────┤
+│ ┌─────┐ NEWS RELEASE                    │
+│ │ IMG │ 2026-01-22                      │
+│ └─────┘ Brothers Imprisoned in Russia   │
+│         Brief description text...       │
+│                          [Read More →]  │
+├─────────────────────────────────────────┤
+│ ┌─────┐ THE WATCHTOWER—STUDY EDITION    │
+│ │ IMG │ 2026-01-20                      │
+│ └─────┘ March 2026 Issue Available      │
+│                          [Read More →]  │
+├─────────────────────────────────────────┤
+│ ┌─────┐ VIDEO · 5:32                    │
+│ │ ▶️  │ 2026-01-18                      │
+│ └─────┘ "Jehovah Will Help You"         │
+│         Morning Worship                 │
+│                          [Watch →]      │
+└─────────────────────────────────────────┘
+```
+
+#### 4.2 News Card Component
+
+Each news item displays:
+- **Thumbnail image** (left side, square format)
+- **Category badge** (color-coded: blue for news, green for magazines, purple for videos)
+- **Publication date** (YYYY-MM-DD format)
+- **Title** (linked headline)
+- **Description** (optional, truncated to 2 lines)
+- **Action button** ("Read More" or "Watch")
+- **Video duration** (for video content only)
+
+#### 4.3 Feed Filters
+
+| Filter | Description |
+|--------|-------------|
+| All | Show all content types |
+| Articles | News releases, life stories, educational |
+| Magazines | Watchtower, Awake!, Meeting Workbooks |
+| Videos | Latest video releases |
+
+#### 4.4 Dashboard Widget (Optional)
+
+Small preview widget on the main dashboard:
+```
+┌─────────────────────────────────────────┐
+│ Latest from JW.org              [→]    │
+├─────────────────────────────────────────┤
+│ • Brothers Released in Eritrea          │
+│ • New Video: "Keep Enduring"            │
+│ • Watchtower Study - March 2026         │
+└─────────────────────────────────────────┘
+```
+
+### Data Model
+
+```javascript
+// newsStore.js - New Zustand store
+
+const useNewsStore = create((set, get) => ({
+  // Feed items
+  items: [],
+  lastFetched: null,
+  isLoading: false,
+  error: null,
+
+  // Filters
+  activeFilter: 'all', // 'all' | 'articles' | 'magazines' | 'videos'
+
+  // Actions
+  fetchNews: async () => { ... },
+  setFilter: (filter) => set({ activeFilter: filter }),
+  refreshFeed: async () => { ... },
+
+  // Cached items for offline
+  cachedItems: [],
+}));
+
+// News item structure
+{
+  id: 'news-2026-01-22-001',
+  type: 'news_release',        // 'news_release' | 'magazine' | 'life_story' | 'video' | 'educational'
+  category: 'NEWS RELEASES',    // Display category label
+  title: 'Brothers Imprisoned in Russia',
+  description: 'Brief description...',
+  thumbnail: 'https://...',
+  url: 'https://www.jw.org/en/...',
+  jwLibraryUrl: 'jwlibrary://...',  // Deep link to JW Library app
+  publishDate: '2026-01-22',
+  duration: null,               // For videos only (in seconds)
+  isVideo: false,
+}
+```
+
+### Technical Implementation
+
+#### 4.5 Data Fetching Strategy
+
+**Option A: RSS/Atom Feed (Preferred)**
+- Check if JW.org provides RSS feeds
+- Lightweight, structured data
+- Easy to parse and cache
+
+**Option B: Web Scraping (Fallback)**
+- Fetch HTML from source pages
+- Parse with DOMParser or cheerio-like library
+- Extract structured data from cards
+- Requires CORS proxy or backend service
+
+**Option C: JW.org API (If Available)**
+- Investigate if public API endpoints exist
+- Most reliable and efficient option
+
+#### 4.6 Caching Strategy
+
+```javascript
+// Cache news items for offline access
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
+// Store in localStorage with expiry
+{
+  newsCache: {
+    items: [...],
+    fetchedAt: timestamp,
+    expiresAt: timestamp + CACHE_DURATION
+  }
+}
+```
+
+#### 4.7 Background Sync (PWA)
+
+- Use Periodic Background Sync API to refresh feed
+- Update badge count for new items
+- Send notification for important news (optional)
+
+### Implementation Phases
+
+#### Phase 6: News Feed Foundation
+- [ ] Create `newsStore.js` Zustand store
+- [ ] Implement data fetching service
+- [ ] Add CORS proxy if needed (or serverless function)
+- [ ] Create NewsCard component
+- [ ] Build NewsFeed page
+
+#### Phase 7: News Feed UI
+- [ ] Add filter tabs (All/Articles/Magazines/Videos)
+- [ ] Implement pull-to-refresh
+- [ ] Add loading skeletons
+- [ ] Handle error states gracefully
+- [ ] Add "Load More" pagination
+
+#### Phase 8: News Feed Integration
+- [ ] Add News tab to bottom navigation
+- [ ] Create dashboard widget (latest 3 items)
+- [ ] Implement JW Library deep links
+- [ ] Add offline caching for feed items
+- [ ] Cache thumbnail images for offline viewing
+
+#### Phase 9: News Feed Polish
+- [ ] Add read/unread tracking
+- [ ] Implement "Mark all as read"
+- [ ] Add notification badge for new items
+- [ ] Background sync for fresh content
+- [ ] Add sharing functionality for news items
+
+### UI/UX Considerations
+
+- **Pull-to-refresh** gesture for mobile users
+- **Infinite scroll** or "Load More" button
+- **Skeleton loaders** while fetching
+- **Offline banner** when cached data is shown
+- **Category colors** for quick visual scanning
+- **Responsive images** with lazy loading
+
+### Accessibility
+
+- Proper heading hierarchy for feed items
+- ARIA labels for filter buttons
+- Screen reader announcements for new content
+- Keyboard navigation through feed items
+
+---
+
 ## Sources
 
 - [Instructions for Our Christian Life and Ministry Meeting](https://www.jw.org/en/library/guidelines/Instructions-for-Our-Christian-Life-and-Ministry-Meeting/Instructions-for-Our-Christian-Life-and-Ministry-Meeting/)
 - [Life and Ministry Meeting Workbook](https://www.jw.org/en/library/jw-meeting-workbook/)
 - [January 19-25, 2026 Schedule](https://www.jw.org/en/library/jw-meeting-workbook/january-february-2026-mwb/Life-and-Ministry-Meeting-Schedule-for-January-19-25-2026/)
+- [JW.org What's New](https://www.jw.org/en/whats-new/)
+- [JW.org Latest Videos](https://www.jw.org/en/library/videos/#en/categories/LatestVideos)
