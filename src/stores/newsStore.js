@@ -2,7 +2,95 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
+// Multiple CORS proxies to try in order
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest=',
+];
+
+// Curated news items as fallback when fetch fails
+const getFallbackItems = () => {
+  const today = new Date().toISOString().split('T')[0];
+  return [
+    {
+      id: 'fallback-whats-new',
+      type: 'news_release',
+      filterCategory: 'articles',
+      category: 'WHAT\'S NEW',
+      title: 'Latest Updates on JW.org',
+      description: 'Visit jw.org to see the latest news, articles, and spiritual encouragement.',
+      thumbnail: '',
+      url: 'https://www.jw.org/en/whats-new/',
+      jwLibraryUrl: 'jwlibrary://content',
+      publishDate: today,
+      duration: null,
+      isVideo: false,
+      isRead: false,
+    },
+    {
+      id: 'fallback-videos',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'VIDEOS',
+      title: 'Latest Videos',
+      description: 'Watch the newest videos including talks, dramatizations, and music.',
+      thumbnail: '',
+      url: 'https://www.jw.org/en/library/videos/#en/categories/LatestVideos',
+      jwLibraryUrl: 'jwlibrary://content',
+      publishDate: today,
+      duration: null,
+      isVideo: true,
+      isRead: false,
+    },
+    {
+      id: 'fallback-watchtower',
+      type: 'magazine',
+      filterCategory: 'magazines',
+      category: 'THE WATCHTOWER',
+      title: 'Watchtower Study Articles',
+      description: 'Read the latest Watchtower study edition for meeting preparation.',
+      thumbnail: '',
+      url: 'https://www.jw.org/en/library/magazines/watchtower-study/',
+      jwLibraryUrl: 'jwlibrary://content',
+      publishDate: today,
+      duration: null,
+      isVideo: false,
+      isRead: false,
+    },
+    {
+      id: 'fallback-newsroom',
+      type: 'news_release',
+      filterCategory: 'articles',
+      category: 'NEWSROOM',
+      title: 'JW Newsroom',
+      description: 'Official news releases and press information from Jehovah\'s Witnesses.',
+      thumbnail: '',
+      url: 'https://www.jw.org/en/news/',
+      jwLibraryUrl: 'jwlibrary://content',
+      publishDate: today,
+      duration: null,
+      isVideo: false,
+      isRead: false,
+    },
+    {
+      id: 'fallback-meeting-workbook',
+      type: 'magazine',
+      filterCategory: 'magazines',
+      category: 'MEETING WORKBOOK',
+      title: 'Life and Ministry Meeting Workbook',
+      description: 'Prepare for the midweek meeting with the latest workbook.',
+      thumbnail: '',
+      url: 'https://www.jw.org/en/library/jw-meeting-workbook/',
+      jwLibraryUrl: 'jwlibrary://content',
+      publishDate: today,
+      duration: null,
+      isVideo: false,
+      isRead: false,
+    },
+  ];
+};
 
 // Category type mappings
 const CATEGORY_TYPES = {
@@ -175,52 +263,40 @@ const useNewsStore = create(
 
         set({ isLoading: true, error: null });
 
-        try {
-          // Fetch What's New page via CORS proxy
-          const whatsNewUrl = encodeURIComponent('https://www.jw.org/en/whats-new/');
-          const response = await fetch(`${CORS_PROXY}${whatsNewUrl}`);
+        const whatsNewUrl = encodeURIComponent('https://www.jw.org/en/whats-new/');
+        let fetchSuccess = false;
+        let parsedItems = [];
 
-          if (!response.ok) {
-            throw new Error('Failed to fetch news');
+        // Try each CORS proxy until one works
+        for (const proxy of CORS_PROXIES) {
+          try {
+            const response = await fetch(`${proxy}${whatsNewUrl}`, {
+              signal: AbortSignal.timeout(10000), // 10 second timeout
+            });
+
+            if (response.ok) {
+              const html = await response.text();
+              parsedItems = parseWhatsNew(html);
+              fetchSuccess = true;
+              break;
+            }
+          } catch {
+            // Try next proxy
+            continue;
           }
-
-          const html = await response.text();
-          const items = parseWhatsNew(html);
-
-          // If parsing didn't work well, use sample data as fallback
-          const finalItems =
-            items.length > 0
-              ? items
-              : [
-                  {
-                    id: 'sample-1',
-                    type: 'news_release',
-                    filterCategory: 'articles',
-                    category: 'NEWS RELEASES',
-                    title: 'Visit jw.org for the latest news',
-                    description: 'Check jw.org/whats-new for current updates from Jehovah\'s Witnesses.',
-                    thumbnail: '',
-                    url: 'https://www.jw.org/en/whats-new/',
-                    jwLibraryUrl: 'jwlibrary://content',
-                    publishDate: new Date().toISOString().split('T')[0],
-                    duration: null,
-                    isVideo: false,
-                    isRead: false,
-                  },
-                ];
-
-          set({
-            items: finalItems,
-            lastFetched: Date.now(),
-            isLoading: false,
-            error: null,
-          });
-        } catch (error) {
-          set({
-            isLoading: false,
-            error: error.message || 'Failed to fetch news',
-          });
         }
+
+        // Use parsed items if successful, otherwise use curated fallback
+        const finalItems = fetchSuccess && parsedItems.length > 0
+          ? parsedItems
+          : getFallbackItems();
+
+        set({
+          items: finalItems,
+          lastFetched: Date.now(),
+          isLoading: false,
+          error: fetchSuccess ? null : 'Using offline content - visit jw.org for latest updates',
+        });
       },
 
       // Get filtered items
