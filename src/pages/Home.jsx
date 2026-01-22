@@ -3,6 +3,7 @@ import BibleReadingCard from '../components/BibleReadingCard';
 import MeetingCard from '../components/MeetingCard';
 import StreakCard from '../components/StreakCard';
 import QuickLinks from '../components/QuickLinks';
+import NewsWidget from '../components/NewsWidget';
 import { format } from 'date-fns';
 
 function Home() {
@@ -21,6 +22,7 @@ function Home() {
         <DailyTextCard />
         <BibleReadingCard />
         <MeetingCard />
+        <NewsWidget />
         <StreakCard />
         <QuickLinks />
       </div>
