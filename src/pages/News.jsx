@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { RefreshCw, Wifi, WifiOff, CheckCheck } from 'lucide-react';
 import useNewsStore from '../stores/newsStore';
 import NewsCard from '../components/NewsCard';
@@ -55,7 +55,17 @@ function News() {
     fetchNews(true); // Force refresh
   };
 
-  const isStale = lastFetched && Date.now() - lastFetched > 30 * 60 * 1000;
+  // Calculate staleness - data older than 30 minutes is considered stale
+  const STALE_THRESHOLD = 30 * 60 * 1000;
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  // Update current time periodically to recalculate staleness
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isStale = lastFetched ? currentTime - lastFetched > STALE_THRESHOLD : false;
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">

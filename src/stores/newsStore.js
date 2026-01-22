@@ -110,7 +110,7 @@ const parseWhatsNew = (html) => {
         isVideo,
         isRead: false,
       });
-    } catch (e) {
+    } catch {
       // Skip malformed items
     }
   });

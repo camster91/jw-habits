@@ -19,17 +19,17 @@ const getCategoryColor = (type) => {
   }
 };
 
-// Category icon
-const getCategoryIcon = (type) => {
+// Category icon component - renders the appropriate icon based on type
+function CategoryIcon({ type, className }) {
   switch (type) {
     case 'video':
-      return Video;
+      return <Video className={className} />;
     case 'magazine':
-      return BookOpen;
+      return <BookOpen className={className} />;
     default:
-      return Newspaper;
+      return <Newspaper className={className} />;
   }
-};
+}
 
 // Format duration (seconds to MM:SS)
 const formatDuration = (seconds) => {
@@ -42,7 +42,6 @@ const formatDuration = (seconds) => {
 function NewsCard({ item, compact = false }) {
   const { markAsRead, isItemRead } = useNewsStore();
   const isRead = isItemRead(item.id);
-  const CategoryIcon = getCategoryIcon(item.type);
 
   const handleClick = () => {
     markAsRead(item.id);
@@ -58,7 +57,7 @@ function NewsCard({ item, compact = false }) {
         }`}
         aria-label={`${item.title} - ${item.category}`}
       >
-        <CategoryIcon className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
+        <CategoryIcon type={item.type} className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
         <span className={`text-sm flex-1 truncate ${isRead ? 'text-base-content/60' : ''}`}>
           {item.title}
         </span>
@@ -100,7 +99,7 @@ function NewsCard({ item, compact = false }) {
             </div>
           ) : (
             <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-base-300 flex items-center justify-center">
-              <CategoryIcon className="w-8 h-8 text-base-content/30" />
+              <CategoryIcon type={item.type} className="w-8 h-8 text-base-content/30" />
             </div>
           )}
 
