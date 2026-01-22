@@ -63,6 +63,21 @@
 - [ ] Add sharing functionality for progress milestones
 - [ ] Add multi-language support (i18n)
 
+### JW.org News Feed (NEW)
+- [ ] Create `newsStore.js` Zustand store for feed state
+- [ ] Implement data fetching service for JW.org content
+- [ ] Set up CORS proxy or serverless function for fetching
+- [ ] Create NewsCard component with thumbnail, category, date, title
+- [ ] Build NewsFeed page with filter tabs (All/Articles/Magazines/Videos)
+- [ ] Add News tab to bottom navigation
+- [ ] Create dashboard widget showing latest 3 items
+- [ ] Implement JW Library deep links for content
+- [ ] Add offline caching for feed items and thumbnails
+- [ ] Add pull-to-refresh and "Load More" pagination
+- [ ] Implement read/unread tracking with badge count
+- [ ] Add background sync for automatic feed refresh
+- [ ] Add sharing functionality for news items
+
 ### Developer Experience
 - [ ] Add Storybook for component documentation
 - [ ] Add Husky for pre-commit hooks

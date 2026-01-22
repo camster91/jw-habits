@@ -9,6 +9,7 @@ import { ToastProvider } from './components/Toast';
 const Stats = lazy(() => import('./pages/Stats'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Links = lazy(() => import('./pages/Links'));
+const News = lazy(() => import('./pages/News'));
 
 // Loading fallback component
 function PageLoader() {
@@ -28,6 +29,7 @@ function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/news" element={<News />} />
                 <Route path="/stats" element={<Stats />} />
                 <Route path="/links" element={<Links />} />
                 <Route path="/settings" element={<Settings />} />
