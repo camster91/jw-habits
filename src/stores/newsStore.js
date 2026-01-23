@@ -1,217 +1,137 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
-
-// Multiple CORS proxies to try in order
-const CORS_PROXIES = [
-  'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?',
-  'https://api.codetabs.com/v1/proxy?quest=',
-];
-
-// Curated news items as fallback when fetch fails
-const getFallbackItems = () => {
-  const today = new Date().toISOString().split('T')[0];
+// Curated JW.org content - reliable links that always work
+const getCuratedItems = () => {
   return [
     {
-      id: 'fallback-whats-new',
+      id: 'whats-new',
       type: 'news_release',
       filterCategory: 'articles',
-      category: 'WHAT\'S NEW',
+      category: "WHAT'S NEW",
       title: 'Latest Updates on JW.org',
-      description: 'Visit jw.org to see the latest news, articles, and spiritual encouragement.',
-      thumbnail: '',
+      description: 'See the latest news, articles, videos, and spiritual encouragement from jw.org.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/802013131/univ/art/802013131_univ_lsr_lg.jpg',
       url: 'https://www.jw.org/en/whats-new/',
       jwLibraryUrl: 'jwlibrary://content',
-      publishDate: today,
-      duration: null,
       isVideo: false,
-      isRead: false,
     },
     {
-      id: 'fallback-videos',
+      id: 'latest-videos',
       type: 'video',
       filterCategory: 'videos',
       category: 'VIDEOS',
       title: 'Latest Videos',
-      description: 'Watch the newest videos including talks, dramatizations, and music.',
-      thumbnail: '',
+      description: 'Watch the newest videos including talks, dramatizations, music, and more.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1011214/univ/art/1011214_univ_lsr_lg.jpg',
       url: 'https://www.jw.org/en/library/videos/#en/categories/LatestVideos',
       jwLibraryUrl: 'jwlibrary://content',
-      publishDate: today,
-      duration: null,
       isVideo: true,
-      isRead: false,
     },
     {
-      id: 'fallback-watchtower',
+      id: 'watchtower-study',
       type: 'magazine',
       filterCategory: 'magazines',
       category: 'THE WATCHTOWER',
-      title: 'Watchtower Study Articles',
+      title: 'Watchtower Study Edition',
       description: 'Read the latest Watchtower study edition for meeting preparation.',
-      thumbnail: '',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/2025007/univ/art/2025007_univ_lsr_lg.jpg',
       url: 'https://www.jw.org/en/library/magazines/watchtower-study/',
-      jwLibraryUrl: 'jwlibrary://content',
-      publishDate: today,
-      duration: null,
+      jwLibraryUrl: 'jwlibrary://finder?wtlocale=E&pub=w',
       isVideo: false,
-      isRead: false,
     },
     {
-      id: 'fallback-newsroom',
+      id: 'newsroom',
       type: 'news_release',
       filterCategory: 'articles',
       category: 'NEWSROOM',
       title: 'JW Newsroom',
-      description: 'Official news releases and press information from Jehovah\'s Witnesses.',
-      thumbnail: '',
+      description: "Official news releases and press information from Jehovah's Witnesses worldwide.",
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/102015323/univ/art/102015323_univ_lsr_lg.jpg',
       url: 'https://www.jw.org/en/news/',
       jwLibraryUrl: 'jwlibrary://content',
-      publishDate: today,
-      duration: null,
       isVideo: false,
-      isRead: false,
     },
     {
-      id: 'fallback-meeting-workbook',
+      id: 'meeting-workbook',
       type: 'magazine',
       filterCategory: 'magazines',
       category: 'MEETING WORKBOOK',
       title: 'Life and Ministry Meeting Workbook',
-      description: 'Prepare for the midweek meeting with the latest workbook.',
-      thumbnail: '',
+      description: 'Prepare for the midweek meeting with the current workbook.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/mwb25/univ/art/mwb25_univ_lsr_lg.jpg',
       url: 'https://www.jw.org/en/library/jw-meeting-workbook/',
-      jwLibraryUrl: 'jwlibrary://content',
-      publishDate: today,
-      duration: null,
+      jwLibraryUrl: 'jwlibrary://finder?wtlocale=E&pub=mwb',
       isVideo: false,
-      isRead: false,
+    },
+    {
+      id: 'awake',
+      type: 'magazine',
+      filterCategory: 'magazines',
+      category: 'AWAKE!',
+      title: 'Awake! Magazine',
+      description: 'Read the latest Awake! articles covering practical life topics.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/g25/univ/art/g25_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/library/magazines/awake/',
+      jwLibraryUrl: 'jwlibrary://finder?wtlocale=E&pub=g',
+      isVideo: false,
+    },
+    {
+      id: 'bible-study',
+      type: 'educational',
+      filterCategory: 'articles',
+      category: 'BIBLE STUDY',
+      title: 'Enjoy Life Forever! - Bible Study',
+      description: 'Free interactive Bible study course available in many languages.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1102021232/univ/art/1102021232_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/bible-teachings/guided-bible-study-course/',
+      jwLibraryUrl: 'jwlibrary://finder?wtlocale=E&pub=lff',
+      isVideo: false,
+    },
+    {
+      id: 'original-songs',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'MUSIC',
+      title: 'Original Songs',
+      description: 'Listen to original songs and music videos for encouragement.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1011231/univ/art/1011231_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/library/music-songs/original-songs/',
+      jwLibraryUrl: 'jwlibrary://content',
+      isVideo: true,
+    },
+    {
+      id: 'broadcasting',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'JW BROADCASTING',
+      title: 'JW Broadcasting',
+      description: 'Monthly programs with spiritual encouragement, news, and interviews.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/sjjm/univ/art/sjjm_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/library/videos/#en/mediaitems/StudioMonthlyPrograms/pub-jwb',
+      jwLibraryUrl: 'jwlibrary://content',
+      isVideo: true,
+    },
+    {
+      id: 'daily-text',
+      type: 'educational',
+      filterCategory: 'articles',
+      category: 'DAILY TEXT',
+      title: "Examining the Scriptures Daily",
+      description: "Today's daily text and comments for personal Bible study.",
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/es25/univ/art/es25_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/library/jw-meeting-workbook/',
+      jwLibraryUrl: 'jwlibrary://finder?wtlocale=E&pub=es',
+      isVideo: false,
     },
   ];
-};
-
-// Category type mappings
-const CATEGORY_TYPES = {
-  'NEWS RELEASES': 'news_release',
-  'NEWS': 'news_release',
-  'LIFE STORIES': 'life_story',
-  'LIFE STORY': 'life_story',
-  'THE WATCHTOWER': 'magazine',
-  'THE WATCHTOWER—STUDY EDITION': 'magazine',
-  'AWAKE!': 'magazine',
-  'MEETING WORKBOOK': 'magazine',
-  'WAS IT DESIGNED?': 'educational',
-  'VIDEO': 'video',
-  'VIDEOS': 'video',
-};
-
-// Get filter category from type
-const getFilterCategory = (type) => {
-  switch (type) {
-    case 'news_release':
-    case 'life_story':
-    case 'educational':
-      return 'articles';
-    case 'magazine':
-      return 'magazines';
-    case 'video':
-      return 'videos';
-    default:
-      return 'articles';
-  }
-};
-
-// Parse HTML to extract news items
-const parseWhatsNew = (html) => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const items = [];
-
-  // Find all synopsis items (cards)
-  const cards = doc.querySelectorAll('.synopsis, .card, [class*="item"], article');
-
-  cards.forEach((card, index) => {
-    try {
-      // Try different selectors for title
-      const titleEl = card.querySelector('h3 a, h2 a, .title a, a.lnk, .headline a, a');
-      const title = titleEl?.textContent?.trim();
-      if (!title) return;
-
-      // Get URL
-      let url = titleEl?.getAttribute('href') || '';
-      if (url && !url.startsWith('http')) {
-        url = `https://www.jw.org${url}`;
-      }
-
-      // Get category
-      const categoryEl = card.querySelector('.category, .cardType, [class*="type"], .contextTitle');
-      const category = categoryEl?.textContent?.trim()?.toUpperCase() || 'ARTICLES';
-
-      // Get description
-      const descEl = card.querySelector('.synopsis, .desc, .description, p');
-      const description = descEl?.textContent?.trim() || '';
-
-      // Get thumbnail
-      const imgEl = card.querySelector('img');
-      let thumbnail = imgEl?.getAttribute('src') || imgEl?.getAttribute('data-src') || '';
-      if (thumbnail && !thumbnail.startsWith('http')) {
-        thumbnail = `https://www.jw.org${thumbnail}`;
-      }
-
-      // Get date
-      const dateEl = card.querySelector('.date, time, [class*="date"]');
-      let publishDate = dateEl?.textContent?.trim() || '';
-      // Try to parse date or use today
-      if (!publishDate || publishDate.length < 8) {
-        publishDate = new Date().toISOString().split('T')[0];
-      }
-
-      // Determine type
-      const type = CATEGORY_TYPES[category] || 'news_release';
-      const isVideo = type === 'video' || category.includes('VIDEO');
-
-      // Check for duration (videos)
-      const durationEl = card.querySelector('.duration, [class*="duration"], time');
-      let duration = null;
-      if (isVideo && durationEl) {
-        const durationText = durationEl.textContent;
-        const match = durationText.match(/(\d+):(\d+)/);
-        if (match) {
-          duration = parseInt(match[1]) * 60 + parseInt(match[2]);
-        }
-      }
-
-      items.push({
-        id: `news-${index}-${Date.now()}`,
-        type,
-        filterCategory: getFilterCategory(type),
-        category,
-        title,
-        description: description.substring(0, 200),
-        thumbnail,
-        url,
-        jwLibraryUrl: url.replace('https://www.jw.org', 'jwlibrary://'),
-        publishDate,
-        duration,
-        isVideo,
-        isRead: false,
-      });
-    } catch {
-      // Skip malformed items
-    }
-  });
-
-  return items;
 };
 
 const useNewsStore = create(
   persist(
     (set, get) => ({
-      // Feed state
-      items: [],
-      lastFetched: null,
+      // Feed state - initialize with curated items
+      items: getCuratedItems(),
       isLoading: false,
       error: null,
 
@@ -247,55 +167,17 @@ const useNewsStore = create(
         return state.items.filter((item) => !state.readItems[item.id]).length;
       },
 
-      // Fetch news from JW.org
-      fetchNews: async (forceRefresh = false) => {
-        const state = get();
-
-        // Check cache validity
-        if (
-          !forceRefresh &&
-          state.lastFetched &&
-          Date.now() - state.lastFetched < CACHE_DURATION &&
-          state.items.length > 0
-        ) {
-          return; // Use cached data
-        }
-
+      // Load curated content (replaces fetchNews)
+      fetchNews: async () => {
         set({ isLoading: true, error: null });
 
-        const whatsNewUrl = encodeURIComponent('https://www.jw.org/en/whats-new/');
-        let fetchSuccess = false;
-        let parsedItems = [];
-
-        // Try each CORS proxy until one works
-        for (const proxy of CORS_PROXIES) {
-          try {
-            const response = await fetch(`${proxy}${whatsNewUrl}`, {
-              signal: AbortSignal.timeout(10000), // 10 second timeout
-            });
-
-            if (response.ok) {
-              const html = await response.text();
-              parsedItems = parseWhatsNew(html);
-              fetchSuccess = true;
-              break;
-            }
-          } catch {
-            // Try next proxy
-            continue;
-          }
-        }
-
-        // Use parsed items if successful, otherwise use curated fallback
-        const finalItems = fetchSuccess && parsedItems.length > 0
-          ? parsedItems
-          : getFallbackItems();
+        // Small delay to show loading state for UX
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         set({
-          items: finalItems,
-          lastFetched: Date.now(),
+          items: getCuratedItems(),
           isLoading: false,
-          error: fetchSuccess ? null : 'Using offline content - visit jw.org for latest updates',
+          error: null,
         });
       },
 
@@ -314,20 +196,17 @@ const useNewsStore = create(
         return state.items.slice(0, count);
       },
 
-      // Clear cache
+      // Refresh content
       clearCache: () =>
         set({
-          items: [],
-          lastFetched: null,
+          items: getCuratedItems(),
           error: null,
         }),
     }),
     {
       name: 'jw-news-storage',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
-        items: state.items,
-        lastFetched: state.lastFetched,
         readItems: state.readItems,
       }),
     }
