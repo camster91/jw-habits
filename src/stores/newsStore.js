@@ -1,7 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-// Curated JW.org content - reliable links that always work
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
+// API endpoint - works on Vercel, falls back for local dev
+const getApiUrl = () => {
+  // In production (Vercel), use relative path
+  // In development, the API won't be available, so we'll use fallback
+  return '/api/news';
+};
+
+// Curated JW.org content - reliable fallback that always works
 const getCuratedItems = () => {
   return [
     {
@@ -132,6 +141,7 @@ const useNewsStore = create(
     (set, get) => ({
       // Feed state - initialize with curated items
       items: getCuratedItems(),
+      lastFetched: null,
       isLoading: false,
       error: null,
 
@@ -167,15 +177,47 @@ const useNewsStore = create(
         return state.items.filter((item) => !state.readItems[item.id]).length;
       },
 
-      // Load curated content (replaces fetchNews)
-      fetchNews: async () => {
+      // Fetch news from API (Vercel serverless) with fallback to curated content
+      fetchNews: async (forceRefresh = false) => {
+        const state = get();
+
+        // Check cache validity
+        if (
+          !forceRefresh &&
+          state.lastFetched &&
+          Date.now() - state.lastFetched < CACHE_DURATION &&
+          state.items.length > 0
+        ) {
+          return; // Use cached data
+        }
+
         set({ isLoading: true, error: null });
 
-        // Small delay to show loading state for UX
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        try {
+          const response = await fetch(getApiUrl(), {
+            signal: AbortSignal.timeout(10000), // 10 second timeout
+          });
 
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.items && data.items.length > 0) {
+              set({
+                items: data.items,
+                lastFetched: Date.now(),
+                isLoading: false,
+                error: null,
+              });
+              return;
+            }
+          }
+        } catch {
+          // API not available (local dev or network error) - use fallback
+        }
+
+        // Fallback to curated content
         set({
           items: getCuratedItems(),
+          lastFetched: Date.now(),
           isLoading: false,
           error: null,
         });
@@ -200,13 +242,16 @@ const useNewsStore = create(
       clearCache: () =>
         set({
           items: getCuratedItems(),
+          lastFetched: null,
           error: null,
         }),
     }),
     {
       name: 'jw-news-storage',
-      version: 2,
+      version: 3,
       partialize: (state) => ({
+        items: state.items,
+        lastFetched: state.lastFetched,
         readItems: state.readItems,
       }),
     }
