@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { BookOpen, Newspaper, Check, ExternalLink, ChevronRight, Sparkles, CheckCircle2, Flame, PenLine, Save } from 'lucide-react';
+import { BookOpen, Newspaper, Check, ExternalLink, ChevronRight, Sparkles, CheckCircle2, Flame, PenLine, Save, BookHeart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useProgressStore from '../stores/progressStore';
 import useNewsStore from '../stores/newsStore';
@@ -35,7 +35,8 @@ function DailyTasksSection() {
   const unreadCount = getUnreadCount();
 
   // Memories state
-  const { saveReflection, getReflection } = useMemoriesStore();
+  const { saveReflection, getReflection, getReflectionCount } = useMemoriesStore();
+  const reflectionCount = getReflectionCount();
 
   // Gamification state
   const { currentStreak, recordDailyTextCompletion, recordReflection, recordNewsRead } = useGamificationStore();
@@ -209,6 +210,18 @@ function DailyTasksSection() {
                 </>
               )}
             </button>
+            {reflectionCount > 0 && (
+              <button
+                onClick={() => {
+                  haptics.light();
+                  navigate('/memories');
+                }}
+                className="btn btn-ghost btn-sm w-full gap-2"
+              >
+                <BookHeart className="w-4 h-4" />
+                View All Reflections ({reflectionCount})
+              </button>
+            )}
           </div>
         )}
       </article>

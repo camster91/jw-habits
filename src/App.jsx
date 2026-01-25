@@ -13,6 +13,7 @@ const Stats = lazy(() => import('./pages/Stats'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Links = lazy(() => import('./pages/Links'));
 const News = lazy(() => import('./pages/News'));
+const Memories = lazy(() => import('./pages/Memories'));
 
 // Loading fallback component
 function PageLoader() {
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/stats" element={<Stats />} />
                 <Route path="/links" element={<Links />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/memories" element={<Memories />} />
               </Routes>
             </Suspense>
             <BottomNav />
