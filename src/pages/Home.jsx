@@ -2,6 +2,7 @@ import { useState, Suspense, lazy } from 'react';
 import { format } from 'date-fns';
 import { Calendar, GraduationCap, Target, FolderKanban, Sun, Moon, CloudSun } from 'lucide-react';
 import DailyTasksSection from '../components/DailyTasksSection';
+import PrayerTrackingCard from '../components/PrayerTrackingCard';
 import { CardLoading } from '../components/LoadingSpinner';
 import { haptics } from '../utils/native';
 
@@ -84,7 +85,10 @@ function Home() {
               Today
             </h2>
           </div>
-          <DailyTasksSection />
+          <div className="space-y-3">
+            <DailyTasksSection />
+            <PrayerTrackingCard />
+          </div>
         </section>
 
         {/* Tab Navigation - Modern Pills */}

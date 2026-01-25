@@ -61,14 +61,13 @@ function DailyTasksSection() {
     fetchNews();
   }, [fetchNews]);
 
-  const handleDailyTextCheck = (field) => {
+  const handleDailyTextCheck = () => {
     haptics.light();
-    const newValue = !dailyTextProgress[field];
-    updateDailyTextProgress(today, field, newValue);
+    const newValue = !dailyTextProgress.readScripture;
+    updateDailyTextProgress(today, 'readScripture', newValue);
 
-    // Check if completing all tasks
-    const newProgress = { ...dailyTextProgress, [field]: newValue };
-    if (newProgress.readScripture && newProgress.meditated) {
+    // Record completion for gamification
+    if (newValue) {
       setTimeout(() => {
         haptics.success();
         recordDailyTextCompletion();
@@ -93,7 +92,7 @@ function DailyTasksSection() {
   };
 
   // Calculate overall progress
-  const dailyTextDone = dailyTextProgress.readScripture && dailyTextProgress.meditated;
+  const dailyTextDone = dailyTextProgress.readScripture;
 
   return (
     <div className="space-y-3">
@@ -138,33 +137,27 @@ function DailyTasksSection() {
           )}
         </a>
 
-        {/* Checklist - 2 items now */}
-        <div className="px-4 pb-3 space-y-2">
-          {[
-            { field: 'readScripture', label: 'Read Scripture & Comments' },
-            { field: 'meditated', label: 'Meditated & Applied' },
-          ].map(({ field, label }) => (
-            <button
-              key={field}
-              onClick={() => handleDailyTextCheck(field)}
-              className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all active:scale-[0.98] ${
-                dailyTextProgress[field]
-                  ? 'bg-success/10'
-                  : 'bg-base-200/50 active:bg-base-200'
-              }`}
-            >
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                dailyTextProgress[field]
-                  ? 'bg-success border-success'
-                  : 'border-base-content/20'
-              }`}>
-                {dailyTextProgress[field] && <Check className="w-4 h-4 text-white" />}
-              </div>
-              <span className={`font-medium ${dailyTextProgress[field] ? 'text-success' : ''}`}>
-                {label}
-              </span>
-            </button>
-          ))}
+        {/* Read Daily Text Checkbox */}
+        <div className="px-4 pb-3">
+          <button
+            onClick={handleDailyTextCheck}
+            className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all active:scale-[0.98] ${
+              dailyTextProgress.readScripture
+                ? 'bg-success/10'
+                : 'bg-base-200/50 active:bg-base-200'
+            }`}
+          >
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+              dailyTextProgress.readScripture
+                ? 'bg-success border-success'
+                : 'border-base-content/20'
+            }`}>
+              {dailyTextProgress.readScripture && <Check className="w-4 h-4 text-white" />}
+            </div>
+            <span className={`font-medium ${dailyTextProgress.readScripture ? 'text-success' : ''}`}>
+              Read Daily Text
+            </span>
+          </button>
         </div>
 
         {/* Notes Toggle */}

@@ -5,6 +5,7 @@ import { haptics } from '../utils/native';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { getBibleReading, getChaptersList, getBibleChapterLink } from '../utils/bibleReadingSchedule';
+import FamilyWorshipCard from './FamilyWorshipCard';
 
 // Deeper study categories
 const STUDY_CATEGORIES = [
@@ -251,6 +252,9 @@ function StudyTab() {
 
   return (
     <div className="space-y-4">
+      {/* Family Worship Card */}
+      <FamilyWorshipCard />
+
       {/* Daily Bible Reading Card */}
       <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
         {/* Header */}
