@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { format, getDayOfYear } from 'date-fns';
-import { BookOpen, Book, Newspaper, Check, ExternalLink, ChevronRight, Sparkles } from 'lucide-react';
+import { BookOpen, Book, Newspaper, Check, ExternalLink, ChevronRight, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useProgressStore from '../stores/progressStore';
 import useNewsStore from '../stores/newsStore';
@@ -31,9 +31,15 @@ function DailyTasksSection() {
   const isBibleComplete = isBibleReadingComplete(dayOfYear);
 
   // News state
-  const { fetchNews, getLatestItems, getUnreadCount } = useNewsStore();
+  const { fetchNews, getLatestItems, getUnreadCount, markAsRead, isItemRead } = useNewsStore();
   const latestNews = getLatestItems(3);
   const unreadCount = getUnreadCount();
+
+  const handleNewsClick = useCallback((item) => {
+    haptics.light();
+    markAsRead(item.id);
+    window.open(item.url, '_blank', 'noopener,noreferrer');
+  }, [markAsRead]);
 
   useEffect(() => {
     fetchNews();
@@ -163,33 +169,60 @@ function DailyTasksSection() {
 
         {latestNews.length > 0 && (
           <div className="mt-3 space-y-2">
-            {latestNews.map((item) => (
-              <a
-                key={item.id}
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-2 rounded-xl press-effect group"
-                onClick={() => haptics.light()}
-              >
-                {item.thumbnail && (
-                  <img
-                    src={item.thumbnail}
-                    alt=""
-                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-base-200"
-                    loading="lazy"
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate group-hover:text-accent transition-colors">
-                    {item.title}
-                  </p>
-                  {item.category && (
-                    <p className="text-xs text-base-content/50 mt-0.5">{item.category}</p>
+            {latestNews.map((item) => {
+              const isRead = isItemRead(item.id);
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNewsClick(item)}
+                  className={`flex items-center gap-3 p-2 rounded-xl press-effect group w-full text-left ${
+                    isRead ? 'bg-success/5' : ''
+                  }`}
+                >
+                  {item.thumbnail ? (
+                    <div className="relative w-12 h-12 flex-shrink-0">
+                      <img
+                        src={item.thumbnail}
+                        alt=""
+                        className={`w-12 h-12 rounded-lg object-cover bg-base-200 ${isRead ? 'opacity-70' : ''}`}
+                        loading="lazy"
+                      />
+                      {isRead && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-success/20 rounded-lg">
+                          <CheckCircle2 className="w-5 h-5 text-success" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-base-200 flex items-center justify-center flex-shrink-0">
+                      {isRead ? (
+                        <CheckCircle2 className="w-5 h-5 text-success" />
+                      ) : (
+                        <Newspaper className="w-5 h-5 text-base-content/30" />
+                      )}
+                    </div>
                   )}
-                </div>
-              </a>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate transition-colors ${
+                      isRead ? 'text-base-content/50' : 'group-hover:text-accent'
+                    }`}>
+                      {item.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {item.category && (
+                        <p className="text-xs text-base-content/50">{item.category}</p>
+                      )}
+                      {isRead && (
+                        <span className="text-xs text-success flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          Read
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
 
