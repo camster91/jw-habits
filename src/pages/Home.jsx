@@ -1,6 +1,6 @@
 import { useState, Suspense, lazy } from 'react';
 import { format } from 'date-fns';
-import { Calendar, GraduationCap, Target, FolderKanban } from 'lucide-react';
+import { Calendar, GraduationCap, Target, FolderKanban, Sun, Moon, CloudSun } from 'lucide-react';
 import DailyTasksSection from '../components/DailyTasksSection';
 import { CardLoading } from '../components/LoadingSpinner';
 import { haptics } from '../utils/native';
@@ -12,15 +12,16 @@ const GoalsTab = lazy(() => import('../components/GoalsTab'));
 const ProjectsTab = lazy(() => import('../components/ProjectsTab'));
 
 const TABS = [
-  { id: 'meeting', label: 'Meeting', icon: Calendar },
-  { id: 'study', label: 'Study', icon: GraduationCap },
-  { id: 'goals', label: 'Goals', icon: Target },
-  { id: 'projects', label: 'Projects', icon: FolderKanban },
+  { id: 'meeting', label: 'Meeting', icon: Calendar, color: 'from-blue-500 to-indigo-600' },
+  { id: 'study', label: 'Study', icon: GraduationCap, color: 'from-emerald-500 to-teal-600' },
+  { id: 'goals', label: 'Goals', icon: Target, color: 'from-amber-500 to-orange-600' },
+  { id: 'projects', label: 'Projects', icon: FolderKanban, color: 'from-purple-500 to-pink-600' },
 ];
 
 function Home() {
   const [activeTab, setActiveTab] = useState('meeting');
   const today = format(new Date(), 'EEEE, MMMM d');
+  const greeting = getGreeting();
 
   const handleTabChange = (tabId) => {
     if (tabId !== activeTab) {
@@ -45,39 +46,62 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-base-200 to-base-300 pb-24">
-      {/* Header with glass effect */}
+    <div className="min-h-screen bg-base-200 pb-24">
+      {/* Modern Header */}
       <header
-        className="header-glass text-primary-content px-4 pb-4 pt-4 shadow-lg sticky top-0 z-40"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+        className="relative overflow-hidden"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-2xl mx-auto">
-          <p className="text-xs opacity-80 uppercase tracking-wider">{today}</p>
-          <h1 className="text-2xl font-bold mt-0.5">Good {getGreeting()}</h1>
+        {/* Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-blue-700" />
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-4 right-4 w-32 h-32 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-300 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative px-4 pt-6 pb-8">
+          <div className="max-w-2xl mx-auto">
+            {/* Date & Greeting */}
+            <div className="flex items-center gap-2 text-primary-content/70 mb-1">
+              <greeting.icon className="w-4 h-4" />
+              <span className="text-sm font-medium">{today}</span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">
+              {greeting.text}
+            </h1>
+            <p className="text-primary-content/80 mt-1 text-sm">
+              Track your spiritual progress
+            </p>
+          </div>
+        </div>
+
+        {/* Wave decoration */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 50" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+            <path d="M0 50V25C240 45 480 5 720 25C960 45 1200 5 1440 25V50H0Z" className="fill-base-200"/>
+          </svg>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-4 space-y-4 max-w-2xl">
-        {/* Daily Tasks - Always Visible */}
-        <section aria-labelledby="daily-tasks-heading" className="slide-up">
-          <h2
-            id="daily-tasks-heading"
-            className="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3 px-1"
-          >
-            Today's Tasks
-          </h2>
+      <main className="container mx-auto px-4 -mt-2 space-y-5 max-w-2xl">
+        {/* Daily Tasks */}
+        <section className="animate-slide-up">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
+              Today
+            </h2>
+          </div>
           <DailyTasksSection />
         </section>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation - Modern Pills */}
         <nav
           role="tablist"
           aria-label="Content sections"
-          className="tabs tabs-boxed bg-base-100/80 backdrop-blur-sm p-1.5 shadow-sm sticky top-20 z-30"
-          style={{ top: 'calc(env(safe-area-inset-top) + 4.5rem)' }}
+          className="flex gap-2 overflow-x-auto scrollbar-hide py-1 -mx-4 px-4"
         >
-          {TABS.map((tab) => {
+          {TABS.map((tab, index) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -85,14 +109,18 @@ function Home() {
                 key={tab.id}
                 role="tab"
                 aria-selected={isActive}
-                aria-controls={`tabpanel-${tab.id}`}
-                className={`tab flex-1 gap-1.5 font-medium ${
-                  isActive ? 'tab-active bg-primary text-primary-content' : 'text-base-content/70'
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive
+                    ? `bg-gradient-to-r ${tab.color} text-white shadow-lg shadow-${tab.color.split('-')[1]}-500/25`
+                    : 'bg-base-100 text-base-content/60 hover:bg-base-100/80'
                 }`}
                 onClick={() => handleTabChange(tab.id)}
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                }}
               >
-                <Icon className="w-4 h-4" aria-hidden="true" />
-                <span className="text-xs sm:text-sm">{tab.label}</span>
+                <Icon className="w-4 h-4" />
+                {tab.label}
               </button>
             );
           })}
@@ -102,8 +130,7 @@ function Home() {
         <section
           id={`tabpanel-${activeTab}`}
           role="tabpanel"
-          aria-labelledby={`tab-${activeTab}`}
-          className="fade-in"
+          className="animate-slide-up"
         >
           <Suspense fallback={<CardLoading />}>
             {renderTabContent()}
@@ -114,12 +141,16 @@ function Home() {
   );
 }
 
-// Helper function for time-based greeting
+// Get greeting based on time of day
 function getGreeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Morning';
-  if (hour < 17) return 'Afternoon';
-  return 'Evening';
+  if (hour < 12) {
+    return { text: 'Good Morning', icon: Sun };
+  }
+  if (hour < 17) {
+    return { text: 'Good Afternoon', icon: CloudSun };
+  }
+  return { text: 'Good Evening', icon: Moon };
 }
 
 export default Home;

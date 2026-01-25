@@ -47,21 +47,21 @@ const useGoalsStore = create(
         })),
 
       // Project actions
-      addProject: (project) =>
+      addProject: (project) => {
+        const newProject = {
+          id: Date.now().toString(),
+          title: project.title,
+          description: project.description || '',
+          category: project.category || 'personal', // congregation, personal, ministry
+          tasks: [],
+          completed: false,
+          createdAt: new Date().toISOString(),
+        };
         set((state) => ({
-          projects: [
-            ...state.projects,
-            {
-              id: Date.now().toString(),
-              title: project.title,
-              description: project.description || '',
-              category: project.category || 'personal', // congregation, personal, ministry
-              tasks: [],
-              completed: false,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        })),
+          projects: [...state.projects, newProject],
+        }));
+        return newProject;
+      },
 
       updateProject: (id, updates) =>
         set((state) => ({
@@ -84,7 +84,7 @@ const useGoalsStore = create(
                   tasks: [
                     ...project.tasks,
                     {
-                      id: Date.now().toString(),
+                      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
                       title: task.title,
                       completed: false,
                     },

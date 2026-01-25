@@ -1,15 +1,125 @@
 import { useState } from 'react';
-import { FolderKanban, Plus, Check, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { FolderKanban, Plus, Trash2, ChevronDown, ChevronRight, Sparkles, Lightbulb, Users, BookOpen, Mic } from 'lucide-react';
 import useGoalsStore from '../stores/goalsStore';
+import { haptics } from '../utils/native';
 
 const CATEGORIES = [
-  { id: 'congregation', label: 'Congregation', color: 'badge-primary' },
-  { id: 'ministry', label: 'Ministry', color: 'badge-secondary' },
-  { id: 'personal', label: 'Personal', color: 'badge-accent' },
+  { id: 'congregation', label: 'Congregation', color: 'badge-primary', icon: Users },
+  { id: 'ministry', label: 'Ministry', color: 'badge-secondary', icon: BookOpen },
+  { id: 'personal', label: 'Personal', color: 'badge-accent', icon: Mic },
+];
+
+// Suggested projects based on JW.org spiritual activities
+const SUGGESTED_PROJECTS = [
+  {
+    title: 'Complete "Enjoy Life Forever!" Course',
+    description: 'Work through the interactive Bible study course systematically',
+    category: 'ministry',
+    icon: '📚',
+    tasks: [
+      'Introduction and Part 1: What God Has Done for Us',
+      'Part 2: Enjoy a Clean Conscience',
+      'Part 3: Make Wise Decisions',
+      'Part 4: Learn More About Jehovah',
+      'Part 5: What Happens at Our Meetings?',
+    ],
+  },
+  {
+    title: 'Prepare for Baptism',
+    description: 'Study and prepare for dedication to Jehovah',
+    category: 'personal',
+    icon: '💧',
+    tasks: [
+      'Complete baptism questions with an elder',
+      'Study the "Enjoy Life Forever!" book',
+      'Attend all meetings consistently',
+      'Share in the ministry regularly',
+      'Deepen personal prayer and study habits',
+    ],
+  },
+  {
+    title: 'Improve Public Speaking Skills',
+    description: 'Apply counsel from the Theocratic Ministry School Guidebook',
+    category: 'personal',
+    icon: '🎤',
+    tasks: [
+      'Work on accuracy and fluent delivery',
+      'Practice effective use of voice',
+      'Develop natural gestures and poise',
+      'Improve eye contact and audience connection',
+      'Apply points from Watchtower study conductor guidelines',
+    ],
+  },
+  {
+    title: 'Family Worship Program',
+    description: 'Establish a consistent weekly family worship routine',
+    category: 'personal',
+    icon: '👨‍👩‍👧',
+    tasks: [
+      'Choose a regular day and time',
+      'Plan first 4 weeks of topics',
+      'Gather materials (Bible, publications)',
+      'Include Bible reading and discussion',
+      'Add interactive activities for children',
+    ],
+  },
+  {
+    title: 'Learn a Language for Ministry',
+    description: 'Study a new language to reach more people',
+    category: 'ministry',
+    icon: '🌍',
+    tasks: [
+      'Choose target language and group',
+      'Use JW Language app daily',
+      'Learn basic greetings and introductions',
+      'Practice with congregation members',
+      'Attend foreign language meetings/groups',
+    ],
+  },
+  {
+    title: 'Convention/Assembly Preparation',
+    description: 'Get ready for the upcoming spiritual event',
+    category: 'congregation',
+    icon: '🏟️',
+    tasks: [
+      'Review program schedule',
+      'Prepare clothing and supplies',
+      'Study Bible verses in advance',
+      'Arrange transportation and accommodations',
+      'Plan ministry during convention',
+    ],
+  },
+  {
+    title: 'Personal Bible Study Schedule',
+    description: 'Create a structured approach to Bible reading',
+    category: 'personal',
+    icon: '📖',
+    tasks: [
+      'Choose a Bible reading plan',
+      'Set daily reading time',
+      'Prepare for weekly Bible reading portion',
+      'Research background information',
+      'Keep notes of personal study insights',
+    ],
+  },
+  {
+    title: 'Territory Coverage Campaign',
+    description: 'Help your congregation cover territory effectively',
+    category: 'congregation',
+    icon: '🗺️',
+    tasks: [
+      'Volunteer for territory servant assistance',
+      'Learn about not-at-homes',
+      'Plan letter writing or phone witnessing',
+      'Participate in group witnessing arrangements',
+      'Report progress to territory servant',
+    ],
+  },
 ];
 
 function ProjectsTab() {
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [newProject, setNewProject] = useState({ title: '', description: '', category: 'personal' });
   const [expandedProject, setExpandedProject] = useState(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -29,19 +139,38 @@ function ProjectsTab() {
   const handleAddProject = (e) => {
     e.preventDefault();
     if (!newProject.title.trim()) return;
+    haptics.success();
     addProject(newProject);
     setNewProject({ title: '', description: '', category: 'personal' });
     setShowAddForm(false);
   };
 
+  const handleAddSuggested = (suggested) => {
+    haptics.success();
+    const project = addProject({
+      title: suggested.title,
+      description: suggested.description,
+      category: suggested.category,
+    });
+    // Add pre-defined tasks to the project
+    if (suggested.tasks && project) {
+      suggested.tasks.forEach((taskTitle) => {
+        addTaskToProject(project.id, { title: taskTitle });
+      });
+    }
+    setShowSuggestions(false);
+  };
+
   const handleAddTask = (projectId, e) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
+    haptics.light();
     addTaskToProject(projectId, { title: newTaskTitle });
     setNewTaskTitle('');
   };
 
   const toggleExpanded = (projectId) => {
+    haptics.selection();
     setExpandedProject(expandedProject === projectId ? null : projectId);
   };
 
@@ -50,54 +179,122 @@ function ProjectsTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FolderKanban className="w-5 h-5 text-secondary" />
-          <h3 className="font-semibold">Projects</h3>
-          <span className="badge badge-ghost badge-sm">{activeProjects.length} active</span>
+          <div className="p-2 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl">
+            <FolderKanban className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold">Projects</h3>
+            <p className="text-xs text-base-content/50">{activeProjects.length} active</p>
+          </div>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="btn btn-secondary btn-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Project
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              haptics.light();
+              setShowSuggestions(!showSuggestions);
+              setShowAddForm(false);
+            }}
+            className="btn btn-ghost btn-sm"
+          >
+            <Lightbulb className="w-4 h-4" />
+            Ideas
+          </button>
+          <button
+            onClick={() => {
+              haptics.light();
+              setShowAddForm(!showAddForm);
+              setShowSuggestions(false);
+            }}
+            className="btn btn-primary btn-sm"
+          >
+            <Plus className="w-4 h-4" />
+            New
+          </button>
+        </div>
       </div>
+
+      {/* Suggestions Panel */}
+      {showSuggestions && (
+        <div className="card bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200">
+          <div className="card-body p-4">
+            <h4 className="font-semibold text-purple-800 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Project Ideas
+            </h4>
+            <div className="grid gap-2 mt-2">
+              {SUGGESTED_PROJECTS.map((suggested, index) => {
+                const isAlreadyAdded = projects.some(p => p.title === suggested.title);
+                return (
+                  <button
+                    key={index}
+                    onClick={() => !isAlreadyAdded && handleAddSuggested(suggested)}
+                    disabled={isAlreadyAdded}
+                    className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+                      isAlreadyAdded
+                        ? 'bg-base-200 opacity-50 cursor-not-allowed'
+                        : 'bg-white hover:bg-purple-100 active:scale-[0.98]'
+                    }`}
+                  >
+                    <span className="text-2xl">{suggested.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">{suggested.title}</p>
+                      <p className="text-xs text-base-content/60 truncate">{suggested.description}</p>
+                      {suggested.tasks && (
+                        <p className="text-xs text-purple-600 mt-1">{suggested.tasks.length} tasks included</p>
+                      )}
+                    </div>
+                    {isAlreadyAdded ? (
+                      <span className="text-xs text-success">Added</span>
+                    ) : (
+                      <Plus className="w-4 h-4 text-purple-600" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Form */}
       {showAddForm && (
-        <form onSubmit={handleAddProject} className="card bg-base-200 p-4 space-y-3">
+        <form onSubmit={handleAddProject} className="card bg-base-100 shadow-md p-4 space-y-3">
           <input
             type="text"
             placeholder="Project name..."
             value={newProject.title}
             onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-            className="input input-bordered input-sm w-full"
+            className="input input-bordered w-full"
             autoFocus
           />
           <textarea
             placeholder="Description (optional)..."
             value={newProject.description}
             onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-            className="textarea textarea-bordered textarea-sm w-full"
+            className="textarea textarea-bordered w-full"
             rows={2}
           />
           <div className="flex gap-2">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setNewProject({ ...newProject, category: cat.id })}
-                className={`badge ${newProject.category === cat.id ? cat.color : 'badge-ghost'}`}
-              >
-                {cat.label}
-              </button>
-            ))}
+            {CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setNewProject({ ...newProject, category: cat.id })}
+                  className={`badge gap-1 ${newProject.category === cat.id ? cat.color : 'badge-ghost'}`}
+                >
+                  <Icon className="w-3 h-3" />
+                  {cat.label}
+                </button>
+              );
+            })}
           </div>
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => setShowAddForm(false)} className="btn btn-ghost btn-sm">
               Cancel
             </button>
-            <button type="submit" className="btn btn-secondary btn-sm">
+            <button type="submit" className="btn btn-primary btn-sm">
               Create Project
             </button>
           </div>
@@ -105,11 +302,20 @@ function ProjectsTab() {
       )}
 
       {/* Projects List */}
-      {activeProjects.length === 0 && !showAddForm ? (
-        <div className="text-center py-8 text-base-content/60">
-          <FolderKanban className="w-12 h-12 mx-auto mb-2 opacity-30" />
-          <p>No active projects</p>
-          <p className="text-sm">Create a project to organize your tasks</p>
+      {activeProjects.length === 0 && !showAddForm && !showSuggestions ? (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+            <FolderKanban className="w-8 h-8 text-purple-500" />
+          </div>
+          <p className="font-medium text-base-content/70">No projects yet</p>
+          <p className="text-sm text-base-content/50 mt-1">Start a project to organize tasks</p>
+          <button
+            onClick={() => setShowSuggestions(true)}
+            className="btn btn-primary btn-sm mt-4"
+          >
+            <Lightbulb className="w-4 h-4" />
+            Browse Ideas
+          </button>
         </div>
       ) : (
         <div className="space-y-2">
@@ -160,11 +366,12 @@ function ProjectsTab() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        haptics.light();
                         deleteProject(project.id);
                       }}
-                      className="btn btn-ghost btn-xs text-error"
+                      className="btn btn-ghost btn-xs text-base-content/40 hover:text-error"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
 
@@ -186,8 +393,11 @@ function ProjectsTab() {
                               <input
                                 type="checkbox"
                                 checked={task.completed}
-                                onChange={() => toggleProjectTask(project.id, task.id)}
-                                className="checkbox checkbox-xs checkbox-secondary"
+                                onChange={() => {
+                                  haptics.light();
+                                  toggleProjectTask(project.id, task.id);
+                                }}
+                                className="checkbox checkbox-sm checkbox-success"
                               />
                               <span
                                 className={`flex-1 text-sm ${
