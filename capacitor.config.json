@@ -2,6 +2,7 @@
   "appId": "com.jwprogress.app",
   "appName": "JW Progress",
   "webDir": "dist",
+  "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https",
     "iosScheme": "https"
@@ -25,16 +26,28 @@
     "Keyboard": {
       "resize": "body",
       "resizeOnFullScreen": true
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#4A6FA4",
+      "sound": "beep.wav"
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
     }
   },
   "ios": {
     "contentInset": "automatic",
     "allowsLinkPreview": true,
-    "scrollEnabled": true
+    "scrollEnabled": true,
+    "backgroundColor": "#ffffff",
+    "preferredContentMode": "mobile"
   },
   "android": {
     "allowMixedContent": false,
     "captureInput": true,
-    "webContentsDebuggingEnabled": false
+    "webContentsDebuggingEnabled": false,
+    "backgroundColor": "#ffffff",
+    "overScrollMode": "never"
   }
 }

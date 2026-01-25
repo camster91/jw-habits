@@ -1,10 +1,13 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { format, getDayOfYear } from 'date-fns';
-import { BookOpen, Book, Newspaper, Check, ExternalLink, ChevronRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Book, Newspaper, Check, ExternalLink, ChevronRight, Sparkles, CheckCircle2, Flame, PenLine, Save, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useProgressStore from '../stores/progressStore';
 import useNewsStore from '../stores/newsStore';
+import useMemoriesStore from '../stores/memoriesStore';
+import useGamificationStore from '../stores/gamificationStore';
 import { getDailyTextLink } from '../utils/jwLibraryLinks';
+import { getBibleReading, getChaptersList, getBibleChapterLink } from '../utils/bibleReadingSchedule';
 import { haptics } from '../utils/native';
 
 function DailyTasksSection() {
@@ -12,14 +15,19 @@ function DailyTasksSection() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const dayOfYear = getDayOfYear(new Date());
 
+  // Local state for notes
+  const [showNotes, setShowNotes] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [noteSaved, setNoteSaved] = useState(false);
+
   // Daily Text state
   const {
     isDailyTextRead,
     getDailyTextProgress,
     updateDailyTextProgress,
+    getBibleChapterProgress,
+    toggleBibleChapter,
     isBibleReadingComplete,
-    getBibleReadingProgress,
-    updateBibleReadingProgress,
   } = useProgressStore();
 
   const dailyTextProgress = getDailyTextProgress(today);
@@ -27,7 +35,11 @@ function DailyTasksSection() {
   const dailyTextLink = getDailyTextLink(new Date());
 
   // Bible Reading state
-  const bibleReadingProgress = getBibleReadingProgress(dayOfYear);
+  const todayReading = getBibleReading(dayOfYear);
+  const chapters = getChaptersList(todayReading.chapters);
+  const chapterProgress = getBibleChapterProgress(dayOfYear);
+  const completedChapters = chapters.filter((_, i) => chapterProgress[i]);
+  const bibleProgress = Math.round((completedChapters.length / chapters.length) * 100);
   const isBibleComplete = isBibleReadingComplete(dayOfYear);
 
   // News state
@@ -35,248 +47,353 @@ function DailyTasksSection() {
   const latestNews = getLatestItems(3);
   const unreadCount = getUnreadCount();
 
-  const handleNewsClick = useCallback((item) => {
+  // Memories state
+  const { saveReflection, getReflection } = useMemoriesStore();
+
+  // Gamification state
+  const { currentStreak, recordDailyTextCompletion, recordReflection, recordNewsRead, recordBibleReading } = useGamificationStore();
+
+  // Load existing reflection on mount
+  const existingReflection = getReflection(today);
+  useEffect(() => {
+    if (existingReflection && !noteText) {
+      setNoteText(existingReflection);
+      setNoteSaved(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleNewsClick = (item) => {
     haptics.light();
     markAsRead(item.id);
+    recordNewsRead();
     window.open(item.url, '_blank', 'noopener,noreferrer');
-  }, [markAsRead]);
+  };
 
   useEffect(() => {
     fetchNews();
   }, [fetchNews]);
 
-  const handleDailyTextCheck = useCallback(
-    (field, checked) => {
-      haptics.light();
-      updateDailyTextProgress(today, field, checked);
+  const handleDailyTextCheck = (field) => {
+    haptics.light();
+    const newValue = !dailyTextProgress[field];
+    updateDailyTextProgress(today, field, newValue);
 
-      // Success haptic when completing all tasks
-      const newProgress = { ...dailyTextProgress, [field]: checked };
-      if (newProgress.readScripture && newProgress.readComments && newProgress.meditated) {
-        setTimeout(() => haptics.success(), 100);
+    // Check if completing all tasks
+    const newProgress = { ...dailyTextProgress, [field]: newValue };
+    if (newProgress.readScripture && newProgress.meditated) {
+      setTimeout(() => {
+        haptics.success();
+        recordDailyTextCompletion();
+      }, 100);
+    }
+  };
+
+  const handleChapterToggle = (index) => {
+    haptics.light();
+    toggleBibleChapter(dayOfYear, index);
+
+    // Check if all chapters are now complete
+    const newProgress = { ...chapterProgress, [index]: !chapterProgress[index] };
+    const allComplete = chapters.every((_, i) => newProgress[i]);
+    if (allComplete) {
+      setTimeout(() => {
+        haptics.success();
+        recordBibleReading();
+      }, 100);
+    }
+  };
+
+  const handleSaveNote = () => {
+    if (noteText.trim()) {
+      haptics.success();
+      saveReflection(today, noteText.trim());
+      setNoteSaved(true);
+      if (!existingReflection) {
+        recordReflection();
       }
-    },
-    [today, updateDailyTextProgress, dailyTextProgress]
-  );
+    }
+  };
 
-  const handleBibleProgressChange = useCallback(
-    (e) => {
-      const value = parseInt(e.target.value);
-      haptics.selection();
-      updateBibleReadingProgress(dayOfYear, value);
-
-      // Success haptic when completing
-      if (value === 100) {
-        setTimeout(() => haptics.success(), 100);
-      }
-    },
-    [dayOfYear, updateBibleReadingProgress]
-  );
-
-  const handleViewNews = useCallback(() => {
+  const handleViewNews = () => {
     haptics.light();
     navigate('/news');
-  }, [navigate]);
+  };
 
-  // Calculate overall progress
-  const tasksCompleted = [isDailyTextComplete, isBibleComplete].filter(Boolean).length;
+  // Calculate overall progress (2 tasks now)
+  const dailyTextDone = dailyTextProgress.readScripture && dailyTextProgress.meditated;
+  const tasksCompleted = [dailyTextDone, isBibleComplete].filter(Boolean).length;
   const totalTasks = 2;
 
   return (
     <div className="space-y-3">
+      {/* Streak Banner */}
+      {currentStreak > 0 && (
+        <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl text-white">
+          <Flame className="w-5 h-5" />
+          <span className="font-bold">{currentStreak} Day Streak!</span>
+          <Flame className="w-5 h-5" />
+        </div>
+      )}
+
       {/* Progress Overview */}
       {tasksCompleted === totalTasks && (
-        <div className="flex items-center justify-center gap-2 p-3 bg-success/10 rounded-2xl text-success">
+        <div className="flex items-center justify-center gap-2 p-4 bg-success/10 rounded-2xl text-success">
           <Sparkles className="w-5 h-5" />
-          <span className="font-medium text-sm">All daily tasks complete!</span>
+          <span className="font-medium">All daily tasks complete!</span>
         </div>
       )}
 
       {/* Daily Text Card */}
-      <article className="card-mobile p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${isDailyTextComplete ? 'bg-success/10' : 'bg-primary/10'}`}>
-              <BookOpen className={`w-5 h-5 ${isDailyTextComplete ? 'text-success' : 'text-primary'}`} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm">Daily Text</h3>
-              <p className="text-xs text-base-content/50">Scripture & meditation</p>
-            </div>
+      <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
+        {/* Header - tappable to open JW Library */}
+        <a
+          href={dailyTextLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 p-4 active:bg-base-200 transition-colors"
+          onClick={() => haptics.light()}
+        >
+          <div className={`p-3 rounded-2xl ${isDailyTextComplete ? 'bg-success/10' : 'bg-primary/10'}`}>
+            <BookOpen className={`w-6 h-6 ${isDailyTextComplete ? 'text-success' : 'text-primary'}`} />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold">Daily Text</h3>
+            <p className="text-sm text-base-content/50">Scripture & meditation</p>
           </div>
           {isDailyTextComplete ? (
-            <div className="badge badge-success gap-1 font-medium">
-              <Check className="w-3 h-3" />
-              Done
-            </div>
+            <CheckCircle2 className="w-6 h-6 text-success" />
           ) : (
-            <div className="radial-progress text-primary text-xs" style={{"--value": dailyTextProgress.progress, "--size": "2.5rem", "--thickness": "3px"}} role="progressbar">
-              {dailyTextProgress.progress}%
-            </div>
+            <ExternalLink className="w-5 h-5 text-base-content/30" />
           )}
-        </div>
+        </a>
 
-        <div className="flex items-center gap-3 mt-4 flex-wrap">
+        {/* Checklist - 2 items now */}
+        <div className="px-4 pb-3 space-y-2">
           {[
-            { field: 'readScripture', label: 'Read' },
-            { field: 'readComments', label: 'Comments' },
-            { field: 'meditated', label: 'Meditate' },
+            { field: 'readScripture', label: 'Read Scripture & Comments' },
+            { field: 'meditated', label: 'Meditated & Applied' },
           ].map(({ field, label }) => (
-            <label
+            <button
               key={field}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer select-none transition-all ${
-                dailyTextProgress[field] ? 'bg-success/10 text-success' : 'bg-base-200/50 hover:bg-base-200'
+              onClick={() => handleDailyTextCheck(field)}
+              className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all active:scale-[0.98] ${
+                dailyTextProgress[field]
+                  ? 'bg-success/10'
+                  : 'bg-base-200/50 active:bg-base-200'
               }`}
             >
-              <input
-                type="checkbox"
-                checked={dailyTextProgress[field] || false}
-                onChange={(e) => handleDailyTextCheck(field, e.target.checked)}
-                className="checkbox checkbox-sm checkbox-success"
-              />
-              <span className="text-sm font-medium">{label}</span>
-            </label>
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                dailyTextProgress[field]
+                  ? 'bg-success border-success'
+                  : 'border-base-content/20'
+              }`}>
+                {dailyTextProgress[field] && <Check className="w-4 h-4 text-white" />}
+              </div>
+              <span className={`font-medium ${dailyTextProgress[field] ? 'text-success' : ''}`}>
+                {label}
+              </span>
+            </button>
           ))}
-          <a
-            href={dailyTextLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-auto btn btn-ghost btn-sm btn-circle"
-            aria-label="Open in JW Library"
-            onClick={() => haptics.light()}
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
         </div>
+
+        {/* Notes Toggle */}
+        <button
+          onClick={() => {
+            haptics.light();
+            setShowNotes(!showNotes);
+          }}
+          className="flex items-center justify-center gap-2 w-full p-3 border-t border-base-200 text-primary font-medium active:bg-base-200 transition-colors"
+        >
+          <PenLine className="w-4 h-4" />
+          {noteSaved ? 'View My Reflection' : 'Add Personal Reflection'}
+        </button>
+
+        {/* Notes Section */}
+        {showNotes && (
+          <div className="px-4 pb-4 space-y-3">
+            <textarea
+              value={noteText}
+              onChange={(e) => {
+                setNoteText(e.target.value);
+                setNoteSaved(false);
+              }}
+              placeholder="Write your personal reflection, thoughts, or how you'll apply today's text..."
+              className="textarea textarea-bordered w-full min-h-[120px] text-base"
+              rows={4}
+            />
+            <button
+              onClick={handleSaveNote}
+              disabled={!noteText.trim() || noteSaved}
+              className={`btn w-full gap-2 ${noteSaved ? 'btn-success' : 'btn-primary'}`}
+            >
+              {noteSaved ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5" />
+                  Saved to Memories
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  Save Reflection
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </article>
 
       {/* News Card */}
-      <article className="card-mobile p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-accent/10">
-              <Newspaper className="w-5 h-5 text-accent" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm">News</h3>
-              <p className="text-xs text-base-content/50">Latest from JW.org</p>
-            </div>
+      <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-4">
+          <div className="p-3 rounded-2xl bg-accent/10">
+            <Newspaper className="w-6 h-6 text-accent" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold">News</h3>
+            <p className="text-sm text-base-content/50">Latest from JW.org</p>
           </div>
           {unreadCount > 0 && (
-            <span className="badge badge-accent badge-pulse font-medium">{unreadCount} new</span>
+            <span className="badge badge-accent font-bold">{unreadCount} new</span>
           )}
         </div>
 
+        {/* News Items - large tap targets */}
         {latestNews.length > 0 && (
-          <div className="mt-3 space-y-2">
+          <div className="px-4 space-y-1">
             {latestNews.map((item) => {
               const isRead = isItemRead(item.id);
               return (
                 <button
                   key={item.id}
                   onClick={() => handleNewsClick(item)}
-                  className={`flex items-center gap-3 p-2 rounded-xl press-effect group w-full text-left ${
-                    isRead ? 'bg-success/5' : ''
+                  className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all active:scale-[0.98] ${
+                    isRead ? 'bg-success/5' : 'active:bg-base-200'
                   }`}
                 >
                   {item.thumbnail ? (
-                    <div className="relative w-12 h-12 flex-shrink-0">
+                    <div className="relative w-14 h-14 flex-shrink-0">
                       <img
                         src={item.thumbnail}
                         alt=""
-                        className={`w-12 h-12 rounded-lg object-cover bg-base-200 ${isRead ? 'opacity-70' : ''}`}
+                        className={`w-14 h-14 rounded-xl object-cover bg-base-200 ${isRead ? 'opacity-60' : ''}`}
                         loading="lazy"
                       />
                       {isRead && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-success/20 rounded-lg">
-                          <CheckCircle2 className="w-5 h-5 text-success" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-success/30 rounded-xl">
+                          <CheckCircle2 className="w-6 h-6 text-success" />
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-base-200 flex items-center justify-center flex-shrink-0">
+                    <div className="w-14 h-14 rounded-xl bg-base-200 flex items-center justify-center flex-shrink-0">
                       {isRead ? (
-                        <CheckCircle2 className="w-5 h-5 text-success" />
+                        <CheckCircle2 className="w-6 h-6 text-success" />
                       ) : (
-                        <Newspaper className="w-5 h-5 text-base-content/30" />
+                        <Newspaper className="w-6 h-6 text-base-content/30" />
                       )}
                     </div>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate transition-colors ${
-                      isRead ? 'text-base-content/50' : 'group-hover:text-accent'
-                    }`}>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className={`font-medium line-clamp-2 ${isRead ? 'text-base-content/50' : ''}`}>
                       {item.title}
                     </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {item.category && (
-                        <p className="text-xs text-base-content/50">{item.category}</p>
-                      )}
-                      {isRead && (
-                        <span className="text-xs text-success flex items-center gap-1">
-                          <Check className="w-3 h-3" />
-                          Read
-                        </span>
-                      )}
-                    </div>
+                    {isRead && (
+                      <span className="text-xs text-success flex items-center gap-1 mt-1">
+                        <Check className="w-3 h-3" />
+                        Read
+                      </span>
+                    )}
                   </div>
+                  <ChevronRight className={`w-5 h-5 flex-shrink-0 ${isRead ? 'text-success/50' : 'text-base-content/30'}`} />
                 </button>
               );
             })}
           </div>
         )}
 
+        {/* View All Button */}
         <button
           onClick={handleViewNews}
-          className="btn btn-ghost btn-sm w-full mt-2 gap-1 text-accent"
+          className="flex items-center justify-center gap-2 w-full p-4 text-accent font-medium active:bg-base-200 transition-colors"
         >
           View All News
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-5 h-5" />
         </button>
       </article>
 
-      {/* Bible Reading Card */}
-      <article className="card-mobile p-4">
-        <div className="flex items-center justify-between">
+      {/* Daily Bible Reading Card */}
+      <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
+        {/* Header */}
+        <div className="p-4">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${isBibleComplete ? 'bg-success/10' : 'bg-secondary/10'}`}>
-              <Book className={`w-5 h-5 ${isBibleComplete ? 'text-success' : 'text-secondary'}`} />
+            <div className={`p-3 rounded-2xl ${isBibleComplete ? 'bg-success/10' : 'bg-secondary/10'}`}>
+              <Book className={`w-6 h-6 ${isBibleComplete ? 'text-success' : 'text-secondary'}`} />
             </div>
-            <div>
-              <h3 className="font-semibold text-sm">Daily Study</h3>
-              <p className="text-xs text-base-content/50">Bible reading progress</p>
+            <div className="flex-1">
+              <h3 className="font-bold">Daily Bible Reading</h3>
+              <p className="text-sm text-base-content/50">Day {dayOfYear}</p>
+            </div>
+            {isBibleComplete ? (
+              <CheckCircle2 className="w-6 h-6 text-success" />
+            ) : (
+              <span className="text-lg font-bold text-secondary">{bibleProgress}%</span>
+            )}
+          </div>
+
+          {/* Reading Info */}
+          <div className="mt-3 p-3 bg-base-200/50 rounded-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-lg">{todayReading.book} {todayReading.chapters}</p>
+                <div className="flex items-center gap-1 text-sm text-base-content/50 mt-1">
+                  <Clock className="w-4 h-4" />
+                  <span>~{todayReading.time} minutes</span>
+                </div>
+              </div>
+              <a
+                href={getBibleChapterLink(todayReading.book, parseInt(todayReading.chapters.split('-')[0]) || 1)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary btn-sm"
+                onClick={() => haptics.light()}
+              >
+                <ExternalLink className="w-4 h-4" />
+                Read
+              </a>
             </div>
           </div>
-          {isBibleComplete ? (
-            <div className="badge badge-success gap-1 font-medium">
-              <Check className="w-3 h-3" />
-              Done
-            </div>
-          ) : (
-            <span className="text-sm font-bold text-secondary">{bibleReadingProgress}%</span>
-          )}
         </div>
 
-        <div className="mt-4">
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="25"
-            value={bibleReadingProgress}
-            onChange={handleBibleProgressChange}
-            className={`range range-sm w-full ${isBibleComplete ? 'range-success' : 'range-secondary'}`}
-            aria-label="Bible reading progress"
-          />
-          <div className="flex justify-between px-1 mt-1">
-            {[0, 25, 50, 75, 100].map((val) => (
-              <span
-                key={val}
-                className={`text-xs ${bibleReadingProgress >= val ? 'text-secondary font-medium' : 'text-base-content/30'}`}
-              >
-                {val}%
-              </span>
-            ))}
+        {/* Chapter Progress */}
+        <div className="px-4 pb-4">
+          <p className="text-xs text-base-content/50 mb-2 font-medium">Progress</p>
+          <div className="grid grid-cols-4 gap-2">
+            {chapters.map((chapter, index) => {
+              const isComplete = chapterProgress[index];
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleChapterToggle(index)}
+                  className={`py-3 px-2 rounded-xl font-medium text-sm transition-all active:scale-95 ${
+                    isComplete
+                      ? 'bg-success text-white'
+                      : 'bg-base-200 text-base-content/60'
+                  }`}
+                >
+                  {chapter}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Visual progress bar */}
+          <div className="mt-3 h-2 bg-base-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-300 ${isBibleComplete ? 'bg-success' : 'bg-secondary'}`}
+              style={{ width: `${bibleProgress}%` }}
+            />
           </div>
         </div>
       </article>

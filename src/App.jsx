@@ -4,6 +4,9 @@ import Home from './pages/Home';
 import BottomNav from './components/BottomNav';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './components/Toast';
+import InstallPrompt from './components/InstallPrompt';
+import UpdatePrompt from './components/UpdatePrompt';
+import OfflineIndicator from './components/OfflineIndicator';
 
 // Lazy load non-critical pages for better initial load performance
 const Stats = lazy(() => import('./pages/Stats'));
@@ -26,6 +29,10 @@ function App() {
       <ToastProvider>
         <Router>
           <div className="app">
+            {/* PWA Components */}
+            <OfflineIndicator />
+            <UpdatePrompt />
+
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -36,6 +43,9 @@ function App() {
               </Routes>
             </Suspense>
             <BottomNav />
+
+            {/* Install Prompt (shown at bottom) */}
+            <InstallPrompt />
           </div>
         </Router>
       </ToastProvider>
