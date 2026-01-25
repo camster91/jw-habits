@@ -3,11 +3,77 @@ import { persist } from 'zustand/middleware';
 
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-// API endpoint - works on Vercel, falls back for local dev
-const getApiUrl = () => {
-  // In production (Vercel), use relative path
-  // In development, the API won't be available, so we'll use fallback
-  return '/api/news';
+// RSS Feed URL - Update this with your actual RSS feed URL
+// Example: 'https://camster91.github.io/JW-Newsfeed/feed.xml'
+const RSS_FEED_URL = null; // Set to your RSS feed URL when available
+
+// API endpoint for fallback
+const getApiUrl = () => '/api/news';
+
+// Parse RSS XML to items
+const parseRSSFeed = (xmlText) => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'text/xml');
+  const items = doc.querySelectorAll('item');
+
+  return Array.from(items).map((item, index) => {
+    const getElementText = (tagName) => {
+      const el = item.querySelector(tagName);
+      return el ? el.textContent.trim() : '';
+    };
+
+    // Try to get image from various RSS formats
+    const getImage = () => {
+      // media:thumbnail or media:content
+      const mediaThumbnail = item.querySelector('thumbnail, content');
+      if (mediaThumbnail?.getAttribute('url')) {
+        return mediaThumbnail.getAttribute('url');
+      }
+      // enclosure
+      const enclosure = item.querySelector('enclosure');
+      if (enclosure?.getAttribute('url')?.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
+        return enclosure.getAttribute('url');
+      }
+      // Look for image in description
+      const description = getElementText('description');
+      const imgMatch = description.match(/<img[^>]+src="([^"]+)"/);
+      if (imgMatch) return imgMatch[1];
+
+      return 'https://assetsnffrgf-a.akamaihd.net/assets/m/802013131/univ/art/802013131_univ_lsr_lg.jpg';
+    };
+
+    const title = getElementText('title');
+    const link = getElementText('link');
+    const description = getElementText('description')
+      .replace(/<[^>]*>/g, '') // Strip HTML
+      .slice(0, 200);
+    const pubDate = getElementText('pubDate');
+    const category = getElementText('category') || 'NEWS';
+
+    // Determine filter category based on content
+    let filterCategory = 'articles';
+    const lowerTitle = title.toLowerCase();
+    const lowerCategory = category.toLowerCase();
+    if (lowerCategory.includes('video') || lowerTitle.includes('video')) {
+      filterCategory = 'videos';
+    } else if (lowerCategory.includes('magazine') || lowerTitle.includes('watchtower') || lowerTitle.includes('awake')) {
+      filterCategory = 'magazines';
+    }
+
+    return {
+      id: `rss-${index}-${Date.now()}`,
+      type: filterCategory === 'videos' ? 'video' : 'news_release',
+      filterCategory,
+      category: category.toUpperCase(),
+      title,
+      description,
+      thumbnail: getImage(),
+      url: link,
+      jwLibraryUrl: link,
+      isVideo: filterCategory === 'videos',
+      pubDate,
+    };
+  });
 };
 
 // Curated JW.org content - reliable fallback that always works
@@ -86,30 +152,6 @@ const getCuratedItems = () => {
       isVideo: false,
     },
     {
-      id: 'bible-study',
-      type: 'educational',
-      filterCategory: 'articles',
-      category: 'BIBLE STUDY',
-      title: 'Enjoy Life Forever! - Bible Study',
-      description: 'Free interactive Bible study course available in many languages.',
-      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1102021232/univ/art/1102021232_univ_lsr_lg.jpg',
-      url: 'https://www.jw.org/en/bible-teachings/guided-bible-study-course/',
-      jwLibraryUrl: 'jwlibrary://finder?wtlocale=E&pub=lff',
-      isVideo: false,
-    },
-    {
-      id: 'original-songs',
-      type: 'video',
-      filterCategory: 'videos',
-      category: 'MUSIC',
-      title: 'Original Songs',
-      description: 'Listen to original songs and music videos for encouragement.',
-      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1011231/univ/art/1011231_univ_lsr_lg.jpg',
-      url: 'https://www.jw.org/en/library/music-songs/original-songs/',
-      jwLibraryUrl: 'jwlibrary://content',
-      isVideo: true,
-    },
-    {
       id: 'broadcasting',
       type: 'video',
       filterCategory: 'videos',
@@ -120,18 +162,6 @@ const getCuratedItems = () => {
       url: 'https://www.jw.org/en/library/videos/#en/mediaitems/StudioMonthlyPrograms/pub-jwb',
       jwLibraryUrl: 'jwlibrary://content',
       isVideo: true,
-    },
-    {
-      id: 'daily-text',
-      type: 'educational',
-      filterCategory: 'articles',
-      category: 'DAILY TEXT',
-      title: "Examining the Scriptures Daily",
-      description: "Today's daily text and comments for personal Bible study.",
-      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/es25/univ/art/es25_univ_lsr_lg.jpg',
-      url: 'https://www.jw.org/en/library/jw-meeting-workbook/',
-      jwLibraryUrl: 'jwlibrary://finder?wtlocale=E&pub=es',
-      isVideo: false,
     },
   ];
 };
@@ -144,6 +174,7 @@ const useNewsStore = create(
       lastFetched: null,
       isLoading: false,
       error: null,
+      rssFeedUrl: RSS_FEED_URL,
 
       // Filters
       activeFilter: 'all', // 'all' | 'articles' | 'magazines' | 'videos'
@@ -153,6 +184,8 @@ const useNewsStore = create(
 
       // Actions
       setFilter: (filter) => set({ activeFilter: filter }),
+
+      setRssFeedUrl: (url) => set({ rssFeedUrl: url, lastFetched: null }),
 
       markAsRead: (itemId) =>
         set((state) => ({
@@ -177,7 +210,7 @@ const useNewsStore = create(
         return state.items.filter((item) => !state.readItems[item.id]).length;
       },
 
-      // Fetch news from API (Vercel serverless) with fallback to curated content
+      // Fetch news - tries RSS feed first, then API, then fallback
       fetchNews: async (forceRefresh = false) => {
         const state = get();
 
@@ -193,9 +226,36 @@ const useNewsStore = create(
 
         set({ isLoading: true, error: null });
 
+        // Try RSS feed if configured
+        if (state.rssFeedUrl) {
+          try {
+            const response = await fetch(state.rssFeedUrl, {
+              signal: AbortSignal.timeout(10000),
+            });
+
+            if (response.ok) {
+              const xmlText = await response.text();
+              const rssItems = parseRSSFeed(xmlText);
+
+              if (rssItems.length > 0) {
+                set({
+                  items: rssItems,
+                  lastFetched: Date.now(),
+                  isLoading: false,
+                  error: null,
+                });
+                return;
+              }
+            }
+          } catch (err) {
+            console.warn('RSS feed fetch failed:', err);
+          }
+        }
+
+        // Try API endpoint
         try {
           const response = await fetch(getApiUrl(), {
-            signal: AbortSignal.timeout(10000), // 10 second timeout
+            signal: AbortSignal.timeout(10000),
           });
 
           if (response.ok) {
@@ -211,7 +271,7 @@ const useNewsStore = create(
             }
           }
         } catch {
-          // API not available (local dev or network error) - use fallback
+          // API not available - use fallback
         }
 
         // Fallback to curated content
@@ -248,11 +308,12 @@ const useNewsStore = create(
     }),
     {
       name: 'jw-news-storage',
-      version: 3,
+      version: 4,
       partialize: (state) => ({
         items: state.items,
         lastFetched: state.lastFetched,
         readItems: state.readItems,
+        rssFeedUrl: state.rssFeedUrl,
       }),
     }
   )

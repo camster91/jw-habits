@@ -2,11 +2,89 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Mobile viewport and scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+    <!-- App metadata -->
     <meta name="description" content="Track your daily spiritual routine: daily text, Bible reading, and meeting preparation" />
+    <meta name="author" content="JW Progress" />
+    <meta name="application-name" content="JW Progress" />
+
+    <!-- Theme and colors -->
     <meta name="theme-color" content="#4A6FA4" />
-    <title>JW Progress Tracker</title>
+    <meta name="msapplication-TileColor" content="#4A6FA4" />
+    <meta name="msapplication-navbutton-color" content="#4A6FA4" />
+
+    <!-- iOS specific -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="JW Progress" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Android specific -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Prevent automatic phone number detection -->
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Security -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://www.jw.org" crossorigin />
+    <link rel="preconnect" href="https://assetsnffrgf-a.akamaihd.net" crossorigin />
+
+    <title>JW Progress</title>
+
+    <!-- Critical CSS for initial load -->
+    <style>
+      /* Prevent flash of unstyled content */
+      html {
+        background-color: #e5e7eb;
+      }
+
+      /* Safe area handling for notched devices */
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sar: env(safe-area-inset-right);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+      }
+
+      /* Initial loading state */
+      #root:empty::after {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 40px;
+        margin: 100px auto;
+        border: 3px solid #4A6FA4;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      /* Disable pull-to-refresh on mobile */
+      body {
+        overscroll-behavior-y: contain;
+      }
+
+      /* Safe area padding */
+      .safe-top { padding-top: env(safe-area-inset-top); }
+      .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+      .safe-left { padding-left: env(safe-area-inset-left); }
+      .safe-right { padding-right: env(safe-area-inset-right); }
+    </style>
   </head>
   <body>
     <div id="root"></div>
