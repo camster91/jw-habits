@@ -1,5 +1,7 @@
-// Vercel Serverless Function to fetch JW.org news
+// Vercel Serverless Function to fetch JW.org RSS feed
 // This runs server-side, avoiding CORS issues
+
+const RSS_FEED_URL = 'https://www.jw.org/en/whats-new/rss/WhatsNewWebArticles/feed.xml';
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -8,25 +10,28 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate'); // 30 min cache
 
   try {
-    const response = await fetch('https://www.jw.org/en/whats-new/', {
+    const response = await fetch(RSS_FEED_URL, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; JW-News-App/1.0)',
+        'Accept': 'application/rss+xml, application/xml, text/xml',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch: ${response.status}`);
+      throw new Error(`Failed to fetch RSS: ${response.status}`);
     }
 
-    const html = await response.text();
-    const items = parseWhatsNew(html);
+    const xml = await response.text();
+    const items = parseRSSFeed(xml);
 
     res.status(200).json({
       success: true,
       items,
+      source: 'rss',
       fetchedAt: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('RSS fetch error:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -35,78 +40,99 @@ export default async function handler(req, res) {
   }
 }
 
-// Parse the What's New page HTML
-function parseWhatsNew(html) {
+// Parse RSS XML feed
+function parseRSSFeed(xml) {
   const items = [];
-  const lines = html.split('\n');
-  let currentItem = null;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  // Extract all <item> elements
+  const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
 
-    // Look for article links
-    const linkMatch = line.match(/href="(\/en\/[^"]+)"[^>]*>\s*([^<]+)/);
-    if (linkMatch && linkMatch[2].trim().length > 10) {
-      if (currentItem && currentItem.title) {
-        items.push(currentItem);
-      }
-      currentItem = {
-        id: `news-${items.length}-${Date.now()}`,
-        url: `https://www.jw.org${linkMatch[1]}`,
-        title: linkMatch[2].trim(),
-        description: '',
-        thumbnail: '',
-        category: 'ARTICLES',
-        type: 'news_release',
-        filterCategory: 'articles',
-        isVideo: false,
-      };
-    }
-
-    // Look for images
-    if (currentItem) {
-      const imgMatch = line.match(/(?:src|data-src)="([^"]*(?:\.jpg|\.png|\.webp)[^"]*)"/i);
-      if (imgMatch && !currentItem.thumbnail) {
-        let thumb = imgMatch[1];
-        if (!thumb.startsWith('http')) {
-          thumb = `https://www.jw.org${thumb}`;
+  itemMatches.forEach((itemXml, index) => {
+    const getTagContent = (tag) => {
+      const match = itemXml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`));
+      if (match) {
+        // Handle CDATA
+        let content = match[1];
+        const cdataMatch = content.match(/<!\[CDATA\[([\s\S]*?)\]\]>/);
+        if (cdataMatch) {
+          content = cdataMatch[1];
         }
-        currentItem.thumbnail = thumb;
+        return content.trim();
       }
+      return '';
+    };
 
-      // Look for category
-      const catMatch = line.match(/class="[^"]*(?:contextTitle|category)[^"]*"[^>]*>([^<]+)/i);
-      if (catMatch) {
-        currentItem.category = catMatch[1].trim().toUpperCase();
-        currentItem.type = getType(currentItem.category);
-        currentItem.filterCategory = getFilterCategory(currentItem.type);
-        currentItem.isVideo = currentItem.type === 'video';
+    const title = getTagContent('title');
+    const link = getTagContent('link');
+    const description = getTagContent('description')
+      .replace(/<[^>]*>/g, '') // Strip HTML tags
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .trim()
+      .slice(0, 250);
+    const pubDate = getTagContent('pubDate');
+    const category = getTagContent('category') || 'NEWS';
+
+    // Extract image from enclosure or media:thumbnail
+    let thumbnail = '';
+    const enclosureMatch = itemXml.match(/<enclosure[^>]+url="([^"]+)"/);
+    if (enclosureMatch) {
+      thumbnail = enclosureMatch[1];
+    }
+    const mediaMatch = itemXml.match(/<media:thumbnail[^>]+url="([^"]+)"/);
+    if (mediaMatch) {
+      thumbnail = mediaMatch[1];
+    }
+    // Try to extract image from description HTML
+    if (!thumbnail) {
+      const imgMatch = getTagContent('description').match(/src="([^"]+\.(jpg|jpeg|png|webp)[^"]*)"/i);
+      if (imgMatch) {
+        thumbnail = imgMatch[1];
       }
     }
-  }
+    // Default thumbnail
+    if (!thumbnail) {
+      thumbnail = 'https://assetsnffrgf-a.akamaihd.net/assets/m/802013131/univ/art/802013131_univ_lsr_lg.jpg';
+    }
 
-  if (currentItem && currentItem.title) {
-    items.push(currentItem);
-  }
+    // Determine type and filter category
+    const type = getType(category, title);
+    const filterCategory = getFilterCategory(type);
 
-  // Filter to only valid items with titles
-  const validItems = items
-    .filter(item => item.title && item.title.length > 5 && item.url)
-    .slice(0, 20); // Limit to 20 items
-
-  // Add JW Library URLs
-  validItems.forEach(item => {
-    item.jwLibraryUrl = item.url.replace('https://www.jw.org', 'jwlibrary://');
+    if (title && link) {
+      items.push({
+        id: `rss-${index}-${Date.now()}`,
+        title,
+        url: link,
+        description,
+        thumbnail,
+        pubDate,
+        category: category.toUpperCase(),
+        type,
+        filterCategory,
+        isVideo: type === 'video',
+        jwLibraryUrl: link.replace('https://www.jw.org', 'jwlibrary://'),
+      });
+    }
   });
 
-  return validItems;
+  return items.slice(0, 30); // Limit to 30 items
 }
 
-function getType(category) {
-  const upper = category.toUpperCase();
-  if (upper.includes('VIDEO') || upper.includes('BROADCAST')) return 'video';
-  if (upper.includes('WATCHTOWER') || upper.includes('AWAKE') || upper.includes('WORKBOOK')) return 'magazine';
-  if (upper.includes('LIFE STOR')) return 'life_story';
+function getType(category, title) {
+  const combined = `${category} ${title}`.toUpperCase();
+  if (combined.includes('VIDEO') || combined.includes('BROADCAST') || combined.includes('WATCH')) {
+    return 'video';
+  }
+  if (combined.includes('WATCHTOWER') || combined.includes('AWAKE') || combined.includes('WORKBOOK') || combined.includes('MAGAZINE')) {
+    return 'magazine';
+  }
+  if (combined.includes('LIFE STOR')) {
+    return 'life_story';
+  }
   return 'news_release';
 }
 
