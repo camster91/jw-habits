@@ -20,7 +20,7 @@ const TABS = [
 
 function Home() {
   const [activeTab, setActiveTab] = useState('meeting');
-  const today = format(new Date(), 'EEEE, MMMM d, yyyy');
+  const today = format(new Date(), 'EEEE, MMMM d');
 
   const handleTabChange = (tabId) => {
     if (tabId !== activeTab) {
@@ -45,25 +45,27 @@ function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 pb-24">
-      {/* Header with safe area */}
+    <div className="min-h-screen bg-gradient-to-b from-base-200 to-base-300 pb-24">
+      {/* Header with glass effect */}
       <header
-        className="bg-primary text-primary-content p-4 shadow-lg"
+        className="header-glass text-primary-content px-4 pb-4 pt-4 shadow-lg sticky top-0 z-40"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
       >
-        <h1 className="text-xl font-bold">JW Progress</h1>
-        <p className="text-xs opacity-90">{today}</p>
+        <div className="max-w-2xl mx-auto">
+          <p className="text-xs opacity-80 uppercase tracking-wider">{today}</p>
+          <h1 className="text-2xl font-bold mt-0.5">Good {getGreeting()}</h1>
+        </div>
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-4 space-y-4 max-w-2xl">
         {/* Daily Tasks - Always Visible */}
-        <section aria-labelledby="daily-tasks-heading">
+        <section aria-labelledby="daily-tasks-heading" className="slide-up">
           <h2
             id="daily-tasks-heading"
-            className="text-sm font-semibold text-base-content/70 mb-2 px-1"
+            className="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3 px-1"
           >
-            Daily Tasks
+            Today's Tasks
           </h2>
           <DailyTasksSection />
         </section>
@@ -72,7 +74,8 @@ function Home() {
         <nav
           role="tablist"
           aria-label="Content sections"
-          className="tabs tabs-boxed bg-base-100 p-1 shadow-md"
+          className="tabs tabs-boxed bg-base-100/80 backdrop-blur-sm p-1.5 shadow-sm sticky top-20 z-30"
+          style={{ top: 'calc(env(safe-area-inset-top) + 4.5rem)' }}
         >
           {TABS.map((tab) => {
             const Icon = tab.icon;
@@ -83,11 +86,13 @@ function Home() {
                 role="tab"
                 aria-selected={isActive}
                 aria-controls={`tabpanel-${tab.id}`}
-                className={`tab flex-1 gap-1 transition-all ${isActive ? 'tab-active' : ''}`}
+                className={`tab flex-1 gap-1.5 font-medium ${
+                  isActive ? 'tab-active bg-primary text-primary-content' : 'text-base-content/70'
+                }`}
                 onClick={() => handleTabChange(tab.id)}
               >
                 <Icon className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="text-xs sm:text-sm">{tab.label}</span>
               </button>
             );
           })}
@@ -98,6 +103,7 @@ function Home() {
           id={`tabpanel-${activeTab}`}
           role="tabpanel"
           aria-labelledby={`tab-${activeTab}`}
+          className="fade-in"
         >
           <Suspense fallback={<CardLoading />}>
             {renderTabContent()}
@@ -106,6 +112,14 @@ function Home() {
       </main>
     </div>
   );
+}
+
+// Helper function for time-based greeting
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Morning';
+  if (hour < 17) return 'Afternoon';
+  return 'Evening';
 }
 
 export default Home;
