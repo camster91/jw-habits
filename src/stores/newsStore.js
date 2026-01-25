@@ -182,6 +182,9 @@ const useNewsStore = create(
       // Read tracking
       readItems: {},
 
+      // Saved for later tracking
+      savedItems: {},
+
       // Actions
       setFilter: (filter) => set({ activeFilter: filter }),
 
@@ -208,6 +211,42 @@ const useNewsStore = create(
       getUnreadCount: () => {
         const state = get();
         return state.items.filter((item) => !state.readItems[item.id]).length;
+      },
+
+      // Save for later functions
+      toggleSaveItem: (item) =>
+        set((state) => {
+          const isSaved = state.savedItems[item.id];
+          if (isSaved) {
+            // Remove from saved
+            const { [item.id]: _, ...rest } = state.savedItems;
+            return { savedItems: rest };
+          } else {
+            // Add to saved (store the full item for offline access)
+            return {
+              savedItems: {
+                ...state.savedItems,
+                [item.id]: { ...item, savedAt: new Date().toISOString() }
+              }
+            };
+          }
+        }),
+
+      isItemSaved: (itemId) => {
+        const state = get();
+        return !!state.savedItems[itemId];
+      },
+
+      getSavedItems: () => {
+        const state = get();
+        return Object.values(state.savedItems).sort(
+          (a, b) => new Date(b.savedAt) - new Date(a.savedAt)
+        );
+      },
+
+      getSavedCount: () => {
+        const state = get();
+        return Object.keys(state.savedItems).length;
       },
 
       // Fetch news - tries RSS feed first, then API, then fallback
@@ -289,6 +328,9 @@ const useNewsStore = create(
         if (state.activeFilter === 'all') {
           return state.items;
         }
+        if (state.activeFilter === 'saved') {
+          return get().getSavedItems();
+        }
         return state.items.filter((item) => item.filterCategory === state.activeFilter);
       },
 
@@ -308,10 +350,11 @@ const useNewsStore = create(
     }),
     {
       name: 'jw-news-storage',
-      version: 5, // Bump to force refresh from new RSS feed
+      version: 6, // Added saved items feature
       partialize: (state) => ({
         // Don't persist items - always fetch fresh from API
         readItems: state.readItems,
+        savedItems: state.savedItems,
       }),
     }
   )

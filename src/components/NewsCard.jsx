@@ -1,4 +1,4 @@
-import { Play, BookOpen, Newspaper, Video, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Play, BookOpen, Newspaper, Video, ExternalLink, CheckCircle2, Bookmark } from 'lucide-react';
 import useNewsStore from '../stores/newsStore';
 import { haptics } from '../utils/native';
 
@@ -33,8 +33,9 @@ function CategoryIcon({ type, className }) {
 }
 
 function NewsCard({ item, compact = false }) {
-  const { markAsRead, isItemRead } = useNewsStore();
+  const { markAsRead, isItemRead, toggleSaveItem, isItemSaved } = useNewsStore();
   const isRead = isItemRead(item.id);
+  const isSaved = isItemSaved(item.id);
 
   const handleClick = () => {
     haptics.light();
@@ -42,27 +43,44 @@ function NewsCard({ item, compact = false }) {
     window.open(item.url, '_blank', 'noopener,noreferrer');
   };
 
+  const handleSaveClick = (e) => {
+    e.stopPropagation(); // Prevent card click
+    haptics.light();
+    toggleSaveItem(item);
+  };
+
   if (compact) {
     return (
-      <button
-        onClick={handleClick}
+      <div
         className={`w-full text-left p-3 rounded-lg hover:bg-base-200 transition-colors flex items-center gap-3 ${
           isRead ? 'bg-base-200/50' : ''
         }`}
-        aria-label={`${item.title} - ${item.category}${isRead ? ' - Read' : ''}`}
       >
-        {isRead ? (
-          <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" aria-hidden="true" />
-        ) : (
-          <CategoryIcon type={item.type} className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
-        )}
-        <span className={`text-sm flex-1 truncate ${isRead ? 'text-base-content/50' : ''}`}>
-          {item.title}
-        </span>
+        <button
+          onClick={handleClick}
+          className="flex items-center gap-3 flex-1 min-w-0"
+          aria-label={`${item.title} - ${item.category}${isRead ? ' - Read' : ''}`}
+        >
+          {isRead ? (
+            <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" aria-hidden="true" />
+          ) : (
+            <CategoryIcon type={item.type} className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
+          )}
+          <span className={`text-sm flex-1 truncate ${isRead ? 'text-base-content/50' : ''}`}>
+            {item.title}
+          </span>
+        </button>
         {isRead && (
           <span className="text-xs text-success/70 flex-shrink-0">Read</span>
         )}
-      </button>
+        <button
+          onClick={handleSaveClick}
+          className={`p-1 rounded ${isSaved ? 'text-warning' : 'text-base-content/30'}`}
+          aria-label={isSaved ? 'Remove from saved' : 'Save for later'}
+        >
+          <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+        </button>
+      </div>
     );
   }
 
@@ -114,19 +132,26 @@ function NewsCard({ item, compact = false }) {
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            {/* Category Badge */}
+            {/* Category Badge & Actions */}
             <div className="flex items-center gap-2 mb-2">
               <span className={`badge badge-sm ${getCategoryColor(item.type)}`}>
                 {item.category}
               </span>
-              {isRead ? (
-                <span className="badge badge-sm badge-success gap-1 ml-auto">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Read
-                </span>
-              ) : (
-                <ExternalLink className="w-3 h-3 text-base-content/30 ml-auto" />
-              )}
+              <div className="flex items-center gap-1 ml-auto">
+                {isRead && (
+                  <span className="badge badge-sm badge-success gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Read
+                  </span>
+                )}
+                <button
+                  onClick={handleSaveClick}
+                  className={`btn btn-ghost btn-xs btn-circle ${isSaved ? 'text-warning' : 'text-base-content/30'}`}
+                  aria-label={isSaved ? 'Remove from saved' : 'Save for later'}
+                >
+                  <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+                </button>
+              </div>
             </div>
 
             {/* Title */}
