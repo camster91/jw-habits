@@ -3,9 +3,8 @@ import { persist } from 'zustand/middleware';
 
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
-// RSS Feed URL - Update this with your actual RSS feed URL
-// Example: 'https://camster91.github.io/JW-Newsfeed/feed.xml'
-const RSS_FEED_URL = null; // Set to your RSS feed URL when available
+// RSS Feed URL - JW.org What's New feed
+const RSS_FEED_URL = 'https://www.jw.org/en/whats-new/rss/WhatsNewWebArticles/feed.xml';
 
 // API endpoint for fallback
 const getApiUrl = () => '/api/news';
@@ -163,6 +162,66 @@ const getCuratedItems = () => {
       jwLibraryUrl: 'jwlibrary://content',
       isVideo: true,
     },
+    {
+      id: 'bible-dramatizations',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'DRAMATIZATIONS',
+      title: 'Bible Dramatizations',
+      description: 'Dramatic video presentations of Bible accounts brought to life.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1001100116/univ/art/1001100116_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/library/videos/#en/categories/VODBibleDramatizations',
+      jwLibraryUrl: 'jwlibrary://content',
+      isVideo: true,
+    },
+    {
+      id: 'original-songs',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'MUSIC',
+      title: 'Original Songs',
+      description: 'Beautiful original songs and music videos for worship and encouragement.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1001071810/univ/art/1001071810_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/library/videos/#en/categories/VODMusicVideos',
+      jwLibraryUrl: 'jwlibrary://content',
+      isVideo: true,
+    },
+    {
+      id: 'morning-worship',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'MORNING WORSHIP',
+      title: 'Morning Worship',
+      description: 'Spiritual talks given at Bethel morning worship programs.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1001100110/univ/art/1001100110_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/library/videos/#en/categories/VODBiblePrinciples/VODMorningWorship',
+      jwLibraryUrl: 'jwlibrary://content',
+      isVideo: true,
+    },
+    {
+      id: 'convention-releases',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'CONVENTIONS',
+      title: 'Convention Releases',
+      description: 'Videos and content released at regional conventions.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1001100113/univ/art/1001100113_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/library/videos/#en/categories/VODConventionsRegional',
+      jwLibraryUrl: 'jwlibrary://content',
+      isVideo: true,
+    },
+    {
+      id: 'whiteboard-animations',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'ANIMATIONS',
+      title: 'Whiteboard Animations',
+      description: 'Animated explanations of Bible topics and principles.',
+      thumbnail: 'https://assetsnffrgf-a.akamaihd.net/assets/m/1001100111/univ/art/1001100111_univ_lsr_lg.jpg',
+      url: 'https://www.jw.org/en/library/videos/#en/categories/VODMinistryTools/VODWhiteboardAnimations',
+      jwLibraryUrl: 'jwlibrary://content',
+      isVideo: true,
+    },
   ];
 };
 
@@ -181,6 +240,9 @@ const useNewsStore = create(
 
       // Read tracking
       readItems: {},
+
+      // Saved for later tracking
+      savedItems: {},
 
       // Actions
       setFilter: (filter) => set({ activeFilter: filter }),
@@ -208,6 +270,42 @@ const useNewsStore = create(
       getUnreadCount: () => {
         const state = get();
         return state.items.filter((item) => !state.readItems[item.id]).length;
+      },
+
+      // Save for later functions
+      toggleSaveItem: (item) =>
+        set((state) => {
+          const isSaved = state.savedItems[item.id];
+          if (isSaved) {
+            // Remove from saved
+            const { [item.id]: _, ...rest } = state.savedItems;
+            return { savedItems: rest };
+          } else {
+            // Add to saved (store the full item for offline access)
+            return {
+              savedItems: {
+                ...state.savedItems,
+                [item.id]: { ...item, savedAt: new Date().toISOString() }
+              }
+            };
+          }
+        }),
+
+      isItemSaved: (itemId) => {
+        const state = get();
+        return !!state.savedItems[itemId];
+      },
+
+      getSavedItems: () => {
+        const state = get();
+        return Object.values(state.savedItems).sort(
+          (a, b) => new Date(b.savedAt) - new Date(a.savedAt)
+        );
+      },
+
+      getSavedCount: () => {
+        const state = get();
+        return Object.keys(state.savedItems).length;
       },
 
       // Fetch news - tries RSS feed first, then API, then fallback
@@ -289,6 +387,9 @@ const useNewsStore = create(
         if (state.activeFilter === 'all') {
           return state.items;
         }
+        if (state.activeFilter === 'saved') {
+          return get().getSavedItems();
+        }
         return state.items.filter((item) => item.filterCategory === state.activeFilter);
       },
 
@@ -308,10 +409,11 @@ const useNewsStore = create(
     }),
     {
       name: 'jw-news-storage',
-      version: 5, // Bump to force refresh from new RSS feed
+      version: 6, // Added saved items feature
       partialize: (state) => ({
         // Don't persist items - always fetch fresh from API
         readItems: state.readItems,
+        savedItems: state.savedItems,
       }),
     }
   )

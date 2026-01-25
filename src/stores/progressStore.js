@@ -1,26 +1,22 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { format, getDayOfYear } from 'date-fns';
+import { format, getDayOfYear, startOfWeek } from 'date-fns';
 
 const useProgressStore = create(
   persist(
     (set, get) => ({
-      // Daily Text Progress - Enhanced with checklist
+      // Daily Text Progress - Simplified to single checkbox
       dailyTexts: {},
       updateDailyTextProgress: (date, field, value) => set((state) => {
         const existing = state.dailyTexts[date] || {
           readScripture: false,
-          readComments: false,
-          meditated: false,
           progress: 0,
           timestamp: null
         };
         const updated = { ...existing, [field]: value, timestamp: new Date().toISOString() };
-        // Calculate progress from checkboxes
-        const checks = [updated.readScripture, updated.readComments, updated.meditated];
-        updated.progress = Math.round((checks.filter(Boolean).length / 3) * 100);
-        // Legacy compatibility
-        updated.read = updated.progress === 100;
+        // Single checkbox = 100% when checked
+        updated.progress = updated.readScripture ? 100 : 0;
+        updated.read = updated.readScripture;
         return {
           dailyTexts: { ...state.dailyTexts, [date]: updated }
         };
@@ -30,8 +26,6 @@ const useProgressStore = create(
           ...state.dailyTexts,
           [date]: {
             readScripture: true,
-            readComments: true,
-            meditated: true,
             progress: 100,
             read: true,
             timestamp: new Date().toISOString()
@@ -40,16 +34,160 @@ const useProgressStore = create(
       })),
       isDailyTextRead: (date) => {
         const state = get();
-        return state.dailyTexts[date]?.read || state.dailyTexts[date]?.progress === 100 || false;
+        return state.dailyTexts[date]?.read || state.dailyTexts[date]?.readScripture || false;
       },
       getDailyTextProgress: (date) => {
         const state = get();
         return state.dailyTexts[date] || {
           readScripture: false,
-          readComments: false,
-          meditated: false,
           progress: 0
         };
+      },
+
+      // Daily Prayer Tracking
+      prayers: {},
+      updatePrayerProgress: (date, prayerType, value) => set((state) => {
+        const existing = state.prayers[date] || {
+          morning: false,
+          afternoon: false,
+          evening: false,
+          timestamp: null
+        };
+        const updated = { ...existing, [prayerType]: value, timestamp: new Date().toISOString() };
+        return {
+          prayers: { ...state.prayers, [date]: updated }
+        };
+      }),
+      getPrayerProgress: (date) => {
+        const state = get();
+        return state.prayers[date] || {
+          morning: false,
+          afternoon: false,
+          evening: false
+        };
+      },
+      getAllPrayersComplete: (date) => {
+        const state = get();
+        const prayers = state.prayers[date];
+        return prayers?.morning && prayers?.afternoon && prayers?.evening;
+      },
+      getPrayerStreak: () => {
+        const state = get();
+        let streak = 0;
+        const today = new Date();
+
+        for (let i = 0; i < 365; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          const dateStr = format(date, 'yyyy-MM-dd');
+          const prayers = state.prayers[dateStr];
+
+          if (prayers?.morning && prayers?.afternoon && prayers?.evening) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+        return streak;
+      },
+
+      // Weekly Family Worship Tracking
+      familyWorship: {},
+      updateFamilyWorship: (weekKey, data) => set((state) => {
+        const existing = state.familyWorship[weekKey] || {
+          completed: false,
+          date: null,
+          topic: '',
+          notes: '',
+          studyLinks: [],
+          timestamp: null
+        };
+        return {
+          familyWorship: {
+            ...state.familyWorship,
+            [weekKey]: { ...existing, ...data, timestamp: new Date().toISOString() }
+          }
+        };
+      }),
+      toggleFamilyWorshipComplete: (weekKey) => set((state) => {
+        const existing = state.familyWorship[weekKey] || {
+          completed: false,
+          date: null,
+          topic: '',
+          notes: '',
+          studyLinks: []
+        };
+        return {
+          familyWorship: {
+            ...state.familyWorship,
+            [weekKey]: { ...existing, completed: !existing.completed, timestamp: new Date().toISOString() }
+          }
+        };
+      }),
+      addStudyLink: (weekKey, link) => set((state) => {
+        const existing = state.familyWorship[weekKey] || {
+          completed: false,
+          date: null,
+          topic: '',
+          notes: '',
+          studyLinks: []
+        };
+        return {
+          familyWorship: {
+            ...state.familyWorship,
+            [weekKey]: {
+              ...existing,
+              studyLinks: [...existing.studyLinks, { id: Date.now(), ...link }],
+              timestamp: new Date().toISOString()
+            }
+          }
+        };
+      }),
+      removeStudyLink: (weekKey, linkId) => set((state) => {
+        const existing = state.familyWorship[weekKey];
+        if (!existing) return state;
+        return {
+          familyWorship: {
+            ...state.familyWorship,
+            [weekKey]: {
+              ...existing,
+              studyLinks: existing.studyLinks.filter(l => l.id !== linkId),
+              timestamp: new Date().toISOString()
+            }
+          }
+        };
+      }),
+      getFamilyWorship: (weekKey) => {
+        const state = get();
+        return state.familyWorship[weekKey] || {
+          completed: false,
+          date: null,
+          topic: '',
+          notes: '',
+          studyLinks: []
+        };
+      },
+      getWeekKey: (date = new Date()) => {
+        const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Monday start
+        return format(weekStart, 'yyyy-MM-dd');
+      },
+      getFamilyWorshipStreak: () => {
+        const state = get();
+        let streak = 0;
+        const today = new Date();
+
+        for (let i = 0; i < 52; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - (i * 7));
+          const weekKey = get().getWeekKey(date);
+
+          if (state.familyWorship[weekKey]?.completed) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+        return streak;
       },
 
       // Bible Reading Progress - Enhanced with chapter-based tracking
@@ -247,12 +385,15 @@ const useProgressStore = create(
       clearAll: () => set({
         dailyTexts: {},
         bibleReadings: {},
-        meetings: {}
+        bibleChapters: {},
+        meetings: {},
+        prayers: {},
+        familyWorship: {}
       })
     }),
     {
       name: 'jw-progress-storage', // LocalStorage key
-      version: 1
+      version: 2
     }
   )
 );

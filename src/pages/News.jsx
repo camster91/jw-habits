@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, Wifi, WifiOff, CheckCheck } from 'lucide-react';
+import { RefreshCw, Wifi, WifiOff, CheckCheck, Bookmark } from 'lucide-react';
 import useNewsStore from '../stores/newsStore';
 import NewsCard from '../components/NewsCard';
 
@@ -8,6 +8,7 @@ const FILTER_TABS = [
   { id: 'articles', label: 'Articles' },
   { id: 'magazines', label: 'Magazines' },
   { id: 'videos', label: 'Videos' },
+  { id: 'saved', label: 'Saved', icon: Bookmark },
 ];
 
 function NewsCardSkeleton() {
@@ -40,11 +41,13 @@ function News() {
     fetchNews,
     getFilteredItems,
     getUnreadCount,
+    getSavedCount,
     markAllAsRead,
   } = useNewsStore();
 
   const items = getFilteredItems();
   const unreadCount = getUnreadCount();
+  const savedCount = getSavedCount();
 
   // Fetch news on mount
   useEffect(() => {
@@ -91,17 +94,24 @@ function News() {
       <div className="bg-base-100 border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 max-w-2xl">
           <div role="tablist" className="tabs tabs-boxed bg-transparent py-2" aria-label="Filter news by category">
-            {FILTER_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                role="tab"
-                className={`tab ${activeFilter === tab.id ? 'tab-active' : ''}`}
-                onClick={() => setFilter(tab.id)}
-                aria-selected={activeFilter === tab.id}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {FILTER_TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  className={`tab gap-1 ${activeFilter === tab.id ? 'tab-active' : ''}`}
+                  onClick={() => setFilter(tab.id)}
+                  aria-selected={activeFilter === tab.id}
+                >
+                  {Icon && <Icon className={`w-3.5 h-3.5 ${tab.id === 'saved' && savedCount > 0 ? 'fill-current' : ''}`} />}
+                  {tab.label}
+                  {tab.id === 'saved' && savedCount > 0 && (
+                    <span className="badge badge-xs badge-warning">{savedCount}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -161,11 +171,23 @@ function News() {
         {/* Empty State */}
         {!isLoading && items.length === 0 && !error && (
           <div className="text-center py-12">
-            <p className="text-base-content/60 mb-4">No news items found</p>
-            <button onClick={handleRefresh} className="btn btn-primary btn-sm">
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </button>
+            {activeFilter === 'saved' ? (
+              <>
+                <Bookmark className="w-12 h-12 mx-auto text-base-content/20 mb-4" />
+                <p className="text-base-content/60 mb-2 font-medium">No saved items</p>
+                <p className="text-base-content/40 text-sm">
+                  Tap the bookmark icon on any news item to save it for later
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-base-content/60 mb-4">No news items found</p>
+                <button onClick={handleRefresh} className="btn btn-primary btn-sm">
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </button>
+              </>
+            )}
           </div>
         )}
 
