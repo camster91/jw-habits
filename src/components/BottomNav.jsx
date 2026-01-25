@@ -1,6 +1,7 @@
 import { Home, BarChart3, Settings, Link2, Newspaper } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useNewsStore from '../stores/newsStore';
+import { haptics } from '../utils/native';
 
 function BottomNav() {
   const location = useLocation();
@@ -15,15 +16,26 @@ function BottomNav() {
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
 
+  const handleNavClick = (path) => {
+    if (location.pathname !== path) {
+      haptics.light();
+      navigate(path);
+    }
+  };
+
   return (
-    <nav className="btm-nav btm-nav-lg bg-base-200 border-t" aria-label="Main navigation">
+    <nav
+      className="btm-nav btm-nav-lg bg-base-200 border-t"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      aria-label="Main navigation"
+    >
       {navItems.map((item) => {
         const isActive = location.pathname === item.path;
         return (
           <button
             key={item.path}
             className={isActive ? 'active' : ''}
-            onClick={() => navigate(item.path)}
+            onClick={() => handleNavClick(item.path)}
             aria-label={item.badge ? `${item.label} (${item.badge} unread)` : item.label}
             aria-current={isActive ? 'page' : undefined}
           >

@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
-import { format } from 'date-fns';
+import { useEffect, useCallback } from 'react';
+import { format, getDayOfYear } from 'date-fns';
 import { BookOpen, Book, Newspaper, Check, ExternalLink, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useProgressStore from '../stores/progressStore';
 import useNewsStore from '../stores/newsStore';
 import { getDailyTextLink } from '../utils/jwLibraryLinks';
-import { getDayOfYear } from 'date-fns';
+import { haptics } from '../utils/native';
 
 function DailyTasksSection() {
   const navigate = useNavigate();
@@ -39,27 +39,52 @@ function DailyTasksSection() {
     fetchNews();
   }, [fetchNews]);
 
-  const handleDailyTextCheck = (field, checked) => {
-    updateDailyTextProgress(today, field, checked);
-  };
+  const handleDailyTextCheck = useCallback(
+    (field, checked) => {
+      haptics.light();
+      updateDailyTextProgress(today, field, checked);
 
-  const handleBibleProgressChange = (e) => {
-    updateBibleReadingProgress(dayOfYear, parseInt(e.target.value));
-  };
+      // Success haptic when completing all tasks
+      const newProgress = { ...dailyTextProgress, [field]: checked };
+      if (newProgress.readScripture && newProgress.readComments && newProgress.meditated) {
+        setTimeout(() => haptics.success(), 100);
+      }
+    },
+    [today, updateDailyTextProgress, dailyTextProgress]
+  );
+
+  const handleBibleProgressChange = useCallback(
+    (e) => {
+      const value = parseInt(e.target.value);
+      haptics.selection();
+      updateBibleReadingProgress(dayOfYear, value);
+
+      // Success haptic when completing
+      if (value === 100) {
+        setTimeout(() => haptics.success(), 100);
+      }
+    },
+    [dayOfYear, updateBibleReadingProgress]
+  );
+
+  const handleViewNews = useCallback(() => {
+    haptics.light();
+    navigate('/news');
+  }, [navigate]);
 
   return (
     <div className="space-y-3">
       {/* Daily Text - Compact */}
-      <div className="card bg-base-100 shadow-md">
+      <article className="card bg-base-100 shadow-md">
         <div className="card-body p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
+              <BookOpen className="w-5 h-5 text-primary" aria-hidden="true" />
               <h3 className="font-semibold">Daily Text</h3>
             </div>
             {isDailyTextComplete ? (
               <div className="badge badge-success badge-sm gap-1">
-                <Check className="w-3 h-3" />
+                <Check className="w-3 h-3" aria-hidden="true" />
                 Done
               </div>
             ) : (
@@ -67,9 +92,12 @@ function DailyTasksSection() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             {['readScripture', 'readComments', 'meditated'].map((field, idx) => (
-              <label key={field} className="flex items-center gap-1 cursor-pointer">
+              <label
+                key={field}
+                className="flex items-center gap-1 cursor-pointer select-none active:scale-95 transition-transform"
+              >
                 <input
                   type="checkbox"
                   checked={dailyTextProgress[field] || false}
@@ -84,19 +112,21 @@ function DailyTasksSection() {
               target="_blank"
               rel="noopener noreferrer"
               className="ml-auto btn btn-ghost btn-xs"
+              aria-label="Open in JW Library"
+              onClick={() => haptics.light()}
             >
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3 h-3" aria-hidden="true" />
             </a>
           </div>
         </div>
-      </div>
+      </article>
 
       {/* News - Compact */}
-      <div className="card bg-base-100 shadow-md">
+      <article className="card bg-base-100 shadow-md">
         <div className="card-body p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Newspaper className="w-5 h-5 text-accent" />
+              <Newspaper className="w-5 h-5 text-accent" aria-hidden="true" />
               <h3 className="font-semibold">News</h3>
             </div>
             {unreadCount > 0 && (
@@ -112,7 +142,8 @@ function DailyTasksSection() {
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-sm hover:text-primary truncate"
+                  className="block text-sm hover:text-primary active:text-primary/70 truncate transition-colors"
+                  onClick={() => haptics.light()}
                 >
                   {item.title}
                 </a>
@@ -121,25 +152,25 @@ function DailyTasksSection() {
           )}
 
           <button
-            onClick={() => navigate('/news')}
-            className="btn btn-ghost btn-xs mt-1 self-end"
+            onClick={handleViewNews}
+            className="btn btn-ghost btn-xs mt-1 self-end active:scale-95 transition-transform"
           >
-            View All <ChevronRight className="w-3 h-3" />
+            View All <ChevronRight className="w-3 h-3" aria-hidden="true" />
           </button>
         </div>
-      </div>
+      </article>
 
       {/* Bible Reading - Compact */}
-      <div className="card bg-base-100 shadow-md">
+      <article className="card bg-base-100 shadow-md">
         <div className="card-body p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Book className="w-5 h-5 text-secondary" />
+              <Book className="w-5 h-5 text-secondary" aria-hidden="true" />
               <h3 className="font-semibold">Daily Study</h3>
             </div>
             {isBibleComplete ? (
               <div className="badge badge-success badge-sm gap-1">
-                <Check className="w-3 h-3" />
+                <Check className="w-3 h-3" aria-hidden="true" />
                 Done
               </div>
             ) : (
@@ -156,11 +187,12 @@ function DailyTasksSection() {
               value={bibleReadingProgress}
               onChange={handleBibleProgressChange}
               className="range range-xs range-secondary flex-1"
+              aria-label="Bible reading progress"
             />
-            <span className="text-xs w-8">{bibleReadingProgress}%</span>
+            <span className="text-xs w-8 tabular-nums">{bibleReadingProgress}%</span>
           </div>
         </div>
-      </div>
+      </article>
     </div>
   );
 }
