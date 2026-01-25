@@ -52,8 +52,28 @@ const useProgressStore = create(
         };
       },
 
-      // Bible Reading Progress - Enhanced with partial tracking
+      // Bible Reading Progress - Enhanced with chapter-based tracking
       bibleReadings: {},
+      bibleChapters: {}, // Track individual chapter completion per day
+
+      // Toggle a specific chapter as complete/incomplete
+      toggleBibleChapter: (dayOfYear, chapterIndex) => set((state) => {
+        const existing = state.bibleChapters[dayOfYear] || {};
+        const newChapters = { ...existing, [chapterIndex]: !existing[chapterIndex] };
+        return {
+          bibleChapters: {
+            ...state.bibleChapters,
+            [dayOfYear]: newChapters
+          }
+        };
+      }),
+
+      // Get chapter progress for a specific day
+      getBibleChapterProgress: (dayOfYear) => {
+        const state = get();
+        return state.bibleChapters[dayOfYear] || {};
+      },
+
       updateBibleReadingProgress: (dayOfYear, progress, chaptersRead = []) => set((state) => ({
         bibleReadings: {
           ...state.bibleReadings,
@@ -79,6 +99,16 @@ const useProgressStore = create(
       })),
       isBibleReadingComplete: (dayOfYear) => {
         const state = get();
+        // Check if all chapters are marked complete
+        const chapters = state.bibleChapters[dayOfYear] || {};
+        const completedCount = Object.values(chapters).filter(Boolean).length;
+        // Assume at least one chapter needs to be marked
+        if (completedCount > 0) {
+          // We need to know how many total chapters - for now check if any are false
+          const hasIncomplete = Object.values(chapters).some(v => v === false);
+          if (!hasIncomplete && completedCount > 0) return true;
+        }
+        // Fall back to legacy check
         return state.bibleReadings[dayOfYear]?.read || state.bibleReadings[dayOfYear]?.progress === 100 || false;
       },
       getBibleReadingProgress: (dayOfYear) => {
