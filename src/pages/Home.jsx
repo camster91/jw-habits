@@ -49,17 +49,16 @@ function Home() {
     <div className="min-h-screen bg-base-200 pb-24">
       {/* Modern Header */}
       <header
-        className="relative overflow-hidden"
+        className="relative bg-gradient-to-br from-primary via-primary to-blue-700"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-blue-700" />
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-4 right-4 w-32 h-32 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-300 rounded-full blur-3xl" />
+        {/* Decorative blurs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-300/10 rounded-full blur-3xl" />
         </div>
 
-        <div className="relative px-4 pt-6 pb-8">
+        <div className="relative px-4 pt-6 pb-10">
           <div className="max-w-2xl mx-auto">
             {/* Date & Greeting */}
             <div className="flex items-center gap-2 text-primary-content/70 mb-1">
@@ -74,17 +73,10 @@ function Home() {
             </p>
           </div>
         </div>
-
-        {/* Wave decoration */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 50" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-            <path d="M0 50V25C240 45 480 5 720 25C960 45 1200 5 1440 25V50H0Z" className="fill-base-200"/>
-          </svg>
-        </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 -mt-2 space-y-5 max-w-2xl">
+      <main className="container mx-auto px-4 pt-4 space-y-5 max-w-2xl">
         {/* Daily Tasks */}
         <section className="animate-slide-up">
           <div className="flex items-center justify-between mb-3">

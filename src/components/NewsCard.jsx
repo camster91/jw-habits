@@ -1,4 +1,4 @@
-import { Play, Clock, BookOpen, Newspaper, Video, ExternalLink } from 'lucide-react';
+import { Play, BookOpen, Newspaper, Video, ExternalLink, CheckCircle2 } from 'lucide-react';
 import useNewsStore from '../stores/newsStore';
 import { haptics } from '../utils/native';
 
@@ -47,14 +47,21 @@ function NewsCard({ item, compact = false }) {
       <button
         onClick={handleClick}
         className={`w-full text-left p-3 rounded-lg hover:bg-base-200 transition-colors flex items-center gap-3 ${
-          isRead ? 'opacity-60' : ''
+          isRead ? 'bg-base-200/50' : ''
         }`}
-        aria-label={`${item.title} - ${item.category}`}
+        aria-label={`${item.title} - ${item.category}${isRead ? ' - Read' : ''}`}
       >
-        <CategoryIcon type={item.type} className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
-        <span className={`text-sm flex-1 truncate ${isRead ? 'text-base-content/60' : ''}`}>
+        {isRead ? (
+          <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" aria-hidden="true" />
+        ) : (
+          <CategoryIcon type={item.type} className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
+        )}
+        <span className={`text-sm flex-1 truncate ${isRead ? 'text-base-content/50' : ''}`}>
           {item.title}
         </span>
+        {isRead && (
+          <span className="text-xs text-success/70 flex-shrink-0">Read</span>
+        )}
       </button>
     );
   }
@@ -63,12 +70,12 @@ function NewsCard({ item, compact = false }) {
     <article
       onClick={handleClick}
       className={`card bg-base-100 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-[0.99] ${
-        isRead ? 'opacity-70' : ''
+        isRead ? 'ring-2 ring-success/20 bg-success/5' : ''
       }`}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-      aria-label={`${item.title} - ${item.category}`}
+      aria-label={`${item.title} - ${item.category}${isRead ? ' - Read' : ''}`}
     >
       <div className="card-body p-4">
         <div className="flex gap-4">
@@ -78,21 +85,30 @@ function NewsCard({ item, compact = false }) {
               <img
                 src={item.thumbnail}
                 alt=""
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover ${isRead ? 'opacity-70' : ''}`}
                 loading="lazy"
                 onError={(e) => {
                   e.target.style.display = 'none';
                 }}
               />
-              {item.isVideo && (
+              {item.isVideo && !isRead && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                   <Play className="w-8 h-8 text-white drop-shadow-lg" fill="white" />
                 </div>
               )}
+              {isRead && (
+                <div className="absolute inset-0 flex items-center justify-center bg-success/20">
+                  <CheckCircle2 className="w-8 h-8 text-success drop-shadow-lg" />
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex-shrink-0 w-24 h-24 rounded-xl bg-base-200 flex items-center justify-center">
-              <CategoryIcon type={item.type} className="w-10 h-10 text-base-content/20" />
+            <div className="relative flex-shrink-0 w-24 h-24 rounded-xl bg-base-200 flex items-center justify-center">
+              {isRead ? (
+                <CheckCircle2 className="w-10 h-10 text-success/50" />
+              ) : (
+                <CategoryIcon type={item.type} className="w-10 h-10 text-base-content/20" />
+              )}
             </div>
           )}
 
@@ -103,7 +119,14 @@ function NewsCard({ item, compact = false }) {
               <span className={`badge badge-sm ${getCategoryColor(item.type)}`}>
                 {item.category}
               </span>
-              <ExternalLink className="w-3 h-3 text-base-content/30 ml-auto" />
+              {isRead ? (
+                <span className="badge badge-sm badge-success gap-1 ml-auto">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Read
+                </span>
+              ) : (
+                <ExternalLink className="w-3 h-3 text-base-content/30 ml-auto" />
+              )}
             </div>
 
             {/* Title */}
