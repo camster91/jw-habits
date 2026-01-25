@@ -3,9 +3,8 @@ import { persist } from 'zustand/middleware';
 
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
-// RSS Feed URL - Update this with your actual RSS feed URL
-// Example: 'https://camster91.github.io/JW-Newsfeed/feed.xml'
-const RSS_FEED_URL = null; // Set to your RSS feed URL when available
+// RSS Feed URL - JW.org What's New feed
+const RSS_FEED_URL = 'https://www.jw.org/en/whats-new/rss/WhatsNewWebArticles/feed.xml';
 
 // API endpoint for fallback
 const getApiUrl = () => '/api/news';
