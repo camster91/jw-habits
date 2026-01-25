@@ -40,3 +40,23 @@ Thumbs.db
 
 # Local data
 history.json
+
+# Android build artifacts
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties
+*.apk
+*.aab
+
+# iOS build artifacts
+ios/App/build/
+ios/DerivedData/
+ios/Pods/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.ipa
+
+# Capacitor
+capacitor.config.ts

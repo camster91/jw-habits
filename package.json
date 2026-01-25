@@ -1,7 +1,7 @@
 {
   "name": "jw-progress-tracker",
   "private": true,
-  "version": "1.1.0",
+  "version": "2.0.0",
   "type": "module",
   "description": "Track daily text, Bible reading, and meeting preparation with JW Library links",
   "scripts": {
@@ -24,7 +24,11 @@
     "mobile:ios": "npm run build && npx cap sync ios && npx cap open ios",
     "mobile:android": "npm run build && npx cap sync android && npx cap open android",
     "mobile:add:ios": "npx cap add ios",
-    "mobile:add:android": "npx cap add android"
+    "mobile:add:android": "npx cap add android",
+    "android:build:debug": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
+    "android:build:release": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
+    "android:bundle": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease",
+    "ios:build": "npm run build && npx cap sync ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",
@@ -33,7 +37,9 @@
     "@capacitor/haptics": "^8.0.0",
     "@capacitor/ios": "^8.0.1",
     "@capacitor/keyboard": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.0",
     "@capacitor/preferences": "^8.0.0",
+    "@capacitor/push-notifications": "^8.0.0",
     "@capacitor/splash-screen": "^8.0.0",
     "@capacitor/status-bar": "^8.0.0",
     "date-fns": "^4.1.0",
