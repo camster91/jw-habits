@@ -32,7 +32,7 @@ function DailyTasksSection() {
 
   // News state
   const { fetchNews, getLatestItems, getUnreadCount } = useNewsStore();
-  const latestNews = getLatestItems(2);
+  const latestNews = getLatestItems(3);
   const unreadCount = getUnreadCount();
 
   useEffect(() => {
@@ -169,13 +169,25 @@ function DailyTasksSection() {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 rounded-xl press-effect group"
+                className="flex items-center gap-3 p-2 rounded-xl press-effect group"
                 onClick={() => haptics.light()}
               >
-                <div className="w-2 h-2 rounded-full bg-accent/50 group-hover:bg-accent transition-colors" />
-                <span className="text-sm truncate group-hover:text-accent transition-colors">
-                  {item.title}
-                </span>
+                {item.thumbnail && (
+                  <img
+                    src={item.thumbnail}
+                    alt=""
+                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-base-200"
+                    loading="lazy"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate group-hover:text-accent transition-colors">
+                    {item.title}
+                  </p>
+                  {item.category && (
+                    <p className="text-xs text-base-content/50 mt-0.5">{item.category}</p>
+                  )}
+                </div>
               </a>
             ))}
           </div>
