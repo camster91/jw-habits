@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
 // RSS Feed URL - Update this with your actual RSS feed URL
 // Example: 'https://camster91.github.io/JW-Newsfeed/feed.xml'
@@ -308,12 +308,10 @@ const useNewsStore = create(
     }),
     {
       name: 'jw-news-storage',
-      version: 4,
+      version: 5, // Bump to force refresh from new RSS feed
       partialize: (state) => ({
-        items: state.items,
-        lastFetched: state.lastFetched,
+        // Don't persist items - always fetch fresh from API
         readItems: state.readItems,
-        rssFeedUrl: state.rssFeedUrl,
       }),
     }
   )

@@ -81,7 +81,7 @@ function NewsCard({ item, compact = false }) {
         <div className="flex gap-4">
           {/* Thumbnail */}
           {item.thumbnail ? (
-            <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-base-300">
+            <div className="relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-base-200">
               <img
                 src={item.thumbnail}
                 alt=""
@@ -92,13 +92,13 @@ function NewsCard({ item, compact = false }) {
                 }}
               />
               {item.isVideo && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                  <Play className="w-8 h-8 text-white" fill="white" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <Play className="w-6 h-6 text-white drop-shadow-lg" fill="white" />
                 </div>
               )}
             </div>
           ) : (
-            <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-base-300 flex items-center justify-center">
+            <div className="flex-shrink-0 w-20 h-20 rounded-lg bg-base-200 flex items-center justify-center">
               <CategoryIcon type={item.type} className="w-8 h-8 text-base-content/30" />
             </div>
           )}
