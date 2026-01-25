@@ -60,3 +60,10 @@ ios/Pods/
 
 # Capacitor
 capacitor.config.ts
+
+# Keystore files
+*.keystore
+*.jks
+
+# Release APKs
+*.apk
