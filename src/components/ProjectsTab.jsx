@@ -22,7 +22,6 @@ function ProjectsTab() {
     toggleProjectTask,
     deleteProjectTask,
     getProjectProgress,
-    updateProject,
   } = useGoalsStore();
 
   const activeProjects = projects.filter((p) => !p.completed);
