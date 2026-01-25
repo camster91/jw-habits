@@ -13,6 +13,8 @@ export function Skeleton({ className = '', ...props }) {
 }
 
 // Card skeleton
+const SKELETON_WIDTHS = ['w-4/5', 'w-3/4', 'w-full', 'w-2/3', 'w-5/6'];
+
 export function CardSkeleton({ lines = 3 }) {
   return (
     <div className="card bg-base-100 shadow-md">
@@ -24,8 +26,7 @@ export function CardSkeleton({ lines = 3 }) {
         {Array.from({ length: lines }).map((_, i) => (
           <Skeleton
             key={i}
-            className="h-3"
-            style={{ width: `${Math.random() * 40 + 60}%` }}
+            className={`h-3 ${SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]}`}
           />
         ))}
       </div>
