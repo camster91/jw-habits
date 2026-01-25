@@ -12,13 +12,14 @@ export default defineConfig({
       manifest: {
         name: 'JW Progress Tracker',
         short_name: 'JW Progress',
-        description: 'Track daily text, Bible reading, and weekly meetings',
+        description: 'Track daily text, Bible reading, and spiritual progress with gamification',
         theme_color: '#4A6FA4',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait-primary',
         scope: '/',
         start_url: '/',
+        categories: ['lifestyle', 'education', 'productivity'],
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -29,22 +30,35 @@ export default defineConfig({
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ],
         shortcuts: [
+          {
+            name: 'Daily Text',
+            short_name: 'Text',
+            description: 'Read today\'s daily text',
+            url: '/?focus=dailytext',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'News',
+            short_name: 'News',
+            description: 'Latest JW.org news',
+            url: '/news',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+          },
           {
             name: 'View Stats',
             short_name: 'Stats',
             description: 'View your progress statistics',
             url: '/stats',
-            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
-          },
-          {
-            name: 'Quick Links',
-            short_name: 'Links',
-            description: 'Access JW Library and jw.org links',
-            url: '/links',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           },
           {
@@ -54,23 +68,168 @@ export default defineConfig({
             url: '/settings',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           }
-        ]
+        ],
+        screenshots: [
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'JW Progress Tracker Home Screen'
+          }
+        ],
+        // Enable share target for receiving shared content
+        share_target: {
+          action: '/share',
+          method: 'GET',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url'
+          }
+        }
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Precache all static assets
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],
+
+        // Clean old caches
+        cleanupOutdatedCaches: true,
+
+        // Skip waiting to activate new service worker immediately
+        skipWaiting: true,
+        clientsClaim: true,
+
+        // Runtime caching strategies
         runtimeCaching: [
+          // Cache JW.org pages with NetworkFirst (prefer network, fall back to cache)
           {
             urlPattern: /^https:\/\/www\.jw\.org\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'jw-org-cache',
               expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Cache Watchtower Online Library with NetworkFirst
+          {
+            urlPattern: /^https:\/\/wol\.jw\.org\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'wol-cache',
+              expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Cache RSS feeds with NetworkFirst (prefer fresh data)
+          {
+            urlPattern: /^https:\/\/.*\/rss\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'rss-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 // 1 hour
+              },
+              networkTimeoutSeconds: 10,
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Cache images with CacheFirst (use cached version, update in background)
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Cache API responses with StaleWhileRevalidate
+          {
+            urlPattern: /^https:\/\/api\..*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 // 1 day
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Cache fonts with CacheFirst
+          {
+            urlPattern: /\.(?:woff|woff2|ttf|otf|eot)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fonts-cache',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Cache Google Fonts
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
               }
             }
           }
-        ]
+        ],
+
+        // Navigation preload for faster navigation
+        navigationPreload: true
+      },
+
+      // Development options
+      devOptions: {
+        enabled: true,
+        type: 'module',
+        navigateFallback: 'index.html'
       }
     })
   ],

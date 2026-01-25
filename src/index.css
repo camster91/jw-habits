@@ -103,6 +103,12 @@ html {
   .pr-safe {
     padding-right: env(safe-area-inset-right);
   }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 
   /* Hide scrollbar but keep functionality */
   .scrollbar-hide {
@@ -134,6 +140,11 @@ html {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Animate slide-up utility */
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out forwards;
 }
 
 @keyframes fadeIn {
