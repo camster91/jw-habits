@@ -99,7 +99,7 @@ function parseRSSFeed(xml) {
     }
 
     // Determine type and filter category
-    const type = getType(category, title);
+    const type = getType(category, title, link);
     const filterCategory = getFilterCategory(type);
 
     if (title && link) {
@@ -122,9 +122,25 @@ function parseRSSFeed(xml) {
   return items.slice(0, 30); // Limit to 30 items
 }
 
-function getType(category, title) {
+function getType(category, title, url) {
   const combined = `${category} ${title}`.toUpperCase();
-  if (combined.includes('VIDEO') || combined.includes('BROADCAST') || combined.includes('WATCH')) {
+  const urlLower = (url || '').toLowerCase();
+
+  // Check URL patterns for actual videos
+  const isVideoUrl = urlLower.includes('/videos/') ||
+                     urlLower.includes('mediaitems') ||
+                     urlLower.includes('/video/');
+
+  // Exclude articles that mention "video" but aren't videos
+  const isVideoArticle = combined.includes('VIDEO REFERENCE') ||
+                         combined.includes('VIDEO GUIDE') ||
+                         combined.includes('ABOUT VIDEO');
+
+  // Only mark as video if URL indicates video OR category explicitly says video (not just title)
+  if (isVideoUrl || (category.toUpperCase().includes('VIDEO') && !isVideoArticle)) {
+    return 'video';
+  }
+  if (combined.includes('BROADCAST') && !isVideoArticle) {
     return 'video';
   }
   if (combined.includes('WATCHTOWER') || combined.includes('AWAKE') || combined.includes('WORKBOOK') || combined.includes('MAGAZINE')) {
