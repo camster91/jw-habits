@@ -3,31 +3,35 @@
  * Allows users to configure push notifications
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Bell, BellOff, Clock, Check } from 'lucide-react';
 import { usePWA } from '../hooks/usePWA';
 import { showNotification, scheduleDailyReminder } from '../utils/pwa';
 import { haptics } from '../utils/native';
 
+// Load saved reminder settings from localStorage
+function loadSavedReminderSettings() {
+  const savedTime = localStorage.getItem('dailyReminderTime');
+  if (savedTime) {
+    try {
+      const { hour, minute } = JSON.parse(savedTime);
+      return {
+        time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+        enabled: true,
+      };
+    } catch {
+      // Ignore parse errors
+    }
+  }
+  return { time: '07:00', enabled: false };
+}
+
 function NotificationSettings() {
   const { notificationPermission, requestNotifications, notificationsSupported } = usePWA();
-  const [reminderTime, setReminderTime] = useState('07:00');
-  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const savedSettings = loadSavedReminderSettings();
+  const [reminderTime, setReminderTime] = useState(savedSettings.time);
+  const [reminderEnabled, setReminderEnabled] = useState(savedSettings.enabled);
   const [testSent, setTestSent] = useState(false);
-
-  useEffect(() => {
-    // Load saved settings
-    const savedTime = localStorage.getItem('dailyReminderTime');
-    if (savedTime) {
-      try {
-        const { hour, minute } = JSON.parse(savedTime);
-        setReminderTime(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
-        setReminderEnabled(true);
-      } catch {
-        // Ignore parse errors
-      }
-    }
-  }, []);
 
   const handleEnableNotifications = async () => {
     haptics.medium();

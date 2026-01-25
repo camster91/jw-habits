@@ -8,30 +8,32 @@ import { Download, X, Smartphone } from 'lucide-react';
 import { usePWA } from '../hooks/usePWA';
 import { haptics } from '../utils/native';
 
+// Check if dismiss is still valid
+function isDismissedInitially() {
+  const dismissedUntil = localStorage.getItem('installPromptDismissed');
+  if (dismissedUntil) {
+    const dismissedDate = new Date(dismissedUntil);
+    if (dismissedDate > new Date()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function InstallPrompt() {
   const { canInstall, promptInstall, isAppInstalled } = usePWA();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(isDismissedInitially);
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    // Check if user has dismissed the banner before
-    const dismissedUntil = localStorage.getItem('installPromptDismissed');
-    if (dismissedUntil) {
-      const dismissedDate = new Date(dismissedUntil);
-      if (dismissedDate > new Date()) {
-        setDismissed(true);
-        return;
-      }
-    }
-
     // Show banner after a short delay
-    if (canInstall && !isAppInstalled) {
+    if (canInstall && !isAppInstalled && !dismissed) {
       const timer = setTimeout(() => {
         setShowBanner(true);
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [canInstall, isAppInstalled]);
+  }, [canInstall, isAppInstalled, dismissed]);
 
   const handleInstall = async () => {
     haptics.medium();

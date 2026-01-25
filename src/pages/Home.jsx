@@ -12,14 +12,14 @@ const GoalsTab = lazy(() => import('../components/GoalsTab'));
 const ProjectsTab = lazy(() => import('../components/ProjectsTab'));
 
 const TABS = [
-  { id: 'meeting', label: 'Meeting', icon: Calendar, color: 'from-blue-500 to-indigo-600' },
   { id: 'study', label: 'Study', icon: GraduationCap, color: 'from-emerald-500 to-teal-600' },
+  { id: 'meeting', label: 'Meeting', icon: Calendar, color: 'from-blue-500 to-indigo-600' },
   { id: 'goals', label: 'Goals', icon: Target, color: 'from-amber-500 to-orange-600' },
   { id: 'projects', label: 'Projects', icon: FolderKanban, color: 'from-purple-500 to-pink-600' },
 ];
 
 function Home() {
-  const [activeTab, setActiveTab] = useState('meeting');
+  const [activeTab, setActiveTab] = useState('study');
   const today = format(new Date(), 'EEEE, MMMM d');
   const greeting = getGreeting();
 
