@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react';
-import { format, getDayOfYear } from 'date-fns';
-import { BookOpen, Book, Newspaper, Check, ExternalLink, ChevronRight, Sparkles, CheckCircle2, Flame, PenLine, Save, Clock } from 'lucide-react';
+import { format } from 'date-fns';
+import { BookOpen, Newspaper, Check, ExternalLink, ChevronRight, Sparkles, CheckCircle2, Flame, PenLine, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useProgressStore from '../stores/progressStore';
 import useNewsStore from '../stores/newsStore';
 import useMemoriesStore from '../stores/memoriesStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { getDailyTextLink } from '../utils/jwLibraryLinks';
-import { getBibleReading, getChaptersList, getBibleChapterLink } from '../utils/bibleReadingSchedule';
 import { haptics } from '../utils/native';
 
 function DailyTasksSection() {
   const navigate = useNavigate();
   const today = format(new Date(), 'yyyy-MM-dd');
-  const dayOfYear = getDayOfYear(new Date());
 
   // Local state for notes
   const [showNotes, setShowNotes] = useState(false);
@@ -25,22 +23,11 @@ function DailyTasksSection() {
     isDailyTextRead,
     getDailyTextProgress,
     updateDailyTextProgress,
-    getBibleChapterProgress,
-    toggleBibleChapter,
-    isBibleReadingComplete,
   } = useProgressStore();
 
   const dailyTextProgress = getDailyTextProgress(today);
   const isDailyTextComplete = isDailyTextRead(today);
   const dailyTextLink = getDailyTextLink(new Date());
-
-  // Bible Reading state
-  const todayReading = getBibleReading(dayOfYear);
-  const chapters = getChaptersList(todayReading.chapters);
-  const chapterProgress = getBibleChapterProgress(dayOfYear);
-  const completedChapters = chapters.filter((_, i) => chapterProgress[i]);
-  const bibleProgress = Math.round((completedChapters.length / chapters.length) * 100);
-  const isBibleComplete = isBibleReadingComplete(dayOfYear);
 
   // News state
   const { fetchNews, getLatestItems, getUnreadCount, markAsRead, isItemRead } = useNewsStore();
@@ -51,7 +38,7 @@ function DailyTasksSection() {
   const { saveReflection, getReflection } = useMemoriesStore();
 
   // Gamification state
-  const { currentStreak, recordDailyTextCompletion, recordReflection, recordNewsRead, recordBibleReading } = useGamificationStore();
+  const { currentStreak, recordDailyTextCompletion, recordReflection, recordNewsRead } = useGamificationStore();
 
   // Load existing reflection on mount
   const existingReflection = getReflection(today);
@@ -89,21 +76,6 @@ function DailyTasksSection() {
     }
   };
 
-  const handleChapterToggle = (index) => {
-    haptics.light();
-    toggleBibleChapter(dayOfYear, index);
-
-    // Check if all chapters are now complete
-    const newProgress = { ...chapterProgress, [index]: !chapterProgress[index] };
-    const allComplete = chapters.every((_, i) => newProgress[i]);
-    if (allComplete) {
-      setTimeout(() => {
-        haptics.success();
-        recordBibleReading();
-      }, 100);
-    }
-  };
-
   const handleSaveNote = () => {
     if (noteText.trim()) {
       haptics.success();
@@ -120,10 +92,8 @@ function DailyTasksSection() {
     navigate('/news');
   };
 
-  // Calculate overall progress (2 tasks now)
+  // Calculate overall progress
   const dailyTextDone = dailyTextProgress.readScripture && dailyTextProgress.meditated;
-  const tasksCompleted = [dailyTextDone, isBibleComplete].filter(Boolean).length;
-  const totalTasks = 2;
 
   return (
     <div className="space-y-3">
@@ -137,10 +107,10 @@ function DailyTasksSection() {
       )}
 
       {/* Progress Overview */}
-      {tasksCompleted === totalTasks && (
+      {dailyTextDone && (
         <div className="flex items-center justify-center gap-2 p-4 bg-success/10 rounded-2xl text-success">
           <Sparkles className="w-5 h-5" />
-          <span className="font-medium">All daily tasks complete!</span>
+          <span className="font-medium">Daily Text complete!</span>
         </div>
       )}
 
@@ -323,80 +293,6 @@ function DailyTasksSection() {
         </button>
       </article>
 
-      {/* Daily Bible Reading Card */}
-      <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
-        {/* Header */}
-        <div className="p-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-2xl ${isBibleComplete ? 'bg-success/10' : 'bg-secondary/10'}`}>
-              <Book className={`w-6 h-6 ${isBibleComplete ? 'text-success' : 'text-secondary'}`} />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold">Daily Bible Reading</h3>
-              <p className="text-sm text-base-content/50">Day {dayOfYear}</p>
-            </div>
-            {isBibleComplete ? (
-              <CheckCircle2 className="w-6 h-6 text-success" />
-            ) : (
-              <span className="text-lg font-bold text-secondary">{bibleProgress}%</span>
-            )}
-          </div>
-
-          {/* Reading Info */}
-          <div className="mt-3 p-3 bg-base-200/50 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold text-lg">{todayReading.book} {todayReading.chapters}</p>
-                <div className="flex items-center gap-1 text-sm text-base-content/50 mt-1">
-                  <Clock className="w-4 h-4" />
-                  <span>~{todayReading.time} minutes</span>
-                </div>
-              </div>
-              <a
-                href={getBibleChapterLink(todayReading.book, parseInt(todayReading.chapters.split('-')[0]) || 1)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-secondary btn-sm"
-                onClick={() => haptics.light()}
-              >
-                <ExternalLink className="w-4 h-4" />
-                Read
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Chapter Progress */}
-        <div className="px-4 pb-4">
-          <p className="text-xs text-base-content/50 mb-2 font-medium">Progress</p>
-          <div className="grid grid-cols-4 gap-2">
-            {chapters.map((chapter, index) => {
-              const isComplete = chapterProgress[index];
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleChapterToggle(index)}
-                  className={`py-3 px-2 rounded-xl font-medium text-sm transition-all active:scale-95 ${
-                    isComplete
-                      ? 'bg-success text-white'
-                      : 'bg-base-200 text-base-content/60'
-                  }`}
-                >
-                  {chapter}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Visual progress bar */}
-          <div className="mt-3 h-2 bg-base-200 rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all duration-300 ${isBibleComplete ? 'bg-success' : 'bg-secondary'}`}
-              style={{ width: `${bibleProgress}%` }}
-            />
-          </div>
-        </div>
-      </article>
     </div>
   );
 }
