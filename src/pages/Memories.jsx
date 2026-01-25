@@ -13,7 +13,7 @@ function Memories() {
   const [expandedReflection, setExpandedReflection] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  const { getAllReflections, getReflectionsByMonth, searchReflections, deleteReflection, getReflectionCount } = useMemoriesStore();
+  const { getReflectionsByMonth, searchReflections, deleteReflection, getReflectionCount } = useMemoriesStore();
 
   const totalCount = getReflectionCount();
 
