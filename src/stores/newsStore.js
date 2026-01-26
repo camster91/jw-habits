@@ -3,8 +3,8 @@ import { persist } from 'zustand/middleware';
 
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
-// RSS Feed URL - JW.org What's New feed
-const RSS_FEED_URL = 'https://www.jw.org/en/whats-new/rss/WhatsNewWebArticles/feed.xml';
+// RSS Feed URL - JW-Newsfeed GitHub Pages
+const RSS_FEED_URL = 'https://camster91.github.io/JW-Newsfeed/jw_feed.xml';
 
 // API endpoint for fallback
 const getApiUrl = () => '/api/news';
