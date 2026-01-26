@@ -1,7 +1,7 @@
 {
   "name": "jw-progress-tracker",
   "private": true,
-  "version": "2.0.1",
+  "version": "2.0.2",
   "type": "module",
   "description": "Track daily text, Bible reading, and meeting preparation with JW Library links",
   "scripts": {
