@@ -399,6 +399,14 @@ const useNewsStore = create(
         return state.items.slice(0, count);
       },
 
+      // Get unread items only for dashboard widget
+      getUnreadItems: (count = 3) => {
+        const state = get();
+        return state.items
+          .filter((item) => !state.readItems[item.id])
+          .slice(0, count);
+      },
+
       // Refresh content
       clearCache: () =>
         set({

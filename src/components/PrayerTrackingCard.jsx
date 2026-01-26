@@ -17,7 +17,7 @@ const PRAYER_TIMES = [
     id: 'afternoon',
     label: 'Afternoon Prayer',
     icon: CloudSun,
-    description: 'Midday communion',
+    description: 'Pray during the day',
     color: 'text-sky-500',
     bgColor: 'bg-sky-500/10'
   },
