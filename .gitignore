@@ -67,3 +67,7 @@ capacitor.config.ts
 
 # Release APKs
 *.apk
+
+# Keystore
+*.keystore
+*.jks
