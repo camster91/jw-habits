@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Check, Clock, ExternalLink } from 'lucide-react';
+import { Book, Calendar, Check, Clock, ExternalLink } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 import useProgressStore from '../stores/progressStore';
 import { getWorkbookForWeek, getMeetingWorkbookLink, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
@@ -77,8 +77,8 @@ function MeetingCard() {
           initMeetingParts(weekOf, 'midweek', midweekPartKeys);
         }
 
-        // Initialize weekend parts
-        const weekendPartKeys = ['publicTalk', 'watchtower'];
+        // Initialize weekend parts (only watchtower has checkbox)
+        const weekendPartKeys = ['watchtower'];
         initMeetingParts(weekOf, 'weekend', weekendPartKeys);
       } catch (err) {
         console.error('Failed to load workbook data:', err);
@@ -368,24 +368,41 @@ function MeetingCard() {
             {/* Weekend Parts */}
             <div className="space-y-2">
               {weekendParts.map((part) => (
-                <label
-                  key={part.key}
-                  className="flex items-center gap-3 p-3 border border-base-300 rounded-lg hover:bg-base-200 cursor-pointer transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={part.completed}
-                    onChange={(e) => handlePartToggle('weekend', part.key, e.target.checked)}
-                    className="checkbox checkbox-primary"
-                  />
-                  <div className="flex-1">
-                    <p className={`font-medium ${part.completed ? 'line-through text-base-content/50' : ''}`}>
-                      {part.title}
-                    </p>
-                    <p className="text-xs text-base-content/60">{part.duration} minutes</p>
+                part.key === 'publicTalk' ? (
+                  // Public Talk - no checkbox, just display
+                  <div
+                    key={part.key}
+                    className="flex items-center gap-3 p-3 border border-base-300 rounded-lg bg-base-100"
+                  >
+                    <div className="w-5 h-5 flex items-center justify-center">
+                      <Book className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{part.title}</p>
+                      <p className="text-xs text-base-content/60">{part.duration} minutes</p>
+                    </div>
                   </div>
-                  {part.completed && <Check className="w-5 h-5 text-success" />}
-                </label>
+                ) : (
+                  // Watchtower Study - with checkbox
+                  <label
+                    key={part.key}
+                    className="flex items-center gap-3 p-3 border border-base-300 rounded-lg hover:bg-base-200 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={part.completed}
+                      onChange={(e) => handlePartToggle('weekend', part.key, e.target.checked)}
+                      className="checkbox checkbox-primary"
+                    />
+                    <div className="flex-1">
+                      <p className={`font-medium ${part.completed ? 'line-through text-base-content/50' : ''}`}>
+                        {part.title}
+                      </p>
+                      <p className="text-xs text-base-content/60">{part.duration} minutes</p>
+                    </div>
+                    {part.completed && <Check className="w-5 h-5 text-success" />}
+                  </label>
+                )
               ))}
             </div>
 
