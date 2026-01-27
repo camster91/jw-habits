@@ -70,7 +70,17 @@ const DEFAULT_BIBLE_READING_SETTINGS = {
   customStartDate: null,
   // Whether user is using custom schedule or default (Jan 1 start)
   useCustomSchedule: false,
+  // Reading pace: 0.5 = 6 months, 1 = 1 year, 1.5 = 1.5 years, 2 = 2 years
+  readingPace: 1,
 };
+
+// Pace options for the UI
+export const READING_PACE_OPTIONS = [
+  { value: 0.5, label: '6 Months', description: '~2 readings/day' },
+  { value: 1, label: '1 Year', description: 'Default pace' },
+  { value: 1.5, label: '1.5 Years', description: 'Relaxed pace' },
+  { value: 2, label: '2 Years', description: 'Leisurely pace' },
+];
 
 const useSettingsStore = create(
   persist(
@@ -173,12 +183,26 @@ const useSettingsStore = create(
       resetBibleReadingSchedule: () =>
         set({ bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS }),
 
+      setBibleReadingPace: (pace) =>
+        set((state) => ({
+          bibleReadingSchedule: {
+            ...state.bibleReadingSchedule,
+            readingPace: pace,
+          }
+        })),
+
       // Get the effective schedule day for today based on custom settings
       getEffectiveScheduleDay: (todayDayOfYear) => {
         const { bibleReadingSchedule } = get();
+        const pace = bibleReadingSchedule?.readingPace || 1;
 
         if (!bibleReadingSchedule?.useCustomSchedule || !bibleReadingSchedule?.customStartDate) {
-          return todayDayOfYear;
+          // Apply pace to default schedule (starting Jan 1)
+          let effectiveDay = Math.floor((todayDayOfYear - 1) / pace) + 1;
+          if (effectiveDay > 341) {
+            effectiveDay = ((effectiveDay - 1) % 341) + 1;
+          }
+          return effectiveDay;
         }
 
         // Parse the date string as local time (YYYY-MM-DD format)
@@ -190,7 +214,9 @@ const useSettingsStore = create(
         startDate.setHours(0, 0, 0, 0);
 
         const daysElapsed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-        let effectiveDay = bibleReadingSchedule.startingScheduleDay + daysElapsed;
+        // Apply pace: lower pace = slower progression through schedule
+        const adjustedDaysElapsed = Math.floor(daysElapsed / pace);
+        let effectiveDay = bibleReadingSchedule.startingScheduleDay + adjustedDaysElapsed;
 
         // Wrap around if exceeded 341 (skip review days)
         if (effectiveDay > 341) {
