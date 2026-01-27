@@ -26,28 +26,28 @@ const DAYS_OF_WEEK = [
 // Notification item component
 function NotificationItem({ icon: Icon, label, description, enabled, time, onToggle, onTimeChange, color = 'text-primary' }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-base-200 last:border-0">
+    <div className="flex items-center justify-between py-3.5 border-b border-base-200/50 last:border-0">
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className={`p-2 rounded-lg bg-base-200 ${color}`}>
-          <Icon className="w-4 h-4" />
+        <div className={`p-2.5 rounded-xl bg-base-100 shadow-sm ${color}`}>
+          <Icon className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm">{label}</p>
-          <p className="text-xs text-base-content/60 truncate">{description}</p>
+          <p className="font-semibold text-sm">{label}</p>
+          <p className="text-xs text-base-content/50">{description}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {time !== undefined && enabled && (
           <input
             type="time"
-            className="input input-xs input-bordered w-24"
+            className="input input-sm input-bordered w-28 text-center font-medium"
             value={time}
             onChange={(e) => onTimeChange(e.target.value)}
           />
         )}
         <input
           type="checkbox"
-          className="toggle toggle-primary toggle-sm"
+          className="toggle toggle-primary"
           checked={enabled}
           onChange={onToggle}
         />
@@ -72,32 +72,30 @@ function WeeklyNotificationItem({
   color = 'text-primary',
   isMeetingPrep = false
 }) {
-  const selectedDayLabel = DAYS_OF_WEEK.find(d => d.value === dayOfWeek)?.fullLabel || 'Monday';
-
   return (
-    <div className="py-3 border-b border-base-200 last:border-0">
+    <div className="py-3.5 border-b border-base-200/50 last:border-0">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className={`p-2 rounded-lg bg-base-200 ${color}`}>
-            <Icon className="w-4 h-4" />
+          <div className={`p-2.5 rounded-xl bg-base-100 shadow-sm ${color}`}>
+            <Icon className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm">{label}</p>
-            <p className="text-xs text-base-content/60 truncate">{description}</p>
+            <p className="font-semibold text-sm">{label}</p>
+            <p className="text-xs text-base-content/50">{description}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {time !== undefined && enabled && (
             <input
               type="time"
-              className="input input-xs input-bordered w-24"
+              className="input input-sm input-bordered w-28 text-center font-medium"
               value={time}
               onChange={(e) => onTimeChange(e.target.value)}
             />
           )}
           <input
             type="checkbox"
-            className="toggle toggle-primary toggle-sm"
+            className="toggle toggle-primary"
             checked={enabled}
             onChange={onToggle}
           />
@@ -106,12 +104,12 @@ function WeeklyNotificationItem({
 
       {/* Day selection - shown when enabled */}
       {enabled && (
-        <div className="mt-3 ml-11">
+        <div className="mt-3 ml-14 p-3 bg-base-100 rounded-xl">
           {isMeetingPrep ? (
             // Meeting days multi-select
             <div>
-              <p className="text-xs text-base-content/60 mb-2">Remind day before these meetings:</p>
-              <div className="flex flex-wrap gap-1">
+              <p className="text-xs font-medium text-base-content/60 mb-2">Remind day before:</p>
+              <div className="flex flex-wrap gap-1.5">
                 {DAYS_OF_WEEK.map((day) => (
                   <button
                     key={day.value}
@@ -122,10 +120,10 @@ function WeeklyNotificationItem({
                         : [...currentDays, day.value].sort((a, b) => a - b);
                       onMeetingDaysChange(newDays);
                     }}
-                    className={`btn btn-xs ${
+                    className={`btn btn-sm min-w-[44px] ${
                       (meetingDays || []).includes(day.value)
                         ? 'btn-primary'
-                        : 'btn-ghost btn-outline'
+                        : 'btn-ghost bg-base-200'
                     }`}
                   >
                     {day.label}
@@ -136,16 +134,16 @@ function WeeklyNotificationItem({
           ) : (
             // Single day select
             <div>
-              <p className="text-xs text-base-content/60 mb-2">Remind every:</p>
-              <div className="flex flex-wrap gap-1">
+              <p className="text-xs font-medium text-base-content/60 mb-2">Remind every:</p>
+              <div className="flex flex-wrap gap-1.5">
                 {DAYS_OF_WEEK.map((day) => (
                   <button
                     key={day.value}
                     onClick={() => onDayChange(day.value)}
-                    className={`btn btn-xs ${
+                    className={`btn btn-sm min-w-[44px] ${
                       dayOfWeek === day.value
                         ? 'btn-primary'
-                        : 'btn-ghost btn-outline'
+                        : 'btn-ghost bg-base-200'
                     }`}
                   >
                     {day.label}

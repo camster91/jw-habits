@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Check, Circle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check } from 'lucide-react';
+import { haptics } from '../utils/native';
 
 function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = false }) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
@@ -7,73 +8,86 @@ function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = f
   const completedCount = parts.filter(p => p.completed).length;
   const totalCount = parts.length;
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const isComplete = progress === 100;
 
-  const getProgressColor = () => {
-    if (progress === 100) return 'bg-success';
-    if (progress > 0) return 'bg-warning';
-    return 'bg-base-300';
+  const handleToggle = () => {
+    haptics.light();
+    setIsExpanded(!isExpanded);
   };
 
   return (
-    <div className="border border-base-300 rounded-lg overflow-hidden">
+    <div className="bg-base-100 rounded-xl overflow-hidden shadow-sm border border-base-200">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-3 bg-base-200 hover:bg-base-300 transition-colors"
+        onClick={handleToggle}
+        className="w-full flex items-center justify-between p-3.5 hover:bg-base-50 active:bg-base-200 transition-colors"
       >
-        <div className="flex items-center gap-2">
-          {isExpanded ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-          <div className={`w-3 h-3 rounded-full ${color}`}></div>
-          <span className="font-medium text-sm">{title}</span>
+        <div className="flex items-center gap-3">
+          <div className={`w-2 h-8 rounded-full ${color}`}></div>
+          <div className="text-left">
+            <span className="font-semibold text-sm">{title}</span>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className={`text-xs ${isComplete ? 'text-success' : 'text-base-content/50'}`}>
+                {completedCount} of {totalCount} complete
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-base-content/60">
-            {completedCount}/{totalCount}
-          </span>
-          <div className="w-16 h-2 bg-base-300 rounded-full overflow-hidden">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-1.5 bg-base-200 rounded-full overflow-hidden">
             <div
-              className={`h-full ${getProgressColor()} transition-all duration-300`}
+              className={`h-full transition-all duration-300 ${
+                isComplete ? 'bg-success' : progress > 0 ? 'bg-primary' : 'bg-base-300'
+              }`}
               style={{ width: `${progress}%` }}
             />
           </div>
+          {isExpanded ? (
+            <ChevronDown className="w-5 h-5 text-base-content/40" />
+          ) : (
+            <ChevronRight className="w-5 h-5 text-base-content/40" />
+          )}
         </div>
       </button>
 
       {isExpanded && (
-        <div className="p-3 space-y-2 bg-base-100">
+        <div className="px-3.5 pb-3.5 space-y-1.5 border-t border-base-200">
           {parts.map((part) => (
             <label
               key={part.key}
-              className="flex items-start gap-3 p-2 rounded-lg hover:bg-base-200 cursor-pointer transition-colors"
+              className={`flex items-start gap-3 p-2.5 rounded-xl cursor-pointer transition-all active:scale-[0.99] ${
+                part.completed
+                  ? 'bg-success/5 hover:bg-success/10'
+                  : 'hover:bg-base-200/50'
+              }`}
             >
               <div className="pt-0.5">
                 <input
                   type="checkbox"
                   checked={part.completed}
-                  onChange={(e) => onPartToggle(part.key, e.target.checked)}
+                  onChange={(e) => {
+                    haptics.light();
+                    onPartToggle(part.key, e.target.checked);
+                  }}
                   className="checkbox checkbox-sm checkbox-primary"
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm ${part.completed ? 'line-through text-base-content/50' : ''}`}>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-sm font-medium ${part.completed ? 'line-through text-base-content/40' : ''}`}>
                     {part.title}
                   </span>
                   {part.duration && (
-                    <span className="text-xs text-base-content/40">
-                      ({part.duration} min)
+                    <span className="text-xs text-base-content/40 bg-base-200 px-1.5 py-0.5 rounded">
+                      {part.duration} min
                     </span>
                   )}
                 </div>
                 {part.subtitle && (
-                  <p className="text-xs text-base-content/60 mt-0.5">{part.subtitle}</p>
+                  <p className="text-xs text-base-content/50 mt-1 line-clamp-2">{part.subtitle}</p>
                 )}
               </div>
               {part.completed && (
-                <Check className="w-4 h-4 text-success flex-shrink-0" />
+                <Check className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
               )}
             </label>
           ))}
