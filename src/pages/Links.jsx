@@ -1,4 +1,4 @@
-import { ExternalLink, Newspaper, BookOpen, Video, Library, Radio, Book, Music, Users, HelpCircle, MapPin, Calendar, Heart, Baby, GraduationCap, Search, Globe, Headphones, MessageCircle, Building2, Sparkles, Gift, Smartphone } from 'lucide-react';
+import { ExternalLink, Newspaper, BookOpen, Video, Library, Radio, Book, Music, Users, HelpCircle, MapPin, Calendar, Heart, Baby, GraduationCap, Search, Globe, Headphones, MessageCircle, Building2, Star, Gift, Smartphone } from 'lucide-react';
 import { JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 
 const linkCategories = [
@@ -14,7 +14,7 @@ const linkCategories = [
       { title: 'Marriage & Family', url: JW_ORG_SECTIONS.marriageAndFamily, icon: Users },
       { title: 'Teens & Young Adults', url: JW_ORG_SECTIONS.teens, icon: Users },
       { title: 'Children', url: JW_ORG_SECTIONS.children, icon: Baby },
-      { title: 'Faith in God', url: JW_ORG_SECTIONS.faithInGod, icon: Sparkles },
+      { title: 'Faith in God', url: JW_ORG_SECTIONS.faithInGod, icon: Star },
       { title: 'Science & the Bible', url: JW_ORG_SECTIONS.scienceAndBible, icon: Globe },
     ]
   },
@@ -48,7 +48,7 @@ const linkCategories = [
   {
     title: 'News & Updates',
     links: [
-      { title: "What's New", url: JW_ORG_SECTIONS.whatsNew, icon: Sparkles },
+      { title: "What's New", url: JW_ORG_SECTIONS.whatsNew, icon: Star },
       { title: 'Newsroom', url: JW_ORG_SECTIONS.news, icon: Newspaper },
       { title: 'Experiences', url: JW_ORG_SECTIONS.experiences, icon: Heart },
     ]
