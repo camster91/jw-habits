@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Sun, CloudSun, Moon, Check, Heart, Flame } from 'lucide-react';
+import { Sun, CloudSun, Moon, Check, Heart, Flame, Star } from 'lucide-react';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
@@ -91,7 +91,7 @@ function PrayerTrackingCard() {
       {/* All Complete Banner */}
       {allComplete && (
         <div className="mx-4 mb-3 flex items-center justify-center gap-2 p-3 bg-success/10 rounded-xl text-success">
-          <Sparkles className="w-4 h-4" />
+          <Star className="w-4 h-4" />
           <span className="font-medium text-sm">All prayers complete for today!</span>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Target, Plus, Check, Trash2, ChevronDown, ChevronUp, Sparkles, BookOpen, Users, Heart, Clock } from 'lucide-react';
+import { Target, Plus, Check, Trash2, ChevronDown, ChevronUp, Star, BookOpen, Users, Heart, Clock } from 'lucide-react';
 import useGoalsStore from '../stores/goalsStore';
 import { haptics } from '../utils/native';
 
@@ -126,7 +126,7 @@ function GoalsTab() {
             }}
             className="btn btn-ghost btn-sm"
           >
-            <Sparkles className="w-4 h-4" />
+            <Star className="w-4 h-4" />
             Ideas
           </button>
           <button
@@ -148,7 +148,7 @@ function GoalsTab() {
         <div className="card bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200">
           <div className="card-body p-4">
             <h4 className="font-semibold text-amber-800 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
+              <Star className="w-4 h-4" />
               Goal Ideas
             </h4>
             <div className="grid gap-2 mt-2">
@@ -240,7 +240,7 @@ function GoalsTab() {
             onClick={() => setShowSuggestions(true)}
             className="btn btn-primary btn-sm mt-4"
           >
-            <Sparkles className="w-4 h-4" />
+            <Star className="w-4 h-4" />
             Browse Ideas
           </button>
         </div>
