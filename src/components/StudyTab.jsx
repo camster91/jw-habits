@@ -325,25 +325,23 @@ function StudyTab() {
 
           {/* Bible Reading Settings Panel */}
           {showReadingSettings && (
-            <div className="mx-4 mb-3 p-4 bg-base-200/70 rounded-xl border border-base-300">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-sm">Reading Schedule Settings</h4>
+            <div className="mx-4 mb-3 p-4 bg-base-200 rounded-2xl shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-bold text-sm">Reading Schedule Settings</h4>
                 {bibleReadingSchedule?.useCustomSchedule && (
                   <button
                     onClick={handleResetSchedule}
-                    className="btn btn-ghost btn-xs gap-1 text-warning"
+                    className="btn btn-ghost btn-sm gap-1.5 text-warning"
                   >
-                    <RotateCcw className="w-3 h-3" />
+                    <RotateCcw className="w-4 h-4" />
                     Reset
                   </button>
                 )}
               </div>
 
               {/* Pace Selector */}
-              <div className="form-control mb-4">
-                <label className="label py-1">
-                  <span className="label-text text-xs font-medium">Reading Pace</span>
-                </label>
+              <div className="mb-5">
+                <p className="text-xs font-semibold text-base-content/60 uppercase tracking-wide mb-2">Reading Pace</p>
                 <div className="grid grid-cols-4 gap-2">
                   {READING_PACE_OPTIONS.map((option) => (
                     <button
@@ -352,32 +350,29 @@ function StudyTab() {
                         haptics.light();
                         setBibleReadingPace(option.value);
                       }}
-                      className={`py-2 px-1 rounded-lg text-center transition-all active:scale-95 ${
+                      className={`py-2.5 px-1 rounded-xl text-center transition-all active:scale-95 shadow-sm ${
                         (bibleReadingSchedule?.readingPace || 1) === option.value
-                          ? 'bg-primary text-primary-content'
-                          : 'bg-base-100 hover:bg-base-200'
+                          ? 'bg-primary text-primary-content shadow-primary/25'
+                          : 'bg-base-100 hover:bg-base-100/80'
                       }`}
                     >
-                      <div className="font-medium text-sm">{option.label}</div>
-                      <div className="text-[10px] opacity-70">{option.description}</div>
+                      <div className="font-bold text-sm">{option.label}</div>
+                      <div className="text-[10px] opacity-70 mt-0.5">{option.description}</div>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="divider my-2 text-xs text-base-content/50">Starting Point</div>
+              <div className="divider my-0 text-xs font-medium text-base-content/40">STARTING POINT</div>
 
-              <p className="text-xs text-base-content/60 mb-3">
-                Select a Bible book and chapter to start your reading schedule from today.
+              <p className="text-xs text-base-content/60 mb-3 mt-3">
+                Select a Bible book and chapter to start from today.
               </p>
 
               {/* Book Selector */}
-              <div className="form-control mb-3">
-                <label className="label py-1">
-                  <span className="label-text text-xs">Select Book</span>
-                </label>
+              <div className="mb-3">
                 <select
-                  className="select select-bordered select-sm w-full"
+                  className="select select-bordered w-full font-medium"
                   value={selectedBook}
                   onChange={(e) => setSelectedBook(e.target.value)}
                 >
@@ -390,22 +385,19 @@ function StudyTab() {
 
               {/* Chapter/Day Selector - shows when book is selected */}
               {selectedBook && (
-                <div className="form-control">
-                  <label className="label py-1">
-                    <span className="label-text text-xs">Select Reading to Start From</span>
-                  </label>
-                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                <div className="bg-base-100 rounded-xl p-2 max-h-52 overflow-y-auto">
+                  <div className="space-y-1.5">
                     {getBookScheduleEntries(selectedBook).map((entry) => (
                       <button
                         key={entry.day}
                         onClick={() => handleSetCustomStart(entry.day)}
-                        className="flex items-center justify-between p-2 bg-base-100 rounded-lg hover:bg-primary/10 active:scale-[0.98] transition-all text-left"
+                        className="flex items-center justify-between w-full p-3 bg-base-200/50 rounded-xl hover:bg-primary/10 active:scale-[0.98] transition-all text-left"
                       >
                         <div>
-                          <span className="font-medium text-sm">{entry.book} {entry.chapters}</span>
-                          <span className="text-xs text-base-content/50 ml-2">(~{entry.time} min)</span>
+                          <span className="font-semibold text-sm">{entry.book} {entry.chapters}</span>
+                          <span className="text-xs text-base-content/40 ml-2 bg-base-300/50 px-1.5 py-0.5 rounded">~{entry.time} min</span>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-base-content/30" />
+                        <ChevronRight className="w-5 h-5 text-base-content/30" />
                       </button>
                     ))}
                   </div>
@@ -413,8 +405,8 @@ function StudyTab() {
               )}
 
               {bibleReadingSchedule?.useCustomSchedule && (
-                <div className="mt-3 p-2 bg-success/10 rounded-lg text-xs text-success flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
+                <div className="mt-4 p-3 bg-success/10 rounded-xl text-sm text-success flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
                   <span>
                     Started from Day {bibleReadingSchedule.startingScheduleDay} on {new Date(bibleReadingSchedule.customStartDate).toLocaleDateString()}
                   </span>
