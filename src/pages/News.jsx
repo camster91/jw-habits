@@ -93,18 +93,26 @@ function News() {
       {/* Filter Tabs */}
       <div className="bg-base-100 border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 max-w-2xl">
-          <div role="tablist" className="tabs tabs-boxed bg-transparent py-2" aria-label="Filter news by category">
+          <div
+            role="tablist"
+            className="flex gap-2 overflow-x-auto scrollbar-hide py-2 -mx-2 px-2"
+            aria-label="Filter news by category"
+          >
             {FILTER_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   role="tab"
-                  className={`tab gap-1 ${activeFilter === tab.id ? 'tab-active' : ''}`}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all flex-shrink-0 ${
+                    activeFilter === tab.id
+                      ? 'bg-primary text-primary-content'
+                      : 'bg-base-200 text-base-content/70 hover:bg-base-300'
+                  }`}
                   onClick={() => setFilter(tab.id)}
                   aria-selected={activeFilter === tab.id}
                 >
-                  {Icon && <Icon className={`w-3.5 h-3.5 ${tab.id === 'saved' && savedCount > 0 ? 'fill-current' : ''}`} />}
+                  {Icon && <Icon className={`w-4 h-4 ${tab.id === 'saved' && savedCount > 0 ? 'fill-current' : ''}`} />}
                   {tab.label}
                   {tab.id === 'saved' && savedCount > 0 && (
                     <span className="badge badge-xs badge-warning">{savedCount}</span>

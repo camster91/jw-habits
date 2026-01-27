@@ -74,8 +74,8 @@ const STUDY_CATEGORIES = [
     ],
   },
   {
-    id: 'doctrine',
-    title: 'Doctrinal Study',
+    id: 'bible-teachings',
+    title: 'Bible Teachings',
     icon: FileText,
     color: 'from-emerald-500 to-teal-600',
     items: [

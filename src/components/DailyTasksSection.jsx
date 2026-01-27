@@ -30,8 +30,8 @@ function DailyTasksSection() {
   const dailyTextLink = getDailyTextLink(new Date());
 
   // News state
-  const { fetchNews, getLatestItems, getUnreadCount, markAsRead, isItemRead } = useNewsStore();
-  const latestNews = getLatestItems(3);
+  const { fetchNews, getUnreadItems, getUnreadCount, markAsRead } = useNewsStore();
+  const unreadNews = getUnreadItems(3);
   const unreadCount = getUnreadCount();
 
   // Memories state
@@ -129,7 +129,7 @@ function DailyTasksSection() {
           </div>
           <div className="flex-1">
             <h3 className="font-bold">Daily Text</h3>
-            <p className="text-sm text-base-content/50">Scripture & meditation</p>
+            <p className="text-sm text-base-content/50">Read and apply today's text</p>
           </div>
           {isDailyTextComplete ? (
             <CheckCircle2 className="w-6 h-6 text-success" />
@@ -219,85 +219,61 @@ function DailyTasksSection() {
         )}
       </article>
 
-      {/* News Card */}
-      <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center gap-3 p-4">
-          <div className="p-3 rounded-2xl bg-accent/10">
-            <Newspaper className="w-6 h-6 text-accent" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold">News</h3>
-            <p className="text-sm text-base-content/50">Latest from JW.org</p>
-          </div>
-          {unreadCount > 0 && (
+      {/* News Card - only show when there are unread items */}
+      {unreadCount > 0 && (
+        <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-3 p-4">
+            <div className="p-3 rounded-2xl bg-accent/10">
+              <Newspaper className="w-6 h-6 text-accent" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold">News</h3>
+              <p className="text-sm text-base-content/50">Latest from JW.org</p>
+            </div>
             <span className="badge badge-accent font-bold">{unreadCount} new</span>
-          )}
-        </div>
+          </div>
 
-        {/* News Items - large tap targets */}
-        {latestNews.length > 0 && (
-          <div className="px-4 space-y-1">
-            {latestNews.map((item) => {
-              const isRead = isItemRead(item.id);
-              return (
+          {/* Unread News Items - large tap targets */}
+          {unreadNews.length > 0 && (
+            <div className="px-4 space-y-1">
+              {unreadNews.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => handleNewsClick(item)}
-                  className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all active:scale-[0.98] ${
-                    isRead ? 'bg-success/5' : 'active:bg-base-200'
-                  }`}
+                  className="flex items-center gap-3 w-full p-3 rounded-xl transition-all active:scale-[0.98] active:bg-base-200"
                 >
                   {item.thumbnail ? (
-                    <div className="relative w-14 h-14 flex-shrink-0">
-                      <img
-                        src={item.thumbnail}
-                        alt=""
-                        className={`w-14 h-14 rounded-xl object-cover bg-base-200 ${isRead ? 'opacity-60' : ''}`}
-                        loading="lazy"
-                      />
-                      {isRead && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-success/30 rounded-xl">
-                          <CheckCircle2 className="w-6 h-6 text-success" />
-                        </div>
-                      )}
-                    </div>
+                    <img
+                      src={item.thumbnail}
+                      alt=""
+                      className="w-14 h-14 rounded-xl object-cover bg-base-200 flex-shrink-0"
+                      loading="lazy"
+                    />
                   ) : (
                     <div className="w-14 h-14 rounded-xl bg-base-200 flex items-center justify-center flex-shrink-0">
-                      {isRead ? (
-                        <CheckCircle2 className="w-6 h-6 text-success" />
-                      ) : (
-                        <Newspaper className="w-6 h-6 text-base-content/30" />
-                      )}
+                      <Newspaper className="w-6 h-6 text-base-content/30" />
                     </div>
                   )}
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className={`font-medium line-clamp-2 ${isRead ? 'text-base-content/50' : ''}`}>
-                      {item.title}
-                    </p>
-                    {isRead && (
-                      <span className="text-xs text-success flex items-center gap-1 mt-1">
-                        <Check className="w-3 h-3" />
-                        Read
-                      </span>
-                    )}
-                  </div>
-                  <ChevronRight className={`w-5 h-5 flex-shrink-0 ${isRead ? 'text-success/50' : 'text-base-content/30'}`} />
+                  <p className="flex-1 min-w-0 text-left font-medium line-clamp-2">
+                    {item.title}
+                  </p>
+                  <ChevronRight className="w-5 h-5 flex-shrink-0 text-base-content/30" />
                 </button>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        {/* View All Button */}
-        <button
-          onClick={handleViewNews}
-          className="flex items-center justify-center gap-2 w-full p-4 text-accent font-medium active:bg-base-200 transition-colors"
-        >
-          View All News
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </article>
+          {/* View All Button */}
+          <button
+            onClick={handleViewNews}
+            className="flex items-center justify-center gap-2 w-full p-4 text-accent font-medium active:bg-base-200 transition-colors"
+          >
+            View All News
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </article>
+      )}
 
     </div>
   );
