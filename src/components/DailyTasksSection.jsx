@@ -99,17 +99,17 @@ function DailyTasksSection() {
     <div className="space-y-3">
       {/* Streak Banner */}
       {currentStreak > 0 && (
-        <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl text-white">
-          <Flame className="w-5 h-5" />
+        <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl text-white shadow-lg animate-fade-in-up">
+          <Flame className="w-5 h-5 animate-flame" />
           <span className="font-bold">{currentStreak} Day Streak!</span>
-          <Flame className="w-5 h-5" />
+          <Flame className="w-5 h-5 animate-flame" />
         </div>
       )}
 
       {/* Progress Overview */}
       {dailyTextDone && (
-        <div className="flex items-center justify-center gap-2 p-4 bg-success/10 rounded-2xl text-success">
-          <Sparkles className="w-5 h-5" />
+        <div className="flex items-center justify-center gap-2 p-4 bg-success/10 rounded-2xl text-success animate-fade-in-up">
+          <Sparkles className="w-5 h-5 animate-wiggle" />
           <span className="font-medium">Daily Text complete!</span>
         </div>
       )}

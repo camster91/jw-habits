@@ -79,15 +79,19 @@ function Home() {
       {/* Main Content */}
       <main className="container mx-auto px-4 pt-4 space-y-5 max-w-2xl">
         {/* Daily Tasks */}
-        <section className="animate-slide-up">
+        <section className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
               Today
             </h2>
           </div>
           <div className="space-y-3">
-            <DailyTasksSection />
-            <PrayerTrackingCard />
+            <div className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+              <DailyTasksSection />
+            </div>
+            <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+              <PrayerTrackingCard />
+            </div>
           </div>
         </section>
 
@@ -95,7 +99,8 @@ function Home() {
         <nav
           role="tablist"
           aria-label="Content sections"
-          className="flex gap-2 overflow-x-auto scrollbar-hide py-1 -mx-4 px-4"
+          className="flex gap-2 overflow-x-auto scrollbar-hide py-1 -mx-4 px-4 animate-fade-in-up"
+          style={{ animationDelay: '300ms' }}
         >
           {TABS.map((tab, index) => {
             const Icon = tab.icon;
@@ -105,15 +110,12 @@ function Home() {
                 key={tab.id}
                 role="tab"
                 aria-selected={isActive}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all active:scale-95 ${
                   isActive
                     ? `bg-gradient-to-r ${tab.color} text-white shadow-lg shadow-${tab.color.split('-')[1]}-500/25`
-                    : 'bg-base-100 text-base-content/60 hover:bg-base-100/80'
+                    : 'bg-base-100 text-base-content/60 hover:bg-base-100/80 active:bg-base-200'
                 }`}
                 onClick={() => handleTabChange(tab.id)}
-                style={{
-                  animationDelay: `${index * 50}ms`,
-                }}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
@@ -124,9 +126,10 @@ function Home() {
 
         {/* Tab Content */}
         <section
+          key={activeTab}
           id={`tabpanel-${activeTab}`}
           role="tabpanel"
-          className="animate-slide-up"
+          className="animate-fade-in-up"
         >
           <Suspense fallback={<CardLoading />}>
             {renderTabContent()}

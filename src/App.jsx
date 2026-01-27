@@ -7,6 +7,7 @@ import { ToastProvider } from './components/Toast';
 import InstallPrompt from './components/InstallPrompt';
 import UpdatePrompt from './components/UpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
+import AchievementPopup from './components/AchievementPopup';
 
 // Lazy load non-critical pages for better initial load performance
 const Stats = lazy(() => import('./pages/Stats'));
@@ -48,6 +49,9 @@ function App() {
 
             {/* Install Prompt (shown at bottom) */}
             <InstallPrompt />
+
+            {/* Achievement Popup */}
+            <AchievementPopup />
           </div>
         </Router>
       </ToastProvider>

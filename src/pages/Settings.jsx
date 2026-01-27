@@ -1,8 +1,9 @@
-import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock } from 'lucide-react';
+import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import useProgressStore from '../stores/progressStore';
 import useSettingsStore from '../stores/settingsStore';
 import { useToast } from '../components/Toast';
+import { haptics } from '../utils/native';
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -11,24 +12,55 @@ import {
   initializeReminders
 } from '../utils/notifications';
 
+// Notification item component
+function NotificationItem({ icon: Icon, label, description, enabled, time, onToggle, onTimeChange, color = 'text-primary' }) {
+  return (
+    <div className="flex items-center justify-between py-3 border-b border-base-200 last:border-0">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className={`p-2 rounded-lg bg-base-200 ${color}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm">{label}</p>
+          <p className="text-xs text-base-content/60 truncate">{description}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {time !== undefined && enabled && (
+          <input
+            type="time"
+            className="input input-xs input-bordered w-24"
+            value={time}
+            onChange={(e) => onTimeChange(e.target.value)}
+          />
+        )}
+        <input
+          type="checkbox"
+          className="toggle toggle-primary toggle-sm"
+          checked={enabled}
+          onChange={onToggle}
+        />
+      </div>
+    </div>
+  );
+}
+
 function Settings() {
   const toast = useToast();
   const { clearAll } = useProgressStore();
   const {
     notificationsEnabled,
-    dailyTextReminderTime,
-    bibleReadingReminderTime,
-    meetingReminderEnabled,
+    notifications,
     theme,
     setNotificationsEnabled,
-    setDailyTextReminderTime,
-    setBibleReadingReminderTime,
-    setMeetingReminderEnabled,
+    toggleNotification,
+    setNotificationTime,
     setTheme,
   } = useSettingsStore();
 
   const [notificationPermission, setNotificationPermission] = useState(() => getNotificationPermission());
   const [notificationSupported] = useState(() => isNotificationSupported());
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -45,6 +77,7 @@ function Settings() {
       return;
     }
 
+    haptics.light();
     const permission = await requestNotificationPermission();
     setNotificationPermission(permission);
 
@@ -55,16 +88,27 @@ function Settings() {
       });
       initializeReminders({
         notificationsEnabled: true,
-        dailyTextReminderTime,
-        bibleReadingReminderTime,
+        dailyTextReminderTime: notifications?.dailyText?.time || '07:00',
+        bibleReadingReminderTime: notifications?.bibleReading?.time || '20:00',
       });
+      haptics.success();
     } else if (permission === 'denied') {
       toast.error('Notification permission was denied. Please enable it in your browser settings.');
     }
   };
 
   const handleDisableNotifications = () => {
+    haptics.light();
     setNotificationsEnabled(false);
+  };
+
+  const handleToggleNotification = (key) => {
+    haptics.light();
+    toggleNotification(key);
+  };
+
+  const handleSetNotificationTime = (key, time) => {
+    setNotificationTime(key, time);
   };
 
   const handleClearData = () => {
@@ -173,7 +217,7 @@ function Settings() {
             ) : (
               <div className="space-y-4">
                 {/* Enable/Disable Notifications */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-3 bg-base-200/50 rounded-xl">
                   <div>
                     <p className="font-medium">Enable Reminders</p>
                     <p className="text-sm text-base-content/70">
@@ -198,55 +242,141 @@ function Settings() {
                 </div>
 
                 {notificationsEnabled && (
-                  <>
-                    {/* Daily Text Reminder Time */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-base-content/60" />
-                        <div>
-                          <p className="font-medium text-sm">Daily Text Reminder</p>
-                          <p className="text-xs text-base-content/70">Morning reminder</p>
-                        </div>
-                      </div>
-                      <input
-                        type="time"
-                        className="input input-sm input-bordered w-28"
-                        value={dailyTextReminderTime}
-                        onChange={(e) => setDailyTextReminderTime(e.target.value)}
+                  <div className="space-y-2">
+                    {/* Essential Reminders */}
+                    <div className="bg-base-200/30 rounded-xl p-3">
+                      <p className="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Daily Reminders</p>
+
+                      <NotificationItem
+                        icon={BookOpen}
+                        label="Daily Text"
+                        description="Morning reminder to read"
+                        enabled={notifications?.dailyText?.enabled ?? true}
+                        time={notifications?.dailyText?.time ?? '07:00'}
+                        onToggle={() => handleToggleNotification('dailyText')}
+                        onTimeChange={(time) => handleSetNotificationTime('dailyText', time)}
+                        color="text-primary"
+                      />
+
+                      <NotificationItem
+                        icon={BookOpen}
+                        label="Bible Reading"
+                        description="Evening reminder"
+                        enabled={notifications?.bibleReading?.enabled ?? true}
+                        time={notifications?.bibleReading?.time ?? '20:00'}
+                        onToggle={() => handleToggleNotification('bibleReading')}
+                        onTimeChange={(time) => handleSetNotificationTime('bibleReading', time)}
+                        color="text-secondary"
                       />
                     </div>
 
-                    {/* Bible Reading Reminder Time */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-base-content/60" />
-                        <div>
-                          <p className="font-medium text-sm">Bible Reading Reminder</p>
-                          <p className="text-xs text-base-content/70">Evening reminder</p>
-                        </div>
-                      </div>
-                      <input
-                        type="time"
-                        className="input input-sm input-bordered w-28"
-                        value={bibleReadingReminderTime}
-                        onChange={(e) => setBibleReadingReminderTime(e.target.value)}
+                    {/* Prayer Reminders */}
+                    <div className="bg-base-200/30 rounded-xl p-3">
+                      <p className="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Prayer Reminders</p>
+
+                      <NotificationItem
+                        icon={Heart}
+                        label="Morning Prayer"
+                        description="Start your day with prayer"
+                        enabled={notifications?.morningPrayer?.enabled ?? true}
+                        time={notifications?.morningPrayer?.time ?? '06:30'}
+                        onToggle={() => handleToggleNotification('morningPrayer')}
+                        onTimeChange={(time) => handleSetNotificationTime('morningPrayer', time)}
+                        color="text-amber-500"
+                      />
+
+                      <NotificationItem
+                        icon={Heart}
+                        label="Afternoon Prayer"
+                        description="Midday reminder"
+                        enabled={notifications?.afternoonPrayer?.enabled ?? true}
+                        time={notifications?.afternoonPrayer?.time ?? '12:00'}
+                        onToggle={() => handleToggleNotification('afternoonPrayer')}
+                        onTimeChange={(time) => handleSetNotificationTime('afternoonPrayer', time)}
+                        color="text-sky-500"
+                      />
+
+                      <NotificationItem
+                        icon={Heart}
+                        label="Evening Prayer"
+                        description="End your day in prayer"
+                        enabled={notifications?.eveningPrayer?.enabled ?? true}
+                        time={notifications?.eveningPrayer?.time ?? '21:00'}
+                        onToggle={() => handleToggleNotification('eveningPrayer')}
+                        onTimeChange={(time) => handleSetNotificationTime('eveningPrayer', time)}
+                        color="text-indigo-500"
                       />
                     </div>
 
-                    {/* Meeting Reminder */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm">Meeting Reminder</p>
-                        <p className="text-xs text-base-content/70">Day before meeting</p>
+                    {/* Show More Toggle */}
+                    <button
+                      onClick={() => {
+                        haptics.light();
+                        setShowAllNotifications(!showAllNotifications);
+                      }}
+                      className="btn btn-ghost btn-sm w-full gap-2"
+                    >
+                      {showAllNotifications ? (
+                        <>
+                          <ChevronUp className="w-4 h-4" />
+                          Show Less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4" />
+                          More Options
+                        </>
+                      )}
+                    </button>
+
+                    {/* Additional Reminders (collapsed by default) */}
+                    {showAllNotifications && (
+                      <div className="space-y-2 animate-fade-in-up">
+                        {/* Weekly Reminders */}
+                        <div className="bg-base-200/30 rounded-xl p-3">
+                          <p className="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Weekly Reminders</p>
+
+                          <NotificationItem
+                            icon={Users}
+                            label="Family Worship"
+                            description="Weekly reminder"
+                            enabled={notifications?.familyWorship?.enabled ?? true}
+                            time={notifications?.familyWorship?.time ?? '19:00'}
+                            onToggle={() => handleToggleNotification('familyWorship')}
+                            onTimeChange={(time) => handleSetNotificationTime('familyWorship', time)}
+                            color="text-purple-500"
+                          />
+
+                          <NotificationItem
+                            icon={Calendar}
+                            label="Meeting Preparation"
+                            description="Day before meeting"
+                            enabled={notifications?.meetingPrep?.enabled ?? true}
+                            time={notifications?.meetingPrep?.time ?? '19:00'}
+                            onToggle={() => handleToggleNotification('meetingPrep')}
+                            onTimeChange={(time) => handleSetNotificationTime('meetingPrep', time)}
+                            color="text-green-500"
+                          />
+                        </div>
+
+                        {/* Motivation */}
+                        <div className="bg-base-200/30 rounded-xl p-3">
+                          <p className="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Motivation</p>
+
+                          <NotificationItem
+                            icon={Flame}
+                            label="Keep Your Streak"
+                            description="Reminder to maintain streaks"
+                            enabled={notifications?.streakMotivation?.enabled ?? true}
+                            time={notifications?.streakMotivation?.time ?? '10:00'}
+                            onToggle={() => handleToggleNotification('streakMotivation')}
+                            onTimeChange={(time) => handleSetNotificationTime('streakMotivation', time)}
+                            color="text-orange-500"
+                          />
+                        </div>
                       </div>
-                      <input
-                        type="checkbox"
-                        className="toggle toggle-primary toggle-sm"
-                        checked={meetingReminderEnabled}
-                        onChange={(e) => setMeetingReminderEnabled(e.target.checked)}
-                      />
-                    </div>
-                  </>
+                    )}
+                  </div>
                 )}
               </div>
             )}

@@ -359,6 +359,42 @@ const useProgressStore = create(
         return streak;
       },
 
+      getMeetingPrepStreak: () => {
+        const state = get();
+        let streak = 0;
+        const today = new Date();
+
+        for (let i = 0; i < 52; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - (i * 7));
+          const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+          const weekOf = format(weekStart, 'yyyy-MM-dd');
+
+          // Check if either meeting type was prepared this week
+          const midweek = state.meetings[`${weekOf}-midweek`];
+          const weekend = state.meetings[`${weekOf}-weekend`];
+
+          if (midweek?.prepared || weekend?.prepared) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+        return streak;
+      },
+
+      // Get all streaks for display
+      getAllStreaks: () => {
+        const state = get();
+        return {
+          dailyText: get().getDailyTextStreak(),
+          bibleReading: get().getBibleReadingStreak(),
+          prayer: get().getPrayerStreak(),
+          familyWorship: get().getFamilyWorshipStreak(),
+          meetingPrep: get().getMeetingPrepStreak()
+        };
+      },
+
       // Statistics
       getCompletionRate: (type, days = 7) => {
         const state = get();
