@@ -4,7 +4,7 @@ import { GraduationCap, Book, ExternalLink, Video, FileText, Globe, Headphones, 
 import { haptics } from '../utils/native';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
-import useSettingsStore from '../stores/settingsStore';
+import useSettingsStore, { READING_PACE_OPTIONS } from '../stores/settingsStore';
 import BIBLE_READING_SCHEDULE, { getBibleReading, getChaptersList, getBibleChapterLink } from '../utils/bibleReadingSchedule';
 import FamilyWorshipCard from './FamilyWorshipCard';
 
@@ -227,6 +227,7 @@ function StudyTab() {
     bibleReadingSchedule,
     getEffectiveScheduleDay,
     setBibleReadingStartDay,
+    setBibleReadingPace,
     resetBibleReadingSchedule,
   } = useSettingsStore();
 
@@ -326,7 +327,7 @@ function StudyTab() {
           {showReadingSettings && (
             <div className="mx-4 mb-3 p-4 bg-base-200/70 rounded-xl border border-base-300">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-sm">Customize Starting Point</h4>
+                <h4 className="font-semibold text-sm">Reading Schedule Settings</h4>
                 {bibleReadingSchedule?.useCustomSchedule && (
                   <button
                     onClick={handleResetSchedule}
@@ -337,6 +338,35 @@ function StudyTab() {
                   </button>
                 )}
               </div>
+
+              {/* Pace Selector */}
+              <div className="form-control mb-4">
+                <label className="label py-1">
+                  <span className="label-text text-xs font-medium">Reading Pace</span>
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {READING_PACE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        haptics.light();
+                        setBibleReadingPace(option.value);
+                      }}
+                      className={`py-2 px-1 rounded-lg text-center transition-all active:scale-95 ${
+                        (bibleReadingSchedule?.readingPace || 1) === option.value
+                          ? 'bg-primary text-primary-content'
+                          : 'bg-base-100 hover:bg-base-200'
+                      }`}
+                    >
+                      <div className="font-medium text-sm">{option.label}</div>
+                      <div className="text-[10px] opacity-70">{option.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="divider my-2 text-xs text-base-content/50">Starting Point</div>
+
               <p className="text-xs text-base-content/60 mb-3">
                 Select a Bible book and chapter to start your reading schedule from today.
               </p>
