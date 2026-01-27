@@ -181,7 +181,10 @@ const useSettingsStore = create(
           return todayDayOfYear;
         }
 
-        const startDate = new Date(bibleReadingSchedule.customStartDate);
+        // Parse the date string as local time (YYYY-MM-DD format)
+        // Using new Date(dateString) interprets as UTC, causing timezone issues
+        const [year, month, day] = bibleReadingSchedule.customStartDate.split('-').map(Number);
+        const startDate = new Date(year, month - 1, day); // month is 0-indexed
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         startDate.setHours(0, 0, 0, 0);
