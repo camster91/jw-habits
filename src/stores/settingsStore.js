@@ -62,11 +62,24 @@ const DEFAULT_NOTIFICATIONS = {
   }
 };
 
+// Default Bible reading schedule settings
+const DEFAULT_BIBLE_READING_SETTINGS = {
+  // The schedule day number the user is starting from (1-341, not review days)
+  startingScheduleDay: 1,
+  // The date when the user set this custom start (to calculate offset)
+  customStartDate: null,
+  // Whether user is using custom schedule or default (Jan 1 start)
+  useCustomSchedule: false,
+};
+
 const useSettingsStore = create(
   persist(
     (set, get) => ({
       // Notification settings (expanded)
       notifications: DEFAULT_NOTIFICATIONS,
+
+      // Bible reading schedule settings
+      bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS,
 
       // Legacy compatibility
       notificationsEnabled: false,
@@ -146,6 +159,44 @@ const useSettingsStore = create(
         set({ theme });
       },
 
+      // Bible reading schedule actions
+      setBibleReadingStartDay: (scheduleDay) =>
+        set((state) => ({
+          bibleReadingSchedule: {
+            ...state.bibleReadingSchedule,
+            startingScheduleDay: scheduleDay,
+            customStartDate: new Date().toISOString().split('T')[0],
+            useCustomSchedule: true,
+          }
+        })),
+
+      resetBibleReadingSchedule: () =>
+        set({ bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS }),
+
+      // Get the effective schedule day for today based on custom settings
+      getEffectiveScheduleDay: (todayDayOfYear) => {
+        const { bibleReadingSchedule } = get();
+
+        if (!bibleReadingSchedule?.useCustomSchedule || !bibleReadingSchedule?.customStartDate) {
+          return todayDayOfYear;
+        }
+
+        const startDate = new Date(bibleReadingSchedule.customStartDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        startDate.setHours(0, 0, 0, 0);
+
+        const daysElapsed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+        let effectiveDay = bibleReadingSchedule.startingScheduleDay + daysElapsed;
+
+        // Wrap around if exceeded 341 (skip review days)
+        if (effectiveDay > 341) {
+          effectiveDay = ((effectiveDay - 1) % 341) + 1;
+        }
+
+        return effectiveDay;
+      },
+
       // Reset notifications to default
       resetNotifications: () =>
         set({ notifications: DEFAULT_NOTIFICATIONS }),
@@ -158,6 +209,7 @@ const useSettingsStore = create(
         bibleReadingReminderTime: get().bibleReadingReminderTime,
         meetingReminderEnabled: get().meetingReminderEnabled,
         theme: get().theme,
+        bibleReadingSchedule: get().bibleReadingSchedule,
       }),
 
       // Get notification permission status
@@ -185,7 +237,7 @@ const useSettingsStore = create(
     }),
     {
       name: 'jw-progress-settings',
-      version: 2,
+      version: 3,
       migrate: (persistedState, version) => {
         if (version < 2) {
           // Migrate from old settings format
@@ -206,7 +258,15 @@ const useSettingsStore = create(
                 ...DEFAULT_NOTIFICATIONS.meetingPrep,
                 enabled: persistedState?.meetingReminderEnabled || true
               }
-            }
+            },
+            bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS
+          };
+        }
+        if (version < 3) {
+          // Add Bible reading schedule settings
+          return {
+            ...persistedState,
+            bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS
           };
         }
         return persistedState;
