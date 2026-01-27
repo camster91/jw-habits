@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Trophy, X, Sparkles } from 'lucide-react';
+import { Trophy, X, Star } from 'lucide-react';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
 
@@ -131,11 +131,11 @@ function AchievementPopup() {
         <div className="relative p-6 text-center">
           {/* Achievement unlocked label */}
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-white animate-pulse" />
+            <Star className="w-5 h-5 text-white animate-pulse" />
             <span className="text-white/90 font-semibold tracking-wide uppercase text-sm">
               Achievement Unlocked!
             </span>
-            <Sparkles className="w-5 h-5 text-white animate-pulse" />
+            <Star className="w-5 h-5 text-white animate-pulse" />
           </div>
 
           {/* Achievement icon */}

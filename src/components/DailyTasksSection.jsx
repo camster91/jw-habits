@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { BookOpen, Newspaper, Check, ExternalLink, ChevronRight, Sparkles, CheckCircle2, Flame, PenLine, Save, BookHeart } from 'lucide-react';
+import { BookOpen, Newspaper, Check, ExternalLink, ChevronRight, Star, CheckCircle2, Flame, PenLine, Save, BookHeart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useProgressStore from '../stores/progressStore';
 import useNewsStore from '../stores/newsStore';
@@ -109,7 +109,7 @@ function DailyTasksSection() {
       {/* Progress Overview */}
       {dailyTextDone && (
         <div className="flex items-center justify-center gap-2 p-4 bg-success/10 rounded-2xl text-success animate-fade-in-up">
-          <Sparkles className="w-5 h-5 animate-wiggle" />
+          <Star className="w-5 h-5 animate-wiggle" />
           <span className="font-medium">Daily Text complete!</span>
         </div>
       )}

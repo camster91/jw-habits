@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FolderKanban, Plus, Trash2, ChevronDown, ChevronRight, Sparkles, Lightbulb, Users, BookOpen, Mic } from 'lucide-react';
+import { FolderKanban, Plus, Trash2, ChevronDown, ChevronRight, Star, Lightbulb, Users, BookOpen, Mic } from 'lucide-react';
 import useGoalsStore from '../stores/goalsStore';
 import { haptics } from '../utils/native';
 
@@ -218,7 +218,7 @@ function ProjectsTab() {
         <div className="card bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200">
           <div className="card-body p-4">
             <h4 className="font-semibold text-purple-800 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
+              <Star className="w-4 h-4" />
               Project Ideas
             </h4>
             <div className="grid gap-2 mt-2">

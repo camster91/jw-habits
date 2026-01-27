@@ -221,8 +221,9 @@ export default defineConfig({
           }
         ],
 
-        // Navigation preload for faster navigation
-        navigationPreload: true
+        // Navigation preload disabled to prevent "preloadResponse" cancellation warnings
+        // when service worker activates and page reloads
+        navigationPreload: false
       },
 
       // Development options
