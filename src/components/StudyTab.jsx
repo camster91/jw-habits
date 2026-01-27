@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { getDayOfYear } from 'date-fns';
-import { GraduationCap, Book, ExternalLink, Video, FileText, Globe, Headphones, Search, ChevronRight, Sparkles, Clock, CheckCircle2, Check } from 'lucide-react';
+import { GraduationCap, Book, ExternalLink, Video, FileText, Globe, Headphones, Search, ChevronRight, Star, Clock, CheckCircle2, Check, Settings2, RotateCcw } from 'lucide-react';
 import { haptics } from '../utils/native';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
-import { getBibleReading, getChaptersList, getBibleChapterLink } from '../utils/bibleReadingSchedule';
+import useSettingsStore from '../stores/settingsStore';
+import BIBLE_READING_SCHEDULE, { getBibleReading, getChaptersList, getBibleChapterLink } from '../utils/bibleReadingSchedule';
 import FamilyWorshipCard from './FamilyWorshipCard';
 
 // Deeper study categories
@@ -208,7 +209,9 @@ const STUDY_IDEAS = [
 function StudyTab() {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [showIdeas, setShowIdeas] = useState(false);
-  const dayOfYear = getDayOfYear(new Date());
+  const [showReadingSettings, setShowReadingSettings] = useState(false);
+  const [selectedBook, setSelectedBook] = useState('');
+  const calendarDayOfYear = getDayOfYear(new Date());
 
   // Bible Reading state
   const {
@@ -219,12 +222,45 @@ function StudyTab() {
 
   const { recordBibleReading } = useGamificationStore();
 
-  const todayReading = getBibleReading(dayOfYear);
+  // Custom Bible reading schedule
+  const {
+    bibleReadingSchedule,
+    getEffectiveScheduleDay,
+    setBibleReadingStartDay,
+    resetBibleReadingSchedule,
+  } = useSettingsStore();
+
+  // Get effective schedule day (custom or default)
+  const effectiveScheduleDay = getEffectiveScheduleDay(calendarDayOfYear);
+
+  const todayReading = getBibleReading(effectiveScheduleDay);
   const chapters = getChaptersList(todayReading.chapters);
-  const chapterProgress = getBibleChapterProgress(dayOfYear);
+  const chapterProgress = getBibleChapterProgress(effectiveScheduleDay);
   const completedChapters = chapters.filter((_, i) => chapterProgress[i]);
   const bibleProgress = Math.round((completedChapters.length / chapters.length) * 100);
-  const isBibleComplete = isBibleReadingComplete(dayOfYear);
+  const isBibleComplete = isBibleReadingComplete(effectiveScheduleDay);
+
+  // Get unique books from schedule for the dropdown
+  const uniqueBooks = [...new Set(BIBLE_READING_SCHEDULE.filter(r => !r.isReview).map(r => r.book))];
+
+  // Get schedule entries for a selected book
+  const getBookScheduleEntries = (bookName) => {
+    return BIBLE_READING_SCHEDULE.filter(r => r.book === bookName && !r.isReview);
+  };
+
+  const handleSetCustomStart = (scheduleDay) => {
+    haptics.medium();
+    setBibleReadingStartDay(scheduleDay);
+    setShowReadingSettings(false);
+    setSelectedBook('');
+  };
+
+  const handleResetSchedule = () => {
+    haptics.medium();
+    resetBibleReadingSchedule();
+    setShowReadingSettings(false);
+    setSelectedBook('');
+  };
 
   const toggleCategory = (id) => {
     haptics.light();
@@ -237,7 +273,7 @@ function StudyTab() {
 
   const handleChapterToggle = (index) => {
     haptics.light();
-    toggleBibleChapter(dayOfYear, index);
+    toggleBibleChapter(effectiveScheduleDay, index);
 
     // Check if all chapters are now complete
     const newProgress = { ...chapterProgress, [index]: !chapterProgress[index] };
@@ -265,14 +301,97 @@ function StudyTab() {
             </div>
             <div className="flex-1">
               <h3 className="font-bold">Daily Bible Reading</h3>
-              <p className="text-sm text-base-content/50">Day {dayOfYear}</p>
+              <p className="text-sm text-base-content/50">Day {effectiveScheduleDay}{bibleReadingSchedule?.useCustomSchedule ? ' (Custom)' : ''}</p>
             </div>
-            {isBibleComplete ? (
-              <CheckCircle2 className="w-6 h-6 text-success" />
-            ) : (
-              <span className="text-lg font-bold text-secondary">{bibleProgress}%</span>
-            )}
+            <div className="flex items-center gap-2">
+              {isBibleComplete ? (
+                <CheckCircle2 className="w-6 h-6 text-success" />
+              ) : (
+                <span className="text-lg font-bold text-secondary">{bibleProgress}%</span>
+              )}
+              <button
+                onClick={() => {
+                  haptics.light();
+                  setShowReadingSettings(!showReadingSettings);
+                }}
+                className="btn btn-ghost btn-sm btn-square"
+                title="Customize reading schedule"
+              >
+                <Settings2 className="w-5 h-5 text-base-content/50" />
+              </button>
+            </div>
           </div>
+
+          {/* Bible Reading Settings Panel */}
+          {showReadingSettings && (
+            <div className="mx-4 mb-3 p-4 bg-base-200/70 rounded-xl border border-base-300">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-sm">Customize Starting Point</h4>
+                {bibleReadingSchedule?.useCustomSchedule && (
+                  <button
+                    onClick={handleResetSchedule}
+                    className="btn btn-ghost btn-xs gap-1 text-warning"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reset
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-base-content/60 mb-3">
+                Select a Bible book and chapter to start your reading schedule from today.
+              </p>
+
+              {/* Book Selector */}
+              <div className="form-control mb-3">
+                <label className="label py-1">
+                  <span className="label-text text-xs">Select Book</span>
+                </label>
+                <select
+                  className="select select-bordered select-sm w-full"
+                  value={selectedBook}
+                  onChange={(e) => setSelectedBook(e.target.value)}
+                >
+                  <option value="">Choose a Bible book...</option>
+                  {uniqueBooks.map((book) => (
+                    <option key={book} value={book}>{book}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Chapter/Day Selector - shows when book is selected */}
+              {selectedBook && (
+                <div className="form-control">
+                  <label className="label py-1">
+                    <span className="label-text text-xs">Select Reading to Start From</span>
+                  </label>
+                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                    {getBookScheduleEntries(selectedBook).map((entry) => (
+                      <button
+                        key={entry.day}
+                        onClick={() => handleSetCustomStart(entry.day)}
+                        className="flex items-center justify-between p-2 bg-base-100 rounded-lg hover:bg-primary/10 active:scale-[0.98] transition-all text-left"
+                      >
+                        <div>
+                          <span className="font-medium text-sm">{entry.book} {entry.chapters}</span>
+                          <span className="text-xs text-base-content/50 ml-2">(~{entry.time} min)</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-base-content/30" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {bibleReadingSchedule?.useCustomSchedule && (
+                <div className="mt-3 p-2 bg-success/10 rounded-lg text-xs text-success flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>
+                    Started from Day {bibleReadingSchedule.startingScheduleDay} on {new Date(bibleReadingSchedule.customStartDate).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Reading Info */}
           <div className="mt-3 p-3 bg-base-200/50 rounded-xl">
@@ -356,7 +475,7 @@ function StudyTab() {
           }}
           className="btn btn-ghost btn-sm gap-1"
         >
-          <Sparkles className="w-4 h-4" />
+          <Star className="w-4 h-4" />
           Ideas
         </button>
       </div>
@@ -366,7 +485,7 @@ function StudyTab() {
         <div className="card bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
           <div className="card-body p-4">
             <h4 className="font-semibold text-emerald-800 flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4" />
+              <Star className="w-4 h-4" />
               Study Project Ideas
             </h4>
             <ul className="space-y-2">
