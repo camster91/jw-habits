@@ -1,4 +1,4 @@
-import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import useProgressStore from '../stores/progressStore';
 import useSettingsStore from '../stores/settingsStore';
@@ -11,6 +11,17 @@ import {
   showNotification,
   initializeReminders
 } from '../utils/notifications';
+
+// Day names for weekly selector
+const DAYS_OF_WEEK = [
+  { value: 0, label: 'Sun', fullLabel: 'Sunday' },
+  { value: 1, label: 'Mon', fullLabel: 'Monday' },
+  { value: 2, label: 'Tue', fullLabel: 'Tuesday' },
+  { value: 3, label: 'Wed', fullLabel: 'Wednesday' },
+  { value: 4, label: 'Thu', fullLabel: 'Thursday' },
+  { value: 5, label: 'Fri', fullLabel: 'Friday' },
+  { value: 6, label: 'Sat', fullLabel: 'Saturday' },
+];
 
 // Notification item component
 function NotificationItem({ icon: Icon, label, description, enabled, time, onToggle, onTimeChange, color = 'text-primary' }) {
@@ -45,6 +56,110 @@ function NotificationItem({ icon: Icon, label, description, enabled, time, onTog
   );
 }
 
+// Weekly notification item with day selection
+function WeeklyNotificationItem({
+  icon: Icon,
+  label,
+  description,
+  enabled,
+  time,
+  dayOfWeek,
+  meetingDays,
+  onToggle,
+  onTimeChange,
+  onDayChange,
+  onMeetingDaysChange,
+  color = 'text-primary',
+  isMeetingPrep = false
+}) {
+  const selectedDayLabel = DAYS_OF_WEEK.find(d => d.value === dayOfWeek)?.fullLabel || 'Monday';
+
+  return (
+    <div className="py-3 border-b border-base-200 last:border-0">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className={`p-2 rounded-lg bg-base-200 ${color}`}>
+            <Icon className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm">{label}</p>
+            <p className="text-xs text-base-content/60 truncate">{description}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {time !== undefined && enabled && (
+            <input
+              type="time"
+              className="input input-xs input-bordered w-24"
+              value={time}
+              onChange={(e) => onTimeChange(e.target.value)}
+            />
+          )}
+          <input
+            type="checkbox"
+            className="toggle toggle-primary toggle-sm"
+            checked={enabled}
+            onChange={onToggle}
+          />
+        </div>
+      </div>
+
+      {/* Day selection - shown when enabled */}
+      {enabled && (
+        <div className="mt-3 ml-11">
+          {isMeetingPrep ? (
+            // Meeting days multi-select
+            <div>
+              <p className="text-xs text-base-content/60 mb-2">Remind day before these meetings:</p>
+              <div className="flex flex-wrap gap-1">
+                {DAYS_OF_WEEK.map((day) => (
+                  <button
+                    key={day.value}
+                    onClick={() => {
+                      const currentDays = meetingDays || [];
+                      const newDays = currentDays.includes(day.value)
+                        ? currentDays.filter(d => d !== day.value)
+                        : [...currentDays, day.value].sort((a, b) => a - b);
+                      onMeetingDaysChange(newDays);
+                    }}
+                    className={`btn btn-xs ${
+                      (meetingDays || []).includes(day.value)
+                        ? 'btn-primary'
+                        : 'btn-ghost btn-outline'
+                    }`}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Single day select
+            <div>
+              <p className="text-xs text-base-content/60 mb-2">Remind every:</p>
+              <div className="flex flex-wrap gap-1">
+                {DAYS_OF_WEEK.map((day) => (
+                  <button
+                    key={day.value}
+                    onClick={() => onDayChange(day.value)}
+                    className={`btn btn-xs ${
+                      dayOfWeek === day.value
+                        ? 'btn-primary'
+                        : 'btn-ghost btn-outline'
+                    }`}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Settings() {
   const toast = useToast();
   const { clearAll } = useProgressStore();
@@ -55,6 +170,7 @@ function Settings() {
     setNotificationsEnabled,
     toggleNotification,
     setNotificationTime,
+    updateNotification,
     setTheme,
   } = useSettingsStore();
 
@@ -111,10 +227,53 @@ function Settings() {
     setNotificationTime(key, time);
   };
 
+  const handleSetDayOfWeek = (key, dayOfWeek) => {
+    haptics.light();
+    updateNotification(key, { dayOfWeek });
+  };
+
+  const handleSetMeetingDays = (key, meetingDays) => {
+    haptics.light();
+    updateNotification(key, { meetingDays });
+  };
+
   const handleClearData = () => {
     if (confirm('Are you sure you want to clear all progress data? This cannot be undone.')) {
       clearAll();
       toast.success('All data has been cleared successfully.');
+    }
+  };
+
+  const handleUpdateApp = async () => {
+    haptics.light();
+    toast.info('Checking for updates...');
+
+    try {
+      // Clear service worker caches (but not localStorage)
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+      }
+
+      // Unregister service workers to force refresh
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(
+          registrations.map(registration => registration.unregister())
+        );
+      }
+
+      toast.success('Cache cleared! Reloading to get latest version...');
+
+      // Reload the page after a short delay
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 1500);
+    } catch (error) {
+      console.error('Error updating app:', error);
+      toast.error('Failed to update. Try refreshing the page manually.');
     }
   };
 
@@ -336,26 +495,31 @@ function Settings() {
                         <div className="bg-base-200/30 rounded-xl p-3">
                           <p className="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Weekly Reminders</p>
 
-                          <NotificationItem
+                          <WeeklyNotificationItem
                             icon={Users}
                             label="Family Worship"
                             description="Weekly reminder"
                             enabled={notifications?.familyWorship?.enabled ?? true}
                             time={notifications?.familyWorship?.time ?? '19:00'}
+                            dayOfWeek={notifications?.familyWorship?.dayOfWeek ?? 1}
                             onToggle={() => handleToggleNotification('familyWorship')}
                             onTimeChange={(time) => handleSetNotificationTime('familyWorship', time)}
+                            onDayChange={(day) => handleSetDayOfWeek('familyWorship', day)}
                             color="text-purple-500"
                           />
 
-                          <NotificationItem
+                          <WeeklyNotificationItem
                             icon={Calendar}
                             label="Meeting Preparation"
                             description="Day before meeting"
                             enabled={notifications?.meetingPrep?.enabled ?? true}
                             time={notifications?.meetingPrep?.time ?? '19:00'}
+                            meetingDays={notifications?.meetingPrep?.meetingDays ?? [0, 4]}
                             onToggle={() => handleToggleNotification('meetingPrep')}
                             onTimeChange={(time) => handleSetNotificationTime('meetingPrep', time)}
+                            onMeetingDaysChange={(days) => handleSetMeetingDays('meetingPrep', days)}
                             color="text-green-500"
+                            isMeetingPrep={true}
                           />
                         </div>
 
@@ -450,6 +614,31 @@ function Settings() {
               >
                 <Trash2 className="w-5 h-5" />
                 Clear All Data
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* App Updates */}
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title text-lg">
+              <RefreshCw className="w-5 h-5" />
+              App Updates
+            </h2>
+
+            <div className="divider my-2"></div>
+
+            <div className="space-y-3">
+              <p className="text-sm text-base-content/70">
+                Check for app updates and refresh the cache. Your progress data will be preserved.
+              </p>
+              <button
+                onClick={handleUpdateApp}
+                className="btn btn-primary w-full justify-start"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Check for Updates
               </button>
             </div>
           </div>
