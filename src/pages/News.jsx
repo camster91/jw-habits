@@ -73,22 +73,32 @@ function News() {
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       {/* Header */}
-      <div className="bg-primary text-primary-content p-6 shadow-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">What's New</h1>
-            <p className="text-sm opacity-90 mt-1">Latest from JW.org</p>
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="btn btn-circle btn-ghost"
-            aria-label="Refresh news feed"
-          >
-            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+      <header
+        className="relative bg-gradient-to-br from-primary via-primary to-blue-700 text-primary-content shadow-lg"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        {/* Decorative blurs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-300/10 rounded-full blur-3xl" />
         </div>
-      </div>
+        <div className="relative p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">What's New</h1>
+              <p className="text-sm opacity-90 mt-1">Latest from JW.org</p>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="btn btn-circle btn-ghost"
+              aria-label="Refresh news feed"
+            >
+              <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+      </header>
 
       {/* Filter Tabs */}
       <div className="bg-base-100 border-b sticky top-0 z-10">

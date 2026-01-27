@@ -5,6 +5,51 @@ import App from './App.jsx';
 import { logWebVitals } from './utils/webVitals.js';
 import { initializeNative, isNative, appLifecycle } from './utils/native.js';
 
+// Global error logging function
+function logGlobalError(type, message, source, error) {
+  const errorLog = {
+    timestamp: new Date().toISOString(),
+    type,
+    message: message || 'Unknown error',
+    source: source || 'unknown',
+    stack: error?.stack || '',
+    userAgent: navigator.userAgent,
+    url: window.location.href,
+  };
+
+  try {
+    const existingLogs = JSON.parse(localStorage.getItem('jw-error-logs') || '[]');
+    existingLogs.push(errorLog);
+    // Keep only the last 20 errors
+    const recentLogs = existingLogs.slice(-20);
+    localStorage.setItem('jw-error-logs', JSON.stringify(recentLogs));
+  } catch {
+    // Ignore storage errors
+  }
+
+  // Log to console in development
+  if (import.meta.env.DEV) {
+    console.error(`[${type}]`, message, error);
+  }
+}
+
+// Global error handler for uncaught exceptions
+window.onerror = function(message, source, lineno, colno, error) {
+  logGlobalError('uncaught_exception', message, `${source}:${lineno}:${colno}`, error);
+  return false; // Let the error propagate
+};
+
+// Global handler for unhandled promise rejections
+window.onunhandledrejection = function(event) {
+  const error = event.reason;
+  logGlobalError(
+    'unhandled_rejection',
+    error?.message || String(error),
+    'Promise',
+    error
+  );
+};
+
 // Initialize native mobile features
 initializeNative().catch(console.error);
 

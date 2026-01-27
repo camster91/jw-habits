@@ -344,10 +344,20 @@ function Settings() {
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       {/* Header */}
-      <div className="bg-primary text-primary-content p-6 shadow-lg">
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm opacity-90 mt-1">Customize your experience</p>
-      </div>
+      <header
+        className="relative bg-gradient-to-br from-primary via-primary to-blue-700 text-primary-content shadow-lg"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        {/* Decorative blurs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-300/10 rounded-full blur-3xl" />
+        </div>
+        <div className="relative p-6">
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="text-sm opacity-90 mt-1">Customize your experience</p>
+        </div>
+      </header>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
