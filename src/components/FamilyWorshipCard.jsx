@@ -41,7 +41,7 @@ function FamilyWorshipCard() {
     getFamilyWorshipStreak
   } = useProgressStore();
 
-  const { addPoints } = useGamificationStore();
+  const { recordFamilyWorshipCompletion } = useGamificationStore();
 
   const worship = getFamilyWorship(weekKey);
   const worshipStreak = getFamilyWorshipStreak();
@@ -58,7 +58,7 @@ function FamilyWorshipCard() {
 
     if (!worship.completed) {
       haptics.success();
-      addPoints(25); // Family worship is valuable!
+      recordFamilyWorshipCompletion();
     }
   };
 
@@ -121,9 +121,9 @@ function FamilyWorshipCard() {
           </p>
         </div>
         {worshipStreak > 0 && (
-          <div className="badge badge-secondary gap-1 mr-2">
-            <Flame className="w-3 h-3" />
-            {worshipStreak}w
+          <div className="badge badge-warning gap-1 mr-2">
+            <Flame className="w-3 h-3 animate-flame" />
+            {worshipStreak} week{worshipStreak !== 1 ? 's' : ''}
           </div>
         )}
         {worship.completed ? (

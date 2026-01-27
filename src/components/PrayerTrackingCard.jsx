@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { Sun, CloudSun, Moon, Check, Heart, Sparkles } from 'lucide-react';
+import { Sun, CloudSun, Moon, Check, Heart, Flame } from 'lucide-react';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
@@ -41,7 +41,7 @@ function PrayerTrackingCard() {
     getPrayerStreak
   } = useProgressStore();
 
-  const { addPoints } = useGamificationStore();
+  const { recordPrayerCompletion } = useGamificationStore();
 
   const prayers = getPrayerProgress(today);
   const allComplete = getAllPrayersComplete(today);
@@ -53,18 +53,17 @@ function PrayerTrackingCard() {
     const newValue = !prayers[prayerId];
     updatePrayerProgress(today, prayerId, newValue);
 
-    // Award points for prayer
+    // Record to gamification store
     if (newValue) {
-      addPoints(5);
-    }
+      const newPrayers = { ...prayers, [prayerId]: newValue };
+      const allDone = newPrayers.morning && newPrayers.afternoon && newPrayers.evening;
+      recordPrayerCompletion(allDone);
 
-    // Check if all prayers are now complete
-    const newPrayers = { ...prayers, [prayerId]: newValue };
-    if (newPrayers.morning && newPrayers.afternoon && newPrayers.evening) {
-      setTimeout(() => {
-        haptics.success();
-        addPoints(10); // Bonus for completing all prayers
-      }, 100);
+      if (allDone) {
+        setTimeout(() => {
+          haptics.success();
+        }, 100);
+      }
     }
   };
 
@@ -82,9 +81,9 @@ function PrayerTrackingCard() {
           </p>
         </div>
         {prayerStreak > 0 && (
-          <div className="badge badge-primary gap-1">
-            <Sparkles className="w-3 h-3" />
-            {prayerStreak} day streak
+          <div className="badge badge-warning gap-1 animate-pulse">
+            <Flame className="w-3 h-3 animate-flame" />
+            {prayerStreak} day{prayerStreak !== 1 ? 's' : ''}
           </div>
         )}
       </div>
