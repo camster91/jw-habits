@@ -49,6 +49,7 @@ const DEFAULT_NOTIFICATIONS = {
   meetingPrep: {
     enabled: true,
     daysBefore: 1, // Remind 1 day before meeting
+    meetingDays: [0, 4], // Sunday and Thursday (common meeting days)
     time: '19:00',
     label: 'Meeting Preparation'
   },
