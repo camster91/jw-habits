@@ -102,9 +102,20 @@ function parseRSSFeed(xml) {
     const type = getType(category, title, link);
     const filterCategory = getFilterCategory(type);
 
+    // Generate stable ID from URL
+    const generateStableId = (url) => {
+      let hash = 0;
+      for (let i = 0; i < url.length; i++) {
+        const char = url.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+      }
+      return `item-${Math.abs(hash)}`;
+    };
+
     if (title && link) {
       items.push({
-        id: `rss-${index}-${Date.now()}`,
+        id: generateStableId(link),
         title,
         url: link,
         description,

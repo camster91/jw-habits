@@ -9,6 +9,18 @@ const RSS_FEED_URL = 'https://camster91.github.io/JW-Newsfeed/jw_feed.xml';
 // API endpoint for fallback
 const getApiUrl = () => '/api/news';
 
+// Generate stable ID from URL
+const generateStableId = (url) => {
+  // Create a simple hash from the URL for a stable ID
+  let hash = 0;
+  for (let i = 0; i < url.length; i++) {
+    const char = url.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return `item-${Math.abs(hash)}`;
+};
+
 // Parse RSS XML to items
 const parseRSSFeed = (xmlText) => {
   const parser = new DOMParser();
@@ -60,7 +72,7 @@ const parseRSSFeed = (xmlText) => {
     }
 
     return {
-      id: `rss-${index}-${Date.now()}`,
+      id: generateStableId(link),
       type: filterCategory === 'videos' ? 'video' : 'news_release',
       filterCategory,
       category: category.toUpperCase(),
@@ -249,10 +261,15 @@ const useNewsStore = create(
 
       setRssFeedUrl: (url) => set({ rssFeedUrl: url, lastFetched: null }),
 
-      markAsRead: (itemId) =>
-        set((state) => ({
-          readItems: { ...state.readItems, [itemId]: true },
-        })),
+      markAsRead: (itemId, itemUrl = null) =>
+        set((state) => {
+          const updates = { [itemId]: true };
+          // Also track by URL hash as backup
+          if (itemUrl) {
+            updates[generateStableId(itemUrl)] = true;
+          }
+          return { readItems: { ...state.readItems, ...updates } };
+        }),
 
       markAllAsRead: () =>
         set((state) => ({
@@ -417,12 +434,23 @@ const useNewsStore = create(
     }),
     {
       name: 'jw-news-storage',
-      version: 6, // Added saved items feature
+      version: 7, // Stable IDs for persistent read tracking
       partialize: (state) => ({
-        // Don't persist items - always fetch fresh from API
+        // Persist read status and saved items
         readItems: state.readItems,
         savedItems: state.savedItems,
       }),
+      migrate: (persistedState, version) => {
+        // Migration from old versions - keep existing data
+        if (version < 7) {
+          return {
+            ...persistedState,
+            readItems: persistedState.readItems || {},
+            savedItems: persistedState.savedItems || {},
+          };
+        }
+        return persistedState;
+      },
     }
   )
 );
