@@ -100,7 +100,7 @@ function Stats() {
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-4 gap-2 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
-            <p className="text-2xl font-bold text-primary">{stats.currentStreak}</p>
+            <p className="text-2xl font-bold text-primary">{dailyTextStreak}</p>
             <p className="text-xs text-base-content/60">Streak</p>
           </div>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
@@ -247,11 +247,11 @@ function Stats() {
                 ></progress>
               </div>
 
-              {stats.longestStreak > 0 && (
+              {Math.max(dailyTextStreak, bibleReadingStreak, prayerStreak) > 0 && (
                 <div className="flex items-center justify-center gap-2 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl animate-pulse">
                   <Trophy className="w-5 h-5 text-amber-600" />
                   <span className="font-medium text-amber-800 dark:text-amber-200">
-                    Longest Streak: {stats.longestStreak} days
+                    Best Current Streak: {Math.max(dailyTextStreak, bibleReadingStreak, prayerStreak)} days
                   </span>
                 </div>
               )}

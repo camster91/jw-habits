@@ -23,7 +23,10 @@ function DailyTasksSection() {
     isDailyTextRead,
     getDailyTextProgress,
     updateDailyTextProgress,
+    getDailyTextStreak,
   } = useProgressStore();
+
+  const dailyTextStreak = getDailyTextStreak();
 
   const dailyTextProgress = getDailyTextProgress(today);
   const isDailyTextComplete = isDailyTextRead(today);
@@ -39,7 +42,7 @@ function DailyTasksSection() {
   const reflectionCount = getReflectionCount();
 
   // Gamification state
-  const { currentStreak, recordDailyTextCompletion, recordReflection, recordNewsRead } = useGamificationStore();
+  const { recordDailyTextCompletion, recordReflection, recordNewsRead } = useGamificationStore();
 
   // Load existing reflection on mount
   const existingReflection = getReflection(today);
@@ -98,10 +101,10 @@ function DailyTasksSection() {
   return (
     <div className="space-y-3">
       {/* Streak Banner */}
-      {currentStreak > 0 && (
+      {dailyTextStreak > 0 && (
         <div className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl text-white shadow-lg animate-fade-in-up">
           <Flame className="w-5 h-5 animate-flame" />
-          <span className="font-bold">{currentStreak} Day Streak!</span>
+          <span className="font-bold">{dailyTextStreak} Day Streak!</span>
           <Flame className="w-5 h-5 animate-flame" />
         </div>
       )}
