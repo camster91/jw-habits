@@ -148,6 +148,22 @@ export default defineConfig({
               }
             }
           },
+          // Cache GitHub Pages feed (JW-Newsfeed) with NetworkFirst
+          {
+            urlPattern: /^https:\/\/.*\.github\.io\/.*\.(xml|rss)(\?.*)?$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'github-feed-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 // 1 hour
+              },
+              networkTimeoutSeconds: 10,
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
           // Cache images with CacheFirst (use cached version, update in background)
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,

@@ -35,10 +35,15 @@ const parseRSSFeed = (xmlText) => {
 
     // Try to get image from various RSS formats
     const getImage = () => {
-      // media:thumbnail or media:content
-      const mediaThumbnail = item.querySelector('thumbnail, content');
-      if (mediaThumbnail?.getAttribute('url')) {
-        return mediaThumbnail.getAttribute('url');
+      // media:thumbnail or media:content (namespace-aware search)
+      // querySelector doesn't match namespace-prefixed elements like ns1:thumbnail,
+      // so we search all elements for those with a 'url' attribute and matching local name
+      const allElements = item.getElementsByTagName('*');
+      for (const el of allElements) {
+        const localName = el.localName || el.nodeName.split(':').pop();
+        if ((localName === 'thumbnail' || localName === 'content') && el.getAttribute('url')) {
+          return el.getAttribute('url');
+        }
       }
       // enclosure
       const enclosure = item.querySelector('enclosure');
@@ -344,8 +349,16 @@ const useNewsStore = create(
         // Try RSS feed if configured
         if (state.rssFeedUrl) {
           try {
-            const response = await fetch(state.rssFeedUrl, {
+            // Append cache-buster to bypass CDN/browser HTTP caching
+            const feedUrl = new URL(state.rssFeedUrl);
+            feedUrl.searchParams.set('_t', Date.now());
+
+            const response = await fetch(feedUrl.toString(), {
               signal: AbortSignal.timeout(10000),
+              cache: 'no-store',
+              headers: {
+                'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+              },
             });
 
             if (response.ok) {
@@ -389,12 +402,15 @@ const useNewsStore = create(
           // API not available - use fallback
         }
 
-        // Fallback to curated content
+        // Fallback to curated content - show warning so user knows live feed failed
+        const hasPreviousItems = state.items.length > 0 &&
+          !state.items.every(item => getCuratedItems().some(c => c.id === item.id));
+
         set({
-          items: getCuratedItems(),
-          lastFetched: Date.now(),
+          items: hasPreviousItems ? state.items : getCuratedItems(),
+          lastFetched: hasPreviousItems ? state.lastFetched : Date.now(),
           isLoading: false,
-          error: null,
+          error: 'Could not reach the news feed. Showing cached or default content.',
         });
       },
 
