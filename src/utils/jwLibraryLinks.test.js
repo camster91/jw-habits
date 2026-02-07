@@ -39,7 +39,7 @@ describe('jwLibraryLinks', () => {
       const expectedSections = [
         'home', 'news', 'whatsNew', 'library', 'magazines',
         'watchtowerStudy', 'awake', 'videos', 'broadcasting',
-        'music', 'meetingWorkbooks', 'bibleOnline', 'bibleTeachings', 'aboutUs'
+        'music', 'meetingWorkbooks', 'bibles', 'bibleTeachings', 'aboutUs'
       ];
       expectedSections.forEach(section => {
         expect(JW_ORG_SECTIONS[section]).toBeDefined();

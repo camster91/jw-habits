@@ -106,13 +106,13 @@ describe('settingsStore', () => {
 
       const settings = useSettingsStore.getState().getSettings();
 
-      expect(settings).toEqual({
-        notificationsEnabled: true,
-        dailyTextReminderTime: '09:00',
-        bibleReadingReminderTime: '20:00',
-        meetingReminderEnabled: true,
-        theme: 'dark',
-      });
+      expect(settings.notificationsEnabled).toBe(true);
+      expect(settings.dailyTextReminderTime).toBe('09:00');
+      expect(settings.bibleReadingReminderTime).toBe('20:00');
+      expect(settings.meetingReminderEnabled).toBe(true);
+      expect(settings.theme).toBe('dark');
+      expect(settings.notifications).toBeDefined();
+      expect(settings.bibleReadingSchedule).toBeDefined();
     });
   });
 });

@@ -21,6 +21,37 @@ const generateStableId = (url) => {
   return `item-${Math.abs(hash)}`;
 };
 
+// Classify item type from category, title, and URL
+const getItemType = (category, title, url) => {
+  const combined = `${category} ${title}`.toUpperCase();
+  const urlLower = (url || '').toLowerCase();
+
+  // Check URL patterns for actual videos
+  const isVideoUrl = urlLower.includes('/videos/') ||
+                     urlLower.includes('mediaitems') ||
+                     urlLower.includes('/video/');
+
+  // Exclude articles that mention "video" but aren't videos
+  const isVideoArticle = combined.includes('VIDEO REFERENCE') ||
+                         combined.includes('VIDEO GUIDE');
+
+  if (isVideoUrl || (category.toUpperCase().includes('VIDEO') && !isVideoArticle)) {
+    return 'video';
+  }
+  if (combined.includes('BROADCAST') && !isVideoArticle) {
+    return 'video';
+  }
+  if (combined.includes('WATCHTOWER') || combined.includes('AWAKE') ||
+      combined.includes('WORKBOOK') || combined.includes('MAGAZINE') ||
+      urlLower.includes('/magazines/')) {
+    return 'magazine';
+  }
+  if (combined.includes('LIFE STOR')) {
+    return 'life_story';
+  }
+  return 'news_release';
+};
+
 // Parse RSS XML to items
 const parseRSSFeed = (xmlText) => {
   const parser = new DOMParser();
@@ -61,19 +92,13 @@ const parseRSSFeed = (xmlText) => {
     const pubDate = getElementText('pubDate');
     const category = getElementText('category') || 'NEWS';
 
-    // Determine filter category based on content
-    let filterCategory = 'articles';
-    const lowerTitle = title.toLowerCase();
-    const lowerCategory = category.toLowerCase();
-    if (lowerCategory.includes('video') || lowerTitle.includes('video')) {
-      filterCategory = 'videos';
-    } else if (lowerCategory.includes('magazine') || lowerTitle.includes('watchtower') || lowerTitle.includes('awake')) {
-      filterCategory = 'magazines';
-    }
+    // Determine type and filter category using URL, title, and category
+    const type = getItemType(category, title, link);
+    const filterCategory = type === 'video' ? 'videos' : type === 'magazine' ? 'magazines' : 'articles';
 
     return {
       id: generateStableId(link),
-      type: filterCategory === 'videos' ? 'video' : 'news_release',
+      type,
       filterCategory,
       category: category.toUpperCase(),
       title,
@@ -81,9 +106,12 @@ const parseRSSFeed = (xmlText) => {
       thumbnail: getImage(),
       url: link,
       jwLibraryUrl: link,
-      isVideo: filterCategory === 'videos',
+      isVideo: type === 'video',
       pubDate,
     };
+  }).filter((item) => {
+    // Filter out meta/self-referential items
+    return item.url !== 'https://www.jw.org/en/whats-new/' && item.title !== 'See What\'s New';
   });
 };
 
@@ -325,7 +353,7 @@ const useNewsStore = create(
         return Object.keys(state.savedItems).length;
       },
 
-      // Fetch news - tries RSS feed first, then API, then fallback
+      // Fetch news - tries API first (accurate dates/content), then RSS feed, then fallback
       fetchNews: async (forceRefresh = false) => {
         const state = get();
 
@@ -341,7 +369,29 @@ const useNewsStore = create(
 
         set({ isLoading: true, error: null });
 
-        // Try RSS feed if configured
+        // Try API endpoint first (fetches directly from jw.org RSS with correct dates)
+        try {
+          const response = await fetch(getApiUrl(), {
+            signal: AbortSignal.timeout(10000),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.items && data.items.length > 0) {
+              set({
+                items: data.items,
+                lastFetched: Date.now(),
+                isLoading: false,
+                error: null,
+              });
+              return;
+            }
+          }
+        } catch {
+          // API not available - try RSS feed
+        }
+
+        // Fallback to GitHub-hosted RSS feed
         if (state.rssFeedUrl) {
           try {
             const response = await fetch(state.rssFeedUrl, {
@@ -365,28 +415,6 @@ const useNewsStore = create(
           } catch (err) {
             console.warn('RSS feed fetch failed:', err);
           }
-        }
-
-        // Try API endpoint
-        try {
-          const response = await fetch(getApiUrl(), {
-            signal: AbortSignal.timeout(10000),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.items && data.items.length > 0) {
-              set({
-                items: data.items,
-                lastFetched: Date.now(),
-                isLoading: false,
-                error: null,
-              });
-              return;
-            }
-          }
-        } catch {
-          // API not available - use fallback
         }
 
         // Fallback to curated content

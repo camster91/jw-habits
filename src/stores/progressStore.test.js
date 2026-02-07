@@ -44,7 +44,8 @@ describe('progressStore', () => {
 
       const state = useProgressStore.getState();
       expect(state.dailyTexts[testDate].readScripture).toBe(true);
-      expect(state.dailyTexts[testDate].progress).toBe(33);
+      // Single checkbox model: readScripture = true means 100% progress
+      expect(state.dailyTexts[testDate].progress).toBe(100);
     });
 
     it('should calculate 100% progress when all fields completed', () => {
@@ -84,8 +85,8 @@ describe('progressStore', () => {
 
       const progress = useProgressStore.getState().getDailyTextProgress(testDate);
       expect(progress.readScripture).toBe(true);
-      expect(progress.readComments).toBe(false);
-      expect(progress.meditated).toBe(false);
+      // Single checkbox model: only readScripture field exists
+      expect(progress.progress).toBe(100);
     });
   });
 
