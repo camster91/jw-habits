@@ -1,4 +1,4 @@
-import { Play, BookOpen, Newspaper, Video, ExternalLink, CheckCircle2, Bookmark } from 'lucide-react';
+import { Play, BookOpen, Newspaper, Video, ExternalLink, CheckCircle2, Bookmark, Calendar } from 'lucide-react';
 import useNewsStore from '../stores/newsStore';
 import { haptics } from '../utils/native';
 
@@ -31,6 +31,24 @@ function CategoryIcon({ type, className }) {
       return <Newspaper className={className} />;
   }
 }
+
+// Format publication date for display
+const formatDate = (dateStr) => {
+  if (!dateStr) return null;
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return null;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return null;
+  }
+};
+
+// Clean title by removing redundant category prefix (e.g. "NEWS RELEASES | Title" → "Title")
+const cleanTitle = (title) => {
+  if (!title) return '';
+  return title.replace(/^[A-Z\s!''—]+\s*\|\s*/, '');
+};
 
 function NewsCard({ item, compact = false }) {
   const { markAsRead, isItemRead, toggleSaveItem, isItemSaved } = useNewsStore();
@@ -67,7 +85,7 @@ function NewsCard({ item, compact = false }) {
             <CategoryIcon type={item.type} className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
           )}
           <span className={`text-sm flex-1 truncate ${isRead ? 'text-base-content/50' : ''}`}>
-            {item.title}
+            {cleanTitle(item.title)}
           </span>
         </button>
         {isRead && (
@@ -156,12 +174,20 @@ function NewsCard({ item, compact = false }) {
 
             {/* Title */}
             <h3 className={`font-semibold text-sm leading-snug line-clamp-2 ${isRead ? 'text-base-content/60' : ''}`}>
-              {item.title}
+              {cleanTitle(item.title)}
             </h3>
 
             {/* Description */}
             {item.description && (
               <p className="text-xs text-base-content/50 mt-1 line-clamp-2">{item.description}</p>
+            )}
+
+            {/* Publication Date */}
+            {item.pubDate && formatDate(item.pubDate) && (
+              <div className="flex items-center gap-1 mt-1.5 text-xs text-base-content/40">
+                <Calendar className="w-3 h-3" />
+                <span>{formatDate(item.pubDate)}</span>
+              </div>
             )}
           </div>
         </div>
