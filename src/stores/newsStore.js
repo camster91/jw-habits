@@ -89,6 +89,11 @@ const parseRSSFeed = (xmlText) => {
       isVideo: filterCategory === 'videos',
       pubDate,
     };
+  }).sort((a, b) => {
+    // Sort by publication date, newest first
+    const dateA = a.pubDate ? new Date(a.pubDate) : new Date(0);
+    const dateB = b.pubDate ? new Date(b.pubDate) : new Date(0);
+    return dateB - dateA;
   });
 };
 

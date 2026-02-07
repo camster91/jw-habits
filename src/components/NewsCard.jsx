@@ -1,4 +1,4 @@
-import { Play, BookOpen, Newspaper, Video, ExternalLink, CheckCircle2, Bookmark } from 'lucide-react';
+import { Play, BookOpen, Newspaper, Video, ExternalLink, CheckCircle2, Bookmark, Calendar } from 'lucide-react';
 import useNewsStore from '../stores/newsStore';
 import { haptics } from '../utils/native';
 
@@ -32,10 +32,26 @@ function CategoryIcon({ type, className }) {
   }
 }
 
+// Format publication date relative to now
+const formatPubDate = (dateStr) => {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date)) return null;
+  const now = new Date();
+  const diffMs = now - date;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
 function NewsCard({ item, compact = false }) {
   const { markAsRead, isItemRead, toggleSaveItem, isItemSaved } = useNewsStore();
   const isRead = isItemRead(item.id);
   const isSaved = isItemSaved(item.id);
+  const dateLabel = formatPubDate(item.pubDate);
 
   const handleClick = () => {
     haptics.light();
@@ -70,6 +86,9 @@ function NewsCard({ item, compact = false }) {
             {item.title}
           </span>
         </button>
+        {dateLabel && (
+          <span className="text-xs text-base-content/40 flex-shrink-0">{dateLabel}</span>
+        )}
         {isRead && (
           <span className="text-xs text-success/70 flex-shrink-0">Read</span>
         )}
@@ -137,6 +156,12 @@ function NewsCard({ item, compact = false }) {
               <span className={`badge badge-sm ${getCategoryColor(item.type)}`}>
                 {item.category}
               </span>
+              {dateLabel && (
+                <span className="text-xs text-base-content/40 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {dateLabel}
+                </span>
+              )}
               <div className="flex items-center gap-1 ml-auto">
                 {isRead && (
                   <span className="badge badge-sm badge-success gap-1">
