@@ -1,4 +1,4 @@
-import { Home, BarChart3, Settings, Link2, Newspaper } from 'lucide-react';
+import { Home, Newspaper, Calendar, Target, FolderKanban } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useNewsStore from '../stores/newsStore';
 import { haptics } from '../utils/native';
@@ -6,14 +6,14 @@ import { haptics } from '../utils/native';
 function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const unreadCount = useNewsStore((state) => state.getUnreadCount());
+  const unreadCount = useNewsStore((state) => state.getTotalUnreadCount());
 
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
     { path: '/news', icon: Newspaper, label: 'News', badge: unreadCount },
-    { path: '/stats', icon: BarChart3, label: 'Stats' },
-    { path: '/links', icon: Link2, label: 'Links' },
-    { path: '/settings', icon: Settings, label: 'Settings' },
+    { path: '/meeting', icon: Calendar, label: 'Meeting' },
+    { path: '/goals', icon: Target, label: 'Goals' },
+    { path: '/projects', icon: FolderKanban, label: 'Projects' },
   ];
 
   const handleNavClick = (path) => {

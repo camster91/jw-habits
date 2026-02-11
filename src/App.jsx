@@ -8,6 +8,7 @@ import InstallPrompt from './components/InstallPrompt';
 import UpdatePrompt from './components/UpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import AchievementPopup from './components/AchievementPopup';
+import SideDrawer from './components/SideDrawer';
 
 // Lazy load non-critical pages for better initial load performance
 const Stats = lazy(() => import('./pages/Stats'));
@@ -15,6 +16,9 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Links = lazy(() => import('./pages/Links'));
 const News = lazy(() => import('./pages/News'));
 const Memories = lazy(() => import('./pages/Memories'));
+const Meeting = lazy(() => import('./pages/Meeting'));
+const Goals = lazy(() => import('./pages/Goals'));
+const Projects = lazy(() => import('./pages/Projects'));
 
 // Loading fallback component
 function PageLoader() {
@@ -30,29 +34,34 @@ function App() {
     <ErrorBoundary>
       <ToastProvider>
         <Router>
-          <div className="app">
-            {/* PWA Components */}
-            <OfflineIndicator />
-            <UpdatePrompt />
+          <SideDrawer>
+            <div className="app">
+              {/* PWA Components */}
+              <OfflineIndicator />
+              <UpdatePrompt />
 
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/news" element={<News />} />
-                <Route path="/stats" element={<Stats />} />
-                <Route path="/links" element={<Links />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/memories" element={<Memories />} />
-              </Routes>
-            </Suspense>
-            <BottomNav />
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/news" element={<News />} />
+                  <Route path="/meeting" element={<Meeting />} />
+                  <Route path="/goals" element={<Goals />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/stats" element={<Stats />} />
+                  <Route path="/links" element={<Links />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/memories" element={<Memories />} />
+                </Routes>
+              </Suspense>
+              <BottomNav />
 
-            {/* Install Prompt (shown at bottom) */}
-            <InstallPrompt />
+              {/* Install Prompt (shown at bottom) */}
+              <InstallPrompt />
 
-            {/* Achievement Popup */}
-            <AchievementPopup />
-          </div>
+              {/* Achievement Popup */}
+              <AchievementPopup />
+            </div>
+          </SideDrawer>
         </Router>
       </ToastProvider>
     </ErrorBoundary>

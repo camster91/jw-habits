@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
-// RSS Feed URL - JW-Newsfeed GitHub Pages
+// RSS Feed URL - JW-Newsfeed GitHub Pages (contains both articles and videos)
 const RSS_FEED_URL = 'https://camster91.github.io/JW-Newsfeed/jw_feed.xml';
 
 // API endpoint for fallback
@@ -29,7 +29,8 @@ const getItemType = (category, title, url) => {
   // Check URL patterns for actual videos
   const isVideoUrl = urlLower.includes('/videos/') ||
                      urlLower.includes('mediaitems') ||
-                     urlLower.includes('/video/');
+                     urlLower.includes('/video/') ||
+                     urlLower.includes('_video');
 
   // Exclude articles that mention "video" but aren't videos
   const isVideoArticle = combined.includes('VIDEO REFERENCE') ||
@@ -113,6 +114,13 @@ const parseRSSFeed = (xmlText) => {
     // Filter out meta/self-referential items
     return item.url !== 'https://www.jw.org/en/whats-new/' && item.title !== 'See What\'s New';
   });
+};
+
+// Split fetched items into articles and videos
+const splitItems = (allItems) => {
+  const newsItems = allItems.filter((item) => item.type !== 'video');
+  const videoItems = allItems.filter((item) => item.type === 'video');
+  return { newsItems, videoItems };
 };
 
 // Curated JW.org content - reliable fallback that always works
@@ -268,23 +276,30 @@ const getCuratedItems = () => {
 const useNewsStore = create(
   persist(
     (set, get) => ({
-      // Feed state - initialize with curated items
-      items: getCuratedItems(),
+      // Feed state — items = articles/magazines, videoItems = videos
+      // Both are derived from the same single feed
+      items: getCuratedItems().filter((i) => i.type !== 'video'),
+      videoItems: getCuratedItems().filter((i) => i.type === 'video'),
       lastFetched: null,
       isLoading: false,
       error: null,
       rssFeedUrl: RSS_FEED_URL,
 
-      // Filters
-      activeFilter: 'all', // 'all' | 'articles' | 'magazines' | 'videos'
+      // Active feed: 'news' (What's New) or 'videos' (Latest Videos)
+      activeFeed: 'news',
 
-      // Read tracking
+      // Filters
+      activeFilter: 'all', // 'all' | 'articles' | 'magazines' | 'videos' | 'saved'
+
+      // Read tracking (shared across both feeds)
       readItems: {},
 
-      // Saved for later tracking
+      // Saved for later tracking (shared across both feeds)
       savedItems: {},
 
       // Actions
+      setActiveFeed: (feed) => set({ activeFeed: feed, activeFilter: 'all' }),
+
       setFilter: (filter) => set({ activeFilter: filter }),
 
       setRssFeedUrl: (url) => set({ rssFeedUrl: url, lastFetched: null }),
@@ -300,21 +315,47 @@ const useNewsStore = create(
         }),
 
       markAllAsRead: () =>
-        set((state) => ({
-          readItems: state.items.reduce((acc, item) => {
-            acc[item.id] = true;
-            return acc;
-          }, {}),
-        })),
+        set((state) => {
+          const currentItems = state.activeFeed === 'videos' ? state.videoItems : state.items;
+          return {
+            readItems: {
+              ...state.readItems,
+              ...currentItems.reduce((acc, item) => {
+                acc[item.id] = true;
+                return acc;
+              }, {}),
+            },
+          };
+        }),
 
       isItemRead: (itemId) => {
         const state = get();
         return state.readItems[itemId] || false;
       },
 
+      // Total unread count across both feeds (for nav badge)
+      getTotalUnreadCount: () => {
+        const state = get();
+        const newsUnread = state.items.filter((item) => !state.readItems[item.id]).length;
+        const videosUnread = state.videoItems.filter((item) => !state.readItems[item.id]).length;
+        return newsUnread + videosUnread;
+      },
+
+      // Unread count for current active feed
       getUnreadCount: () => {
         const state = get();
+        const currentItems = state.activeFeed === 'videos' ? state.videoItems : state.items;
+        return currentItems.filter((item) => !state.readItems[item.id]).length;
+      },
+
+      // Per-feed unread counts (for feed tab badges)
+      getNewsUnreadCount: () => {
+        const state = get();
         return state.items.filter((item) => !state.readItems[item.id]).length;
+      },
+      getVideosUnreadCount: () => {
+        const state = get();
+        return state.videoItems.filter((item) => !state.readItems[item.id]).length;
       },
 
       // Save for later functions
@@ -353,7 +394,7 @@ const useNewsStore = create(
         return Object.keys(state.savedItems).length;
       },
 
-      // Fetch news - tries API first (accurate dates/content), then RSS feed, then fallback
+      // Fetch feed — single fetch, split into articles vs videos
       fetchNews: async (forceRefresh = false) => {
         const state = get();
 
@@ -362,54 +403,41 @@ const useNewsStore = create(
           !forceRefresh &&
           state.lastFetched &&
           Date.now() - state.lastFetched < CACHE_DURATION &&
-          state.items.length > 0
+          (state.items.length > 0 || state.videoItems.length > 0)
         ) {
           return; // Use cached data
         }
 
         set({ isLoading: true, error: null });
 
-        // Try API endpoint first (fetches directly from jw.org RSS with correct dates)
+        let allItems = null;
+
+        // Try API endpoint first (fetches from jw.org RSS with correct dates)
         try {
           const response = await fetch(getApiUrl(), {
             signal: AbortSignal.timeout(10000),
           });
-
           if (response.ok) {
             const data = await response.json();
             if (data.success && data.items && data.items.length > 0) {
-              set({
-                items: data.items,
-                lastFetched: Date.now(),
-                isLoading: false,
-                error: null,
-              });
-              return;
+              allItems = data.items;
             }
           }
         } catch {
-          // API not available - try RSS feed
+          // API not available — try RSS feed
         }
 
         // Fallback to GitHub-hosted RSS feed
-        if (state.rssFeedUrl) {
+        if (!allItems) {
           try {
-            const response = await fetch(state.rssFeedUrl, {
+            const response = await fetch(state.rssFeedUrl || RSS_FEED_URL, {
               signal: AbortSignal.timeout(10000),
             });
-
             if (response.ok) {
               const xmlText = await response.text();
               const rssItems = parseRSSFeed(xmlText);
-
               if (rssItems.length > 0) {
-                set({
-                  items: rssItems,
-                  lastFetched: Date.now(),
-                  isLoading: false,
-                  error: null,
-                });
-                return;
+                allItems = rssItems;
               }
             }
           } catch (err) {
@@ -418,51 +446,66 @@ const useNewsStore = create(
         }
 
         // Fallback to curated content
+        if (!allItems) {
+          allItems = getCuratedItems();
+        }
+
+        // Split into news (articles/magazines) and videos
+        const { newsItems, videoItems } = splitItems(allItems);
+
         set({
-          items: getCuratedItems(),
+          items: newsItems,
+          videoItems,
           lastFetched: Date.now(),
           isLoading: false,
           error: null,
         });
       },
 
-      // Get filtered items
+      // Get filtered items for the active feed
       getFilteredItems: () => {
         const state = get();
+        const currentItems = state.activeFeed === 'videos' ? state.videoItems : state.items;
+
         if (state.activeFilter === 'all') {
-          return state.items;
+          return currentItems;
         }
         if (state.activeFilter === 'saved') {
           return get().getSavedItems();
         }
-        return state.items.filter((item) => item.filterCategory === state.activeFilter);
+        return currentItems.filter((item) => item.filterCategory === state.activeFilter);
       },
 
-      // Get latest items for dashboard widget
+      // Get latest items for dashboard widget (from news feed)
       getLatestItems: (count = 3) => {
         const state = get();
         return state.items.slice(0, count);
       },
 
-      // Get unread items only for dashboard widget
+      // Get unread items from both feeds for dashboard widget
       getUnreadItems: (count = 3) => {
         const state = get();
-        return state.items
+        const allItems = [...state.items, ...state.videoItems];
+        return allItems
           .filter((item) => !state.readItems[item.id])
           .slice(0, count);
       },
 
       // Refresh content
-      clearCache: () =>
+      clearCache: () => {
+        const curated = getCuratedItems();
+        const { newsItems, videoItems } = splitItems(curated);
         set({
-          items: getCuratedItems(),
+          items: newsItems,
+          videoItems,
           lastFetched: null,
           error: null,
-        }),
+        });
+      },
     }),
     {
       name: 'jw-news-storage',
-      version: 7, // Stable IDs for persistent read tracking
+      version: 9, // Single-feed split into articles + videos
       partialize: (state) => ({
         // Persist read status and saved items
         readItems: state.readItems,
@@ -470,7 +513,7 @@ const useNewsStore = create(
       }),
       migrate: (persistedState, version) => {
         // Migration from old versions - keep existing data
-        if (version < 7) {
+        if (version < 9) {
           return {
             ...persistedState,
             readItems: persistedState.readItems || {},

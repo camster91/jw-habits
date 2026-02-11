@@ -1,9 +1,9 @@
 {
-  "name": "jw-progress-tracker",
+  "name": "jw-habits",
   "private": true,
-  "version": "2.0.2",
+  "version": "3.0.0",
   "type": "module",
-  "description": "Track daily text, Bible reading, and meeting preparation with JW Library links",
+  "description": "Build daily spiritual habits: daily text, Bible reading, meeting prep, and more",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

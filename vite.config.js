@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'JW Progress Tracker',
-        short_name: 'JW Progress',
-        description: 'Track daily text, Bible reading, and spiritual progress with gamification',
+        name: 'JW Habits',
+        short_name: 'JW Habits',
+        description: 'Build daily spiritual habits: daily text, Bible reading, meeting prep, and more',
         theme_color: '#4A6FA4',
         background_color: '#ffffff',
         display: 'standalone',
@@ -75,7 +75,7 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             form_factor: 'narrow',
-            label: 'JW Progress Tracker Home Screen'
+            label: 'JW Habits Home Screen'
           }
         ],
         // Enable share target for receiving shared content
@@ -140,6 +140,22 @@ export default defineConfig({
               cacheName: 'rss-cache',
               expiration: {
                 maxEntries: 20,
+                maxAgeSeconds: 60 * 60 // 1 hour
+              },
+              networkTimeoutSeconds: 10,
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Cache GitHub Pages XML feeds (JW-Newsfeed)
+          {
+            urlPattern: /^https:\/\/camster91\.github\.io\/JW-Newsfeed\/.*\.xml$/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'github-feed-cache',
+              expiration: {
+                maxEntries: 10,
                 maxAgeSeconds: 60 * 60 // 1 hour
               },
               networkTimeoutSeconds: 10,

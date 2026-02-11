@@ -1,6 +1,6 @@
 {
   "appId": "com.jwprogress.app",
-  "appName": "JW Progress",
+  "appName": "JW Habits",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {

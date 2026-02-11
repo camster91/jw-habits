@@ -64,10 +64,4 @@ capacitor.config.ts
 # Keystore files
 *.keystore
 *.jks
-
-# Release APKs
-*.apk
-
-# Keystore
-*.keystore
-*.jks
+android/keystore.properties

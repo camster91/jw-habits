@@ -417,6 +417,84 @@ const useProgressStore = create(
         return Math.round((completed / days) * 100);
       },
 
+      // Weekly Bible Reading (from midweek meeting workbook)
+      weeklyBibleReading: {},
+
+      toggleWeeklyChapter: (weekKey, index) => set((state) => {
+        const existing = state.weeklyBibleReading[weekKey] || { chapters: {} };
+        const chapters = { ...existing.chapters, [index]: !existing.chapters[index] };
+        const completedCount = Object.values(chapters).filter(Boolean).length;
+        return {
+          weeklyBibleReading: {
+            ...state.weeklyBibleReading,
+            [weekKey]: {
+              ...existing,
+              chapters,
+              completed: false, // Will be recalculated by component
+              timestamp: new Date().toISOString()
+            }
+          }
+        };
+      }),
+
+      markWeeklyReadingComplete: (weekKey, totalChapters) => set((state) => {
+        const existing = state.weeklyBibleReading[weekKey] || { chapters: {} };
+        const chapters = {};
+        for (let i = 0; i < totalChapters; i++) {
+          chapters[i] = true;
+        }
+        return {
+          weeklyBibleReading: {
+            ...state.weeklyBibleReading,
+            [weekKey]: {
+              ...existing,
+              chapters,
+              completed: true,
+              timestamp: new Date().toISOString()
+            }
+          }
+        };
+      }),
+
+      getWeeklyReadingProgress: (weekKey) => {
+        const state = get();
+        return state.weeklyBibleReading[weekKey] || { chapters: {}, completed: false };
+      },
+
+      isWeeklyReadingComplete: (weekKey, totalChapters) => {
+        const state = get();
+        const data = state.weeklyBibleReading[weekKey];
+        if (!data) return false;
+        const completed = Object.values(data.chapters || {}).filter(Boolean).length;
+        return completed >= totalChapters && totalChapters > 0;
+      },
+
+      getWeeklyReadingStreak: () => {
+        const state = get();
+        let streak = 0;
+        const today = new Date();
+
+        for (let i = 0; i < 52; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - (i * 7));
+          // Get ISO week key
+          const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+          const dayNum = d.getUTCDay() || 7;
+          d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+          const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+          const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+          const weekKey = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+
+          const data = state.weeklyBibleReading[weekKey];
+          if (data?.completed) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+        return streak;
+      },
+
       // Clear all data (for testing)
       clearAll: () => set({
         dailyTexts: {},
@@ -424,12 +502,13 @@ const useProgressStore = create(
         bibleChapters: {},
         meetings: {},
         prayers: {},
-        familyWorship: {}
+        familyWorship: {},
+        weeklyBibleReading: {}
       })
     }),
     {
       name: 'jw-progress-storage', // LocalStorage key
-      version: 2
+      version: 3
     }
   )
 );

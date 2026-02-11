@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { getDayOfYear } from 'date-fns';
-import { GraduationCap, Book, ExternalLink, Video, FileText, Globe, Headphones, Search, ChevronRight, Star, Clock, CheckCircle2, Check, Settings2, RotateCcw } from 'lucide-react';
+import { GraduationCap, Book, ExternalLink, Video, FileText, Globe, Headphones, Search, ChevronRight, ChevronDown, Star, Clock, CheckCircle2, Check, Settings2, RotateCcw } from 'lucide-react';
 import { haptics } from '../utils/native';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import useSettingsStore, { READING_PACE_OPTIONS } from '../stores/settingsStore';
 import BIBLE_READING_SCHEDULE, { getBibleReading, getChaptersList, getBibleChapterLink } from '../utils/bibleReadingSchedule';
-import FamilyWorshipCard from './FamilyWorshipCard';
 
 // Deeper study categories
 const STUDY_CATEGORIES = [
@@ -209,6 +208,7 @@ const STUDY_IDEAS = [
 function StudyTab() {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [showIdeas, setShowIdeas] = useState(false);
+  const [showDeeperStudy, setShowDeeperStudy] = useState(false);
   const [showReadingSettings, setShowReadingSettings] = useState(false);
   const [selectedBook, setSelectedBook] = useState('');
   const calendarDayOfYear = getDayOfYear(new Date());
@@ -289,9 +289,6 @@ function StudyTab() {
 
   return (
     <div className="space-y-4">
-      {/* Family Worship Card */}
-      <FamilyWorshipCard />
-
       {/* Daily Bible Reading Card */}
       <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
         {/* Header */}
@@ -479,125 +476,142 @@ function StudyTab() {
         </div>
       </article>
 
-      {/* Deeper Study Header */}
-      <div className="flex items-center justify-between">
+      {/* Deeper Study - Collapsible */}
+      <button
+        onClick={() => {
+          haptics.light();
+          setShowDeeperStudy(!showDeeperStudy);
+        }}
+        className="flex items-center justify-between w-full p-4 bg-base-100 rounded-2xl shadow-sm active:scale-[0.99] transition-all"
+      >
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
-          <div>
+          <div className="text-left">
             <h3 className="font-bold">Deeper Study</h3>
             <p className="text-xs text-base-content/50">Research & learning tools</p>
           </div>
         </div>
-        <button
-          onClick={() => {
-            haptics.light();
-            setShowIdeas(!showIdeas);
-          }}
-          className="btn btn-ghost btn-sm gap-1"
-        >
-          <Star className="w-4 h-4" />
-          Ideas
-        </button>
-      </div>
+        {showDeeperStudy ? (
+          <ChevronDown className="w-5 h-5 text-base-content/30" />
+        ) : (
+          <ChevronRight className="w-5 h-5 text-base-content/30" />
+        )}
+      </button>
 
-      {/* Study Ideas Panel */}
-      {showIdeas && (
-        <div className="card bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
-          <div className="card-body p-4">
-            <h4 className="font-semibold text-emerald-800 flex items-center gap-2 mb-3">
+      {showDeeperStudy && (
+        <>
+          {/* Study Ideas Toggle */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => {
+                haptics.light();
+                setShowIdeas(!showIdeas);
+              }}
+              className="btn btn-ghost btn-sm gap-1"
+            >
               <Star className="w-4 h-4" />
-              Study Project Ideas
-            </h4>
-            <ul className="space-y-2">
-              {STUDY_IDEAS.map((idea, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm">
-                  <span className="text-emerald-600 font-bold">{index + 1}.</span>
-                  <span className="text-emerald-900">{idea}</span>
-                </li>
-              ))}
-            </ul>
+              Ideas
+            </button>
           </div>
-        </div>
-      )}
 
-      {/* Study Categories */}
-      <div className="space-y-2">
-        {STUDY_CATEGORIES.map((category) => {
-          const Icon = category.icon;
-          const isExpanded = expandedCategory === category.id;
-
-          return (
-            <div key={category.id} className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
-              {/* Category Header */}
-              <button
-                onClick={() => toggleCategory(category.id)}
-                className="flex items-center gap-3 w-full p-4 active:bg-base-200 transition-colors"
-              >
-                <div className={`p-2 rounded-xl bg-gradient-to-br ${category.color}`}>
-                  <Icon className="w-5 h-5 text-white" />
-                </div>
-                <span className="flex-1 font-bold text-left">{category.title}</span>
-                <ChevronRight className={`w-5 h-5 text-base-content/30 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-              </button>
-
-              {/* Category Items */}
-              {isExpanded && (
-                <div className="px-4 pb-4 space-y-2">
-                  {category.items.map((item, index) => (
-                    <a
-                      key={index}
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={handleLinkClick}
-                      className="flex items-center gap-3 p-3 bg-base-200/50 rounded-xl active:scale-[0.98] transition-all"
-                    >
-                      <span className="text-2xl">{item.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">{item.title}</p>
-                        <p className="text-xs text-base-content/50 line-clamp-1">{item.description}</p>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-base-content/30 flex-shrink-0" />
-                    </a>
+          {/* Study Ideas Panel */}
+          {showIdeas && (
+            <div className="card bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+              <div className="card-body p-4">
+                <h4 className="font-semibold text-emerald-800 flex items-center gap-2 mb-3">
+                  <Star className="w-4 h-4" />
+                  Study Project Ideas
+                </h4>
+                <ul className="space-y-2">
+                  {STUDY_IDEAS.map((idea, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm">
+                      <span className="text-emerald-600 font-bold">{index + 1}.</span>
+                      <span className="text-emerald-900">{idea}</span>
+                    </li>
                   ))}
-                </div>
-              )}
+                </ul>
+              </div>
             </div>
-          );
-        })}
-      </div>
+          )}
 
-      {/* Quick Links */}
-      <div className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
-        <div className="p-4">
-          <h4 className="font-bold mb-3 flex items-center gap-2">
-            <Headphones className="w-5 h-5 text-primary" />
-            Quick Access
-          </h4>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: 'WOL', url: 'https://wol.jw.org/', icon: '🔍' },
-              { label: 'Study Bible', url: 'https://www.jw.org/en/library/bible/study-bible/books/', icon: '📖' },
-              { label: 'JW Broadcasting', url: 'https://www.jw.org/en/library/videos/', icon: '📺' },
-              { label: 'Kingdom Songs', url: 'https://www.jw.org/en/library/music/', icon: '🎵' },
-            ].map((link) => (
-              <a
-                key={link.label}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={handleLinkClick}
-                className="flex items-center gap-2 p-3 bg-base-200/50 rounded-xl active:scale-95 transition-all"
-              >
-                <span className="text-xl">{link.icon}</span>
-                <span className="font-medium text-sm">{link.label}</span>
-              </a>
-            ))}
+          {/* Study Categories */}
+          <div className="space-y-2">
+            {STUDY_CATEGORIES.map((category) => {
+              const Icon = category.icon;
+              const isExpanded = expandedCategory === category.id;
+
+              return (
+                <div key={category.id} className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
+                  <button
+                    onClick={() => toggleCategory(category.id)}
+                    className="flex items-center gap-3 w-full p-4 active:bg-base-200 transition-colors"
+                  >
+                    <div className={`p-2 rounded-xl bg-gradient-to-br ${category.color}`}>
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="flex-1 font-bold text-left">{category.title}</span>
+                    <ChevronRight className={`w-5 h-5 text-base-content/30 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-4 pb-4 space-y-2">
+                      {category.items.map((item, index) => (
+                        <a
+                          key={index}
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={handleLinkClick}
+                          className="flex items-center gap-3 p-3 bg-base-200/50 rounded-xl active:scale-[0.98] transition-all"
+                        >
+                          <span className="text-2xl">{item.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm">{item.title}</p>
+                            <p className="text-xs text-base-content/50 line-clamp-1">{item.description}</p>
+                          </div>
+                          <ExternalLink className="w-4 h-4 text-base-content/30 flex-shrink-0" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </div>
+
+          {/* Quick Links */}
+          <div className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
+            <div className="p-4">
+              <h4 className="font-bold mb-3 flex items-center gap-2">
+                <Headphones className="w-5 h-5 text-primary" />
+                Quick Access
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: 'WOL', url: 'https://wol.jw.org/', icon: '🔍' },
+                  { label: 'Study Bible', url: 'https://www.jw.org/en/library/bible/study-bible/books/', icon: '📖' },
+                  { label: 'JW Broadcasting', url: 'https://www.jw.org/en/library/videos/', icon: '📺' },
+                  { label: 'Kingdom Songs', url: 'https://www.jw.org/en/library/music/', icon: '🎵' },
+                ].map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleLinkClick}
+                    className="flex items-center gap-2 p-3 bg-base-200/50 rounded-xl active:scale-95 transition-all"
+                  >
+                    <span className="text-xl">{link.icon}</span>
+                    <span className="font-medium text-sm">{link.label}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
