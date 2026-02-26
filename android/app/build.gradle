@@ -1,20 +1,14 @@
 apply plugin: 'com.android.application'
 
-def keystorePropertiesFile = rootProject.file("keystore.properties")
-def keystoreProperties = new Properties()
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-}
-
 android {
-    namespace = "com.jwprogress.app"
+    namespace = "com.ashbi.jwnews"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.jwprogress.app"
+        applicationId "com.ashbi.jwnews"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "3.0.0"
+        versionCode 1
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -24,10 +18,10 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file(keystoreProperties['storeFile'] ?: 'jw-habits-release.keystore')
-            storePassword keystoreProperties['storePassword'] ?: ''
-            keyAlias keystoreProperties['keyAlias'] ?: 'jw-habits'
-            keyPassword keystoreProperties['keyPassword'] ?: ''
+            storeFile file('../jwnews-release.keystore')
+            storePassword 'jwnews2024release'
+            keyAlias 'jwnews'
+            keyPassword 'jwnews2024release'
         }
     }
     buildTypes {

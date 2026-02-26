@@ -1,4 +1,4 @@
-package com.jwprogress.app;
+package com.ashbi.jwnews;
 
 import com.getcapacitor.BridgeActivity;
 
