@@ -66,3 +66,12 @@ capacitor.config.ts
 *.keystore
 *.jks
 android/keystore.properties
+
+# Build artifacts
+*.exe
+*.zip
+dist/
+index.cjs
+
+# User data
+history.json
