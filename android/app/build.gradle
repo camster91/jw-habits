@@ -7,8 +7,8 @@ android {
         applicationId "com.ashbi.jwnews"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 300
+        versionName "3.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,11 +17,23 @@ android {
         }
     }
     signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
         release {
-            storeFile file('../jwnews-release.keystore')
-            storePassword 'jwnews2024release'
-            keyAlias 'jwnews'
-            keyPassword 'jwnews2024release'
+            // TODO: Create proper release keystore for app store submission
+            // storeFile file('../jwnews-release.keystore')
+            // storePassword 'jwnews2024release'
+            // keyAlias 'jwnews'
+            // keyPassword 'jwnews2024release'
+            // For now, use debug signing
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
         }
     }
     buildTypes {
