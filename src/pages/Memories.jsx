@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { BookHeart, Search, Calendar, Trash2, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import useMemoriesStore from '../stores/memoriesStore';
+import useMemoriesStore from '../stores/memoriesStore.ts';
 import { haptics } from '../utils/native';
 
 function Memories() {

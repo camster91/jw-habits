@@ -1,0 +1,150 @@
+                        onTimeChange={(time) => handleSetNotificationTime('morningPrayer', time)}
+                        color="text-amber-500"
+                      />
+
+                      <NotificationItem
+                        icon={Heart}
+                        label="Afternoon Prayer"
+                        description="Midday reminder"
+                        enabled={notifications?.afternoonPrayer?.enabled ?? true}
+                        time={notifications?.afternoonPrayer?.time ?? '12:00'}
+                        onToggle={() => handleToggleNotification('afternoonPrayer')}
+                        onTimeChange={(time) => handleSetNotificationTime('afternoonPrayer', time)}
+                        color="text-sky-500"
+                      />
+
+                      <NotificationItem
+                        icon={Heart}
+                        label="Evening Prayer"
+                        description="End your day in prayer"
+                        enabled={notifications?.eveningPrayer?.enabled ?? true}
+                        time={notifications?.eveningPrayer?.time ?? '21:00'}
+                        onToggle={() => handleToggleNotification('eveningPrayer')}
+                        onTimeChange={(time) => handleSetNotificationTime('eveningPrayer', time)}
+                        color="text-indigo-500"
+                      />
+                    </div>
+
+                    {/* Show More Toggle */}
+                    <button
+                      onClick={() => {
+                        haptics.light();
+                        setShowAllNotifications(!showAllNotifications);
+                      }}
+                      className="btn btn-ghost btn-sm w-full gap-2"
+                    >
+                      {showAllNotifications ? (
+                        <>
+                          <ChevronUp className="w-4 h-4" />
+                          Show Less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4" />
+                          More Options
+                        </>
+                      )}
+                    </button>
+
+                    {/* Additional Reminders (collapsed by default) */}
+                    {showAllNotifications && (
+                      <div className="space-y-2 animate-fade-in-up">
+                        {/* Weekly Reminders */}
+                        <div className="bg-base-200/30 rounded-xl p-3">
+                          <p className="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Weekly Reminders</p>
+
+                          <WeeklyNotificationItem
+                            icon={Users}
+                            label="Family Worship"
+                            description="Weekly reminder"
+                            enabled={notifications?.familyWorship?.enabled ?? true}
+                            time={notifications?.familyWorship?.time ?? '19:00'}
+                            dayOfWeek={notifications?.familyWorship?.dayOfWeek ?? 1}
+                            onToggle={() => handleToggleNotification('familyWorship')}
+                            onTimeChange={(time) => handleSetNotificationTime('familyWorship', time)}
+                            onDayChange={(day) => handleSetDayOfWeek('familyWorship', day)}
+                            color="text-purple-500"
+                          />
+
+                          <WeeklyNotificationItem
+                            icon={Calendar}
+                            label="Meeting Preparation"
+                            description="Day before meeting"
+                            enabled={notifications?.meetingPrep?.enabled ?? true}
+                            time={notifications?.meetingPrep?.time ?? '19:00'}
+                            meetingDays={notifications?.meetingPrep?.meetingDays ?? [0, 4]}
+                            onToggle={() => handleToggleNotification('meetingPrep')}
+                            onTimeChange={(time) => handleSetNotificationTime('meetingPrep', time)}
+                            onMeetingDaysChange={(days) => handleSetMeetingDays('meetingPrep', days)}
+                            color="text-green-500"
+                            isMeetingPrep={true}
+                          />
+                        </div>
+
+                        {/* Motivation */}
+                        <div className="bg-base-200/30 rounded-xl p-3">
+                          <p className="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Motivation</p>
+
+                          <NotificationItem
+                            icon={Flame}
+                            label="Keep Your Streak"
+                            description="Reminder to maintain streaks"
+                            enabled={notifications?.streakMotivation?.enabled ?? true}
+                            time={notifications?.streakMotivation?.time ?? '10:00'}
+                            onToggle={() => handleToggleNotification('streakMotivation')}
+                            onTimeChange={(time) => handleSetNotificationTime('streakMotivation', time)}
+                            color="text-orange-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title text-lg">Appearance</h2>
+
+            <div className="divider my-2"></div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {theme === 'light' ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+                <div>
+                  <p className="font-medium">Theme</p>
+                  <p className="text-sm text-base-content/70">
+                    {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
+                  </p>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                className="toggle toggle-primary"
+                checked={theme === 'dark'}
+                onChange={toggleTheme}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Data Management */}
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title text-lg">Data Management</h2>
+
+            <div className="divider my-2"></div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleExportData}
+                className="btn btn-outline w-full justify-start"
+              >

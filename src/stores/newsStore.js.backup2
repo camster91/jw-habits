@@ -1,0 +1,307 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+// Development version - uses curated items immediately, no network requests
+
+const generateStableId = (url) => {
+  // Simple hash function for generating stable IDs
+  let hash = 0;
+  for (let i = 0; i < url.length; i++) {
+    const char = url.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return `item-${Math.abs(hash)}`;
+};
+
+const getItemType = (category, title, url) => {
+  const combined = `${category} ${title}`.toUpperCase();
+  const urlLower = (url || '').toLowerCase();
+
+  // Check for video URLs
+  const isVideoUrl = urlLower.includes('/videos/') ||
+                     urlLower.includes('mediaitems') ||
+                     urlLower.includes('/video/') ||
+                     urlLower.includes('_video');
+
+  // Articles about videos (not actual videos)
+  const isVideoArticle = combined.includes('VIDEO REFERENCE') ||
+                         combined.includes('VIDEO GUIDE');
+
+  if (isVideoUrl || (category.toUpperCase().includes('VIDEO') && !isVideoArticle)) {
+    return 'video';
+  }
+  if (combined.includes('BROADCAST') && !isVideoArticle) {
+    return 'video';
+  }
+  if (combined.includes('WATCHTOWER') || combined.includes('AWAKE') ||
+      combined.includes('WORKBOOK') || combined.includes('MAGAZINE') ||
+      urlLower.includes('/magazines/')) {
+    return 'magazine';
+  }
+  if (combined.includes('LIFE STOR')) {
+    return 'life_story';
+  }
+  return 'news_release';
+};
+
+const getCuratedItems = () => {
+  return [
+    {
+      id: 'whats-new',
+      type: 'news_release',
+      filterCategory: 'articles',
+      category: "WHAT'S NEW",
+      title: 'Latest Updates on JW.org',
+      description: 'See the latest news, articles, videos, and spiritual encouragement from jw.org.',
+      thumbnail: 'https://www.jw.org/assets/img/logo-jw.svg',
+      url: 'https://www.jw.org/en/whats-new/',
+      jwLibraryUrl: 'jwlibrary:/en/whats-new/',
+      isVideo: false,
+    },
+    {
+      id: 'latest-videos',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'VIDEOS',
+      title: 'Latest Videos',
+      description: 'Watch the newest videos including talks, dramatizations, music, and more.',
+      thumbnail: 'https://www.jw.org/assets/img/logo-jw.svg',
+      url: 'https://www.jw.org/en/whats-new/videos/',
+      jwLibraryUrl: 'jwlibrary:/en/whats-new/videos/',
+      isVideo: true,
+    },
+    {
+      id: 'watchtower-study',
+      type: 'magazine',
+      filterCategory: 'magazines',
+      category: 'THE WATCHTOWER',
+      title: 'Watchtower Study Edition',
+      description: 'Read the latest Watchtower study edition for meeting preparation.',
+      thumbnail: 'https://www.jw.org/assets/img/logo-jw.svg',
+      url: 'https://www.jw.org/en/library/magazines/watchtower-study/',
+      jwLibraryUrl: 'jwlibrary:/en/library/magazines/watchtower-study/',
+      isVideo: false,
+    },
+    {
+      id: 'newsroom',
+      type: 'news_release',
+      filterCategory: 'articles',
+      category: 'NEWSROOM',
+      title: 'JW Newsroom',
+      description: "Official news releases and press information from Jehovah's Witnesses worldwide.",
+      thumbnail: 'https://www.jw.org/assets/img/logo-jw.svg',
+      url: 'https://www.jw.org/en/news/',
+      jwLibraryUrl: 'jwlibrary:/en/news/',
+      isVideo: false,
+    },
+    {
+      id: 'meeting-workbook',
+      type: 'magazine',
+      filterCategory: 'magazines',
+      category: 'MEETING WORKBOOK',
+      title: 'Life and Ministry Meeting Workbook',
+      description: 'Prepare for the midweek meeting with the current workbook.',
+      thumbnail: 'https://www.jw.org/assets/img/logo-jw.svg',
+      url: 'https://www.jw.org/en/library/magazines/meeting-workbooks/',
+      jwLibraryUrl: 'jwlibrary:/en/library/magazines/meeting-workbooks/',
+      isVideo: false,
+    },
+    {
+      id: 'awake',
+      type: 'magazine',
+      filterCategory: 'magazines',
+      category: 'AWAKE!',
+      title: 'Awake! Magazine',
+      description: 'Read the latest Awake! articles covering practical life topics.',
+      thumbnail: 'https://www.jw.org/assets/img/logo-jw.svg',
+      url: 'https://www.jw.org/en/library/magazines/awake/',
+      jwLibraryUrl: 'jwlibrary:/en/library/magazines/awake/',
+      isVideo: false,
+    },
+    {
+      id: 'broadcasting',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'JW BROADCASTING',
+      title: 'JW Broadcasting',
+      description: 'Monthly programs with spiritual encouragement, news, and interviews.',
+      thumbnail: 'https://www.jw.org/assets/img/logo-jw.svg',
+      url: 'https://www.jw.org/en/library/videos/#en/mediaitems/AllVideos/pub-jwb_',
+      jwLibraryUrl: 'jwlibrary:/en/library/videos/#en/mediaitems/AllVideos/pub-jwb_',
+      isVideo: true,
+    },
+    {
+      id: 'bible-dramatizations',
+      type: 'video',
+      filterCategory: 'videos',
+      category: 'DRAMATIZATIONS',
+      title: 'Bible Dramatizations',
+      description: 'Dramatic video presentations of Bible accounts brought to life.',
+      thumbnail: 'https://www.jw.org/assets/img/logo-jw.svg',
+      url: 'https://www.jw.org/en/library/videos/#en/mediaitems/AllVideos/pub-imv_',
+      jwLibraryUrl: 'jwlibrary:/en/library/videos/#en/mediaitems/AllVideos/pub-imv_',
+      isVideo: true,
+    },
+  ];
+};
+
+const splitItems = (allItems) => {
+  const newsItems = allItems.filter((item) => item.type !== 'video');
+  const videoItems = allItems.filter((item) => item.type === 'video');
+  return { newsItems, videoItems };
+};
+
+const useNewsStore = create(
+  persist(
+    (set, get) => ({
+      // State
+      items: [],
+      videoItems: [],
+      readItems: {},
+      savedItems: {},
+      activeFilter: 'all',
+      activeFeed: 'articles',
+      isLoading: false,
+      error: null,
+      lastFetched: null,
+      rssFeedUrl: 'https://www.jw.org/en/whats-new/rss/WhatsNewWebArticles/',
+
+      // Actions
+      setFilter: (filter) => set({ activeFilter: filter }),
+      setActiveFeed: (feed) => set({ activeFeed: feed }),
+
+      // In development, immediately use curated items
+      fetchNews: async (forceRefresh = false) => {
+        const state = get();
+
+        // Check cache validity (1 hour)
+        if (
+          !forceRefresh &&
+          state.lastFetched &&
+          Date.now() - state.lastFetched < 60 * 60 * 1000 &&
+          (state.items.length > 0 || state.videoItems.length > 0)
+        ) {
+          return; // Use cached data
+        }
+
+        set({ isLoading: true, error: null });
+
+        // In development, immediately use curated items
+        const allItems = getCuratedItems();
+        const { newsItems, videoItems } = splitItems(allItems);
+
+        set({
+          items: newsItems,
+          videoItems,
+          lastFetched: Date.now(),
+          isLoading: false,
+          error: null,
+        });
+      },
+
+      markAsRead: (itemId) =>
+        set((state) => ({
+          readItems: { ...state.readItems, [itemId]: true },
+        })),
+
+      markAllAsRead: () => {
+        const state = get();
+        const currentItems = state.activeFeed === 'videos' ? state.videoItems : state.items;
+        const updates = {};
+        currentItems.forEach((item) => {
+          updates[item.id] = true;
+        });
+        set((state) => ({
+          readItems: { ...state.readItems, ...updates },
+        }));
+      },
+
+      toggleSaveItem: (itemId) =>
+        set((state) => {
+          const isSaved = state.savedItems[itemId];
+          if (isSaved) {
+            const { [itemId]: _, ...rest } = state.savedItems;
+            return { savedItems: rest };
+          } else {
+            return { savedItems: { ...state.savedItems, [itemId]: true } };
+          }
+        }),
+
+      isItemRead: (itemId) => {
+        const state = get();
+        return state.readItems[itemId] || false;
+      },
+
+      isItemSaved: (itemId) => {
+        const state = get();
+        return state.savedItems[itemId] || false;
+      },
+
+      getUnreadCount: () => {
+        const state = get();
+        const newsUnread = state.items.filter((item) => !state.readItems[item.id]).length;
+        const videosUnread = state.videoItems.filter((item) => !state.readItems[item.id]).length;
+        return newsUnread + videosUnread;
+      },
+
+      getNewsUnreadCount: () => {
+        const state = get();
+        return state.items.filter((item) => !state.readItems[item.id]).length;
+      },
+
+      getVideosUnreadCount: () => {
+        const state = get();
+        return state.videoItems.filter((item) => !state.readItems[item.id]).length;
+      },
+
+      getFilteredItems: () => {
+        const state = get();
+        const currentItems = state.activeFeed === 'videos' ? state.videoItems : state.items;
+
+        if (state.activeFilter === 'all') {
+          return currentItems;
+        }
+        if (state.activeFilter === 'saved') {
+          return get().getSavedItems();
+        }
+        return currentItems.filter((item) => item.filterCategory === state.activeFilter);
+      },
+
+      getSavedItems: () => {
+        const state = get();
+        const allItems = [...state.items, ...state.videoItems];
+        return allItems.filter((item) => state.savedItems[item.id]);
+      },
+
+      getSavedCount: () => {
+        const state = get();
+        return Object.keys(state.savedItems).length;
+      },
+
+      getUnreadItems: (count = 3) => {
+        const state = get();
+        const allItems = [...state.items, ...state.videoItems];
+        return allItems
+          .filter((item) => !state.readItems[item.id])
+          .slice(0, count);
+      },
+
+      getLatestItems: (count = 3) => {
+        const state = get();
+        return state.items.slice(0, count);
+      },
+    }),
+    {
+      name: 'jw-news-store',
+      partialize: (state) => ({
+        readItems: state.readItems,
+        savedItems: state.savedItems,
+        activeFilter: state.activeFilter,
+        activeFeed: state.activeFeed,
+      }),
+    }
+  )
+);
+
+export default useNewsStore;

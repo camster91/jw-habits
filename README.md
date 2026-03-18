@@ -1,16 +1,15 @@
-# JW News - Spiritual Progress Tracker
+# JW-News
 
-A Progressive Web App for tracking daily spiritual activities with direct links to JW Library. Track daily text reading, Bible reading schedules, meeting preparation, and spiritual progress with statistics and reminders.
+A news platform for publishing and aggregating content with modern web technologies.
 
 ## Features
 
-- **Daily Text** - Track daily text reading with JW Library links
-- **Bible Reading** - Follow the "Read Bible in One Year" schedule
-- **Meeting Preparation** - Prepare for midweek and weekend meetings
-- **Progress Statistics** - Track streaks and completion rates
-- **PWA Notifications** - Get reminders for daily reading
-- **Offline Support** - Works without internet connection
-- **Install as App** - Add to home screen for native experience
+- **News Publishing** - Create and publish news articles with rich content
+- **Content Aggregation** - Aggregate news from multiple sources
+- **Article Management** - Organize and categorize news content
+- **Responsive Design** - Mobile-first design for all devices
+- **SEO Optimized** - Built-in SEO features for better discoverability
+- **Fast Performance** - Optimized for speed with Next.js
 
 ## Quick Start
 
@@ -24,97 +23,171 @@ npm run dev
 # Build for production
 npm run build
 
-# Preview production build
-npm run preview
+# Start production server
+npm start
+
+# Run linting
+npm run lint
 ```
 
-Visit: http://localhost:5173
+Visit: http://localhost:3000
+
+## Development Scripts
+
+The project includes scripts to make it easy to start and stop the development servers on different platforms.
+
+### PowerShell (Windows)
+
+```powershell
+# Run from project root
+.\scripts\start-dev.ps1
+.\scripts\stop-dev.ps1
+
+# Run in background (with logging)
+.\scripts\start-dev.ps1 -Background
+
+# Force kill processes using dev ports
+.\scripts\stop-dev.ps1 -KillPorts
+```
+
+### Bash (Linux/macOS/WSL/Git Bash)
+
+```bash
+# Make scripts executable (first time only)
+chmod +x scripts/*.sh
+
+# Start servers
+./scripts/start-dev.sh
+
+# Start in background
+./scripts/start-dev.sh --background
+
+# Stop servers
+./scripts/stop-dev.sh
+
+# Kill processes on dev ports
+./scripts/stop-dev.sh --kill-ports
+```
+
+### Cross-Platform
+
+For all platforms, you can always use:
+
+```bash
+npm run dev        # Start development server (foreground)
+npm run build      # Build for production
+npm start          # Start production server
+```
+
+The development server runs on port 3000 by default.
 
 ## Project Structure
 
 ```
-jw-progress-tracker/
-├── index.html
+jw-news/
 ├── package.json
-├── vite.config.js
+├── next.config.js
 ├── tailwind.config.js
 ├── public/
-│   ├── pwa-192x192.png
-│   ├── pwa-512x512.png
-│   └── data/
-│       ├── bible-reading.json      # 365-day reading schedule
-│       └── meeting-workbooks.json  # Weekly meeting docids
-└── src/
-    ├── main.jsx
-    ├── App.jsx
-    ├── index.css
-    ├── components/
-    │   ├── DailyTextCard.jsx
-    │   ├── BibleReadingCard.jsx
-    │   ├── MeetingCard.jsx
-    │   ├── StreakCard.jsx
-    │   ├── BottomNav.jsx
-    │   └── QuickLinks.jsx
-    ├── pages/
-    │   ├── Home.jsx
-    │   ├── Stats.jsx
-    │   ├── Settings.jsx
-    │   └── Links.jsx
-    ├── stores/
-    │   ├── progressStore.js
-    │   └── settingsStore.js
-    └── utils/
-        ├── jwLibraryLinks.js
-        └── notifications.js
+│   ├── images/
+│   └── favicon.ico
+├── src/
+│   ├── app/
+│   │   ├── layout.jsx
+│   │   ├── page.jsx
+│   │   ├── globals.css
+│   │   └── api/
+│   │       └── news/
+│   ├── components/
+│   │   ├── NewsCard.jsx
+│   │   ├── NewsGrid.jsx
+│   │   ├── Header.jsx
+│   │   ├── Footer.jsx
+│   │   └── Navigation.jsx
+│   ├── lib/
+│   │   ├── newsAPI.js
+│   │   └── aggregator.js
+│   └── utils/
+│       ├── formatDate.js
+│       └── helpers.js
+└── .env.local
 ```
 
-## Deployment (Hostinger Static)
+## Deployment
+
+### Vercel (Recommended)
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+### Other Platforms
 
 ```
 Build Command: npm run build
-Publish Directory: dist
+Output Directory: .next
+Install Command: npm install
 ```
 
-No Node.js server needed - just serves the built static files.
+## Environment Variables
 
-## Updating Meeting Workbooks
+Create a `.env.local` file in the root directory:
 
-The meeting workbook links use docids from `public/data/meeting-workbooks.json`. Update this file with new weeks as needed:
+```env
+# API Configuration
+API_URL=http://localhost:3000/api
+NEWS_API_KEY=your_api_key_here
 
-```json
-{
-  "2026-W02": {
-    "docid": "2025642",
-    "weekOf": "January 5-11, 2026",
-    "bibleReading": "Genesis 4-7"
-  }
-}
+# Database (if using)
+DATABASE_URL=your_database_url
+
+# Other settings
+NODE_ENV=development
 ```
 
 ## Technology Stack
 
+- **Next.js 15** - React framework with App Router
 - **React 19** - UI framework
-- **Vite 7** - Build tool
 - **Tailwind CSS 4** - Styling
-- **DaisyUI 5** - Component library
-- **Zustand 5** - State management
-- **vite-plugin-pwa** - PWA support
+- **DaisyUI 5** - Component library (optional)
+- **TypeScript** - Type safety (if enabled)
 
-## PWA Installation
+## Features in Detail
 
-### Mobile (Chrome/Safari)
-1. Open the app in browser
-2. Tap "Share" or menu button
-3. Select "Add to Home Screen"
+### Publishing
+- Rich text editor for creating articles
+- Image upload and management
+- Category and tag organization
+- Draft and publish workflow
 
-### Desktop (Chrome/Edge)
-1. Click install icon in address bar
-2. Or use browser menu: "Install app"
+### Aggregation
+- Fetch news from multiple sources
+- Automatic content parsing
+- Scheduled updates
+- Duplicate detection
 
-## Disclaimer
+## API Routes
 
-This is an **unofficial** application and is not affiliated with, endorsed by, or connected to Jehovah's Witnesses or the Watch Tower Bible and Tract Society. All content links direct to JW.org and JW Library.
+### News API
+- `GET /api/news` - Get all news articles
+- `GET /api/news/:id` - Get specific article
+- `POST /api/news` - Create new article
+- `PUT /api/news/:id` - Update article
+- `DELETE /api/news/:id` - Delete article
+
+### Aggregation API
+- `GET /api/aggregate` - Get aggregated news
+- `POST /api/aggregate/refresh` - Refresh news sources
 
 ## License
 
-MIT License
+**Private** - This project is proprietary and confidential. Unauthorized copying, distribution, or use is strictly prohibited.
+
+## Development
+
+Built with ❤️ using Next.js

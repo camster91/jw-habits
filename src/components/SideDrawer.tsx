@@ -1,22 +1,28 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { useState, useCallback, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BarChart3, Link2, Settings, BookHeart, X } from 'lucide-react';
 import { haptics } from '../utils/native';
+import { DrawerContext } from '../hooks/useDrawer';
 
-const DrawerContext = createContext();
-
-export function useDrawer() {
-  return useContext(DrawerContext);
+interface DrawerItem {
+  path: string;
+  icon: any; // LucideIcon type
+  label: string;
+  description: string;
 }
 
-const DRAWER_ITEMS = [
+const DRAWER_ITEMS: DrawerItem[] = [
   { path: '/stats', icon: BarChart3, label: 'Statistics', description: 'View your progress data' },
   { path: '/links', icon: Link2, label: 'Quick Links', description: 'JW.org resources' },
   { path: '/settings', icon: Settings, label: 'Settings', description: 'App preferences' },
   { path: '/memories', icon: BookHeart, label: 'Memories', description: 'Your reflections' },
 ];
 
-function SideDrawer({ children }) {
+interface SideDrawerProps {
+  children: ReactNode;
+}
+
+function SideDrawer({ children }: SideDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,10 +36,10 @@ function SideDrawer({ children }) {
     setIsOpen(false);
   }, []);
 
-  const handleNavClick = (path) => {
+  const handleNavClick = (path: string) => {
     haptics.light();
     setIsOpen(false);
-    // Small delay for drawer close animation
+    
     setTimeout(() => navigate(path), 150);
   };
 
