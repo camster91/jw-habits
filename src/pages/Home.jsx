@@ -5,7 +5,7 @@ import DailyTasksSection from '../components/DailyTasksSection';
 import PrayerTrackingCard from '../components/PrayerTrackingCard';
 import FamilyWorshipCard from '../components/FamilyWorshipCard';
 import { CardLoading } from '../components/LoadingSpinner';
-import { useDrawer } from '../components/SideDrawer';
+import { useDrawer } from '../hooks/useDrawer';
 
 // Lazy load StudyTab for the daily Bible reading section
 const StudyTab = lazy(() => import('../components/StudyTab'));
