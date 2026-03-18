@@ -1,6 +1,6 @@
-# JW Progress Tracker
+# JW News - Spiritual Progress Tracker
 
-A Progressive Web App for tracking daily spiritual activities with direct links to JW Library.
+A Progressive Web App for tracking daily spiritual activities with direct links to JW Library. Track daily text reading, Bible reading schedules, meeting preparation, and spiritual progress with statistics and reminders.
 
 ## Features
 

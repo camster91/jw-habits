@@ -1,19 +1,13 @@
 apply plugin: 'com.android.application'
 
-def keystorePropertiesFile = rootProject.file("keystore.properties")
-def keystoreProperties = new Properties()
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-}
-
 android {
-    namespace = "com.jwprogress.app"
+    namespace = "com.ashbi.jwnews"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.jwprogress.app"
+        applicationId "com.ashbi.jwnews"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
+        versionCode 300
         versionName "3.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -23,11 +17,20 @@ android {
         }
     }
     signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
         release {
-            storeFile file(keystoreProperties['storeFile'] ?: 'jw-habits-release.keystore')
-            storePassword keystoreProperties['storePassword'] ?: ''
-            keyAlias keystoreProperties['keyAlias'] ?: 'jw-habits'
-            keyPassword keystoreProperties['keyPassword'] ?: ''
+            // Release keystore configuration
+            // Run: ./scripts/generate-android-keystore.sh
+            // Then move jwnews-release.keystore to android/app/
+            storeFile file('jwnews-release.keystore')
+            storePassword System.getenv('KEYSTORE_PASSWORD') ?: 'YOUR_KEYSTORE_PASSWORD'
+            keyAlias 'jwnews'
+            keyPassword System.getenv('KEY_PASSWORD') ?: 'YOUR_KEY_PASSWORD'
         }
     }
     buildTypes {

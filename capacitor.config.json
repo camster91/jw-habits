@@ -1,6 +1,6 @@
 {
-  "appId": "com.jwprogress.app",
-  "appName": "JW Habits",
+  "appId": "com.ashbi.jwnews",
+  "appName": "JW News",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {
