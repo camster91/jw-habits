@@ -9,6 +9,7 @@
 | `ios/App/App/Info.plist` | Fixed `UIRequiredDeviceCapabilities` from `armv64` to `arm64` |
 | `ios/App/App/Info.plist` | Added `NSCalendarsUsageDescription` for calendar reminders |
 | `ios/App/App/Info.plist` | Added `NSUserTrackingUsageDescription` for App Store compliance |
+| `PRIVACY_POLICY.md` | Added live privacy policy URL: https://ashbi.ca/privacy/jw-news.html |
 | `ios/App/App.xcodeproj/project.pbxproj` | Set `MARKETING_VERSION` to `3.0.0` (was `1.0`) |
 | `ios/App/App.xcodeproj/project.pbxproj` | Set `CURRENT_PROJECT_VERSION` to `300` (was `1`) |
 | `ios/App/App.xcodeproj/project.pbxproj` | Updated `PRODUCT_BUNDLE_IDENTIFIER` to `com.ashbi.jwnews` |

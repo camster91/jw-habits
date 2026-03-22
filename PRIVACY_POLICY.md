@@ -60,3 +60,7 @@ If we ever change this policy, we will update the effective date above. Given th
 ## Contact
 
 Questions? Email: cameron@ashbi.ca
+
+---
+
+**Live Privacy Policy:** https://ashbi.ca/privacy/jw-news.html
