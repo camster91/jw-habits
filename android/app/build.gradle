@@ -28,9 +28,9 @@ android {
             // Run: ./scripts/generate-android-keystore.sh
             // Then move jwnews-release.keystore to android/app/
             storeFile file('jwnews-release.keystore')
-            storePassword System.getenv('KEYSTORE_PASSWORD') ?: 'YOUR_KEYSTORE_PASSWORD'
+            storePassword System.getenv('KEYSTORE_PASSWORD') ?: 'JWHabits2026!'
             keyAlias 'jwnews'
-            keyPassword System.getenv('KEY_PASSWORD') ?: 'YOUR_KEY_PASSWORD'
+            keyPassword System.getenv('KEY_PASSWORD') ?: 'JWHabits2026!'
         }
     }
     buildTypes {

@@ -1,20 +1,20 @@
-# Privacy Policy — JW Habits
+# Privacy Policy — JW News
 
-**Effective Date:** March 17, 2026  
-**App:** JW Habits  
+**Effective Date:** March 17, 2026
+**App:** JW News
 **Developer:** Ashbi Design (cameron@ashbi.ca)
 
 ---
 
 ## Summary
 
-JW Habits is a simple, private app. **We collect no personal data. Everything stays on your device.**
+JW News is a simple, private app. **We collect no personal data. Everything stays on your device.**
 
 ---
 
 ## Data Collection
 
-JW Habits does **not** collect, transmit, or share any personal information. Specifically:
+JW News does **not** collect, transmit, or share any personal information. Specifically:
 
 - ❌ No account required
 - ❌ No analytics or tracking
@@ -36,7 +36,7 @@ All app data (your progress, settings, habits, notes) is stored **locally on you
 
 ## Permissions
 
-JW Habits may request the following device permissions:
+JW News may request the following device permissions:
 
 | Permission | Purpose |
 |------------|---------|
@@ -47,7 +47,7 @@ JW Habits may request the following device permissions:
 
 ## Children's Privacy
 
-JW Habits does not collect any data from anyone, including children under 13. The app is safe for all ages.
+JW News does not collect any data from anyone, including children under 13. The app is safe for all ages.
 
 ---
 

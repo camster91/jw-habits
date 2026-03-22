@@ -30,8 +30,12 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv64</string>
+		<string>arm64</string>
 	</array>
+	<key>NSCalendarsUsageDescription</key>
+	<string>JW News uses your calendar to set reminders for meetings and study schedules.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This app does not track you. This permission is required by the App Store.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
