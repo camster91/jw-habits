@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI Pipeline
 
 on:
   push:
@@ -10,7 +10,6 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-  # Lint job
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -30,7 +29,6 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
-  # Test job (if tests exist)
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -50,7 +48,6 @@ jobs:
         run: npm test --if-present
         continue-on-error: true
 
-  # Security audit job
   security:
     name: Security Audit
     runs-on: ubuntu-latest
@@ -70,7 +67,6 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
-  # Build job
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -93,19 +89,19 @@ jobs:
       - name: Verify PWA manifest
         run: |
           if [ -f "dist/manifest.webmanifest" ]; then
-            echo "✅ PWA manifest found"
+            echo "PWA manifest found"
             cat dist/manifest.webmanifest | head -20
           else
-            echo "❌ PWA manifest not found"
+            echo "PWA manifest not found"
             exit 1
           fi
 
       - name: Verify service worker
         run: |
           if [ -f "dist/sw.js" ]; then
-            echo "✅ Service worker found"
+            echo "Service worker found"
           else
-            echo "❌ Service worker not found"
+            echo "Service worker not found"
             exit 1
           fi
 
@@ -128,71 +124,6 @@ jobs:
           path: dist/
           retention-days: 7
 
-  # Deploy to Vercel (only on main branch push)
-  deploy-preview:
-    name: Deploy Preview
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-      - name: Deploy Preview to Vercel
-        uses: amondnet/vercel-action@v25
-        id: vercel-deploy
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./
-        if: ${{ secrets.VERCEL_TOKEN != '' }}
-        continue-on-error: true
-
-      - name: Comment PR with preview URL
-        uses: actions/github-script@v7
-        if: steps.vercel-deploy.outputs.preview-url
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🚀 Preview deployed to: ${{ steps.vercel-deploy.outputs.preview-url }}`
-            })
-        continue-on-error: true
-
-  deploy-production:
-    name: Deploy Production
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-      - name: Deploy to Vercel Production
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-          working-directory: ./
-        if: ${{ secrets.VERCEL_TOKEN != '' }}
-        continue-on-error: true
-
-  # Create release on tag
   release:
     name: Create Release
     runs-on: ubuntu-latest
