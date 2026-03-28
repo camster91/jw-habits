@@ -3,8 +3,10 @@
  * Generates deep links that open content in JW Library app
  */
 
-// Base finder URL for JW Library deep links
-// Uses jwlibrary:// custom URL scheme to open directly in the app
+import { Capacitor } from '@capacitor/core';
+
+// Use JW Library deep links on native, jw.org on web
+const isNative = Capacitor.isNativePlatform();
 const FINDER_BASE = 'jwlibrary:///finder';
 
 // Bible book number mapping (1-66)

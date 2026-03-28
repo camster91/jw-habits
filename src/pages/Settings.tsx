@@ -54,12 +54,12 @@ function Settings() {
     toast.info('Notifications disabled');
   };
 
-  const handleToggleNotification = (key: any) => {
+  const handleToggleNotification = (key: string) => {
     toggleNotification(key);
     haptics.light();
   };
 
-  const handleSetNotificationTime = (key: any, time: string) => {
+  const handleSetNotificationTime = (key: string, time: string) => {
     setNotificationTime(key, time);
   };
 
@@ -101,8 +101,8 @@ function Settings() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
-    input.onchange = async (e: any) => {
-      const file = e.target.files?.[0];
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       try {
         const text = await file.text();

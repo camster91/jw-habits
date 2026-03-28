@@ -78,7 +78,7 @@ interface GamificationState {
   projectsCompleted: number;
   meetingsPrepared: number;
   prayersCompleted: number;
-  recentAchievements: any[]; // Needs better typing if possible
+  recentAchievements: Achievement[];
   unlockedAchievements: UserAchievement[];
 }
 

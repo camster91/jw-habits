@@ -1,4 +1,4 @@
-import { useState, useCallback, ReactNode } from 'react';
+import React, { useState, useCallback, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BarChart3, Link2, Settings, BookHeart, X } from 'lucide-react';
 import { haptics } from '../utils/native';
@@ -6,7 +6,7 @@ import { DrawerContext } from '../hooks/useDrawer';
 
 interface DrawerItem {
   path: string;
-  icon: any; // LucideIcon type
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   description: string;
 }
