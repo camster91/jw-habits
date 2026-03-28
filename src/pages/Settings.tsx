@@ -80,18 +80,26 @@ function Settings() {
     toast.success('Checking for updates...');
   };
 
+  const STORAGE_KEYS = [
+    'jw-progress-storage',
+    'jw-progress-settings',
+    'jw-gamification-storage',
+    'jw-goals-storage',
+    'jw-memories-storage',
+    'jw-news-store',
+  ];
+
   const handleExportData = () => {
-    const progressData = localStorage.getItem('jw-progress-storage');
-    const settingsData = localStorage.getItem('jw-progress-settings');
-    const exportData = {
-      progress: progressData ? JSON.parse(progressData) : null,
-      settings: settingsData ? JSON.parse(settingsData) : null,
-    };
+    const exportData: Record<string, unknown> = {};
+    STORAGE_KEYS.forEach((key) => {
+      const raw = localStorage.getItem(key);
+      if (raw) exportData[key] = JSON.parse(raw);
+    });
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'jw-progress-backup.json';
+    a.download = `jw-habits-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Data exported');
@@ -107,13 +115,26 @@ function Settings() {
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-        if (!data.progress && !data.settings) {
+
+        // Support both old format (progress/settings keys) and new format (storage keys)
+        const isOldFormat = data.progress || data.settings;
+        const isNewFormat = STORAGE_KEYS.some((key) => key in data);
+        if (!isOldFormat && !isNewFormat) {
           toast.error('Invalid backup file format');
           return;
         }
         if (!confirm('This will replace your current data. Continue?')) return;
-        if (data.progress) localStorage.setItem('jw-progress-storage', JSON.stringify(data.progress));
-        if (data.settings) localStorage.setItem('jw-progress-settings', JSON.stringify(data.settings));
+
+        if (isNewFormat) {
+          STORAGE_KEYS.forEach((key) => {
+            if (data[key]) localStorage.setItem(key, JSON.stringify(data[key]));
+          });
+        } else {
+          // Legacy format support
+          if (data.progress) localStorage.setItem('jw-progress-storage', JSON.stringify(data.progress));
+          if (data.settings) localStorage.setItem('jw-progress-settings', JSON.stringify(data.settings));
+        }
+
         toast.success('Data imported successfully! Refreshing...');
         setTimeout(() => window.location.reload(), 1000);
       } catch {

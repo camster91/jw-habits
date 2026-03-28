@@ -47,6 +47,7 @@ function getChapterLink(chapterStr) {
 function WeeklyBibleReading() {
   const [weekData, setWeekData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const weekKey = getISOWeekString(new Date());
 
@@ -66,8 +67,8 @@ function WeeklyBibleReading() {
       try {
         const workbooks = await loadMeetingWorkbooks();
         setWeekData(workbooks[weekKey] || null);
-      } catch (err) {
-        console.error('Failed to load weekly Bible reading:', err);
+      } catch {
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -86,7 +87,7 @@ function WeeklyBibleReading() {
     );
   }
 
-  if (!weekData || !weekData.bibleReading) {
+  if (loadError || !weekData || !weekData.bibleReading) {
     return (
       <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
         <div className="card-body items-center py-8">

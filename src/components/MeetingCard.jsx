@@ -17,6 +17,7 @@ function MeetingCard() {
   const [activeTab, setActiveTab] = useState('midweek');
   const [workbookData, setWorkbookData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekOf = format(weekStart, 'yyyy-MM-dd');
@@ -64,8 +65,8 @@ function MeetingCard() {
 
         const weekendPartKeys = ['watchtower'];
         initMeetingParts(weekOf, 'weekend', weekendPartKeys);
-      } catch (err) {
-        console.error('Failed to load workbook data:', err);
+      } catch {
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -197,6 +198,25 @@ function MeetingCard() {
         <div className="card-body items-center py-8">
           <div className="loading loading-spinner loading-md text-accent"></div>
           <p className="text-sm text-base-content/50">Loading meetings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="card bg-base-100 shadow-sm rounded-2xl">
+        <div className="card-body items-center py-8">
+          <Calendar className="w-8 h-8 text-base-content/30" />
+          <p className="text-sm text-base-content/50">Could not load meeting data</p>
+          <a
+            href={JW_ORG_SECTIONS.meetingWorkbooks}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary btn-sm mt-2"
+          >
+            <ExternalLink className="w-4 h-4" /> Open on JW.org
+          </a>
         </div>
       </div>
     );

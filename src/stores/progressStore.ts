@@ -46,6 +46,13 @@ interface BibleReadingData {
   timestamp: string | null;
 }
 
+interface WeeklyReadingData {
+  chapters: Record<number, boolean>;
+  completed: boolean;
+  totalChapters: number;
+  timestamp: string | null;
+}
+
 interface ProgressState {
   dailyTexts: Record<string, DailyTextData>;
   prayers: Record<string, PrayerData>;
@@ -53,10 +60,11 @@ interface ProgressState {
   bibleReadings: Record<string, BibleReadingData>;
   bibleChapters: Record<string, Record<number, boolean>>;
   meetings: Record<string, MeetingPartData>;
+  weeklyReadings: Record<string, WeeklyReadingData>;
 }
 
 interface ProgressActions {
-  updateDailyTextProgress: (date: string, field: keyof DailyTextData, value: any) => void;
+  updateDailyTextProgress: (date: string, field: keyof DailyTextData, value: boolean | number | string | null) => void;
   markDailyTextRead: (date: string) => void;
   isDailyTextRead: (date: string) => boolean;
   getDailyTextProgress: (date: string) => DailyTextData | { readScripture: boolean; progress: number };
@@ -80,6 +88,11 @@ interface ProgressActions {
   markBibleReadingComplete: (dayOfYear: string) => void;
   isBibleReadingComplete: (dayOfYear: string) => boolean;
   getBibleReadingProgress: (dayOfYear: string) => number;
+  getWeeklyReadingProgress: (weekKey: string) => WeeklyReadingData;
+  toggleWeeklyChapter: (weekKey: string, chapterIndex: number) => void;
+  isWeeklyReadingComplete: (weekKey: string, totalChapters: number) => boolean;
+  markWeeklyReadingComplete: (weekKey: string, totalChapters: number) => void;
+  getWeeklyReadingStreak: () => number;
   getMeetingProgress: (weekOf: string, meetingType: string) => MeetingPartData;
   isMeetingPrepared: (weekOf: string, meetingType: string) => boolean;
   markMeetingPrepared: (weekOf: string, meetingType: string, duration?: number) => void;
@@ -96,6 +109,7 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
       familyWorship: {},
       bibleReadings: {},
       bibleChapters: {},
+      weeklyReadings: {},
       meetings: {},
 
       updateDailyTextProgress: (date, field, value) => set((state) => {
@@ -362,6 +376,67 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
         return state.bibleReadings[dayOfYear]?.progress || 0;
       },
 
+      getWeeklyReadingProgress: (weekKey) => {
+        const state = get();
+        return state.weeklyReadings[weekKey] || { chapters: {}, completed: false, totalChapters: 0, timestamp: null };
+      },
+
+      toggleWeeklyChapter: (weekKey, chapterIndex) => set((state) => {
+        const existing = state.weeklyReadings[weekKey] || { chapters: {}, completed: false, totalChapters: 0, timestamp: null };
+        const chapters = { ...existing.chapters, [chapterIndex]: !existing.chapters[chapterIndex] };
+        return {
+          weeklyReadings: {
+            ...state.weeklyReadings,
+            [weekKey]: { ...existing, chapters, timestamp: new Date().toISOString() }
+          }
+        };
+      }),
+
+      isWeeklyReadingComplete: (weekKey, totalChapters) => {
+        const state = get();
+        const data = state.weeklyReadings[weekKey];
+        if (!data) return false;
+        if (data.completed) return true;
+        const completedCount = Object.values(data.chapters).filter(Boolean).length;
+        return completedCount >= totalChapters && totalChapters > 0;
+      },
+
+      markWeeklyReadingComplete: (weekKey, totalChapters) => set((state) => {
+        const existing = state.weeklyReadings[weekKey] || { chapters: {}, completed: false, totalChapters: 0, timestamp: null };
+        const chapters = { ...existing.chapters };
+        for (let i = 0; i < totalChapters; i++) {
+          chapters[i] = true;
+        }
+        return {
+          weeklyReadings: {
+            ...state.weeklyReadings,
+            [weekKey]: { chapters, completed: true, totalChapters, timestamp: new Date().toISOString() }
+          }
+        };
+      }),
+
+      getWeeklyReadingStreak: () => {
+        const state = get();
+        let streak = 0;
+        const today = new Date();
+        for (let i = 0; i < 52; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - (i * 7));
+          const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+          const dayNum = d.getUTCDay() || 7;
+          d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+          const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+          const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+          const weekKey = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+          if (state.weeklyReadings[weekKey]?.completed) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+        return streak;
+      },
+
       getMeetingProgress: (weekOf, meetingType) => {
         const state = get();
         const key = `${weekOf}-${meetingType}`;
@@ -429,7 +504,7 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
         };
       }),
 
-      clearAll: () => set({ dailyTexts: {}, prayers: {}, familyWorship: {}, bibleReadings: {}, bibleChapters: {}, meetings: {} }),
+      clearAll: () => set({ dailyTexts: {}, prayers: {}, familyWorship: {}, bibleReadings: {}, bibleChapters: {}, meetings: {}, weeklyReadings: {} }),
     }),
     {
       name: 'jw-progress-storage',
@@ -440,6 +515,7 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
         bibleReadings: state.bibleReadings,
         bibleChapters: state.bibleChapters,
         meetings: state.meetings,
+        weeklyReadings: state.weeklyReadings,
       }),
     }
   )

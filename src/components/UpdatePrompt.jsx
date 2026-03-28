@@ -20,7 +20,7 @@ function UpdatePrompt() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 safe-area-top">
+    <div className="fixed top-0 left-0 right-0 z-40 safe-area-top">
       <div className="bg-success text-success-content p-3">
         <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
           <div className="flex items-center gap-2">
