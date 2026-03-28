@@ -71,6 +71,9 @@ interface ProgressActions {
   getFamilyWorship: (weekKey: string) => FamilyWorshipData;
   getWeekKey: (date?: Date) => string;
   getFamilyWorshipStreak: () => number;
+  getDailyTextStreak: () => number;
+  getBibleReadingStreak: () => number;
+  getCompletionRate: (category: string, days: number) => number;
   toggleBibleChapter: (dayOfYear: string, chapterIndex: number) => void;
   getBibleChapterProgress: (dayOfYear: string) => Record<number, boolean>;
   updateBibleReadingProgress: (dayOfYear: string, progress: number, chaptersRead?: number[]) => void;
@@ -242,6 +245,62 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
           }
         }
         return streak;
+      },
+
+      getDailyTextStreak: () => {
+        const state = get();
+        let streak = 0;
+        const today = new Date();
+        for (let i = 0; i < 365; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          const dateStr = format(date, 'yyyy-MM-dd');
+          const data = state.dailyTexts[dateStr];
+          if (data?.readScripture || data?.read) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+        return streak;
+      },
+
+      getBibleReadingStreak: () => {
+        const state = get();
+        let streak = 0;
+        const today = new Date();
+        for (let i = 0; i < 365; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          const dayOfYear = String(getDayOfYear(date));
+          const data = state.bibleReadings[dayOfYear];
+          if (data?.read || data?.progress === 100) {
+            streak++;
+          } else {
+            break;
+          }
+        }
+        return streak;
+      },
+
+      getCompletionRate: (category, days) => {
+        const state = get();
+        let completed = 0;
+        const today = new Date();
+        for (let i = 0; i < days; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          if (category === 'dailyText') {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const data = state.dailyTexts[dateStr];
+            if (data?.readScripture || data?.read) completed++;
+          } else if (category === 'bibleReading') {
+            const dayOfYear = String(getDayOfYear(date));
+            const data = state.bibleReadings[dayOfYear];
+            if (data?.read || data?.progress === 100) completed++;
+          }
+        }
+        return Math.round((completed / days) * 100);
       },
 
       toggleBibleChapter: (dayOfYear, chapterIndex) => set((state) => ({
