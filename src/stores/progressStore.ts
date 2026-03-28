@@ -80,6 +80,9 @@ interface ProgressActions {
   markBibleReadingComplete: (dayOfYear: string) => void;
   isBibleReadingComplete: (dayOfYear: string) => boolean;
   getBibleReadingProgress: (dayOfYear: string) => number;
+  getMeetingProgress: (weekOf: string, meetingType: string) => MeetingPartData;
+  isMeetingPrepared: (weekOf: string, meetingType: string) => boolean;
+  markMeetingPrepared: (weekOf: string, meetingType: string, duration?: number) => void;
   updateMeetingPartProgress: (weekOf: string, meetingType: string, partKey: string, completed: boolean) => void;
   initMeetingParts: (weekOf: string, meetingType: string, partKeys: string[]) => void;
   clearAll: () => void;
@@ -358,6 +361,37 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
         const state = get();
         return state.bibleReadings[dayOfYear]?.progress || 0;
       },
+
+      getMeetingProgress: (weekOf, meetingType) => {
+        const state = get();
+        const key = `${weekOf}-${meetingType}`;
+        return state.meetings[key] || { parts: {}, progress: 0, prepared: false, timestamp: null };
+      },
+
+      isMeetingPrepared: (weekOf, meetingType) => {
+        const state = get();
+        const key = `${weekOf}-${meetingType}`;
+        return state.meetings[key]?.prepared || false;
+      },
+
+      markMeetingPrepared: (weekOf, meetingType) => set((state) => {
+        const key = `${weekOf}-${meetingType}`;
+        const existing = state.meetings[key] || { parts: {}, progress: 0, prepared: false, timestamp: null };
+        const parts = { ...existing.parts };
+        Object.keys(parts).forEach(k => { parts[k] = true; });
+        return {
+          meetings: {
+            ...state.meetings,
+            [key]: {
+              ...existing,
+              parts,
+              progress: 100,
+              prepared: true,
+              timestamp: new Date().toISOString()
+            }
+          }
+        };
+      }),
 
       updateMeetingPartProgress: (weekOf, meetingType, partKey, completed) => set((state) => {
         const key = `${weekOf}-${meetingType}`;

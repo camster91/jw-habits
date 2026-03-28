@@ -122,6 +122,8 @@ interface GamificationActions {
   recordProjectCompleted: () => void;
   recordMeetingPrepared: () => void;
   recordPrayerCompleted: () => void;
+  recordPrayerCompletion: (allDone: boolean) => void;
+  recordFamilyWorshipCompletion: () => void;
   checkAndUnlockAchievements: () => void;
   clearRecentAchievements: () => void;
 }
@@ -313,6 +315,19 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
         const today = format(new Date(), 'yyyy-MM-dd');
         get().updatePrayerStreak(today);
         get().addPoints(5);
+      },
+
+      recordPrayerCompletion: (allDone) => {
+        get().addPoints(5);
+        if (allDone) {
+          get().recordPrayerCompleted();
+        }
+      },
+
+      recordFamilyWorshipCompletion: () => {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        get().updateFamilyWorshipStreak(today, true);
+        get().addPoints(25);
       },
 
       checkAndUnlockAchievements: () => {

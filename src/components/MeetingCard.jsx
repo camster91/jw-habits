@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Book, Calendar, Check, Clock, ExternalLink, Music, CheckCircle2 } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 import useProgressStore from '../stores/progressStore';
+import useGamificationStore from '../stores/gamificationStore';
 import { getWorkbookForWeek, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { haptics } from '../utils/native';
 import MeetingSection from './MeetingSection';
@@ -29,6 +30,8 @@ function MeetingCard() {
     isMeetingPrepared,
     markMeetingPrepared
   } = useProgressStore();
+
+  const { recordMeetingPrepared } = useGamificationStore();
 
   const midweekProgress = getMeetingProgress(weekOf, 'midweek');
   const weekendProgress = getMeetingProgress(weekOf, 'weekend');
@@ -76,7 +79,8 @@ function MeetingCard() {
 
   const handleMarkAllComplete = (meetingType) => {
     haptics.success();
-    markMeetingPrepared(weekOf, meetingType, 30);
+    markMeetingPrepared(weekOf, meetingType);
+    recordMeetingPrepared();
   };
 
   const getDaysUntilMeeting = (dayIndex) => {
