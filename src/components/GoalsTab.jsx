@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Target, Plus, Check, Trash2, ChevronDown, ChevronUp, Star, BookOpen, Users, Heart, Clock } from 'lucide-react';
 import useGoalsStore from '../stores/goalsStore';
+import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
 
 const CATEGORIES = [
@@ -68,6 +69,7 @@ function GoalsTab() {
   const [showCompleted, setShowCompleted] = useState(false);
 
   const { goals, addGoal, toggleGoalComplete, deleteGoal, updateGoal } = useGoalsStore();
+  const { recordGoalCompleted } = useGamificationStore();
 
   const activeGoals = goals.filter((g) => !g.completed);
   const completedGoals = goals.filter((g) => g.completed);
@@ -101,7 +103,11 @@ function GoalsTab() {
 
   const handleToggleComplete = (id) => {
     haptics.medium();
+    const goal = goals.find(g => g.id === id);
     toggleGoalComplete(id);
+    if (goal && !goal.completed) {
+      recordGoalCompleted();
+    }
   };
 
   return (

@@ -78,8 +78,30 @@ interface GamificationState {
   projectsCompleted: number;
   meetingsPrepared: number;
   prayersCompleted: number;
-  recentAchievements: any[]; // Needs better typing if possible
+  recentAchievements: Achievement[];
   unlockedAchievements: UserAchievement[];
+}
+
+interface AchievementWithStatus extends Achievement {
+  unlocked: boolean;
+  unlockedAt?: string;
+}
+
+interface GamificationStats {
+  points: number;
+  currentStreak: number;
+  longestStreak: number;
+  dailyTextCompletions: number;
+  bibleReadingsCompleted: number;
+  prayersCompleted: number;
+  familyWorshipCompleted: number;
+  reflectionsWritten: number;
+  newsRead: number;
+  goalsCompleted: number;
+  projectsCompleted: number;
+  meetingsPrepared: number;
+  achievementsUnlocked: number;
+  totalAchievements: number;
 }
 
 interface GamificationActions {
@@ -89,6 +111,20 @@ interface GamificationActions {
   updateFamilyWorshipStreak: (weekKey: string, completed: boolean) => void;
   incrementActivity: (category: string) => void;
   getLevel: () => number;
+  getPointsToNextLevel: () => number;
+  getStats: () => GamificationStats;
+  getAllAchievements: () => AchievementWithStatus[];
+  recordDailyTextCompletion: () => void;
+  recordReflection: () => void;
+  recordNewsRead: () => void;
+  recordBibleReading: () => void;
+  recordGoalCompleted: () => void;
+  recordProjectCompleted: () => void;
+  recordMeetingPrepared: () => void;
+  recordPrayerCompleted: () => void;
+  recordPrayerCompletion: (allDone: boolean) => void;
+  recordFamilyWorshipCompletion: () => void;
+  checkAndUnlockAchievements: () => void;
   clearRecentAchievements: () => void;
 }
 
@@ -115,13 +151,16 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
       recentAchievements: [],
       unlockedAchievements: [],
 
-      addPoints: (points) => set((state) => ({ points: state.points + points })),
-      
+      addPoints: (points) => {
+        set((state) => ({ points: state.points + points }));
+        get().checkAndUnlockAchievements();
+      },
+
       updateStreak: (date) => {
         const state = get();
         const lastDate = state.lastActivityDate ? parseISO(state.lastActivityDate) : null;
         const todayDate = startOfDay(new Date());
-        
+
         let newStreak = 1;
         if (lastDate) {
           const daysDiff = differenceInDays(todayDate, startOfDay(lastDate));
@@ -131,12 +170,13 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
             return;
           }
         }
-        
+
         set({
           currentStreak: newStreak,
           longestStreak: Math.max(state.longestStreak, newStreak),
           lastActivityDate: date
         });
+        get().checkAndUnlockAchievements();
       },
 
       updatePrayerStreak: (date) => {
@@ -159,29 +199,204 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
           longestPrayerStreak: Math.max(state.longestPrayerStreak, newStreak),
           lastPrayerDate: date
         });
+        get().checkAndUnlockAchievements();
       },
 
       updateFamilyWorshipStreak: (weekKey, completed) => {
         const state = get();
-        // Simplified for now - needs better logic based on weeks
         set({
-          familyWorshipStreak: completed ? state.familyWorshipStreak + 1 : 0
+          familyWorshipStreak: completed ? state.familyWorshipStreak + 1 : 0,
+          longestFamilyWorshipStreak: completed
+            ? Math.max(state.longestFamilyWorshipStreak, state.familyWorshipStreak + 1)
+            : state.longestFamilyWorshipStreak
         });
+        get().checkAndUnlockAchievements();
       },
 
       incrementActivity: (category) => {
-        set((state) => {
-          const key = `${category}Completions` as keyof GamificationState;
-          if (key in state) {
-            const newState = { ...state, [key]: (state[key] as number) + 1 };
-            // Check for new achievements
-            return newState;
-          }
-          return state;
-        });
+        const categoryMap: Record<string, keyof GamificationState> = {
+          dailyText: 'dailyTextCompletions',
+          bibleReading: 'bibleReadingsCompleted',
+          prayer: 'prayersCompleted',
+          reflection: 'reflectionsWritten',
+          news: 'newsRead',
+          goal: 'goalsCompleted',
+          project: 'projectsCompleted',
+          meeting: 'meetingsPrepared',
+        };
+        const key = categoryMap[category];
+        if (key) {
+          set((state) => ({ ...state, [key]: (state[key] as number) + 1 }));
+          get().checkAndUnlockAchievements();
+        }
       },
 
       getLevel: () => Math.floor(get().points / 100) + 1,
+
+      getPointsToNextLevel: () => {
+        const points = get().points;
+        const nextLevelPoints = (Math.floor(points / 100) + 1) * 100;
+        return nextLevelPoints - points;
+      },
+
+      getStats: () => {
+        const state = get();
+        return {
+          points: state.points,
+          currentStreak: state.currentStreak,
+          longestStreak: state.longestStreak,
+          dailyTextCompletions: state.dailyTextCompletions,
+          bibleReadingsCompleted: state.bibleReadingsCompleted,
+          prayersCompleted: state.prayersCompleted,
+          familyWorshipCompleted: state.familyWorshipStreak,
+          reflectionsWritten: state.reflectionsWritten,
+          newsRead: state.newsRead,
+          goalsCompleted: state.goalsCompleted,
+          projectsCompleted: state.projectsCompleted,
+          meetingsPrepared: state.meetingsPrepared,
+          achievementsUnlocked: state.unlockedAchievements.length,
+          totalAchievements: ACHIEVEMENTS.length,
+        };
+      },
+
+      getAllAchievements: () => {
+        const state = get();
+        return ACHIEVEMENTS.map((achievement) => {
+          const unlocked = state.unlockedAchievements.find(a => a.id === achievement.id);
+          return {
+            ...achievement,
+            unlocked: !!unlocked,
+            unlockedAt: unlocked?.unlockedAt,
+          };
+        });
+      },
+
+      recordDailyTextCompletion: () => {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        get().incrementActivity('dailyText');
+        get().updateStreak(today);
+        get().addPoints(10);
+      },
+
+      recordReflection: () => {
+        get().incrementActivity('reflection');
+        get().addPoints(5);
+      },
+
+      recordNewsRead: () => {
+        get().incrementActivity('news');
+        get().addPoints(5);
+      },
+
+      recordBibleReading: () => {
+        get().incrementActivity('bibleReading');
+        const today = format(new Date(), 'yyyy-MM-dd');
+        get().updateStreak(today);
+        get().addPoints(10);
+      },
+
+      recordGoalCompleted: () => {
+        get().incrementActivity('goal');
+        get().addPoints(20);
+      },
+
+      recordProjectCompleted: () => {
+        get().incrementActivity('project');
+        get().addPoints(30);
+      },
+
+      recordMeetingPrepared: () => {
+        get().incrementActivity('meeting');
+        get().addPoints(15);
+      },
+
+      recordPrayerCompleted: () => {
+        get().incrementActivity('prayer');
+        const today = format(new Date(), 'yyyy-MM-dd');
+        get().updatePrayerStreak(today);
+        get().addPoints(5);
+      },
+
+      recordPrayerCompletion: (allDone) => {
+        get().addPoints(5);
+        if (allDone) {
+          get().recordPrayerCompleted();
+        }
+      },
+
+      recordFamilyWorshipCompletion: () => {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        get().updateFamilyWorshipStreak(today, true);
+        get().addPoints(25);
+      },
+
+      checkAndUnlockAchievements: () => {
+        const state = get();
+        const newAchievements: UserAchievement[] = [];
+
+        const checks: Record<string, boolean> = {
+          first_text: state.dailyTextCompletions >= 1,
+          text_week: state.currentStreak >= 7,
+          text_month: state.currentStreak >= 30,
+          first_prayer: state.prayersCompleted >= 1,
+          prayer_complete: state.prayersCompleted >= 3,
+          prayer_week: state.prayerStreak >= 7,
+          prayer_month: state.prayerStreak >= 30,
+          first_worship: state.familyWorshipStreak >= 1,
+          worship_month: state.familyWorshipStreak >= 4,
+          worship_quarter: state.familyWorshipStreak >= 12,
+          week_streak: state.currentStreak >= 7,
+          month_streak: state.currentStreak >= 30,
+          quarter_streak: state.currentStreak >= 90,
+          year_streak: state.currentStreak >= 365,
+          first_reflection: state.reflectionsWritten >= 1,
+          reflections_10: state.reflectionsWritten >= 10,
+          reflections_50: state.reflectionsWritten >= 50,
+          reflections_100: state.reflectionsWritten >= 100,
+          news_reader: state.newsRead >= 10,
+          news_enthusiast: state.newsRead >= 50,
+          news_master: state.newsRead >= 100,
+          bible_reader: state.bibleReadingsCompleted >= 7,
+          bible_scholar: state.bibleReadingsCompleted >= 30,
+          bible_master: state.bibleReadingsCompleted >= 100,
+          first_goal: state.goalsCompleted >= 1,
+          goals_5: state.goalsCompleted >= 5,
+          goals_10: state.goalsCompleted >= 10,
+          goals_20: state.goalsCompleted >= 20,
+          first_project: state.projectsCompleted >= 1,
+          projects_5: state.projectsCompleted >= 5,
+          projects_10: state.projectsCompleted >= 10,
+          first_meeting: state.meetingsPrepared >= 1,
+          meeting_prepared: state.meetingsPrepared >= 10,
+          meeting_master: state.meetingsPrepared >= 50,
+          level_5: state.points >= 400,
+          level_10: state.points >= 900,
+          level_25: state.points >= 2400,
+          level_50: state.points >= 4900,
+        };
+
+        const alreadyUnlocked = new Set(state.unlockedAchievements.map(a => a.id));
+
+        for (const [id, met] of Object.entries(checks)) {
+          if (met && !alreadyUnlocked.has(id)) {
+            const achievement = ACHIEVEMENTS.find(a => a.id === id);
+            if (achievement) {
+              newAchievements.push({ id, unlockedAt: new Date().toISOString() });
+              if (achievement.points > 0) {
+                set((s) => ({ points: s.points + achievement.points }));
+              }
+            }
+          }
+        }
+
+        if (newAchievements.length > 0) {
+          const achievementDetails = newAchievements.map(a => ACHIEVEMENTS.find(ach => ach.id === a.id)!);
+          set((s) => ({
+            unlockedAchievements: [...s.unlockedAchievements, ...newAchievements],
+            recentAchievements: [...s.recentAchievements, ...achievementDetails],
+          }));
+        }
+      },
 
       clearRecentAchievements: () => set({ recentAchievements: [] }),
     }),

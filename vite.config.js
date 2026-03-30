@@ -78,16 +78,6 @@ export default defineConfig({
             label: 'JW Habits Home Screen'
           }
         ],
-        // Enable share target for receiving shared content
-        share_target: {
-          action: '/share',
-          method: 'GET',
-          params: {
-            title: 'title',
-            text: 'text',
-            url: 'url'
-          }
-        }
       },
       workbox: {
         // Precache all static assets

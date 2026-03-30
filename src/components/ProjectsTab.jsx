@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FolderKanban, Plus, Trash2, ChevronDown, ChevronRight, Star, Lightbulb, Users, BookOpen, Mic } from 'lucide-react';
 import useGoalsStore from '../stores/goalsStore';
+import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
 
 const CATEGORIES = [
@@ -133,6 +134,7 @@ function ProjectsTab() {
     deleteProjectTask,
     getProjectProgress,
   } = useGoalsStore();
+  const { recordProjectCompleted } = useGamificationStore();
 
   const activeProjects = projects.filter((p) => !p.completed);
 
@@ -396,6 +398,13 @@ function ProjectsTab() {
                                 onChange={() => {
                                   haptics.light();
                                   toggleProjectTask(project.id, task.id);
+                                  if (!task.completed) {
+                                    const otherTasks = project.tasks.filter(t => t.id !== task.id);
+                                    const allOthersDone = otherTasks.every(t => t.completed);
+                                    if (allOthersDone) {
+                                      recordProjectCompleted();
+                                    }
+                                  }
                                 }}
                                 className="checkbox checkbox-sm checkbox-success"
                               />

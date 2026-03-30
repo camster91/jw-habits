@@ -160,13 +160,12 @@ export const JW_ORG_SECTIONS = {
  * @param {string} locale - Language code (default: 'E' for English)
  * @returns {string} JW Library finder URL
  */
-export function getDailyTextLink(date = new Date(), locale = 'E') {
+export function getDailyTextLink(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  const dateStr = `${year}${month}${day}`;
 
-  return `${FINDER_BASE}?wtlocale=${locale}&alias=daily-text&date=${dateStr}`;
+  return `https://wol.jw.org/en/wol/h/r1/lp-e/text-today/${year}/${month}/${day}`;
 }
 
 /**

@@ -46,6 +46,10 @@ interface SettingsActions {
   updateNotification: (key: keyof Notifications, updates: Partial<NotificationSetting>) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   setBibleReadingSchedule: (schedule: Partial<BibleReadingSchedule>) => void;
+  getEffectiveScheduleDay: () => number;
+  setBibleReadingStartDay: (day: number) => void;
+  setBibleReadingPace: (pace: number) => void;
+  resetBibleReadingSchedule: () => void;
 }
 
 const DEFAULT_NOTIFICATIONS: Notifications = {
@@ -108,6 +112,30 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
         set((state) => ({
           bibleReadingSchedule: { ...state.bibleReadingSchedule, ...schedule },
         })),
+      getEffectiveScheduleDay: () => {
+        const state = get();
+        const { startingScheduleDay, readingPace, customStartDate, useCustomSchedule } = state.bibleReadingSchedule;
+        if (useCustomSchedule && customStartDate) {
+          const start = new Date(customStartDate);
+          const today = new Date();
+          const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+          return Math.max(1, (diffDays * readingPace) + 1);
+        }
+        const now = new Date();
+        const startOfYear = new Date(now.getFullYear(), 0, 0);
+        const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
+        return ((dayOfYear - 1 + startingScheduleDay - 1) % 366) + 1;
+      },
+      setBibleReadingStartDay: (day) =>
+        set((state) => ({
+          bibleReadingSchedule: { ...state.bibleReadingSchedule, startingScheduleDay: day },
+        })),
+      setBibleReadingPace: (pace) =>
+        set((state) => ({
+          bibleReadingSchedule: { ...state.bibleReadingSchedule, readingPace: pace },
+        })),
+      resetBibleReadingSchedule: () =>
+        set({ bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS }),
     }),
     {
       name: 'jw-progress-settings',

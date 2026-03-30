@@ -21,7 +21,6 @@ function DailyTasksSection() {
     isDailyTextRead,
     getDailyTextProgress,
     updateDailyTextProgress,
-    // getDailyTextStreak, // Not used in this component?
   } = useProgressStore();
 
   const dailyTextProgress = getDailyTextProgress(today);
