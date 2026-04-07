@@ -1,193 +1,265 @@
-# JW-News
+# JW-News (Daily Spiritual Habits Tracker)
 
-A news platform for publishing and aggregating content with modern web technologies.
+**A spiritual habits tracking app for building consistent daily routines.**
 
-## Features
+JW-News is a mobile-first progressive web application designed to help users build and maintain daily spiritual habits. Built with React 19 and Capacitor, it offers a native app experience across iOS, Android, and web platforms.
 
-- **News Publishing** - Create and publish news articles with rich content
-- **Content Aggregation** - Aggregate news from multiple sources
-- **Article Management** - Organize and categorize news content
-- **Responsive Design** - Mobile-first design for all devices
-- **SEO Optimized** - Built-in SEO features for better discoverability
-- **Fast Performance** - Optimized for speed with Next.js
+## Tech Stack
 
-## Quick Start
+### Core
+- **React 19** - UI framework
+- **Vite 7** - Build tool and dev server
+- **TypeScript** - Type safety
+
+### Mobile
+- **Capacitor 8** - Native runtime bridge
+- **@capacitor/ios** - iOS native features
+- **@capacitor/android** - Android native features
+
+### Styling
+- **Tailwind CSS 3** - Utility-first styling
+- **DaisyUI 4** - Component library
+
+### State Management
+- **Zustand** - Lightweight global state
+
+### Navigation
+- **React Router DOM 7** - Client-side routing
+
+### Mobile Features
+- **@capacitor/local-notifications** - Local push notifications
+- **@capacitor/push-notifications** - Remote push notifications
+- **@capacitor/preferences** - Persistent storage
+- **@capacitor/haptics** - Haptic feedback
+
+## Key Features
+
+### Habit Tracking
+- Daily text reading tracking
+- Bible reading progress
+- Meeting preparation reminders
+- Ministry activity logging
+
+### Progress Visualization
+- Streak tracking
+- Weekly/monthly statistics
+- Visual progress charts
+- Achievement badges
+
+### Notifications
+- Custom reminder times
+- Daily habit reminders
+- Meeting prep notifications
+- Streak milestone alerts
+
+### Data Management
+- Local-first storage
+- Cloud sync capability
+- Export/import data
+- Privacy-focused design
+
+## Installation
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+
+### Web Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/camster91/JW-News.git
+   cd JW-News
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+Visit `http://localhost:5173` for the web version.
+
+### Mobile Setup (iOS/Android)
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
+# Build web assets
 npm run build
 
-# Start production server
-npm start
+# Add platforms (first time)
+npm run mobile:add:ios      # iOS
+npm run mobile:add:android  # Android
 
-# Run linting
-npm run lint
+# Sync and open native IDE
+npm run mobile:ios          # Opens Xcode
+npm run mobile:android      # Opens Android Studio
 ```
 
-Visit: http://localhost:3000
+## Usage
 
-## Development Scripts
-
-The project includes scripts to make it easy to start and stop the development servers on different platforms.
-
-### PowerShell (Windows)
-
-```powershell
-# Run from project root
-.\scripts\start-dev.ps1
-.\scripts\stop-dev.ps1
-
-# Run in background (with logging)
-.\scripts\start-dev.ps1 -Background
-
-# Force kill processes using dev ports
-.\scripts\stop-dev.ps1 -KillPorts
-```
-
-### Bash (Linux/macOS/WSL/Git Bash)
+### Development Commands
 
 ```bash
-# Make scripts executable (first time only)
-chmod +x scripts/*.sh
-
-# Start servers
-./scripts/start-dev.sh
-
-# Start in background
-./scripts/start-dev.sh --background
-
-# Stop servers
-./scripts/stop-dev.sh
-
-# Kill processes on dev ports
-./scripts/stop-dev.sh --kill-ports
+npm run dev           # Start Vite dev server
+npm run build         # Build for production
+npm run preview       # Preview production build
+npm run lint          # Run ESLint
+npm run format        # Format with Prettier
+npm run test          # Run Vitest tests
+npm run test:watch    # Run tests in watch mode
+npm run test:coverage # Generate coverage report
 ```
 
-### Cross-Platform
-
-For all platforms, you can always use:
+### Mobile Commands
 
 ```bash
-npm run dev        # Start development server (foreground)
-npm run build      # Build for production
-npm start          # Start production server
+npm run mobile:build      # Build and sync for mobile
+npm run mobile:ios        # Build and open Xcode
+npm run mobile:android    # Build and open Android Studio
+npm run cap:sync          # Sync web assets to native
+npm run cap:open:ios      # Open iOS project
+npm run cap:open:android  # Open Android project
 ```
 
-The development server runs on port 3000 by default.
+### Android Build Commands
+
+```bash
+npm run android:build:debug    # Debug APK
+npm run android:build:release   # Release APK
+npm run android:bundle          # Play Store bundle
+```
 
 ## Project Structure
 
 ```
-jw-news/
-├── package.json
-├── next.config.js
-├── tailwind.config.js
-├── public/
-│   ├── images/
-│   └── favicon.ico
+JW-News/
 ├── src/
-│   ├── app/
-│   │   ├── layout.jsx
-│   │   ├── page.jsx
-│   │   ├── globals.css
-│   │   └── api/
-│   │       └── news/
-│   ├── components/
-│   │   ├── NewsCard.jsx
-│   │   ├── NewsGrid.jsx
-│   │   ├── Header.jsx
-│   │   ├── Footer.jsx
-│   │   └── Navigation.jsx
-│   ├── lib/
-│   │   ├── newsAPI.js
-│   │   └── aggregator.js
-│   └── utils/
-│       ├── formatDate.js
-│       └── helpers.js
-└── .env.local
+│   ├── components/        # Reusable UI components
+│   ├── pages/             # Route components
+│   ├── hooks/             # Custom React hooks
+│   ├── stores/            # Zustand stores
+│   ├── utils/             # Utility functions
+│   ├── assets/            # Static assets
+│   ├── App.jsx            # Root component
+│   ├── main.jsx           # Entry point
+│   └── index.css          # Global styles
+├── android/               # Android native project
+├── ios/                   # iOS native project
+├── capacitor.config.json  # Capacitor configuration
+├── vite.config.ts         # Vite configuration
+└── package.json
+```
+
+## Core Modules
+
+### Daily Text
+- Today's scripture and commentary
+- Reading progress tracking
+- Notes and highlights
+
+### Bible Reading
+- Weekly reading schedule
+- Progress visualization
+- Completion streaks
+
+### Meeting Preparation
+- Weekly meeting schedule
+- Preparation reminders
+- Note-taking
+
+### Ministry Tracker
+- Activity logging
+- Time tracking
+- Return visit management
+
+## Configuration
+
+### Capacitor Config
+
+```json
+{
+  "appId": "com.jwnews.habits",
+  "appName": "JW-News",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_notification"
+    }
+  }
+}
+```
+
+### Environment Variables
+
+```env
+VITE_API_URL=your_api_url
+VITE_NOTIFICATION_KEY=your_notification_key
 ```
 
 ## Deployment
 
-### Vercel (Recommended)
+### Web (PWA)
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
+npm run build
+# Deploy dist/ folder to static hosting
 ```
 
-### Other Platforms
+### iOS App Store
 
-```
-Build Command: npm run build
-Output Directory: .next
-Install Command: npm install
-```
+1. Build and open Xcode: `npm run mobile:ios`
+2. Configure signing in Xcode
+3. Archive and submit to App Store Connect
 
-## Environment Variables
+### Android Play Store
 
-Create a `.env.local` file in the root directory:
-
-```env
-# API Configuration
-API_URL=http://localhost:3000/api
-NEWS_API_KEY=your_api_key_here
-
-# Database (if using)
-DATABASE_URL=your_database_url
-
-# Other settings
-NODE_ENV=development
+```bash
+npm run android:bundle
+# Upload .aab to Play Console
 ```
 
-## Technology Stack
+## Background Services
 
-- **Next.js 15** - React framework with App Router
-- **React 19** - UI framework
-- **Tailwind CSS 4** - Styling
-- **DaisyUI 5** - Component library (optional)
-- **TypeScript** - Type safety (if enabled)
+The app includes a simple API server for optional backend features:
 
-## Features in Detail
+```bash
+npm run dev:server    # Start API server only
+npm run dev:full      # Start both Vite and API server
+```
 
-### Publishing
-- Rich text editor for creating articles
-- Image upload and management
-- Category and tag organization
-- Draft and publish workflow
+## Roadmap
 
-### Aggregation
-- Fetch news from multiple sources
-- Automatic content parsing
-- Scheduled updates
-- Duplicate detection
+- [ ] Add cloud sync for cross-device data
+- [ ] Implement sharing features
+- [ ] Add widget support
+- [ ] Apple Watch companion app
+- [ ] Enhanced analytics dashboard
 
-## API Routes
+## Testing
 
-### News API
-- `GET /api/news` - Get all news articles
-- `GET /api/news/:id` - Get specific article
-- `POST /api/news` - Create new article
-- `PUT /api/news/:id` - Update article
-- `DELETE /api/news/:id` - Delete article
+```bash
+npm run test          # Run unit tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
 
-### Aggregation API
-- `GET /api/aggregate` - Get aggregated news
-- `POST /api/aggregate/refresh` - Refresh news sources
+## Documentation
+
+- `MOBILE_BUILD_GUIDE.md` - Detailed mobile build instructions
+- `APP_STORE_SUBMISSION.md` - App store submission guide
+- `PRIVACY_POLICY.md` - Privacy policy
 
 ## License
 
-**Private** - This project is proprietary and confidential. Unauthorized copying, distribution, or use is strictly prohibited.
+Private - This project is proprietary and confidential.
 
-## Development
+## Author
 
-Built with ❤️ using Next.js
+Developed by Cameron Ashley.
