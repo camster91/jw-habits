@@ -151,8 +151,9 @@ describe('goalsStore', () => {
 
       const goal = useGoalsStore.getState().goals[0];
       expect(goal.completed).toBe(false);
-      // When uncompleting, progress stays at 100 (it was set to 100 on first toggle)
-      expect(goal.progress).toBe(100);
+      // When uncompleting, progress reverts to previousProgress (0 for new goals)
+      expect(goal.progress).toBe(0);
+      expect(goal.previousProgress).toBe(100);
     });
   });
 
