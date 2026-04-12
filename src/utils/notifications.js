@@ -167,8 +167,8 @@ export function initializeReminders(settings) {
   const timeouts = {};
 
   if (settings.notificationsEnabled && getNotificationPermission() === 'granted') {
-    timeouts.dailyText = scheduleDailyTextReminder(settings.dailyTextReminderTime);
-    timeouts.bibleReading = scheduleBibleReadingReminder(settings.bibleReadingReminderTime);
+    timeouts.dailyText = scheduleDailyTextReminder(settings.notifications.dailyText.time);
+    timeouts.bibleReading = scheduleBibleReadingReminder(settings.notifications.bibleReading.time);
   }
 
   return timeouts;

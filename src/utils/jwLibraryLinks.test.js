@@ -49,25 +49,25 @@ describe('jwLibraryLinks', () => {
   });
 
   describe('getDailyTextLink', () => {
-    it('should generate correct daily text link', () => {
+    it('should generate correct WOL daily text link', () => {
       const date = new Date(2026, 0, 20); // January 20, 2026
       const link = getDailyTextLink(date);
 
-      expect(link).toBe('jwlibrary:///finder?wtlocale=E&alias=daily-text&date=20260120');
-    });
-
-    it('should use custom locale', () => {
-      const date = new Date(2026, 0, 20);
-      const link = getDailyTextLink(date, 'S');
-
-      expect(link).toContain('wtlocale=S');
+      expect(link).toBe('https://wol.jw.org/en/wol/h/r1/lp-e/text-today/2026/01/20');
     });
 
     it('should pad single digit months and days', () => {
       const date = new Date(2026, 0, 5); // January 5, 2026
       const link = getDailyTextLink(date);
 
-      expect(link).toContain('date=20260105');
+      expect(link).toBe('https://wol.jw.org/en/wol/h/r1/lp-e/text-today/2026/01/05');
+    });
+
+    it('should always return English WOL link', () => {
+      const date = new Date(2026, 0, 20);
+      const link = getDailyTextLink(date);
+
+      expect(link).toContain('/lp-e/');
     });
   });
 

@@ -33,9 +33,6 @@ interface SettingsState {
   notifications: Notifications;
   bibleReadingSchedule: BibleReadingSchedule;
   notificationsEnabled: boolean;
-  dailyTextReminderTime: string;
-  bibleReadingReminderTime: string;
-  meetingReminderEnabled: boolean;
   theme: 'light' | 'dark';
 }
 
@@ -77,9 +74,6 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
       notifications: DEFAULT_NOTIFICATIONS,
       bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS,
       notificationsEnabled: false,
-      dailyTextReminderTime: '07:00',
-      bibleReadingReminderTime: '20:00',
-      meetingReminderEnabled: true,
       theme: 'light',
 
       setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),

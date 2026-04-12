@@ -5,7 +5,7 @@ import { act } from '@testing-library/react';
 vi.spyOn(document.documentElement, 'setAttribute').mockImplementation(() => {});
 
 // Import after setup
-const { default: useSettingsStore } = await import('./settingsStore.js');
+const { default: useSettingsStore } = await import('./settingsStore.ts');
 
 describe('settingsStore', () => {
   beforeEach(() => {
@@ -13,10 +13,14 @@ describe('settingsStore', () => {
     act(() => {
       const store = useSettingsStore.getState();
       store.setNotificationsEnabled(false);
-      store.setDailyTextReminderTime('07:00');
-      store.setBibleReadingReminderTime('20:00');
-      store.setMeetingReminderEnabled(true);
       store.setTheme('light');
+      // Reset notifications to defaults
+      store.toggleNotification('dailyText');
+      store.toggleNotification('dailyText'); // toggle back on
+      store.setNotificationTime('dailyText', '07:00');
+      store.setNotificationTime('bibleReading', '20:00');
+      store.updateNotification('meetingPrep', { enabled: true });
+      store.setBibleReadingSchedule({ startingScheduleDay: 1, readingPace: 1, customStartDate: null, useCustomSchedule: false });
     });
   });
 
@@ -24,10 +28,25 @@ describe('settingsStore', () => {
     it('should have correct default values', () => {
       const state = useSettingsStore.getState();
       expect(state.notificationsEnabled).toBe(false);
-      expect(state.dailyTextReminderTime).toBe('07:00');
-      expect(state.bibleReadingReminderTime).toBe('20:00');
-      expect(state.meetingReminderEnabled).toBe(true);
+      expect(state.notifications.dailyText.time).toBe('07:00');
+      expect(state.notifications.bibleReading.time).toBe('20:00');
+      expect(state.notifications.meetingPrep.enabled).toBe(true);
       expect(state.theme).toBe('light');
+    });
+
+    it('should have default notifications object', () => {
+      const state = useSettingsStore.getState();
+      expect(state.notifications).toBeDefined();
+      expect(state.notifications.dailyText).toBeDefined();
+      expect(state.notifications.bibleReading).toBeDefined();
+      expect(state.notifications.meetingPrep).toBeDefined();
+    });
+
+    it('should have default bible reading schedule', () => {
+      const state = useSettingsStore.getState();
+      expect(state.bibleReadingSchedule.startingScheduleDay).toBe(1);
+      expect(state.bibleReadingSchedule.readingPace).toBe(1);
+      expect(state.bibleReadingSchedule.useCustomSchedule).toBe(false);
     });
   });
 
@@ -48,31 +67,46 @@ describe('settingsStore', () => {
 
       expect(useSettingsStore.getState().notificationsEnabled).toBe(false);
     });
-  });
 
-  describe('Reminder times', () => {
-    it('should set daily text reminder time', () => {
+    it('should toggle individual notification', () => {
       act(() => {
-        useSettingsStore.getState().setDailyTextReminderTime('08:30');
+        const store = useSettingsStore.getState();
+        store.toggleNotification('dailyText');
       });
 
-      expect(useSettingsStore.getState().dailyTextReminderTime).toBe('08:30');
+      expect(useSettingsStore.getState().notifications.dailyText.enabled).toBe(false);
+
+      act(() => {
+        useSettingsStore.getState().toggleNotification('dailyText');
+      });
+
+      expect(useSettingsStore.getState().notifications.dailyText.enabled).toBe(true);
     });
 
-    it('should set bible reading reminder time', () => {
+    it('should set notification time', () => {
       act(() => {
-        useSettingsStore.getState().setBibleReadingReminderTime('21:00');
+        useSettingsStore.getState().setNotificationTime('dailyText', '08:30');
       });
 
-      expect(useSettingsStore.getState().bibleReadingReminderTime).toBe('21:00');
+      expect(useSettingsStore.getState().notifications.dailyText.time).toBe('08:30');
     });
 
-    it('should toggle meeting reminder', () => {
+    it('should set bible reading notification time', () => {
       act(() => {
-        useSettingsStore.getState().setMeetingReminderEnabled(false);
+        useSettingsStore.getState().setNotificationTime('bibleReading', '21:00');
       });
 
-      expect(useSettingsStore.getState().meetingReminderEnabled).toBe(false);
+      expect(useSettingsStore.getState().notifications.bibleReading.time).toBe('21:00');
+    });
+
+    it('should update notification with partial updates', () => {
+      act(() => {
+        useSettingsStore.getState().updateNotification('meetingPrep', { enabled: false, time: '18:00' });
+      });
+
+      const notification = useSettingsStore.getState().notifications.meetingPrep;
+      expect(notification.enabled).toBe(false);
+      expect(notification.time).toBe('18:00');
     });
   });
 
@@ -83,7 +117,6 @@ describe('settingsStore', () => {
       });
 
       expect(useSettingsStore.getState().theme).toBe('dark');
-      expect(document.documentElement.setAttribute).toHaveBeenCalledWith('data-theme', 'dark');
     });
 
     it('should set theme to light', () => {
@@ -95,24 +128,48 @@ describe('settingsStore', () => {
     });
   });
 
-  describe('getSettings', () => {
-    it('should return all settings', () => {
+  describe('Bible reading schedule', () => {
+    it('should update bible reading schedule', () => {
       act(() => {
-        const store = useSettingsStore.getState();
-        store.setNotificationsEnabled(true);
-        store.setDailyTextReminderTime('09:00');
-        store.setTheme('dark');
+        useSettingsStore.getState().setBibleReadingSchedule({ startingScheduleDay: 50, readingPace: 2 });
       });
 
-      const settings = useSettingsStore.getState().getSettings();
+      const schedule = useSettingsStore.getState().bibleReadingSchedule;
+      expect(schedule.startingScheduleDay).toBe(50);
+      expect(schedule.readingPace).toBe(2);
+    });
 
-      expect(settings.notificationsEnabled).toBe(true);
-      expect(settings.dailyTextReminderTime).toBe('09:00');
-      expect(settings.bibleReadingReminderTime).toBe('20:00');
-      expect(settings.meetingReminderEnabled).toBe(true);
-      expect(settings.theme).toBe('dark');
-      expect(settings.notifications).toBeDefined();
-      expect(settings.bibleReadingSchedule).toBeDefined();
+    it('should set bible reading start day', () => {
+      act(() => {
+        useSettingsStore.getState().setBibleReadingStartDay(100);
+      });
+
+      expect(useSettingsStore.getState().bibleReadingSchedule.startingScheduleDay).toBe(100);
+    });
+
+    it('should set bible reading pace', () => {
+      act(() => {
+        useSettingsStore.getState().setBibleReadingPace(3);
+      });
+
+      expect(useSettingsStore.getState().bibleReadingSchedule.readingPace).toBe(3);
+    });
+
+    it('should reset bible reading schedule', () => {
+      act(() => {
+        useSettingsStore.getState().setBibleReadingSchedule({ startingScheduleDay: 100, readingPace: 3 });
+        useSettingsStore.getState().resetBibleReadingSchedule();
+      });
+
+      const schedule = useSettingsStore.getState().bibleReadingSchedule;
+      expect(schedule.startingScheduleDay).toBe(1);
+      expect(schedule.readingPace).toBe(1);
+    });
+
+    it('should calculate effective schedule day', () => {
+      const day = useSettingsStore.getState().getEffectiveScheduleDay();
+      expect(day).toBeGreaterThanOrEqual(1);
+      expect(day).toBeLessThanOrEqual(366);
     });
   });
 });

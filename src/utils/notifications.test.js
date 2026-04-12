@@ -180,8 +180,10 @@ describe('notifications', () => {
 
       const settings = {
         notificationsEnabled: true,
-        dailyTextReminderTime: '07:00',
-        bibleReadingReminderTime: '20:00',
+        notifications: {
+          dailyText: { time: '07:00', enabled: true },
+          bibleReading: { time: '20:00', enabled: true },
+        },
       };
 
       const timeouts = initializeReminders(settings);
@@ -193,8 +195,10 @@ describe('notifications', () => {
     it('should not initialize reminders when disabled', () => {
       const settings = {
         notificationsEnabled: false,
-        dailyTextReminderTime: '07:00',
-        bibleReadingReminderTime: '20:00',
+        notifications: {
+          dailyText: { time: '07:00', enabled: true },
+          bibleReading: { time: '20:00', enabled: true },
+        },
       };
 
       const timeouts = initializeReminders(settings);
