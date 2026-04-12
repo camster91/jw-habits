@@ -5,7 +5,7 @@
 | File | Change |
 |------|--------|
 | `android/app/jwnews-release.keystore` | Generated release signing keystore (RSA 2048, 10000 day validity) |
-| `android/app/build.gradle` | Updated release signingConfig fallback passwords to `JWHabits2026!` |
+| `android/app/build.gradle` | Updated release signingConfig to require env vars `KEYSTORE_PASSWORD` and `KEY_PASSWORD` |
 | `ios/App/App/Info.plist` | Fixed `UIRequiredDeviceCapabilities` from `armv64` to `arm64` |
 | `ios/App/App/Info.plist` | Added `NSCalendarsUsageDescription` for calendar reminders |
 | `ios/App/App/Info.plist` | Added `NSUserTrackingUsageDescription` for App Store compliance |
@@ -38,9 +38,9 @@ The signed AAB will be at: `android/app/build/outputs/bundle/release/app-release
 | Property | Value |
 |----------|-------|
 | Location | `android/app/jwnews-release.keystore` |
-| Password | `JWHabits2026!` |
+| Password | Set via `KEYSTORE_PASSWORD` env var |
 | Key alias | `jwnews` |
-| Key password | `JWHabits2026!` |
+| Key password | Set via `KEY_PASSWORD` env var |
 
 **Back up this keystore file.** If lost, you cannot update the app on Google Play.
 

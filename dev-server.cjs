@@ -7,11 +7,27 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const VITE_PORT = process.env.VITE_PORT || 5174;
 
-// Enable CORS for all routes
-app.use(cors());
+const allowedOrigins = [
+  'https://budget.ashbi.ca',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://localhost:3009',
+];
+
+// Enable CORS for allowed origins only
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+}));
 
 // Parse JSON bodies
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // API endpoint for news (mimics Vercel serverless function)
 app.get('/api/news', async (req, res) => {

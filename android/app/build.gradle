@@ -27,6 +27,7 @@ android {
             // Release keystore configuration
             // Run: ./scripts/generate-android-keystore.sh
             // Then move jwnews-release.keystore to android/app/
+            // Set KEYSTORE_PASSWORD and KEY_PASSWORD env vars before building
             storeFile file('jwnews-release.keystore')
             storePassword System.getenv('KEYSTORE_PASSWORD')
             keyAlias 'jwnews'

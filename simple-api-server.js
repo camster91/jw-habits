@@ -4,8 +4,24 @@ import cors from 'cors';
 const app = express();
 const PORT = 3009;
 
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = [
+  'https://budget.ashbi.ca',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://localhost:3009',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+}));
+app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/news', async (req, res) => {
   console.log('News API called - RSS feed disabled for compliance');

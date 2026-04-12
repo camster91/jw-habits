@@ -51,7 +51,7 @@ npx cap open android
 #    Select: Android App Bundle
 #    Keystore: android/app/jw-habits-release.keystore
 #    Key alias: jw-habits
-#    Passwords: JWHabits2026!
+#    Passwords: Set via KEYSTORE_PASSWORD and KEY_PASSWORD env vars
 ```
 
 ### Play Store Listing
@@ -61,9 +61,9 @@ npx cap open android
 
 ### Keystore Info (KEEP SAFE)
 - File: `android/app/jw-habits-release.keystore`
-- Store password: JWHabits2026!
+- Store password: Set via KEYSTORE_PASSWORD env var
 - Key alias: jw-habits
-- Key password: JWHabits2026!
+- Key password: Set via KEY_PASSWORD env var
 
 ---
 

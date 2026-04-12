@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { createSafeStorage } from '../utils/storageErrorHandler';
 
 const useGoalsStore = create(
   persist(
@@ -41,7 +42,12 @@ const useGoalsStore = create(
         set((state) => ({
           goals: state.goals.map((goal) =>
             goal.id === id
-              ? { ...goal, completed: !goal.completed, progress: goal.completed ? goal.progress : 100 }
+              ? {
+                  ...goal,
+                  completed: !goal.completed,
+                  progress: !goal.completed ? 100 : (goal.previousProgress ?? 0),
+                  previousProgress: goal.completed ? goal.progress : (goal.previousProgress ?? goal.progress),
+                }
               : goal
           ),
         })),
@@ -146,6 +152,7 @@ const useGoalsStore = create(
     }),
     {
       name: 'jw-goals-storage',
+      storage: createSafeStorage('jw-goals-storage'),
       version: 2,
       migrate: (persistedState, version) => {
         if (version === 1) {

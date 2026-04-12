@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { createSafeStorage } from '../utils/storageErrorHandler';
 
 interface NotificationSetting {
   enabled: boolean;
@@ -133,6 +134,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
     }),
     {
       name: 'jw-progress-settings',
+      storage: createSafeStorage('jw-progress-settings'),
     }
   )
 );

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { format, differenceInDays, parseISO, startOfDay } from 'date-fns';
+import { createSafeStorage } from '../utils/storageErrorHandler';
 
 interface Achievement {
   id: string;
@@ -402,6 +403,7 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
     }),
     {
       name: 'jw-gamification-storage',
+      storage: createSafeStorage('jw-gamification-storage'),
       version: 1,
       migrate: (persistedState, version) => {
         if (version === undefined || version === 0) {

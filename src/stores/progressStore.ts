@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { format, getDayOfYear, startOfWeek } from 'date-fns';
+import { createSafeStorage } from '../utils/storageErrorHandler';
 
 interface DailyTextData {
   readScripture: boolean;
@@ -508,6 +509,7 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
     }),
     {
       name: 'jw-progress-storage',
+      storage: createSafeStorage('jw-progress-storage'),
       partialize: (state) => ({
         dailyTexts: state.dailyTexts,
         prayers: state.prayers,
