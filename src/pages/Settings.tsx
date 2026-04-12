@@ -4,6 +4,7 @@ import useProgressStore from '../stores/progressStore';
 import useSettingsStore from '../stores/settingsStore';
 import { useToast } from '../components/Toast';
 import { haptics } from '../utils/native';
+import PageHeader from '../components/PageHeader';
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -184,12 +185,13 @@ function Settings() {
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
-      <header className="relative bg-gradient-to-br from-primary via-primary to-blue-700 text-primary-content shadow-lg" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="relative p-6">
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-sm opacity-90 mt-1">Customize your experience</p>
-        </div>
-      </header>
+      <PageHeader
+        title="Settings"
+        subtitle="Customize your experience"
+        gradient="from-primary via-primary to-blue-700"
+        shadow
+        noBlurs
+      />
       <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">

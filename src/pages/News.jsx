@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, ExternalLink, Flame, Calendar, History, Trophy, Target, RefreshCw } from 'lucide-react';
 import useNewsStore from '../stores/newsStore';
 import { format, parseISO, isSameDay, startOfDay, eachDayOfInterval, subDays } from 'date-fns';
+import PageHeader from '../components/PageHeader';
 
 function News() {
   const {
@@ -49,38 +50,32 @@ function News() {
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       {/* Header */}
-      <header
-        className="relative bg-gradient-to-br from-primary via-primary to-blue-700 text-primary-content shadow-lg"
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      <PageHeader
+        title="Daily Check"
+        subtitle="Stay updated with JW.org"
+        gradient="from-primary via-primary to-blue-700"
+        shadow
+        titleSize="text-xl"
+        subtitleClass="text-xs text-primary-content/60"
+        contentClass="px-5 pt-4 pb-6"
+        blurColor="blue"
       >
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-2 right-4 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-300/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative px-5 pt-4 pb-6">
-          <div className="mb-2">
-            <h1 className="text-xl font-bold tracking-tight">Daily Check</h1>
-            <p className="text-xs text-primary-content/60">Stay updated with JW.org</p>
+        {/* Stats row */}
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold">{currentStreak}</div>
+            <div className="text-xs opacity-80">Day Streak</div>
           </div>
-
-          {/* Stats row */}
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{currentStreak}</div>
-              <div className="text-xs opacity-80">Day Streak</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{totalCheckCount}</div>
-              <div className="text-xs opacity-80">Total Checks</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{consistencyPercentage}%</div>
-              <div className="text-xs opacity-80">Last 30 days</div>
-            </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold">{totalCheckCount}</div>
+            <div className="text-xs opacity-80">Total Checks</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold">{consistencyPercentage}%</div>
+            <div className="text-xs opacity-80">Last 30 days</div>
           </div>
         </div>
-      </header>
+      </PageHeader>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 max-w-2xl">
