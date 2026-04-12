@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Book, Calendar, Check, Clock, ExternalLink, Music, CheckCircle2 } from 'lucide-react';
+import { Calendar, CheckCircle2, ExternalLink } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { getWorkbookForWeek, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { haptics } from '../utils/native';
-import MeetingSection from './MeetingSection';
-import WeeklyBibleReading from './WeeklyBibleReading';
+import MidweekMeetingSection from './MidweekMeetingSection';
+import WeekendMeetingSection from './WeekendMeetingSection';
 
 function getWorkbookWolLink(docid) {
   if (!docid) return JW_ORG_SECTIONS.meetingWorkbooks;
@@ -266,177 +266,30 @@ function MeetingCard() {
 
         {/* Midweek Tab */}
         {activeTab === 'midweek' && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-sm">{midweekDate}</p>
-                {songs?.opening && (
-                  <span className="flex items-center gap-1 text-xs text-base-content/40">
-                    <Music className="w-3 h-3" /> {songs.opening}
-                  </span>
-                )}
-              </div>
-              {isMidweekPrepared ? (
-                <div className="badge badge-success gap-1"><Check className="w-3 h-3" /> Prepared</div>
-              ) : midweekDaysLeft >= 0 ? (
-                <div className="badge badge-warning gap-1"><Clock className="w-3 h-3" /> {midweekDaysLeft}d left</div>
-              ) : (
-                <div className="badge badge-error">Past</div>
-              )}
-            </div>
-
-            {/* Progress */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 bg-base-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    midweekProgress.progress === 100 ? 'bg-success' :
-                    midweekProgress.progress > 0 ? 'bg-blue-500' : 'bg-base-200'
-                  }`}
-                  style={{ width: `${midweekProgress.progress || 0}%` }}
-                />
-              </div>
-              <span className="text-xs font-medium text-base-content/50">{midweekProgress.progress || 0}%</span>
-            </div>
-
-            {/* Weekly Bible Reading - integrated into midweek */}
-            <WeeklyBibleReading />
-
-            {/* Meeting Sections */}
-            <div className="space-y-2">
-              <MeetingSection
-                title="Treasures From God's Word"
-                color="bg-amber-500"
-                parts={midweekParts.treasures}
-                onPartToggle={(key, completed) => handlePartToggle('midweek', key, completed)}
-                defaultExpanded={true}
-              />
-              <MeetingSection
-                title="Apply Yourself to the Ministry"
-                color="bg-emerald-500"
-                parts={midweekParts.ministry}
-                onPartToggle={(key, completed) => handlePartToggle('midweek', key, completed)}
-              />
-              <MeetingSection
-                title="Living as Christians"
-                color="bg-rose-500"
-                parts={midweekParts.living}
-                onPartToggle={(key, completed) => handlePartToggle('midweek', key, completed)}
-              />
-            </div>
-
-            {/* Song info */}
-            {songs && (
-              <div className="flex items-center justify-center gap-4 text-xs text-base-content/40 pt-1">
-                {songs.middle && <span className="flex items-center gap-1"><Music className="w-3 h-3" /> Song {songs.middle}</span>}
-                {songs.closing && <span className="flex items-center gap-1"><Music className="w-3 h-3" /> Song {songs.closing}</span>}
-              </div>
-            )}
-
-            <a
-              href={workbookLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline btn-sm w-full gap-2"
-              onClick={() => haptics.light()}
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open Workbook on WOL
-            </a>
-
-            {!isMidweekPrepared && midweekProgress.progress < 100 && (
-              <button
-                onClick={() => handleMarkAllComplete('midweek')}
-                className="btn btn-primary btn-sm w-full gap-2"
-              >
-                <Check className="w-4 h-4" />
-                Mark All Complete
-              </button>
-            )}
-          </div>
+          <MidweekMeetingSection
+            date={midweekDate}
+            isPrepared={isMidweekPrepared}
+            daysLeft={midweekDaysLeft}
+            progress={midweekProgress}
+            parts={midweekParts}
+            songs={songs}
+            workbookLink={workbookLink}
+            onPartToggle={(key, completed) => handlePartToggle('midweek', key, completed)}
+            onMarkAllComplete={() => handleMarkAllComplete('midweek')}
+          />
         )}
 
         {/* Weekend Tab */}
         {activeTab === 'weekend' && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <p className="font-semibold text-sm">{weekendDate}</p>
-              {isWeekendPrepared ? (
-                <div className="badge badge-success gap-1"><Check className="w-3 h-3" /> Prepared</div>
-              ) : weekendDaysLeft >= 0 ? (
-                <div className="badge badge-warning gap-1"><Clock className="w-3 h-3" /> {weekendDaysLeft}d left</div>
-              ) : (
-                <div className="badge badge-error">Past</div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1.5 bg-base-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    weekendProgress.progress === 100 ? 'bg-success' :
-                    weekendProgress.progress > 0 ? 'bg-blue-500' : 'bg-base-200'
-                  }`}
-                  style={{ width: `${weekendProgress.progress || 0}%` }}
-                />
-              </div>
-              <span className="text-xs font-medium text-base-content/50">{weekendProgress.progress || 0}%</span>
-            </div>
-
-            <div className="space-y-2">
-              {weekendParts.map((part) => (
-                part.key === 'publicTalk' ? (
-                  <div key={part.key} className="flex items-center gap-3 p-3 bg-base-200/50 rounded-xl">
-                    <Book className="w-5 h-5 text-primary flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{part.title}</p>
-                      <p className="text-xs text-base-content/50">{part.duration} minutes</p>
-                    </div>
-                  </div>
-                ) : (
-                  <label
-                    key={part.key}
-                    className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all active:scale-[0.98] ${
-                      part.completed ? 'bg-success/5' : 'bg-base-200/50 hover:bg-base-200'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={part.completed}
-                      onChange={(e) => { haptics.light(); handlePartToggle('weekend', part.key, e.target.checked); }}
-                      className="checkbox checkbox-sm checkbox-primary"
-                    />
-                    <div className="flex-1">
-                      <p className={`font-medium text-sm ${part.completed ? 'line-through text-base-content/40' : ''}`}>{part.title}</p>
-                      <p className="text-xs text-base-content/50">{part.duration} minutes</p>
-                    </div>
-                    {part.completed && <Check className="w-4 h-4 text-success" />}
-                  </label>
-                )
-              ))}
-            </div>
-
-            <a
-              href={JW_ORG_SECTIONS.watchtowerStudy}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline btn-sm w-full gap-2"
-              onClick={() => haptics.light()}
-            >
-              <ExternalLink className="w-4 h-4" />
-              View Watchtower Study
-            </a>
-
-            {!isWeekendPrepared && weekendProgress.progress < 100 && (
-              <button
-                onClick={() => handleMarkAllComplete('weekend')}
-                className="btn btn-primary btn-sm w-full gap-2"
-              >
-                <Check className="w-4 h-4" />
-                Mark All Complete
-              </button>
-            )}
-          </div>
+          <WeekendMeetingSection
+            date={weekendDate}
+            isPrepared={isWeekendPrepared}
+            daysLeft={weekendDaysLeft}
+            progress={weekendProgress}
+            parts={weekendParts}
+            onPartToggle={(key, completed) => handlePartToggle('weekend', key, completed)}
+            onMarkAllComplete={() => handleMarkAllComplete('weekend')}
+          />
         )}
       </div>
     </div>
