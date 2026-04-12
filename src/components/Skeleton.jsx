@@ -6,7 +6,7 @@
 export function Skeleton({ className = '', ...props }) {
   return (
     <div
-      className={`animate-pulse bg-base-300 rounded ${className}`}
+      className={`animate-shimmer bg-base-300 rounded ${className}`}
       {...props}
     />
   );

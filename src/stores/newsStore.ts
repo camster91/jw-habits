@@ -18,13 +18,10 @@ interface NewsActions {
   getNeedsCheck: () => boolean;
   getUnreadCount: () => number;
   getTotalUnreadCount: () => number;
-  fetchNews: () => Promise<void>;
   markAsRead: (itemId: string) => void;
   isItemRead: (itemId: string) => boolean;
   toggleSaveItem: (itemId: string) => void;
   isItemSaved: (itemId: string) => boolean;
-  getUnreadItems: (count?: number) => any[];
-  getLatestItems: (count?: number) => any[];
   resetStreak: () => void;
   resetHistory: () => void;
   resetAll: () => void;
@@ -92,10 +89,6 @@ const useNewsStore = create<NewsStore>()(
       getUnreadCount: () => (get().getNeedsCheck() ? 1 : 0),
       getTotalUnreadCount: () => get().getUnreadCount(),
 
-      fetchNews: async () => {
-        console.log('News fetching disabled - using daily check system');
-      },
-
       markAsRead: (itemId: string) => {
         get().checkToday();
       },
@@ -105,8 +98,6 @@ const useNewsStore = create<NewsStore>()(
         console.log('Save item functionality disabled');
       },
       isItemSaved: (itemId: string) => false,
-      getUnreadItems: (count = 3) => [],
-      getLatestItems: (count = 3) => [],
 
       resetStreak: () => set({ streak: 0 }),
       resetHistory: () => set({ history: [], totalChecks: 0 }),
