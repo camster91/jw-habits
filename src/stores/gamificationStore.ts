@@ -402,6 +402,21 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
     }),
     {
       name: 'jw-gamification-storage',
+      version: 1,
+      migrate: (persistedState, version) => {
+        if (version === undefined || version === 0) {
+          return persistedState;
+        }
+        return persistedState;
+      },
+      partialize: (state) => ({
+        totalPoints: state.totalPoints,
+        currentLevel: state.currentLevel,
+        streakDays: state.streakDays,
+        longestStreak: state.longestStreak,
+        lastActiveDate: state.lastActiveDate,
+        unlockedAchievements: state.unlockedAchievements,
+      }),
     }
   )
 );

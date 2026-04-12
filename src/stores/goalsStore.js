@@ -146,7 +146,19 @@ const useGoalsStore = create(
     }),
     {
       name: 'jw-goals-storage',
-      version: 1,
+      version: 2,
+      migrate: (persistedState, version) => {
+        if (version === 1) {
+          // v1 persisted action functions; v2 excludes them via partialize
+          const { goals, projects } = persistedState;
+          return { goals, projects };
+        }
+        return persistedState;
+      },
+      partialize: (state) => ({
+        goals: state.goals,
+        projects: state.projects,
+      }),
     }
   )
 );

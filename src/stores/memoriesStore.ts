@@ -85,6 +85,9 @@ const useMemoriesStore = create<MemoriesState & MemoriesActions>()(
     {
       name: 'jw-memories-storage',
       version: 1,
+      partialize: (state) => ({
+        reflections: state.reflections,
+      }),
     }
   )
 );
