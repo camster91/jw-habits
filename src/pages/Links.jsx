@@ -1,4 +1,5 @@
-import { ExternalLink, Newspaper, BookOpen, Video, Library, Radio, Book, Music, Users, HelpCircle, MapPin, Calendar, Heart, Baby, GraduationCap, Search, Globe, Headphones, MessageCircle, Building2, Star, Gift, Smartphone } from 'lucide-react';
+import { ExternalLink, Newspaper, BookOpen, Video, Library, Radio, Book, Music, Users, HelpCircle, MapPin, Calendar, Heart, Baby, GraduationCap, Search, Globe, Headphones, MessageCircle, Building2, Star, Gift, Smartphone, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 
 const linkCategories = [
@@ -92,6 +93,23 @@ const linkCategories = [
 ];
 
 function Links() {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return linkCategories;
+    const query = searchQuery.toLowerCase();
+    return linkCategories
+      .map((category) => ({
+        ...category,
+        links: category.links.filter(
+          (link) =>
+            link.title.toLowerCase().includes(query) ||
+            category.title.toLowerCase().includes(query)
+        ),
+      }))
+      .filter((category) => category.links.length > 0);
+  }, [searchQuery]);
+
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       {/* Header */}
@@ -112,29 +130,66 @@ function Links() {
 
       {/* Links */}
       <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
-        {linkCategories.map((category) => (
-          <div key={category.title} className="card bg-base-100 shadow-xl">
-            <div className="card-body p-4">
-              <h2 className="font-bold text-base-content/80">{category.title}</h2>
-              <div className="divider my-1"></div>
-              <div className="space-y-1">
-                {category.links.map((link) => (
-                  <a
-                    key={link.title}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-base-200 active:bg-base-300 transition-colors"
-                  >
-                    <link.icon className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="flex-1 text-sm">{link.title}</span>
-                    <ExternalLink className={`w-4 h-4 flex-shrink-0 ${link.external ? 'text-primary' : 'text-base-content/40'}`} />
-                  </a>
-                ))}
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40" />
+          <input
+            type="text"
+            placeholder="Search links..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input input-bordered w-full pl-10"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+            >
+              <X className="w-5 h-5 text-base-content/40" />
+            </button>
+          )}
+        </div>
+
+        {/* Search Results Label */}
+        {searchQuery && (
+          <p className="text-sm text-base-content/60">
+            {filteredCategories.reduce((sum, cat) => sum + cat.links.length, 0)} link{filteredCategories.reduce((sum, cat) => sum + cat.links.length, 0) !== 1 ? 's' : ''} matching "{searchQuery}"
+          </p>
+        )}
+
+        {filteredCategories.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-primary/20 flex items-center justify-center">
+              <Search className="w-8 h-8 text-primary/50" />
+            </div>
+            <p className="font-medium text-base-content/70">No links found</p>
+            <p className="text-sm text-base-content/50 mt-1">Try a different search term</p>
+          </div>
+        ) : (
+          filteredCategories.map((category) => (
+            <div key={category.title} className="card bg-base-100 shadow-xl">
+              <div className="card-body p-4">
+                <h2 className="font-bold text-base-content/80">{category.title}</h2>
+                <div className="divider my-1"></div>
+                <div className="space-y-1">
+                  {category.links.map((link) => (
+                    <a
+                      key={link.title}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-base-200 active:bg-base-300 transition-colors"
+                    >
+                      <link.icon className="w-5 h-5 text-primary flex-shrink-0" />
+                      <span className="flex-1 text-sm">{link.title}</span>
+                      <ExternalLink className={`w-4 h-4 flex-shrink-0 ${link.external ? 'text-primary' : 'text-base-content/40'}`} />
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
 
         {/* Direct JW Library Link */}
         <div className="card bg-gradient-to-br from-primary to-blue-700 text-primary-content shadow-xl">

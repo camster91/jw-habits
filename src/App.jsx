@@ -9,6 +9,7 @@ import UpdatePrompt from './components/UpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import AchievementPopup from './components/AchievementPopup';
 import SideDrawer from './components/SideDrawer';
+import useNotificationReminders from './hooks/useNotificationReminders';
 
 // Lazy load non-critical pages for better initial load performance
 const Stats = lazy(() => import('./pages/Stats'));
@@ -31,6 +32,8 @@ function PageLoader() {
 }
 
 function App() {
+  useNotificationReminders();
+
   return (
     <ErrorBoundary>
       <ToastProvider>

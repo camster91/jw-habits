@@ -1,5 +1,5 @@
-import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import useProgressStore from '../stores/progressStore';
 import useSettingsStore from '../stores/settingsStore';
 import { useToast } from '../components/Toast';
@@ -90,11 +90,16 @@ function Settings() {
   ];
 
   const handleExportData = () => {
-    const exportData: Record<string, unknown> = {};
+    const storeData: Record<string, unknown> = {};
     STORAGE_KEYS.forEach((key) => {
       const raw = localStorage.getItem(key);
-      if (raw) exportData[key] = JSON.parse(raw);
+      if (raw) storeData[key] = JSON.parse(raw);
     });
+    const exportData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data: storeData,
+    };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -105,6 +110,9 @@ function Settings() {
     toast.success('Data exported');
   };
 
+  const [importModal, setImportModal] = useState<{ data: any; isOldFormat: boolean; versionMismatch: boolean } | null>(null);
+  const pendingImportData = useRef<any>(null);
+
   const handleImportData = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -114,34 +122,64 @@ function Settings() {
       if (!file) return;
       try {
         const text = await file.text();
-        const data = JSON.parse(text);
+        const parsed = JSON.parse(text);
 
-        // Support both old format (progress/settings keys) and new format (storage keys)
-        const isOldFormat = data.progress || data.settings;
-        const isNewFormat = STORAGE_KEYS.some((key) => key in data);
-        if (!isOldFormat && !isNewFormat) {
+        // Detect versioned format (version + data wrapper)
+        let isOldFormat = false;
+        let versionMismatch = false;
+        let storeData = parsed;
+
+        if (parsed.version !== undefined && parsed.data !== undefined) {
+          // New versioned format
+          if (parsed.version !== 1) {
+            versionMismatch = true;
+          }
+          storeData = parsed.data;
+        } else {
+          // Legacy format: raw store keys at top level
+          isOldFormat = !!(parsed.progress || parsed.settings);
+        }
+
+        const hasKnownKeys = STORAGE_KEYS.some((key) => key in storeData);
+        if (!isOldFormat && !hasKnownKeys) {
           toast.error('Invalid backup file format');
           return;
         }
-        if (!confirm('This will replace your current data. Continue?')) return;
 
-        if (isNewFormat) {
-          STORAGE_KEYS.forEach((key) => {
-            if (data[key]) localStorage.setItem(key, JSON.stringify(data[key]));
-          });
-        } else {
-          // Legacy format support
-          if (data.progress) localStorage.setItem('jw-progress-storage', JSON.stringify(data.progress));
-          if (data.settings) localStorage.setItem('jw-progress-settings', JSON.stringify(data.settings));
-        }
-
-        toast.success('Data imported successfully! Refreshing...');
-        setTimeout(() => window.location.reload(), 1000);
+        // Store parsed data and show confirmation modal
+        pendingImportData.current = { storeData, isOldFormat, versionMismatch };
+        setImportModal({ data: parsed, isOldFormat, versionMismatch });
       } catch {
         toast.error('Failed to import data');
       }
     };
     input.click();
+  };
+
+  const confirmImport = () => {
+    if (!pendingImportData.current) return;
+    const { storeData, isOldFormat } = pendingImportData.current;
+
+    if (STORAGE_KEYS.some((key) => key in storeData)) {
+      STORAGE_KEYS.forEach((key) => {
+        if (storeData[key]) localStorage.setItem(key, JSON.stringify(storeData[key]));
+      });
+    } else if (isOldFormat) {
+      // Legacy format support
+      if (storeData.progress) localStorage.setItem('jw-progress-storage', JSON.stringify(storeData.progress));
+      if (storeData.settings) localStorage.setItem('jw-progress-settings', JSON.stringify(storeData.settings));
+    }
+
+    setImportModal(null);
+    pendingImportData.current = null;
+    toast.success('Data imported successfully! Refreshing...');
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
+  const cancelImport = () => {
+    setImportModal(null);
+    pendingImportData.current = null;
+    toast.info('Import cancelled');
   };
 
   return (
@@ -208,6 +246,49 @@ function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Import Confirmation Modal */}
+      {importModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="card bg-base-100 shadow-2xl w-full max-w-md">
+            <div className="card-body">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-warning" />
+                  Import Data
+                </h3>
+                <button onClick={cancelImport} className="btn btn-ghost btn-sm btn-circle">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="divider my-1"></div>
+              {importModal.versionMismatch && (
+                <div className="alert alert-warning mb-3">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span className="text-sm">This backup was created by a different version of the app. Some data may not import correctly.</span>
+                </div>
+              )}
+              {importModal.isOldFormat && (
+                <div className="alert alert-info mb-3">
+                  <span className="text-sm">This is a legacy backup file. Only progress and settings data will be imported.</span>
+                </div>
+              )}
+              <p className="text-base-content/70 mb-4">
+                This will <strong>replace all your current data</strong> with the imported backup. This action cannot be undone.
+              </p>
+              {importModal.data.exportedAt && (
+                <p className="text-xs text-base-content/50 mb-4">
+                  Backup created: {new Date(importModal.data.exportedAt).toLocaleString()}
+                </p>
+              )}
+              <div className="flex gap-2 justify-end">
+                <button onClick={cancelImport} className="btn btn-ghost">Cancel</button>
+                <button onClick={confirmImport} className="btn btn-error">Replace Data</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
