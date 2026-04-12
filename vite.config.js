@@ -69,6 +69,16 @@ export default defineConfig({
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           }
         ],
+        // Enable share target for receiving shared content
+        share_target: {
+          action: '/share',
+          method: 'GET',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url'
+          }
+        },
         screenshots: [
           {
             src: 'pwa-512x512.png',

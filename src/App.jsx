@@ -19,6 +19,7 @@ const Memories = lazy(() => import('./pages/Memories'));
 const Meeting = lazy(() => import('./pages/Meeting'));
 const Goals = lazy(() => import('./pages/Goals'));
 const Projects = lazy(() => import('./pages/Projects'));
+const SharePage = lazy(() => import('./pages/Share'));
 
 // Loading fallback component
 function PageLoader() {
@@ -51,6 +52,7 @@ function App() {
                   <Route path="/links" element={<Links />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/memories" element={<Memories />} />
+                  <Route path="/share" element={<SharePage />} />
                 </Routes>
               </Suspense>
               <BottomNav />

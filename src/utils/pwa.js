@@ -17,65 +17,21 @@ export const isInstalled = () => {
   );
 };
 
-// Check if notifications are supported
-export const isNotificationSupported = () => {
-  return 'Notification' in window && 'serviceWorker' in navigator;
-};
+// Import notification functions from notifications.js (single source of truth)
+// Used locally by scheduleDailyReminder and re-exported for consumers
+import {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  showNotification,
+} from './notifications.js';
 
-// Get current notification permission status
-export const getNotificationPermission = () => {
-  if (!isNotificationSupported()) return 'unsupported';
-  return Notification.permission;
-};
-
-// Request notification permission
-export const requestNotificationPermission = async () => {
-  if (!isNotificationSupported()) {
-    return { granted: false, reason: 'unsupported' };
-  }
-
-  try {
-    const permission = await Notification.requestPermission();
-    return {
-      granted: permission === 'granted',
-      permission,
-    };
-  } catch (error) {
-    console.error('Error requesting notification permission:', error);
-    return { granted: false, reason: 'error', error };
-  }
-};
-
-// Show a local notification
-export const showNotification = async (title, options = {}) => {
-  if (!isNotificationSupported()) {
-    console.warn('Notifications not supported');
-    return null;
-  }
-
-  if (Notification.permission !== 'granted') {
-    console.warn('Notification permission not granted');
-    return null;
-  }
-
-  try {
-    const registration = await navigator.serviceWorker.ready;
-
-    const defaultOptions = {
-      icon: '/pwa-192x192.png',
-      badge: '/pwa-192x192.png',
-      vibrate: [100, 50, 100],
-      requireInteraction: false,
-      silent: false,
-      ...options,
-    };
-
-    await registration.showNotification(title, defaultOptions);
-    return true;
-  } catch (error) {
-    console.error('Error showing notification:', error);
-    return null;
-  }
+// Re-export for consumers that import from pwa.js
+export {
+  isNotificationSupported,
+  getNotificationPermission,
+  requestNotificationPermission,
+  showNotification,
 };
 
 // Schedule a daily reminder notification
