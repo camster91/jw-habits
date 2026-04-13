@@ -14,6 +14,7 @@ const useGoalsStore = create(
           goals: [
             ...state.goals,
             {
+              ...goal,
               id: crypto.randomUUID(),
               description: goal.description || '',
               category: goal.category || 'spiritual', // spiritual, ministry, personal

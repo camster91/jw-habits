@@ -1,4 +1,4 @@
-import { Sun, Moon, CloudSun, Menu, ExternalLink, Newspaper } from 'lucide-react';
+import { Sun, Moon, CloudSun, Menu } from 'lucide-react';
 import DailyTasksSection from '../components/DailyTasksSection';
 import PrayerTrackingCard from '../components/PrayerTrackingCard';
 import FamilyWorshipCard from '../components/FamilyWorshipCard';
@@ -78,26 +78,6 @@ function Home() {
           <BibleReadingCard />
         </section>
 
-        {/* What's New on JW.org */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '350ms' }}>
-          <a
-            href="https://www.jw.org/en/whats-new/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="card bg-base-100 shadow-sm rounded-2xl hover:shadow-md transition-shadow active:scale-[0.98]"
-          >
-            <div className="card-body p-4 flex-row items-center gap-3">
-              <div className="p-2.5 bg-primary/10 rounded-2xl">
-                <Newspaper className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-sm">What&apos;s New</h3>
-                <p className="text-xs text-base-content/50">Latest from JW.org</p>
-              </div>
-              <ExternalLink className="w-4 h-4 text-base-content/40" />
-            </div>
-          </a>
-        </section>
       </main>
     </div>
   );

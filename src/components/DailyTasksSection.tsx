@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { BookOpen, CheckCircle2, Flame, PenLine, Save, BookHeart, Globe } from 'lucide-react';
+import { BookOpen, CheckCircle2, Flame, PenLine, Save, BookHeart, Globe, ExternalLink } from 'lucide-react';
 import useProgressStore from '../stores/progressStore';
 import useNewsStore from '../stores/newsStore';
 import useMemoriesStore from '../stores/memoriesStore';
@@ -39,12 +39,15 @@ function DailyTasksSection() {
     }
   }, [existingReflection, noteText]);
 
+  const JW_WHATS_NEW = 'https://www.jw.org/en/whats-new/';
+
   const handleDailyCheck = () => {
     haptics.light();
     if (!hasCheckedToday) {
       checkToday();
       recordNewsRead();
     }
+    window.open(JW_WHATS_NEW, '_blank', 'noopener,noreferrer');
   };
 
   const handleOpenJW = () => {
@@ -116,10 +119,10 @@ function DailyTasksSection() {
           </div>
           <button
             onClick={handleDailyCheck}
-            disabled={hasCheckedToday}
-            className={`btn w-full mt-2 ${hasCheckedToday ? 'btn-disabled' : 'btn-primary'}`}
+            className={`btn w-full mt-2 gap-2 ${hasCheckedToday ? 'btn-outline' : 'btn-primary'}`}
           >
-            {hasCheckedToday ? 'Checked in today' : 'Check in now'}
+            <ExternalLink className="w-4 h-4" />
+            {hasCheckedToday ? "What's New on JW.org" : "Check in & read What's New"}
           </button>
         </div>
       </div>
