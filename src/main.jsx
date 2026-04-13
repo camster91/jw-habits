@@ -91,4 +91,20 @@ if ('serviceWorker' in navigator) {
     // New service worker activated, reload to get updates
     window.location.reload();
   });
+
+  // Handle notification clicks — focus app window
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'NOTIFICATION_CLICK') {
+      const url = event.data.url || '/';
+      window.focus();
+      window.location.href = url;
+    }
+  });
+}
+
+// Listen for notification clicks directly (for when SW isn't controlling)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then((registration) => {
+    // No-op: registration ready for notification scheduling
+  }).catch(() => {});
 }

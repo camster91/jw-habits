@@ -1,4 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Mock Capacitor core
+vi.mock('@capacitor/core', () => ({
+  Capacitor: {
+    isNativePlatform: () => false,
+    getPlatform: () => 'web',
+  },
+}));
+
+// Mock Capacitor LocalNotifications
+vi.mock('@capacitor/local-notifications', () => ({
+  LocalNotifications: {
+    schedule: vi.fn(() => Promise.resolve()),
+    cancel: vi.fn(() => Promise.resolve()),
+    cancelAll: vi.fn(() => Promise.resolve()),
+    checkPermissions: vi.fn(() => Promise.resolve({ state: 'granted' })),
+    requestPermissions: vi.fn(() => Promise.resolve({ state: 'granted' })),
+  },
+}));
+
+// Mock native module
+vi.mock('../utils/native', () => ({
+  isNative: false,
+  isAndroid: false,
+  isIOS: false,
+  isWeb: true,
+}));
+
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -16,11 +44,9 @@ describe('notifications', () => {
   let originalServiceWorker;
 
   beforeEach(() => {
-    // Save originals
     originalNotification = global.Notification;
     originalServiceWorker = global.navigator.serviceWorker;
 
-    // Setup mocks
     global.Notification = {
       permission: 'default',
       requestPermission: vi.fn(() => Promise.resolve('granted')),
@@ -36,7 +62,6 @@ describe('notifications', () => {
   });
 
   afterEach(() => {
-    // Restore originals
     global.Notification = originalNotification;
     global.navigator.serviceWorker = originalServiceWorker;
     vi.useRealTimers();
@@ -167,13 +192,12 @@ describe('notifications', () => {
     });
 
     it('should handle null timeout id', () => {
-      // Should not throw
       expect(() => cancelScheduledNotification(null)).not.toThrow();
     });
   });
 
   describe('initializeReminders', () => {
-    it('should initialize reminders when enabled and permission granted', () => {
+    it('should initialize reminders when enabled and permission granted', async () => {
       const now = new Date('2026-01-20T06:00:00');
       vi.setSystemTime(now);
       global.Notification.permission = 'granted';
@@ -186,13 +210,12 @@ describe('notifications', () => {
         },
       };
 
-      const timeouts = initializeReminders(settings);
+      const handles = await initializeReminders(settings);
 
-      expect(timeouts.dailyText).not.toBeNull();
-      expect(timeouts.bibleReading).not.toBeNull();
+      expect(handles.length).toBeGreaterThan(0);
     });
 
-    it('should not initialize reminders when disabled', () => {
+    it('should return empty array when disabled', async () => {
       const settings = {
         notificationsEnabled: false,
         notifications: {
@@ -201,10 +224,9 @@ describe('notifications', () => {
         },
       };
 
-      const timeouts = initializeReminders(settings);
+      const handles = await initializeReminders(settings);
 
-      expect(timeouts.dailyText).toBeUndefined();
-      expect(timeouts.bibleReading).toBeUndefined();
+      expect(handles).toEqual([]);
     });
   });
 });

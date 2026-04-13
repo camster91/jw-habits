@@ -1,34 +1,33 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from '@testing-library/react';
 
-// Mock date-fns before importing the store
-vi.mock('date-fns', () => {
-  let mockToday = new Date('2026-04-12T12:00:00');
+// Use fake timers to control Date.now() so checkToday() sees April 12
+vi.useFakeTimers();
+vi.setSystemTime(new Date('2026-04-12T12:00:00'));
 
-  return {
-    startOfDay: (date) => {
-      const d = new Date(date);
-      d.setHours(0, 0, 0, 0);
-      return d;
-    },
-    isSameDay: (dateLeft, dateRight) => {
-      return (
-        dateLeft.getFullYear() === dateRight.getFullYear() &&
-        dateLeft.getMonth() === dateRight.getMonth() &&
-        dateLeft.getDate() === dateRight.getDate()
-      );
-    },
-    parseISO: (str) => new Date(str),
-    _setMockToday: (date) => { mockToday = date; },
-    _getMockToday: () => mockToday,
-  };
-});
+// Mock date-fns before importing the store
+vi.mock('date-fns', () => ({
+  startOfDay: (date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  },
+  isSameDay: (dateLeft, dateRight) => {
+    return (
+      dateLeft.getFullYear() === dateRight.getFullYear() &&
+      dateLeft.getMonth() === dateRight.getMonth() &&
+      dateLeft.getDate() === dateRight.getDate()
+    );
+  },
+  parseISO: (str) => new Date(str),
+}));
 
 // Import after mocking
 const { default: useNewsStore } = await import('./newsStore.ts');
 
 describe('newsStore', () => {
   beforeEach(() => {
+    vi.setSystemTime(new Date('2026-04-12T12:00:00'));
     act(() => {
       useNewsStore.setState({
         lastChecked: null,
@@ -37,6 +36,10 @@ describe('newsStore', () => {
         totalChecks: 0,
       });
     });
+  });
+
+  afterEach(() => {
+    vi.setSystemTime(new Date('2026-04-12T12:00:00'));
   });
 
   describe('checkToday', () => {
@@ -52,14 +55,12 @@ describe('newsStore', () => {
     });
 
     it('should not update if already checked today', () => {
-      // First check
       act(() => {
         useNewsStore.getState().checkToday();
       });
 
       const firstState = useNewsStore.getState();
 
-      // Second check same day
       act(() => {
         useNewsStore.getState().checkToday();
       });
@@ -70,7 +71,6 @@ describe('newsStore', () => {
     });
 
     it('should reset streak if a day was missed', () => {
-      // Set up as if we checked 2 days ago with a streak of 5
       const twoDaysAgo = new Date('2026-04-10T12:00:00');
       const twoDaysAgoISO = twoDaysAgo.toISOString();
 
@@ -83,7 +83,6 @@ describe('newsStore', () => {
         });
       });
 
-      // Now check today (2026-04-12) - 2 days gap
       act(() => {
         useNewsStore.getState().checkToday();
       });
@@ -105,7 +104,6 @@ describe('newsStore', () => {
         });
       });
 
-      // Check today (2026-04-12)
       act(() => {
         useNewsStore.getState().checkToday();
       });
@@ -166,5 +164,4 @@ describe('newsStore', () => {
       expect(state.totalChecks).toBe(0);
     });
   });
-
 });

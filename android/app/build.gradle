@@ -25,14 +25,10 @@ android {
             keyPassword 'android'
         }
         release {
-            // Release keystore configuration
-            // Run: ./scripts/generate-android-keystore.sh
-            // Then move jwnews-release.keystore to android/app/
-            // Set KEYSTORE_PASSWORD and KEY_PASSWORD env vars before building
-            storeFile file('jwnews-release.keystore')
-            storePassword System.getenv('KEYSTORE_PASSWORD')
-            keyAlias 'jwnews'
-            keyPassword System.getenv('KEY_PASSWORD')
+            storeFile file('jw-habits-release.keystore')
+            storePassword 'JWHabits2026!'
+            keyAlias 'jw-habits'
+            keyPassword 'JWHabits2026!'
         }
     }
     buildTypes {

@@ -9,6 +9,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-maskable-512x512.png'],
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       manifest: {
         name: 'JW Habits',
         short_name: 'JW Habits',
@@ -48,10 +51,10 @@ export default defineConfig({
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           },
           {
-            name: 'News',
-            short_name: 'News',
-            description: 'Latest JW.org news',
-            url: '/news',
+            name: 'Study',
+            short_name: 'Study',
+            description: 'Meeting prep & deeper study',
+            url: '/study',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           },
           {
@@ -90,124 +93,11 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Precache all static assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],
-
-        // Clean old caches
         cleanupOutdatedCaches: true,
-
-        // Skip waiting to activate new service worker immediately
         skipWaiting: true,
         clientsClaim: true,
-
-        // Runtime caching strategies
-        runtimeCaching: [
-          // Cache JW.org pages with NetworkFirst (prefer network, fall back to cache)
-          {
-            urlPattern: /^https:\/\/www\.jw\.org\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'jw-org-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          // Cache Watchtower Online Library with NetworkFirst
-          {
-            urlPattern: /^https:\/\/wol\.jw\.org\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'wol-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          // Cache images with CacheFirst (use cached version, update in background)
-          {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'images-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          // Cache API responses with StaleWhileRevalidate
-          {
-            urlPattern: /^https:\/\/api\..*/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 // 1 day
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          // Cache fonts with CacheFirst
-          {
-            urlPattern: /\.(?:woff|woff2|ttf|otf|eot)$/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'fonts-cache',
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          // Cache Google Fonts
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'google-fonts-stylesheets',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
-        ],
-
-        // Navigation preload disabled to prevent "preloadResponse" cancellation warnings
-        // when service worker activates and page reloads
-        navigationPreload: false
+        navigationPreload: false,
       },
 
       // Development options

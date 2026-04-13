@@ -1,6 +1,6 @@
 /**
  * useNotificationReminders Hook
- * Schedules browser notification reminders based on settingsStore configuration.
+ * Schedules native local notifications on Capacitor, web notifications on PWA.
  * Re-schedules whenever notification settings change.
  */
 
@@ -9,38 +9,47 @@ import useSettingsStore from '../stores/settingsStore';
 import {
   isNotificationSupported,
   getNotificationPermission,
+  requestNotificationPermission,
   initializeReminders,
-  cancelScheduledNotification,
+  cancelAllNotifications,
 } from '../utils/notifications';
 
 export default function useNotificationReminders() {
-  const scheduledTimeouts = useRef({});
-
+  const cancelHandles = useRef([]);
   const { notificationsEnabled, notifications } = useSettingsStore();
 
   useEffect(() => {
-    // Cancel any previously scheduled reminders
-    Object.values(scheduledTimeouts.current).forEach((id) => {
-      if (id != null) cancelScheduledNotification(id);
-    });
-    scheduledTimeouts.current = {};
+    let cancelled = false;
 
-    // Schedule new reminders if notifications are enabled and permission granted
-    if (
-      notificationsEnabled &&
-      isNotificationSupported() &&
-      getNotificationPermission() === 'granted'
-    ) {
-      const timeouts = initializeReminders({ notificationsEnabled, notifications });
-      scheduledTimeouts.current = timeouts;
+    async function setup() {
+      // Cancel any previously scheduled reminders
+      cancelHandles.current.forEach((h) => {
+        if (h && typeof h.cancel === 'function') h.cancel();
+      });
+      cancelHandles.current = [];
+      await cancelAllNotifications();
+
+      // Schedule new reminders if notifications are enabled
+      if (notificationsEnabled) {
+        if (isNotificationSupported() || /* Capacitor */ true) {
+          const perm = await requestNotificationPermission();
+          if (perm === 'granted' && !cancelled) {
+            const handles = await initializeReminders({ notificationsEnabled, notifications });
+            cancelHandles.current = handles;
+          }
+        }
+      }
     }
 
-    // Cleanup on unmount or before next effect run
+    setup();
+
     return () => {
-      Object.values(scheduledTimeouts.current).forEach((id) => {
-        if (id != null) cancelScheduledNotification(id);
+      cancelled = true;
+      cancelHandles.current.forEach((h) => {
+        if (h && typeof h.cancel === 'function') h.cancel();
       });
-      scheduledTimeouts.current = {};
+      cancelHandles.current = [];
+      cancelAllNotifications();
     };
   }, [notificationsEnabled, notifications]);
 }
