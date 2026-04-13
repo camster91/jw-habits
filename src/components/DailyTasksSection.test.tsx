@@ -129,9 +129,9 @@ describe('DailyTasksSection', () => {
     expect(newPoints).toBeGreaterThan(initialPoints);
   });
 
-  it('should show daily check section', () => {
+  it('should show daily check-in section', () => {
     renderWithRouter(<DailyTasksSection />);
-    expect(screen.getByText('Daily Check')).toBeDefined();
+    expect(screen.getByText('Daily Check-in')).toBeDefined();
   });
 
   it('should show daily reflection section', () => {

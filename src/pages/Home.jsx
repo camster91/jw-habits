@@ -58,24 +58,24 @@ function Home() {
           </div>
         </section>
 
-        {/* Family Worship */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '250ms' }}>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
-              This Week
-            </h2>
-          </div>
-          <FamilyWorshipCard />
-        </section>
-
         {/* Bible Reading */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+        <section className="animate-fade-in-up" style={{ animationDelay: '250ms' }}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
               Bible Reading
             </h2>
           </div>
           <BibleReadingCard />
+        </section>
+
+        {/* Family Worship */}
+        <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
+              This Week
+            </h2>
+          </div>
+          <FamilyWorshipCard />
         </section>
 
       </main>

@@ -218,14 +218,14 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
       {/* Chapter Progress */}
       <div className="px-4 pb-4">
         <p className="text-xs text-base-content/50 mb-2 font-medium">Mark chapters as complete</p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="flex flex-wrap gap-2">
           {chapters.map((chapter, index) => {
             const isComplete = chapterProgress[index];
             return (
               <button
                 key={index}
                 onClick={() => handleChapterToggle(index)}
-                className={`py-3 px-2 rounded-xl font-medium text-sm transition-all active:scale-95 flex items-center justify-center gap-1 ${
+                className={`py-2.5 px-3 rounded-xl font-medium text-sm transition-all active:scale-95 flex items-center justify-center gap-1 min-w-[44px] ${
                   isComplete
                     ? 'bg-success text-white'
                     : 'bg-base-200 text-base-content/60'

@@ -105,24 +105,31 @@ function DailyTasksSection() {
         </div>
       </div>
 
-      {/* Quick Check */}
+      {/* Daily Check-in */}
       <div className="card bg-base-100 shadow-md">
         <div className="card-body p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <Flame className="w-5 h-5 text-warning" />
-              <h3 className="font-semibold text-lg">Daily Check</h3>
+              <h3 className="font-semibold text-lg">Daily Check-in</h3>
             </div>
             {dailyCheckStreak > 0 && (
-              <div className="text-sm font-bold text-warning">{dailyCheckStreak} day streak</div>
+              <div className="flex items-center gap-1 text-sm font-bold text-warning">
+                <Flame className="w-4 h-4" /> {dailyCheckStreak} day streak
+              </div>
             )}
           </div>
+          <p className="text-sm text-base-content/60 mb-3">
+            {hasCheckedToday
+              ? "You checked in today! Tap to see what's new."
+              : "Check in and see what's new on JW.org."}
+          </p>
           <button
             onClick={handleDailyCheck}
-            className={`btn w-full mt-2 gap-2 ${hasCheckedToday ? 'btn-outline' : 'btn-primary'}`}
+            className={`btn w-full gap-2 ${hasCheckedToday ? 'btn-outline btn-sm' : 'btn-primary'}`}
           >
             <ExternalLink className="w-4 h-4" />
-            {hasCheckedToday ? "What's New on JW.org" : "Check in & read What's New"}
+            {hasCheckedToday ? "What's New" : 'Check in now'}
           </button>
         </div>
       </div>
