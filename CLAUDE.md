@@ -5,7 +5,7 @@
 A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses to track daily spiritual habits. Published as **JW Habits** on Android/iOS.
 
 - **App ID:** `com.ashbi.jwnews`
-- **Version:** 3.0.0
+- **Version:** 4.1.0
 - **Node requirement:** >= 18.0.0
 
 ## Stack
@@ -30,15 +30,12 @@ src/
 ├── main.jsx              # Entry point (error logging, back button, SW updates)
 ├── App.jsx               # Router + global wrappers (ErrorBoundary, Toast, Drawer)
 ├── index.css             # Tailwind base + 20+ custom animations
-├── pages/                # 9 route pages (lazy-loaded except Home)
-│   ├── Home.jsx          # Dashboard: daily tasks, prayers, family worship, study
-│   ├── News.jsx          # Daily check-in tracker with streaks
-│   ├── Meeting.jsx       # Meeting prep (midweek/weekend)
-│   ├── Goals.jsx         # Goal tracking with categories
-│   ├── Projects.jsx      # Project management with tasks
+├── pages/                # 5 route pages (lazy-loaded except Home)
+│   ├── Home.jsx          # Dashboard: daily text + reflection, prayers, family worship, Bible reading
+│   ├── Study.jsx         # Meeting prep (midweek/weekend) + deeper study
+│   ├── Goals.jsx         # Merged goals + projects with tab switcher
 │   ├── Stats.jsx         # Gamification stats, achievements, streaks
 │   ├── Links.jsx         # JW.org resource links (8 categories, 50+ links)
-│   ├── Memories.jsx      # Daily reflections journal
 │   └── Settings.tsx      # Notifications, theme, data import/export
 ├── stores/               # Zustand state (all persisted)
 │   ├── progressStore.ts  # Daily texts, prayers, family worship, Bible, meetings
@@ -48,13 +45,14 @@ src/
 │   ├── goalsStore.js     # Goals + projects CRUD
 │   └── memoriesStore.ts  # Reflections by date
 ├── components/           # ~20 reusable components
-│   ├── BottomNav.jsx     # 5-tab nav: Home, News, Meeting, Goals, Projects
-│   ├── SideDrawer.tsx    # Hamburger drawer: Stats, Links, Settings, Memories
-│   ├── DailyTasksSection.tsx
+│   ├── BottomNav.jsx     # 3-tab nav: Home, Study, Goals
+│   ├── SideDrawer.tsx    # Hamburger drawer: Stats, Links, Settings
+│   ├── DailyTasksSection.tsx  # Daily text + optional reflection + daily check
 │   ├── PrayerTrackingCard.jsx
 │   ├── FamilyWorshipCard.jsx
-│   ├── StudyTab.jsx
+│   ├── BibleReadingCard.jsx
 │   ├── MeetingCard.jsx
+│   ├── DeeperStudySection.jsx
 │   ├── WeeklyBibleReading.jsx
 │   ├── GoalsTab.jsx
 │   ├── ProjectsTab.jsx
@@ -63,7 +61,6 @@ src/
 │   ├── ErrorBoundary.jsx
 │   ├── LoadingSpinner.jsx / Skeleton.jsx
 │   ├── OfflineIndicator.jsx / UpdatePrompt.jsx / InstallPrompt.jsx
-│   ├── NewsCard.jsx
 │   └── settings/NotificationItems.tsx
 ├── hooks/
 │   ├── useDrawer.js      # Drawer context (import from HERE, not SideDrawer)
@@ -82,14 +79,11 @@ src/
 | Path | Page | Loading | Nav |
 |------|------|---------|-----|
 | `/` | Home | Eager | Bottom |
-| `/news` | News | Lazy | Bottom |
-| `/meeting` | Meeting | Lazy | Bottom |
+| `/study` | Study | Lazy | Bottom |
 | `/goals` | Goals | Lazy | Bottom |
-| `/projects` | Projects | Lazy | Bottom |
 | `/stats` | Stats | Lazy | Side drawer |
 | `/links` | Links | Lazy | Side drawer |
 | `/settings` | Settings | Lazy | Side drawer |
-| `/memories` | Memories | Lazy | Side drawer |
 
 ## State Management
 
@@ -100,7 +94,7 @@ All stores use Zustand with `persist` middleware to localStorage:
 | progressStore | `jw-progress-storage` | Daily texts, prayers, family worship, Bible reading, meetings |
 | gamificationStore | `jw-gamification-storage` | Points (100/level), 38 achievements, streaks |
 | settingsStore | `jw-progress-settings` | Notifications, theme, Bible reading pace |
-| newsStore | `jw-news-store` | Daily check-in history, streak |
+| newsStore | `jw-news-store` | Daily check-in streak (simplified) |
 | goalsStore | `jw-goals-storage` | Goals and projects with tasks |
 | memoriesStore | `jw-memories-storage` | Reflections indexed by date |
 
@@ -187,9 +181,16 @@ npm run test:coverage    # Vitest with v8 coverage
 
 ## Testing
 
-Tests live alongside source files (`*.test.js`):
+Tests live alongside source files (`*.test.js` / `*.test.ts`):
 - `src/stores/settingsStore.test.js`
 - `src/stores/progressStore.test.js`
+- `src/stores/newsStore.test.ts`
+- `src/stores/gamificationStore.test.ts`
+- `src/stores/memoriesStore.test.ts`
+- `src/stores/goalsStore.test.js`
+- `src/components/DailyTasksSection.test.tsx`
+- `src/components/PrayerTrackingCard.test.tsx`
+- `src/components/MeetingCard.test.tsx`
 - `src/utils/jwLibraryLinks.test.js`
 - `src/utils/notifications.test.js`
 
@@ -199,7 +200,7 @@ Config: `vitest.config.js` with jsdom environment, globals enabled, v8 coverage.
 
 - Service worker: auto-update via Workbox (vite-plugin-pwa)
 - Offline caching: JW.org (NetworkFirst), images (CacheFirst), fonts (CacheFirst), API (StaleWhileRevalidate)
-- App shortcuts: Daily Text, News, Stats, Settings
+- App shortcuts: Daily Text, Study, Stats, Settings
 - Install prompt with 7-day dismissal (`InstallPrompt.jsx`)
 - Update prompt when new SW detected (`UpdatePrompt.jsx`)
 
