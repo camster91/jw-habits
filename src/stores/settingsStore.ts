@@ -35,6 +35,12 @@ interface SettingsState {
   bibleReadingSchedule: BibleReadingSchedule;
   notificationsEnabled: boolean;
   theme: 'light' | 'dark';
+  ai: {
+    provider: 'ollama' | 'none';
+    ollamaBaseUrl: string;
+    ollamaApiKey: string;
+    ollamaModel: string;
+  };
 }
 
 interface SettingsActions {
@@ -48,6 +54,7 @@ interface SettingsActions {
   setBibleReadingStartDay: (day: number) => void;
   setBibleReadingPace: (pace: number) => void;
   resetBibleReadingSchedule: () => void;
+  setAiSettings: (settings: Partial<SettingsState['ai']>) => void;
 }
 
 const DEFAULT_NOTIFICATIONS: Notifications = {
@@ -76,6 +83,12 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
       bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS,
       notificationsEnabled: false,
       theme: 'light',
+      ai: {
+        provider: 'none',
+        ollamaBaseUrl: 'https://ollama.com',
+        ollamaApiKey: '',
+        ollamaModel: 'llama3.2',
+      },
 
       setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
       toggleNotification: (key) =>
@@ -131,6 +144,10 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
         })),
       resetBibleReadingSchedule: () =>
         set({ bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS }),
+      setAiSettings: (settings) =>
+        set((state) => ({
+          ai: { ...state.ai, ...settings },
+        })),
     }),
     {
       name: 'jw-progress-settings',

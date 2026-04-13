@@ -49,7 +49,7 @@ function DailyTasksSection() {
 
   const handleOpenJW = () => {
     haptics.light();
-    window.open(dailyTextLink, '_blank');
+    window.open(dailyTextLink, '_blank', 'noopener,noreferrer');
   };
 
   const handleDailyTextCheck = () => {

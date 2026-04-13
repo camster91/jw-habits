@@ -14,8 +14,7 @@ const useGoalsStore = create(
           goals: [
             ...state.goals,
             {
-              id: Date.now().toString(),
-              title: goal.title,
+              id: crypto.randomUUID(),
               description: goal.description || '',
               category: goal.category || 'spiritual', // spiritual, ministry, personal
               targetDate: goal.targetDate || null,
@@ -55,7 +54,7 @@ const useGoalsStore = create(
       // Project actions
       addProject: (project) => {
         const newProject = {
-          id: Date.now().toString(),
+          id: crypto.randomUUID(),
           title: project.title,
           description: project.description || '',
           category: project.category || 'personal', // congregation, personal, ministry

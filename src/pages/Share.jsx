@@ -20,6 +20,10 @@ function SharePage() {
   const handleOpenLink = () => {
     if (url) {
       haptics.light();
+      // Prevent XSS: only allow http/https URLs
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return;
+      }
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };

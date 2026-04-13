@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import {
   Users,
@@ -47,10 +47,10 @@ function FamilyWorshipCard() {
   const worshipStreak = getFamilyWorshipStreak();
 
   // Initialize local state from stored data
-  useState(() => {
+  useEffect(() => {
     if (worship.topic) setTopicText(worship.topic);
     if (worship.notes) setNotesText(worship.notes);
-  });
+  }, [worship.topic, worship.notes]);
 
   const handleToggleComplete = () => {
     haptics.light();
@@ -65,8 +65,12 @@ function FamilyWorshipCard() {
   const handleAddLink = () => {
     if (newLinkTitle.trim() && newLinkUrl.trim()) {
       haptics.light();
-      // Ensure URL has protocol
       let url = newLinkUrl.trim();
+      // Block dangerous schemes
+      if (url.startsWith('javascript:') || url.startsWith('data:') || url.startsWith('vbscript:')) {
+        return;
+      }
+      // Ensure URL has protocol
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
       }
@@ -84,6 +88,11 @@ function FamilyWorshipCard() {
 
   const handleOpenLink = (url) => {
     haptics.light();
+    // Prevent XSS: only allow http/https URLs
+    if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+      console.warn('Blocked unsafe URL:', url);
+      return;
+    }
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 

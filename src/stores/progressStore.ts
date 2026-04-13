@@ -216,7 +216,7 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
             ...state.familyWorship,
             [weekKey]: {
               ...existing,
-              studyLinks: [...existing.studyLinks, { id: Date.now(), ...link }],
+              studyLinks: [...existing.studyLinks, { id: crypto.randomUUID(), ...link }],
               timestamp: new Date().toISOString()
             }
           }

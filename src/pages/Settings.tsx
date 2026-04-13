@@ -1,4 +1,4 @@
-import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, X } from 'lucide-react';
+import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, X, Bot, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import useProgressStore from '../stores/progressStore';
 import useSettingsStore from '../stores/settingsStore';
@@ -20,11 +20,16 @@ function Settings() {
     notificationsEnabled,
     notifications,
     theme,
+    ai,
     setNotificationsEnabled,
     toggleNotification,
     setNotificationTime,
     setTheme,
+    setAiSettings,
   } = useSettingsStore();
+
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [aiTestStatus, setAiTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
 
   const [notificationPermission, setNotificationPermission] = useState(() => getNotificationPermission());
   const [notificationSupported] = useState(() => isNotificationSupported());
@@ -43,7 +48,8 @@ function Settings() {
     setNotificationPermission(permission);
     if (permission === 'granted') {
       setNotificationsEnabled(true);
-      initializeReminders();
+      const settings = useSettingsStore.getState();
+      initializeReminders(settings);
       toast.success('Notifications enabled');
     } else {
       toast.error('Permission denied');
@@ -79,6 +85,41 @@ function Settings() {
     }
     window.location.reload();
     toast.success('Checking for updates...');
+  };
+
+  const handleTestAi = async () => {
+    setAiTestStatus('testing');
+    try {
+      const { chatWithOllama } = await import('../utils/ollama');
+      const baseUrl = ai.ollamaBaseUrl || 'https://ollama.com';
+      const apiKey = ai.ollamaApiKey;
+      const headers = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+      const response = await fetch(`${baseUrl}/api/chat`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: ai.ollamaModel || 'llama3.2',
+          messages: [{ role: 'user', content: 'Say "OK" in one word.' }],
+          stream: false,
+        }),
+      });
+
+      if (response.ok) {
+        setAiTestStatus('success');
+        toast.success('AI connection successful');
+      } else {
+        const err = await response.text();
+        setAiTestStatus('error');
+        toast.error(`AI error: ${response.status}`);
+        console.error('Ollama test failed:', err);
+      }
+    } catch (error) {
+      setAiTestStatus('error');
+      toast.error('AI connection failed');
+      console.error('Ollama test error:', error);
+    }
   };
 
   const STORAGE_KEYS = [
@@ -238,6 +279,80 @@ function Settings() {
             <button onClick={handleExportData} className="btn btn-outline w-full justify-start"><Download className="w-5 h-5" /> Export Data</button>
             <button onClick={handleImportData} className="btn btn-outline w-full justify-start"><Upload className="w-5 h-5" /> Import Data</button>
             <button onClick={handleClearData} className="btn btn-error btn-outline w-full justify-start"><Trash2 className="w-5 h-5" /> Clear All Data</button>
+          </div>
+        </div>
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title text-lg"><Bot className="w-5 h-5" /> AI Assistant</h2>
+            <div className="divider my-2"></div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-base-200/50 rounded-xl">
+                <div><p className="font-medium">AI Provider</p></div>
+                <select
+                  className="select select-sm select-bordered"
+                  value={ai.provider}
+                  onChange={(e) => setAiSettings({ provider: e.target.value as 'ollama' | 'none' })}
+                >
+                  <option value="none">Disabled</option>
+                  <option value="ollama">Ollama Cloud / Local</option>
+                </select>
+              </div>
+              {ai.provider === 'ollama' && (
+                <>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-base-content/70">Base URL</label>
+                    <input
+                      type="text"
+                      className="input input-bordered input-sm w-full"
+                      value={ai.ollamaBaseUrl}
+                      onChange={(e) => setAiSettings({ ollamaBaseUrl: e.target.value })}
+                      placeholder="https://ollama.com or http://localhost:11434"
+                    />
+                    <p className="text-xs text-base-content/50">Cloud: ollama.com | Local: localhost:11434</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-base-content/70">API Key</label>
+                    <div className="flex gap-2">
+                      <input
+                        type={showApiKey ? 'text' : 'password'}
+                        className="input input-bordered input-sm flex-1"
+                        value={ai.ollamaApiKey}
+                        onChange={(e) => setAiSettings({ ollamaApiKey: e.target.value })}
+                        placeholder="Ollama Cloud API key (not needed for local)"
+                      />
+                      <button
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        className="btn btn-sm btn-ghost"
+                      >
+                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-base-content/50">Get key at ollama.com (account settings)</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-base-content/70">Model</label>
+                    <input
+                      type="text"
+                      className="input input-bordered input-sm w-full"
+                      value={ai.ollamaModel}
+                      onChange={(e) => setAiSettings({ ollamaModel: e.target.value })}
+                      placeholder="llama3.2, mistral-small3.1, deepseek-r1, etc."
+                    />
+                    <p className="text-xs text-base-content/50">Cloud models: llama3.2, llama3.3, mistral-small3.1, qwen3, gemma3, phi4, deepseek-r1</p>
+                  </div>
+                  <button
+                    onClick={handleTestAi}
+                    disabled={aiTestStatus === 'testing'}
+                    className="btn btn-outline btn-sm w-full gap-2"
+                  >
+                    {aiTestStatus === 'testing' && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {aiTestStatus === 'success' && <CheckCircle2 className="w-4 h-4 text-success" />}
+                    {aiTestStatus === 'error' && <XCircle className="w-4 h-4 text-error" />}
+                    Test Connection
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
         <div className="card bg-base-100 shadow-xl">

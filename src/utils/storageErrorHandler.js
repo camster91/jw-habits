@@ -14,18 +14,25 @@ export function createStorageErrorHandler(storeName) {
       console.warn(`[Zustand Persist] localStorage quota exceeded for "${storeName}". Attempting cleanup...`);
 
       try {
-        // Try to free space by removing stale session keys
-        const keysToRemove = [];
+        // LRU eviction: remove oldest app-owned keys first, keep recent data
+        const appPrefixes = ['jw-', 'jw-habits-'];
+        const appKeys = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
-          if (key && !key.startsWith('jw-')) {
-            keysToRemove.push(key);
+          if (key && appPrefixes.some(prefix => key.startsWith(prefix))) {
+            appKeys.push(key);
           }
         }
-        keysToRemove.forEach((key) => localStorage.removeItem(key));
+        // Sort by last modified (approximated by order) and remove oldest
+        // Remove up to 5 oldest app keys to free space
+        const keysToRemove = appKeys.slice(0, Math.min(5, appKeys.length));
+        keysToRemove.forEach((key) => {
+          console.warn(`[Zustand Persist] Evicting old key: ${key}`);
+          localStorage.removeItem(key);
+        });
 
         console.warn(
-          `[Zustand Persist] Cleaned ${keysToRemove.length} non-app keys. ` +
+          `[Zustand Persist] Evicted ${keysToRemove.length} old app keys. ` +
             `App will continue with in-memory state.`
         );
       } catch (cleanupError) {

@@ -6,10 +6,12 @@ const PORT = 3009;
 
 const allowedOrigins = [
   'https://budget.ashbi.ca',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000',
-  'http://localhost:3009',
+  ...(process.env.NODE_ENV !== 'production' ? [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'http://localhost:3009',
+  ] : []),
 ];
 
 app.use(cors({

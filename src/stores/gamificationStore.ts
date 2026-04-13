@@ -154,7 +154,6 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
 
       addPoints: (points) => {
         set((state) => ({ points: state.points + points }));
-        get().checkAndUnlockAchievements();
       },
 
       updateStreak: (date) => {
@@ -412,11 +411,23 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
         return persistedState;
       },
       partialize: (state) => ({
-        totalPoints: state.totalPoints,
-        currentLevel: state.currentLevel,
-        streakDays: state.streakDays,
+        points: state.points,
+        currentStreak: state.currentStreak,
         longestStreak: state.longestStreak,
-        lastActiveDate: state.lastActiveDate,
+        lastActivityDate: state.lastActivityDate,
+        prayerStreak: state.prayerStreak,
+        longestPrayerStreak: state.longestPrayerStreak,
+        lastPrayerDate: state.lastPrayerDate,
+        familyWorshipStreak: state.familyWorshipStreak,
+        longestFamilyWorshipStreak: state.longestFamilyWorshipStreak,
+        dailyTextCompletions: state.dailyTextCompletions,
+        reflectionsWritten: state.reflectionsWritten,
+        newsRead: state.newsRead,
+        bibleReadingsCompleted: state.bibleReadingsCompleted,
+        goalsCompleted: state.goalsCompleted,
+        projectsCompleted: state.projectsCompleted,
+        meetingsPrepared: state.meetingsPrepared,
+        prayersCompleted: state.prayersCompleted,
         unlockedAchievements: state.unlockedAchievements,
       }),
     }
