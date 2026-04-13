@@ -1,21 +1,17 @@
-import { Suspense, lazy } from 'react';
-import { format } from 'date-fns';
-import { Sun, Moon, CloudSun, Menu } from 'lucide-react';
+import { Sun, Moon, CloudSun, Menu, ExternalLink, Newspaper } from 'lucide-react';
 import DailyTasksSection from '../components/DailyTasksSection';
 import PrayerTrackingCard from '../components/PrayerTrackingCard';
 import FamilyWorshipCard from '../components/FamilyWorshipCard';
-import { CardLoading } from '../components/LoadingSpinner';
+import BibleReadingCard from '../components/BibleReadingCard';
 import { useDrawer } from '../hooks/useDrawer';
 import PageHeader from '../components/PageHeader';
 
-// Lazy load StudyTab for the daily Bible reading section
-const StudyTab = lazy(() => import('../components/StudyTab'));
-
 function Home() {
-  const today = format(new Date(), 'EEEE, MMMM d');
+  const today = new Date();
   const greeting = getGreeting();
   const { openDrawer } = useDrawer();
   const GreetingIcon = greeting.icon;
+  const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
@@ -30,7 +26,7 @@ function Home() {
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2 text-primary-content/70">
               <GreetingIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">{today}</span>
+              <span className="text-sm font-medium">{formattedDate}</span>
             </div>
             <button
               onClick={openDrawer}
@@ -45,7 +41,7 @@ function Home() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 pt-4 space-y-5 max-w-2xl">
-        {/* Daily Tasks */}
+        {/* Daily Tasks + Prayer */}
         <section className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
@@ -72,16 +68,35 @@ function Home() {
           <FamilyWorshipCard />
         </section>
 
-        {/* Daily Bible Reading + Deeper Study */}
+        {/* Bible Reading */}
         <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
-              Study
+              Bible Reading
             </h2>
           </div>
-          <Suspense fallback={<CardLoading />}>
-            <StudyTab />
-          </Suspense>
+          <BibleReadingCard />
+        </section>
+
+        {/* What's New on JW.org */}
+        <section className="animate-fade-in-up" style={{ animationDelay: '350ms' }}>
+          <a
+            href="https://www.jw.org/en/whats-new/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="card bg-base-100 shadow-sm rounded-2xl hover:shadow-md transition-shadow active:scale-[0.98]"
+          >
+            <div className="card-body p-4 flex-row items-center gap-3">
+              <div className="p-2.5 bg-primary/10 rounded-2xl">
+                <Newspaper className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-sm">What&apos;s New</h3>
+                <p className="text-xs text-base-content/50">Latest from JW.org</p>
+              </div>
+              <ExternalLink className="w-4 h-4 text-base-content/40" />
+            </div>
+          </a>
         </section>
       </main>
     </div>

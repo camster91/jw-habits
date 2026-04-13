@@ -1,19 +1,15 @@
-import { Home, Newspaper, Calendar, Target, FolderKanban } from 'lucide-react';
+import { Home, BookOpen, Target } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import useNewsStore from '../stores/newsStore';
 import { haptics } from '../utils/native';
 
 function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const unreadCount = useNewsStore((state) => state.getTotalUnreadCount());
 
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
-    { path: '/news', icon: Newspaper, label: 'News', badge: unreadCount },
-    { path: '/meeting', icon: Calendar, label: 'Meeting' },
+    { path: '/study', icon: BookOpen, label: 'Study' },
     { path: '/goals', icon: Target, label: 'Goals' },
-    { path: '/projects', icon: FolderKanban, label: 'Projects' },
   ];
 
   const handleNavClick = (path) => {
@@ -23,6 +19,12 @@ function BottomNav() {
     }
   };
 
+  // Check if current path matches a nav item or is a sub-path of it
+  const isActive = (path) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <nav
       className="btm-nav btm-nav-lg bg-base-200 border-t"
@@ -30,23 +32,16 @@ function BottomNav() {
       aria-label="Main navigation"
     >
       {navItems.map((item) => {
-        const isActive = location.pathname === item.path;
+        const active = isActive(item.path);
         return (
           <button
             key={item.path}
-            className={isActive ? 'active' : ''}
+            className={active ? 'active' : ''}
             onClick={() => handleNavClick(item.path)}
-            aria-label={item.badge ? `${item.label} (${item.badge} unread)` : item.label}
-            aria-current={isActive ? 'page' : undefined}
+            aria-label={item.label}
+            aria-current={active ? 'page' : undefined}
           >
-            <div className="relative">
-              <item.icon className="w-5 h-5" aria-hidden="true" />
-              {item.badge > 0 && (
-                <span className="absolute -top-1 -right-1 badge badge-xs badge-primary">
-                  {item.badge > 9 ? '9+' : item.badge}
-                </span>
-              )}
-            </div>
+            <item.icon className="w-5 h-5" aria-hidden="true" />
             <span className="btm-nav-label text-xs">{item.label}</span>
           </button>
         );

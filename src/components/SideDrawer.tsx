@@ -1,6 +1,6 @@
 import React, { useState, useCallback, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { BarChart3, Link2, Settings, BookHeart, X } from 'lucide-react';
+import { BarChart3, Link2, Settings, X } from 'lucide-react';
 import { haptics } from '../utils/native';
 import { DrawerContext } from '../hooks/useDrawer';
 
@@ -15,7 +15,6 @@ const DRAWER_ITEMS: DrawerItem[] = [
   { path: '/stats', icon: BarChart3, label: 'Statistics', description: 'View your progress data' },
   { path: '/links', icon: Link2, label: 'Quick Links', description: 'JW.org resources' },
   { path: '/settings', icon: Settings, label: 'Settings', description: 'App preferences' },
-  { path: '/memories', icon: BookHeart, label: 'Memories', description: 'Your reflections' },
 ];
 
 interface SideDrawerProps {

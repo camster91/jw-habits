@@ -16,13 +16,6 @@ interface NewsActions {
   getStreak: () => number;
   getTotalChecks: () => number;
   getHistory: () => string[];
-  getNeedsCheck: () => boolean;
-  getUnreadCount: () => number;
-  getTotalUnreadCount: () => number;
-  markAsRead: (itemId: string) => void;
-  isItemRead: (itemId: string) => boolean;
-  toggleSaveItem: (itemId: string) => void;
-  isItemSaved: (itemId: string) => boolean;
   resetStreak: () => void;
   resetHistory: () => void;
   resetAll: () => void;
@@ -86,19 +79,6 @@ const useNewsStore = create<NewsStore>()(
       getStreak: () => get().streak,
       getTotalChecks: () => get().totalChecks,
       getHistory: () => get().history,
-      getNeedsCheck: () => !get().getHasCheckedToday(),
-      getUnreadCount: () => (get().getNeedsCheck() ? 1 : 0),
-      getTotalUnreadCount: () => get().getUnreadCount(),
-
-      markAsRead: (itemId: string) => {
-        get().checkToday();
-      },
-
-      isItemRead: (itemId: string) => false,
-      toggleSaveItem: (itemId: string) => {
-        console.log('Save item functionality disabled');
-      },
-      isItemSaved: (itemId: string) => false,
 
       resetStreak: () => set({ streak: 0 }),
       resetHistory: () => set({ history: [], totalChecks: 0 }),

@@ -167,27 +167,4 @@ describe('newsStore', () => {
     });
   });
 
-  describe('markAsRead', () => {
-    it('should call checkToday when marking as read', () => {
-      act(() => {
-        useNewsStore.getState().markAsRead('some-item-id');
-      });
-
-      const state = useNewsStore.getState();
-      expect(state.lastChecked).not.toBeNull();
-      expect(state.streak).toBe(1);
-    });
-  });
-
-  describe('isItemRead', () => {
-    it('should return false', () => {
-      expect(useNewsStore.getState().isItemRead('any-item')).toBe(false);
-    });
-  });
-
-  describe('isItemSaved', () => {
-    it('should return false', () => {
-      expect(useNewsStore.getState().isItemSaved('any-item')).toBe(false);
-    });
-  });
 });

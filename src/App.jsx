@@ -12,14 +12,11 @@ import SideDrawer from './components/SideDrawer';
 import useNotificationReminders from './hooks/useNotificationReminders';
 
 // Lazy load non-critical pages for better initial load performance
+const Study = lazy(() => import('./pages/Study'));
+const Goals = lazy(() => import('./pages/Goals'));
 const Stats = lazy(() => import('./pages/Stats'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Links = lazy(() => import('./pages/Links'));
-const News = lazy(() => import('./pages/News'));
-const Memories = lazy(() => import('./pages/Memories'));
-const Meeting = lazy(() => import('./pages/Meeting'));
-const Goals = lazy(() => import('./pages/Goals'));
-const Projects = lazy(() => import('./pages/Projects'));
 const SharePage = lazy(() => import('./pages/Share'));
 
 // Loading fallback component
@@ -47,14 +44,11 @@ function App() {
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/news" element={<News />} />
-                  <Route path="/meeting" element={<Meeting />} />
+                  <Route path="/study" element={<Study />} />
                   <Route path="/goals" element={<Goals />} />
-                  <Route path="/projects" element={<Projects />} />
                   <Route path="/stats" element={<Stats />} />
                   <Route path="/links" element={<Links />} />
                   <Route path="/settings" element={<Settings />} />
-                  <Route path="/memories" element={<Memories />} />
                   <Route path="/share" element={<SharePage />} />
                 </Routes>
               </Suspense>
