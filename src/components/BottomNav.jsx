@@ -1,4 +1,4 @@
-import { Home, BookOpen, Target } from 'lucide-react';
+import { Home, BookOpen, Target, Cross } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { haptics } from '../utils/native';
 
@@ -10,6 +10,7 @@ function BottomNav() {
     { path: '/', icon: Home, label: 'Home' },
     { path: '/study', icon: BookOpen, label: 'Study' },
     { path: '/goals', icon: Target, label: 'Goals' },
+    { path: '/service', icon: Cross, label: 'Service' },
   ];
 
   const handleNavClick = (path) => {
