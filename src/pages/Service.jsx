@@ -23,6 +23,7 @@ function Service() {
   const [showCustom, setShowCustom] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
+  const [selectedType, setSelectedType] = useState('field-service');
 
   const {
     addEntry,
