@@ -71,7 +71,7 @@
     "autoprefixer": "^10.4.23",
     "concurrently": "^9.2.1",
     "cors": "^2.8.6",
-    "daisyui": "^4.12.24",
+    "daisyui": "^5.5.19",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.0.1",
