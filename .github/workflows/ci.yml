@@ -142,7 +142,7 @@ jobs:
         run: zip -r jw-progress-${{ github.ref_name }}.zip dist/
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: jw-progress-${{ github.ref_name }}.zip
           generate_release_notes: true
