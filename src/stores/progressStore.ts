@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { format, getDayOfYear, startOfWeek } from 'date-fns';
-import { createSafeStorage } from '../utils/storageErrorHandler';
+import { createSafeStorage } from '../utils/storageErrorHandler.js';
 
 interface DailyTextData {
   readScripture: boolean;
@@ -18,7 +18,7 @@ interface PrayerData {
 }
 
 interface StudyLink {
-  id: number;
+  id: string;
   url: string;
   title: string;
 }
@@ -76,7 +76,7 @@ interface ProgressActions {
   updateFamilyWorship: (weekKey: string, data: Partial<FamilyWorshipData>) => void;
   toggleFamilyWorshipComplete: (weekKey: string) => void;
   addStudyLink: (weekKey: string, link: Omit<StudyLink, 'id'>) => void;
-  removeStudyLink: (weekKey: string, linkId: number) => void;
+  removeStudyLink: (weekKey: string, linkId: string) => void;
   getFamilyWorship: (weekKey: string) => FamilyWorshipData;
   getWeekKey: (date?: Date) => string;
   getFamilyWorshipStreak: () => number;
@@ -509,7 +509,7 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
     }),
     {
       name: 'jw-progress-storage',
-      storage: createSafeStorage('jw-progress-storage'),
+      storage: createSafeStorage('jw-progress-storage') as any,
       partialize: (state) => ({
         dailyTexts: state.dailyTexts,
         prayers: state.prayers,

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { createSafeStorage } from '../utils/storageErrorHandler';
+import { createSafeStorage } from '../utils/storageErrorHandler.js';
 
 interface Reflection {
   content: string;
@@ -86,7 +86,7 @@ const useMemoriesStore = create<MemoriesState & MemoriesActions>()(
     {
       name: 'jw-memories-storage',
       version: 1,
-      storage: createSafeStorage('jw-memories-storage'),
+      storage: createSafeStorage('jw-memories-storage') as any,
       partialize: (state) => ({
         reflections: state.reflections,
       }),

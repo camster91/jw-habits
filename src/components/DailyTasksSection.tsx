@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { BookOpen, CheckCircle2, Flame, PenLine, Save, BookHeart, Globe, ExternalLink } from 'lucide-react';
-import useProgressStore from '../stores/progressStore';
-import useNewsStore from '../stores/newsStore';
-import useMemoriesStore from '../stores/memoriesStore';
-import useGamificationStore from '../stores/gamificationStore';
-import { getDailyTextLink } from '../utils/jwLibraryLinks';
-import { haptics } from '../utils/native';
+import useProgressStore from '../stores/progressStore.js';
+import useNewsStore from '../stores/newsStore.js';
+import useMemoriesStore from '../stores/memoriesStore.js';
+import useGamificationStore from '../stores/gamificationStore.js';
+import { getDailyTextLink } from '../utils/jwLibraryLinks.js';
+import { haptics } from '../utils/native.js';
 
 function DailyTasksSection() {
   const today = format(new Date(), 'yyyy-MM-dd');

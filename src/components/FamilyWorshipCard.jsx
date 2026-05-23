@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import {
   Users,
@@ -29,28 +29,23 @@ function FamilyWorshipCard() {
   const [showAddLink, setShowAddLink] = useState(false);
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
-  const [topicText, setTopicText] = useState('');
-  const [notesText, setNotesText] = useState('');
+
+  const progressStore = useProgressStore();
+  const worship = progressStore.getFamilyWorship(weekKey);
+  const worshipStreak = progressStore.getFamilyWorshipStreak();
+
+  const [topicText, setTopicText] = useState(() => worship?.topic || '');
+  const [notesText, setNotesText] = useState(() => worship?.notes || '');
 
   const {
-    getFamilyWorship,
     toggleFamilyWorshipComplete,
     updateFamilyWorship,
     addStudyLink,
     removeStudyLink,
-    getFamilyWorshipStreak
-  } = useProgressStore();
+  } = progressStore;
 
-  const { recordFamilyWorshipCompletion } = useGamificationStore();
-
-  const worship = getFamilyWorship(weekKey);
-  const worshipStreak = getFamilyWorshipStreak();
-
-  // Initialize local state from stored data
-  useEffect(() => {
-    if (worship.topic) setTopicText(worship.topic);
-    if (worship.notes) setNotesText(worship.notes);
-  }, [worship.topic, worship.notes]);
+  const gamificationStore = useGamificationStore();
+  const { recordFamilyWorshipCompletion } = gamificationStore;
 
   const handleToggleComplete = () => {
     haptics.light();

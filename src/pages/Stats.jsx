@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { TrendingUp, Calendar, Target, Trophy, Star, Flame, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
@@ -19,24 +19,21 @@ function Stats() {
   const getLevel = useGamificationStore((s) => s.getLevel);
   const getPointsToNextLevel = useGamificationStore((s) => s.getPointsToNextLevel);
 
-  const progressState = useProgressStore((s) => s);
-  const gamState = useGamificationStore((s) => s);
+  const dailyTextStreak = getDailyTextStreak();
+  const bibleReadingStreak = getBibleReadingStreak();
+  const prayerStreak = getPrayerStreak();
+  const familyWorshipStreak = getFamilyWorshipStreak();
+  const dailyText7Day = getCompletionRate('dailyText', 7);
+  const dailyText30Day = getCompletionRate('dailyText', 30);
+  const bibleReading7Day = getCompletionRate('bibleReading', 7);
+  const bibleReading30Day = getCompletionRate('bibleReading', 30);
 
-  const dailyTextStreak = useMemo(() => getDailyTextStreak(), [progressState.dailyTexts, progressState.prayers]);
-  const bibleReadingStreak = useMemo(() => getBibleReadingStreak(), [progressState.bibleReadings]);
-  const prayerStreak = useMemo(() => getPrayerStreak(), [progressState.prayers]);
-  const familyWorshipStreak = useMemo(() => getFamilyWorshipStreak(), [progressState.familyWorship]);
-  const dailyText7Day = useMemo(() => getCompletionRate('dailyText', 7), [progressState.dailyTexts]);
-  const dailyText30Day = useMemo(() => getCompletionRate('dailyText', 30), [progressState.dailyTexts]);
-  const bibleReading7Day = useMemo(() => getCompletionRate('bibleReading', 7), [progressState.bibleReadings]);
-  const bibleReading30Day = useMemo(() => getCompletionRate('bibleReading', 30), [progressState.bibleReadings]);
-
-  const stats = useMemo(() => getStats(), [gamState.points, gamState.currentStreak]);
-  const level = useMemo(() => getLevel(), [gamState.points]);
-  const pointsToNext = useMemo(() => getPointsToNextLevel(), [gamState.points]);
-  const achievements = useMemo(() => getAllAchievements(), [gamState.unlockedAchievements]);
-  const unlockedAchievements = useMemo(() => achievements.filter(a => a.unlocked), [achievements]);
-  const lockedAchievements = useMemo(() => achievements.filter(a => !a.unlocked), [achievements]);
+  const stats = getStats();
+  const level = getLevel();
+  const pointsToNext = getPointsToNextLevel();
+  const achievements = getAllAchievements();
+  const unlockedAchievements = achievements.filter(a => a.unlocked);
+  const lockedAchievements = achievements.filter(a => !a.unlocked);
 
   const displayedAchievements = showAllAchievements
     ? achievements

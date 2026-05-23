@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { Trophy, X, Star } from 'lucide-react';
-import useGamificationStore from '../stores/gamificationStore';
-import { haptics } from '../utils/native';
+import useGamificationStore from '../stores/gamificationStore.js';
+import { haptics } from '../utils/native.js';
 
 // Confetti particle component
 interface ConfettiParticleProps {
@@ -52,10 +52,10 @@ function AchievementPopup() {
 
   useEffect(() => {
     if (currentAchievement) {
-      setParticles(Array.from({ length: 20 }, (_, i) => ({
+      setParticles(Array.from({ length: 20 }, (_, i): Particle => ({
         id: i,
         delay: i * 50,
-        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length] ?? '#FFD700',
         left: Math.random() * 100,
       })));
     }

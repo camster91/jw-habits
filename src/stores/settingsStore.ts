@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { createSafeStorage } from '../utils/storageErrorHandler';
+import { createSafeStorage } from '../utils/storageErrorHandler.js';
 
 interface NotificationSetting {
   enabled: boolean;
@@ -11,7 +11,7 @@ interface NotificationSetting {
   meetingDays?: number[];
 }
 
-interface Notifications {
+export interface Notifications {
   enabled: boolean;
   dailyText: NotificationSetting;
   morningPrayer: NotificationSetting;
@@ -151,7 +151,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
     }),
     {
       name: 'jw-progress-settings',
-      storage: createSafeStorage('jw-progress-settings'),
+      storage: createSafeStorage('jw-progress-settings') as any,
     }
   )
 );

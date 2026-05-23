@@ -1,17 +1,17 @@
 import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, X, Bot, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import useProgressStore from '../stores/progressStore';
-import useSettingsStore from '../stores/settingsStore';
-import { useToast } from '../components/Toast';
-import { haptics } from '../utils/native';
-import PageHeader from '../components/PageHeader';
+import useProgressStore from '../stores/progressStore.js';
+import useSettingsStore, { type Notifications } from '../stores/settingsStore.js';
+import { useToast } from '../components/Toast.jsx';
+import { haptics } from '../utils/native.js';
+import PageHeader from '../components/PageHeader.jsx';
 import {
   isNotificationSupported,
   getNotificationPermission,
   requestNotificationPermission,
   initializeReminders
-} from '../utils/notifications';
-import { NotificationItem, WeeklyNotificationItem } from '../components/settings/NotificationItems';
+} from '../utils/notifications.js';
+import { NotificationItem, WeeklyNotificationItem } from '../components/settings/NotificationItems.js';
 
 function Settings() {
   const toast = useToast();
@@ -62,12 +62,12 @@ function Settings() {
   };
 
   const handleToggleNotification = (key: string) => {
-    toggleNotification(key);
+    toggleNotification(key as keyof Notifications);
     haptics.light();
   };
 
   const handleSetNotificationTime = (key: string, time: string) => {
-    setNotificationTime(key, time);
+    setNotificationTime(key as keyof Notifications, time);
   };
 
   const handleClearData = () => {
@@ -90,10 +90,10 @@ function Settings() {
   const handleTestAi = async () => {
     setAiTestStatus('testing');
     try {
-      const { chatWithOllama } = await import('../utils/ollama');
+      const { chatWithOllama } = await import('../utils/ollama.js');
       const baseUrl = ai.ollamaBaseUrl || 'https://ollama.com';
       const apiKey = ai.ollamaApiKey;
-      const headers = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
       const response = await fetch(`${baseUrl}/api/chat`, {

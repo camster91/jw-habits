@@ -104,7 +104,7 @@ if ('serviceWorker' in navigator) {
 
 // Listen for notification clicks directly (for when SW isn't controlling)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.ready.then((registration) => {
+  navigator.serviceWorker.ready.then(() => {
     // No-op: registration ready for notification scheduling
   }).catch(() => {});
 }

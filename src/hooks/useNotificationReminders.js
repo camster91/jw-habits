@@ -7,8 +7,6 @@
 import { useEffect, useRef } from 'react';
 import useSettingsStore from '../stores/settingsStore';
 import {
-  isNotificationSupported,
-  getNotificationPermission,
   requestNotificationPermission,
   initializeReminders,
   cancelAllNotifications,
@@ -31,12 +29,10 @@ export default function useNotificationReminders() {
 
       // Schedule new reminders if notifications are enabled
       if (notificationsEnabled) {
-        if (isNotificationSupported() || /* Capacitor */ true) {
-          const perm = await requestNotificationPermission();
-          if (perm === 'granted' && !cancelled) {
-            const handles = await initializeReminders({ notificationsEnabled, notifications });
-            cancelHandles.current = handles;
-          }
+        const perm = await requestNotificationPermission();
+        if (perm === 'granted' && !cancelled) {
+          const handles = await initializeReminders({ notificationsEnabled, notifications });
+          cancelHandles.current = handles;
         }
       }
     }

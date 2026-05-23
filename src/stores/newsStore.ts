@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { startOfDay, isSameDay, parseISO } from 'date-fns';
-import { createSafeStorage } from '../utils/storageErrorHandler';
+import { createSafeStorage } from '../utils/storageErrorHandler.js';
 
 interface NewsState {
   lastChecked: string | null;
@@ -86,7 +86,7 @@ const useNewsStore = create<NewsStore>()(
     }),
     {
       name: 'jw-news-store',
-      storage: createSafeStorage('jw-news-store'),
+      storage: createSafeStorage('jw-news-store') as any,
       partialize: (state) => ({
         lastChecked: state.lastChecked,
         streak: state.streak,

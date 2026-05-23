@@ -1,8 +1,9 @@
-import React, { useState, useCallback, ReactNode } from 'react';
+import React, { useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BarChart3, Link2, Settings, X } from 'lucide-react';
-import { haptics } from '../utils/native';
-import { DrawerContext } from '../hooks/useDrawer';
+import { haptics } from '../utils/native.js';
+import { DrawerContext } from '../hooks/useDrawer.js';
 
 interface DrawerItem {
   path: string;

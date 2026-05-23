@@ -14,7 +14,7 @@ const DAYS_OF_WEEK = [
 export interface NotificationItemProps {
   icon: LucideIcon;
   label: string;
-  description: string;
+  description?: string;
   enabled: boolean;
   time?: string;
   onToggle: () => void;
@@ -22,7 +22,7 @@ export interface NotificationItemProps {
   color?: string;
 }
 
-export function NotificationItem({ icon: Icon, label, description, enabled, time, onToggle, onTimeChange, color = 'text-primary' }: NotificationItemProps) {
+export function NotificationItem({ icon: Icon, label, description = '', enabled, time, onToggle, onTimeChange, color = 'text-primary' }: NotificationItemProps) {
   return (
     <div className="flex items-center justify-between py-3.5 border-b border-base-200/50 last:border-0">
       <div className="flex items-center gap-3 flex-1 min-w-0">
