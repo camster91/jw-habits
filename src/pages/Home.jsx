@@ -57,7 +57,7 @@ function Home() {
         {/* Daily Tasks + Prayer */}
         <section className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
+            <h2 className="text-base font-bold text-base-content uppercase tracking-wider">
               {t('today.title')}
             </h2>
           </div>
@@ -74,7 +74,7 @@ function Home() {
         {/* Bible Reading */}
         <section className="animate-fade-in-up" style={{ animationDelay: '250ms' }}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
+            <h2 className="text-sm font-semibold text-base-content/80 uppercase tracking-wider">
               {t('bibleReading.heading')}
             </h2>
           </div>
@@ -84,7 +84,7 @@ function Home() {
         {/* Family Worship */}
         <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
+            <h2 className="text-xs font-medium text-base-content/50 uppercase tracking-wider">
               {t('familyWorship.title')}
             </h2>
           </div>

@@ -195,7 +195,7 @@ function Links() {
               href="https://www.jw.org/en/online-help/jw-library/"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-outline btn-sm mt-2 text-primary-content border-primary-content/50 hover:bg-primary-content hover:text-primary"
+              className="btn btn-outline btn-sm mt-2"
             >
               <Smartphone className="w-4 h-4" />
               Get JW Library App

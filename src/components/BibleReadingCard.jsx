@@ -207,7 +207,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
               href={getBibleChapterLink(todayReading.book, parseInt(todayReading.chapters.split('-')[0]) || 1)}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-secondary btn-sm gap-1"
+              className="btn btn-primary btn-sm gap-1"
               onClick={() => haptics.light()}
             >
               <ExternalLink className="w-4 h-4" />
@@ -227,10 +227,10 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
               <button
                 key={index}
                 onClick={() => handleChapterToggle(index)}
-                className={`py-2.5 px-3 rounded-xl font-medium text-sm transition-all active:scale-95 flex items-center justify-center gap-1 min-w-[44px] ${
+                className={`py-2.5 px-3 rounded-xl font-medium text-sm transition-all active:scale-95 flex items-center justify-center gap-1 min-w-[44px] border-2 ${
                   isComplete
-                    ? 'bg-success text-white'
-                    : 'bg-base-200 text-base-content/60'
+                    ? 'bg-success text-white border-success'
+                    : 'bg-base-100 text-base-content/60 border-base-300 hover:border-primary/40'
                 }`}
               >
                 {isComplete && <Check className="w-3 h-3" />}

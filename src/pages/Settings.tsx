@@ -401,8 +401,8 @@ function Settings() {
                 </p>
               )}
               <div className="flex gap-2 justify-end">
-                <button onClick={cancelImport} className="btn btn-ghost">{t("settings.cancel")}</button>
-                <button onClick={confirmImport} className="btn btn-error">{t("settings.replaceData")}</button>
+                <button onClick={cancelImport} className="btn btn-ghost btn-sm">{t("settings.cancel")}</button>
+                <button onClick={confirmImport} className="btn btn-error btn-outline">{t("settings.replaceData")}</button>
               </div>
             </div>
           </div>
