@@ -1,4 +1,5 @@
 import { Sun, Moon, CloudSun, Menu } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import PrayerTrackingCard from '../components/PrayerTrackingCard';
 import FamilyWorshipCard from '../components/FamilyWorshipCard';
@@ -12,6 +13,7 @@ function Home() {
   const { openDrawer } = useDrawer();
   const GreetingIcon = greeting.icon;
   const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">

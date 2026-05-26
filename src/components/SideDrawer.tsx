@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BarChart3, Link2, Settings, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { haptics } from '../utils/native.js';
 import { DrawerContext } from '../hooks/useDrawer.js';
 
@@ -12,12 +13,6 @@ interface DrawerItem {
   description: string;
 }
 
-const DRAWER_ITEMS: DrawerItem[] = [
-  { path: '/stats', icon: BarChart3, label: 'Statistics', description: 'View your progress data' },
-  { path: '/links', icon: Link2, label: 'Quick Links', description: 'JW.org resources' },
-  { path: '/settings', icon: Settings, label: 'Settings', description: 'App preferences' },
-];
-
 interface SideDrawerProps {
   children: ReactNode;
 }
@@ -26,6 +21,13 @@ function SideDrawer({ children }: SideDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
+
+  const DRAWER_ITEMS: DrawerItem[] = [
+    { path: '/stats', icon: BarChart3, label: t('nav.statistics'), description: t('nav.statisticsDesc') },
+    { path: '/links', icon: Link2, label: t('nav.quickLinks'), description: t('nav.quickLinksDesc') },
+    { path: '/settings', icon: Settings, label: t('nav.settings'), description: t('nav.settingsDesc') },
+  ];
 
   const openDrawer = useCallback(() => {
     haptics.light();
@@ -72,9 +74,9 @@ function SideDrawer({ children }: SideDrawerProps) {
           <aside className="bg-base-100 min-h-full w-72 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-base-200">
-              <div>
-                <h2 className="text-lg font-bold">More</h2>
-                <p className="text-xs text-base-content/50">Additional features</p>
+                <div>
+                <h2 className="text-lg font-bold">{t('nav.more')}</h2>
+                <p className="text-xs text-base-content/50">{t('nav.moreSubtitle')}</p>
               </div>
               <button
                 onClick={closeDrawer}

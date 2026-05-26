@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { TrendingUp, Calendar, Target, Trophy, Star, Flame, Lock, ChevronDown, ChevronUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
@@ -8,6 +9,7 @@ import PageHeader from '../components/PageHeader';
 function Stats() {
   const [showAllAchievements, setShowAllAchievements] = useState(false);
   const [statsData, setStatsData] = useState(null);
+  const { t } = useTranslation();
 
   try {
     const getDailyTextStreak = useProgressStore((s) => s.getDailyTextStreak);
@@ -45,8 +47,8 @@ function Stats() {
       <div className="min-h-screen bg-base-200 pb-24">
         {/* Header */}
         <PageHeader
-          title="Your Progress"
-          subtitle="Track your spiritual journey"
+          title={t('stats.title')}
+          subtitle={t('stats.subtitle')}
           icon={TrendingUp}
           gradient="from-primary via-primary to-emerald-700"
           iconBare
@@ -90,19 +92,19 @@ function Stats() {
         <div className="grid grid-cols-4 gap-2 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
             <p className="text-2xl font-bold text-primary">{dailyTextStreak}</p>
-            <p className="text-xs text-base-content/60">Streak</p>
+            <p className="text-xs text-base-content/60">{t('stats.streak')}</p>
           </div>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
             <p className="text-2xl font-bold text-secondary">{stats.bibleReadingsCompleted}</p>
-            <p className="text-xs text-base-content/60">Bible</p>
+            <p className="text-xs text-base-content/60">{t('stats.bible')}</p>
           </div>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
             <p className="text-2xl font-bold text-accent">{stats.goalsCompleted}</p>
-            <p className="text-xs text-base-content/60">Goals</p>
+            <p className="text-xs text-base-content/60">{t('stats.goals')}</p>
           </div>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
             <p className="text-2xl font-bold text-info">{stats.reflectionsWritten}</p>
-            <p className="text-xs text-base-content/60">Notes</p>
+            <p className="text-xs text-base-content/60">{t('stats.notes')}</p>
           </div>
         </div>
 
@@ -112,7 +114,7 @@ function Stats() {
             <div className="flex items-center justify-between">
               <h2 className="card-title">
                 <Trophy className="w-5 h-5 text-amber-500" />
-                Achievements
+                {t('stats.achievements')}
               </h2>
               <span className="badge badge-primary">
                 {stats.achievementsUnlocked}/{stats.totalAchievements}
@@ -161,9 +163,9 @@ function Stats() {
               className="btn btn-ghost btn-sm w-full mt-2"
             >
               {showAllAchievements ? (
-                <>Show Less <ChevronUp className="w-4 h-4 ml-1" /></>
+                <>{t('stats.showLess')} <ChevronUp className="w-4 h-4 ml-1" /></>
               ) : (
-                <>Show All ({achievements.length}) <ChevronDown className="w-4 h-4 ml-1" /></>
+                <>{t('stats.showAll')} ({achievements.length}) <ChevronDown className="w-4 h-4 ml-1" /></>
               )}
             </button>
           </div>
@@ -174,7 +176,7 @@ function Stats() {
           <div className="card-body">
             <h2 className="card-title">
               <Flame className="w-5 h-5 text-orange-500 animate-flame" />
-              Current Streaks
+              {t('stats.currentStreaks')}
             </h2>
 
             <div className="divider my-2"></div>
@@ -182,9 +184,9 @@ function Stats() {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">Daily Text</span>
+                  <span className="font-medium">{t('stats.dailyText')}</span>
                   <span className="text-2xl font-bold text-primary">
-                    {dailyTextStreak} days
+                    {dailyTextStreak} {t('stats.days')}
                   </span>
                 </div>
                 <progress

@@ -1,0 +1,92 @@
+{
+  "appName": "JW Habits",
+  "greeting": {
+    "morning": "Good Morning",
+    "afternoon": "Good Afternoon",
+    "evening": "Good Evening",
+    "subtitle": "Build your spiritual habits"
+  },
+  "nav": {
+    "home": "Home",
+    "study": "Study",
+    "goals": "Goals",
+    "statistics": "Statistics",
+    "statisticsDesc": "View your progress data",
+    "quickLinks": "Quick Links",
+    "quickLinksDesc": "JW.org resources",
+    "settings": "Settings",
+    "settingsDesc": "App preferences",
+    "more": "More",
+    "moreSubtitle": "Additional features"
+  },
+  "today": {
+    "title": "TODAY",
+    "dailyText": "Daily Text",
+    "readText": "Read today's text",
+    "openOnJw": "Open on JW.org",
+    "checkIn": "Daily Check-in",
+    "checkInDesc": "Check in and see what's new on JW.org.",
+    "checkInNow": "Check in now",
+    "reflection": "Daily Reflection",
+    "reflectionOptional": "Optional",
+    "prayers": "Daily Prayers",
+    "morningPrayer": "Morning Prayer",
+    "morningPrayerDesc": "Start your day with Jehovah",
+    "afternoonPrayer": "Afternoon Prayer",
+    "afternoonPrayerDesc": "Pray during the day",
+    "eveningPrayer": "Evening Prayer",
+    "eveningPrayerDesc": "End your day in prayer"
+  },
+  "bibleReading": {
+    "title": "BIBLE READING",
+    "heading": "Daily Bible Reading",
+    "customize": "Customize reading schedule",
+    "minutes": "minutes",
+    "openInLibrary": "Open in JW Library",
+    "chapter": "Ch. {{num}}"
+  },
+  "familyWorship": {
+    "title": "THIS WEEK",
+    "heading": "Family Worship",
+    "weekOf": "Week of {{start}} - {{end}}",
+    "markComplete": "Mark as complete"
+  },
+  "stats": {
+    "title": "Your Progress",
+    "subtitle": "Track your spiritual journey",
+    "level": "Level",
+    "xp": "XP",
+    "xpToNext": "XP to next",
+    "streak": "Streak",
+    "bible": "Bible",
+    "goals": "Goals",
+    "notes": "Notes",
+    "achievements": "Achievements",
+    "showAll": "Show All",
+    "showLess": "Show Less",
+    "currentStreaks": "Current Streaks",
+    "dailyText": "Daily Text",
+    "days": "days",
+    "bibleReading": "Bible Reading",
+    "dailyPrayers": "Daily Prayers",
+    "familyWorshipStreak": "Family Worship",
+    "weeks": "weeks",
+    "bestStreak": "Best Current Streak",
+    "completionRates": "Completion Rates",
+    "sevenDays": "7 days",
+    "thirtyDays": "30 days",
+    "activitySummary": "Activity Summary",
+    "dailyTextsCompleted": "Daily Texts Completed",
+    "bibleReadingsCompleted": "Bible Readings Completed",
+    "prayersCompleted": "Prayers Completed",
+    "familyWorshipSessions": "Family Worship Sessions",
+    "reflectionsWritten": "Reflections Written",
+    "newsArticlesRead": "News Articles Read",
+    "goalsCompleted": "Goals Completed",
+    "projectsCompleted": "Projects Completed"
+  },
+  "errors": {
+    "statsLoad": "Unable to load statistics",
+    "tryAgain": "Please try again later"
+  }
+}

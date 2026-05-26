@@ -1,15 +1,17 @@
 import { Home, BookOpen, Target } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { haptics } from '../utils/native';
 
 function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const navItems = [
-    { path: '/', icon: Home, label: 'Home' },
-    { path: '/study', icon: BookOpen, label: 'Study' },
-    { path: '/goals', icon: Target, label: 'Goals' },
+    { path: '/', icon: Home, label: t('nav.home') },
+    { path: '/study', icon: BookOpen, label: t('nav.study') },
+    { path: '/goals', icon: Target, label: t('nav.goals') },
   ];
 
   const handleNavClick = (path) => {
