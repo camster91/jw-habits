@@ -53,7 +53,7 @@ export const scheduleDailyReminder = async (hour = 7, minute = 0) => {
       return true;
     }
   } catch {
-    console.log('Periodic sync not supported, using fallback');
+    if (import.meta.env.DEV) console.log('Periodic sync not supported, using fallback');
   }
 
   return false;
