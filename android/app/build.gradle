@@ -26,9 +26,9 @@ android {
         }
         release {
             storeFile file('jw-habits-release.keystore')
-            storePassword 'JWHabits2026!'
+            storePassword System.getenv('KEYSTORE_PASSWORD')
             keyAlias 'jw-habits'
-            keyPassword 'JWHabits2026!'
+            keyPassword System.getenv('KEY_PASSWORD')
         }
     }
     buildTypes {
