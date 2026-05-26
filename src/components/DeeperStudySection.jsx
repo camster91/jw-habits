@@ -9,7 +9,7 @@ const STUDY_CATEGORIES = [
     id: 'bible-study',
     title: 'Bible Study Tools',
     icon: Book,
-    color: 'from-blue-500 to-indigo-600',
+    color: 'from-primary to-primary/80',
     items: [
       {
         title: 'Insight on the Scriptures',
@@ -41,7 +41,7 @@ const STUDY_CATEGORIES = [
     id: 'prophecy',
     title: 'Prophecy & History',
     icon: Search,
-    color: 'from-purple-500 to-pink-600',
+    color: 'from-primary to-primary/80',
     items: [
       {
         title: 'Pure Worship Restored',
@@ -73,7 +73,7 @@ const STUDY_CATEGORIES = [
     id: 'bible-teachings',
     title: 'Bible Teachings',
     icon: FileText,
-    color: 'from-emerald-500 to-teal-600',
+    color: 'from-secondary to-secondary/80',
     items: [
       {
         title: 'What Does the Bible Really Teach?',
@@ -105,7 +105,7 @@ const STUDY_CATEGORIES = [
     id: 'research',
     title: 'Research Tools',
     icon: Search,
-    color: 'from-amber-500 to-orange-600',
+    color: 'from-primary to-primary/80',
     items: [
       {
         title: 'Watchtower ONLINE LIBRARY',
@@ -131,7 +131,7 @@ const STUDY_CATEGORIES = [
     id: 'multimedia',
     title: 'Audio & Video',
     icon: Video,
-    color: 'from-red-500 to-rose-600',
+    color: 'from-primary to-primary/80',
     items: [
       {
         title: 'JW Broadcasting',
@@ -163,7 +163,7 @@ const STUDY_CATEGORIES = [
     id: 'languages',
     title: 'Language Learning',
     icon: Globe,
-    color: 'from-cyan-500 to-blue-600',
+    color: 'from-secondary to-secondary/80',
     items: [
       {
         title: 'JW Language App',
@@ -227,7 +227,7 @@ function DeeperStudySection() {
         className="flex items-center justify-between w-full p-4 bg-base-100 rounded-2xl shadow-sm active:scale-[0.99] transition-all"
       >
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl">
+          <div className="p-2 bg-primary rounded-xl">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
@@ -260,17 +260,17 @@ function DeeperStudySection() {
 
           {/* Study Ideas Panel */}
           {showIdeas && (
-            <div className="card bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200">
+            <div className="card bg-base-100 border border-primary/20">
               <div className="card-body p-4">
-                <h4 className="font-semibold text-emerald-800 flex items-center gap-2 mb-3">
+                <h4 className="font-semibold text-primary flex items-center gap-2 mb-3">
                   <Star className="w-4 h-4" />
                   {t("study.studyIdeas")}
                 </h4>
                 <ul className="space-y-2">
                   {STUDY_IDEAS.map((idea, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
-                      <span className="text-emerald-600 font-bold">{index + 1}.</span>
-                      <span className="text-emerald-900">{idea}</span>
+                      <span className="text-primary font-bold">{index + 1}.</span>
+                      <span className="text-base-content">{idea}</span>
                     </li>
                   ))}
                 </ul>

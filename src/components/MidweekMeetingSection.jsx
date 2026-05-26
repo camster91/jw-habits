@@ -42,7 +42,7 @@ function MidweekMeetingSection({
           <div
             className={`h-full transition-all duration-300 ${
               progress.progress === 100 ? 'bg-success' :
-              progress.progress > 0 ? 'bg-blue-500' : 'bg-base-200'
+              progress.progress > 0 ? 'bg-primary' : 'bg-base-200'
             }`}
             style={{ width: `${progress.progress || 0}%` }}
           />
@@ -57,20 +57,20 @@ function MidweekMeetingSection({
       <div className="space-y-2">
         <MeetingSection
           title={t("study.treasures")}
-          color="bg-amber-500"
+          color="bg-primary"
           parts={parts.treasures}
           onPartToggle={onPartToggle}
           defaultExpanded={true}
         />
         <MeetingSection
           title={t("study.ministry")}
-          color="bg-emerald-500"
+          color="bg-secondary"
           parts={parts.ministry}
           onPartToggle={onPartToggle}
         />
         <MeetingSection
           title={t("study.living")}
-          color="bg-rose-500"
+          color="bg-neutral"
           parts={parts.living}
           onPartToggle={onPartToggle}
         />

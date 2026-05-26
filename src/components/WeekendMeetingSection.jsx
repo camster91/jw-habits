@@ -31,7 +31,7 @@ function WeekendMeetingSection({
           <div
             className={`h-full transition-all duration-300 ${
               progress.progress === 100 ? 'bg-success' :
-              progress.progress > 0 ? 'bg-blue-500' : 'bg-base-200'
+              progress.progress > 0 ? 'bg-primary' : 'bg-base-200'
             }`}
             style={{ width: `${progress.progress || 0}%` }}
           />

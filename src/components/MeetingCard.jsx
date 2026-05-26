@@ -233,8 +233,8 @@ function MeetingCard() {
       <div className="p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-500/10 rounded-2xl">
-            <Calendar className="w-6 h-6 text-blue-500" />
+          <div className="p-2.5 bg-primary/10 rounded-2xl">
+            <Calendar className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1">
             <h2 className="font-bold text-lg">This Week&apos;s Meetings</h2>
@@ -255,7 +255,7 @@ function MeetingCard() {
                 onClick={() => { haptics.light(); setActiveTab(tab); }}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all active:scale-95 ${
                   isActive
-                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+                    ? 'bg-primary text-white shadow-lg shadow-primary/25'
                     : 'bg-base-200 text-base-content/60'
                 }`}
               >

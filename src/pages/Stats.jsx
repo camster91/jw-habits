@@ -113,7 +113,7 @@ function Stats() {
           <div className="card-body">
             <div className="flex items-center justify-between">
               <h2 className="card-title">
-                <Trophy className="w-5 h-5 text-amber-500" />
+                <Trophy className="w-5 h-5 text-primary" />
                 {t('stats.achievements')}
               </h2>
               <span className="badge badge-primary">
@@ -213,7 +213,7 @@ function Stats() {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium">Daily Prayers</span>
-                  <span className="text-2xl font-bold text-pink-500">
+                  <span className="text-2xl font-bold text-primary">
                     {prayerStreak} days
                   </span>
                 </div>
@@ -227,7 +227,7 @@ function Stats() {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-medium">Family Worship</span>
-                  <span className="text-2xl font-bold text-purple-500">
+                  <span className="text-2xl font-bold text-secondary">
                     {familyWorshipStreak} weeks
                   </span>
                 </div>
@@ -306,8 +306,8 @@ function Stats() {
               {[
                 { label: 'Daily Texts Completed', value: stats.dailyTextCompletions, color: 'text-primary' },
                 { label: 'Bible Readings Completed', value: stats.bibleReadingsCompleted, color: 'text-secondary' },
-                { label: 'Prayers Completed', value: stats.prayersCompleted || 0, color: 'text-pink-500' },
-                { label: 'Family Worship Sessions', value: stats.familyWorshipCompleted || 0, color: 'text-purple-500' },
+                { label: 'Prayers Completed', value: stats.prayersCompleted || 0, color: 'text-primary' },
+                { label: 'Family Worship Sessions', value: stats.familyWorshipCompleted || 0, color: 'text-secondary' },
                 { label: 'Reflections Written', value: stats.reflectionsWritten, color: 'text-accent' },
                 { label: 'News Articles Read', value: stats.newsRead, color: 'text-info' },
                 { label: 'Goals Completed', value: stats.goalsCompleted, color: 'text-success' },
@@ -327,7 +327,7 @@ function Stats() {
         </div>
 
         {/* Motivational Message */}
-        <div className="card bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-xl animate-fade-in-up" style={{ animationDelay: '600ms' }}>
+        <div className="card bg-gradient-to-br from-primary to-secondary text-white shadow-xl animate-fade-in-up" style={{ animationDelay: '600ms' }}>
           <div className="card-body text-center">
             <h3 className="text-xl font-bold mb-2">
               {level >= 10

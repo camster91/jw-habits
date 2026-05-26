@@ -183,7 +183,7 @@ function ProjectsTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl">
+          <div className="p-2 bg-secondary rounded-xl">
             <FolderKanban className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -219,9 +219,9 @@ function ProjectsTab() {
 
       {/* Suggestions Panel */}
       {showSuggestions && (
-        <div className="card bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200">
+        <div className="card bg-base-100 border border-secondary/20">
           <div className="card-body p-4">
-            <h4 className="font-semibold text-purple-800 flex items-center gap-2">
+            <h4 className="font-semibold text-secondary flex items-center gap-2">
               <Star className="w-4 h-4" />
               {t("goals.projectIdeas")}
             </h4>
@@ -236,7 +236,7 @@ function ProjectsTab() {
                     className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
                       isAlreadyAdded
                         ? 'bg-base-200 opacity-50 cursor-not-allowed'
-                        : 'bg-white hover:bg-purple-100 active:scale-[0.98]'
+                        : 'bg-white hover:bg-secondary/5 active:scale-[0.98]'
                     }`}
                   >
                     <span className="text-2xl">{suggested.icon}</span>
@@ -244,13 +244,13 @@ function ProjectsTab() {
                       <p className="font-medium text-sm">{suggested.title}</p>
                       <p className="text-xs text-base-content/60 truncate">{suggested.description}</p>
                       {suggested.tasks && (
-                        <p className="text-xs text-purple-600 mt-1">{t("goals.tasksIncluded", { count: suggested.tasks.length })}</p>
+                        <p className="text-xs text-secondary mt-1">{t("goals.tasksIncluded", { count: suggested.tasks.length })}</p>
                       )}
                     </div>
                     {isAlreadyAdded ? (
                       <span className="text-xs text-success">{t("goals.added")}</span>
                     ) : (
-                      <Plus className="w-4 h-4 text-purple-600" />
+                      <Plus className="w-4 h-4 text-secondary" />
                     )}
                   </button>
                 );
@@ -308,8 +308,8 @@ function ProjectsTab() {
       {/* Projects List */}
       {activeProjects.length === 0 && !showAddForm && !showSuggestions ? (
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-            <FolderKanban className="w-8 h-8 text-purple-500" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-secondary/10 flex items-center justify-center">
+            <FolderKanban className="w-8 h-8 text-secondary" />
           </div>
           <p className="font-medium text-base-content/70">{t("goals.noProjects")}</p>
           <p className="text-sm text-base-content/50 mt-1"></p>

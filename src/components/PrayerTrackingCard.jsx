@@ -11,24 +11,24 @@ const PRAYER_TIMES = [
     labelKey: 'today.morningPrayer',
     icon: Sun,
     descKey: 'today.morningPrayerDesc',
-    color: 'text-amber-500',
-    bgColor: 'bg-amber-500/10'
+    color: 'text-primary',
+    bgColor: 'bg-primary/10'
   },
   {
     id: 'afternoon',
     labelKey: 'today.afternoonPrayer',
     icon: CloudSun,
     descKey: 'today.afternoonPrayerDesc',
-    color: 'text-sky-500',
-    bgColor: 'bg-sky-500/10'
+    color: 'text-secondary',
+    bgColor: 'bg-secondary/10'
   },
   {
     id: 'evening',
     labelKey: 'today.eveningPrayer',
     icon: Moon,
     descKey: 'today.eveningPrayerDesc',
-    color: 'text-indigo-500',
-    bgColor: 'bg-indigo-500/10'
+    color: 'text-neutral',
+    bgColor: 'bg-neutral/10'
   },
 ];
 
@@ -73,8 +73,8 @@ function PrayerTrackingCard() {
     <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 p-4">
-        <div className={`p-3 rounded-2xl ${allComplete ? 'bg-success/10' : 'bg-pink-500/10'}`}>
-          <Heart className={`w-6 h-6 ${allComplete ? 'text-success' : 'text-pink-500'}`} />
+        <div className={`p-3 rounded-2xl ${allComplete ? 'bg-success/10' : 'bg-primary/10'}`}>
+          <Heart className={`w-6 h-6 ${allComplete ? 'text-success' : 'text-primary'}`} />
         </div>
         <div className="flex-1">
           <h3 className="font-bold">{t('today.prayers')}</h3>
@@ -83,7 +83,7 @@ function PrayerTrackingCard() {
           </p>
         </div>
         {prayerStreak > 0 && (
-          <div className="badge badge-warning gap-1 animate-pulse">
+          <div className="badge badge-secondary gap-1">
             <Flame className="w-3 h-3 animate-flame" />
             {prayerStreak} {prayerStreak === 1 ? t('stats.day') : t('stats.days')}
           </div>

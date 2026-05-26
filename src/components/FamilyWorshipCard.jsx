@@ -117,8 +117,8 @@ function FamilyWorshipCard() {
         }}
         className="flex items-center gap-3 p-4 w-full active:bg-base-200/50 transition-colors"
       >
-        <div className={`p-3 rounded-2xl ${worship.completed ? 'bg-success/10' : 'bg-purple-500/10'}`}>
-          <Users className={`w-6 h-6 ${worship.completed ? 'text-success' : 'text-purple-500'}`} />
+        <div className={`p-3 rounded-2xl ${worship.completed ? 'bg-success/10' : 'bg-secondary/10'}`}>
+          <Users className={`w-6 h-6 ${worship.completed ? 'text-success' : 'text-secondary'}`} />
         </div>
         <div className="flex-1 text-left">
           <h3 className="font-bold">{t('familyWorship.heading')}</h3>
