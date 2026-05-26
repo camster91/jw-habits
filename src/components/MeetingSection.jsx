@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { haptics } from '../utils/native';
 
 function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = false }) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   const completedCount = parts.filter(p => p.completed).length;
@@ -27,7 +29,7 @@ function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = f
             <span className="font-semibold text-sm">{title}</span>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`text-xs ${isComplete ? 'text-success' : 'text-base-content/50'}`}>
-                {completedCount} of {totalCount} complete
+                {t("study.ofComplete", { completed: completedCount, total: totalCount })}
               </span>
             </div>
           </div>
@@ -78,7 +80,7 @@ function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = f
                   </span>
                   {part.duration && (
                     <span className="text-xs text-base-content/40 bg-base-200 px-1.5 py-0.5 rounded">
-                      {part.duration} min
+                      {part.duration} {t("bibleReading.min")}
                     </span>
                   )}
                 </div>

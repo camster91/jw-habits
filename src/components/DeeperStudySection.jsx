@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GraduationCap, Book, ExternalLink, Video, FileText, Globe, Search, ChevronRight, ChevronDown, Star, Headphones } from 'lucide-react';
 import { haptics } from '../utils/native';
 
@@ -201,6 +202,7 @@ const STUDY_IDEAS = [
 ];
 
 function DeeperStudySection() {
+  const { t } = useTranslation();
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [showIdeas, setShowIdeas] = useState(false);
   const [showDeeperStudy, setShowDeeperStudy] = useState(false);
@@ -229,8 +231,8 @@ function DeeperStudySection() {
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
-            <h3 className="font-bold">Deeper Study</h3>
-            <p className="text-xs text-base-content/50">Research & learning tools</p>
+            <h3 className="font-bold">{t("study.deeperStudy")}</h3>
+            <p className="text-xs text-base-content/50">{t("study.researchTools")}</p>
           </div>
         </div>
         {showDeeperStudy ? (
@@ -252,7 +254,7 @@ function DeeperStudySection() {
               className="btn btn-ghost btn-sm gap-1"
             >
               <Star className="w-4 h-4" />
-              Ideas
+              {t("goals.ideas")}
             </button>
           </div>
 
@@ -262,7 +264,7 @@ function DeeperStudySection() {
               <div className="card-body p-4">
                 <h4 className="font-semibold text-emerald-800 flex items-center gap-2 mb-3">
                   <Star className="w-4 h-4" />
-                  Study Project Ideas
+                  {t("study.studyIdeas")}
                 </h4>
                 <ul className="space-y-2">
                   {STUDY_IDEAS.map((idea, index) => (
@@ -326,7 +328,7 @@ function DeeperStudySection() {
             <div className="p-4">
               <h4 className="font-bold mb-3 flex items-center gap-2">
                 <Headphones className="w-5 h-5 text-primary" />
-                Quick Access
+                {t("study.quickAccess")}
               </h4>
               <div className="grid grid-cols-2 gap-2">
                 {[

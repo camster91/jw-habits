@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Book, Check, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
 import { haptics } from '../utils/native';
 import { JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
@@ -11,16 +12,17 @@ function WeekendMeetingSection({
   onPartToggle,
   onMarkAllComplete,
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
         <p className="font-semibold text-sm">{date}</p>
         {isPrepared ? (
-          <div className="badge badge-success gap-1"><Check className="w-3 h-3" /> Prepared</div>
+          <div className="badge badge-success gap-1"><Check className="w-3 h-3" /> {t("study.prepared")}</div>
         ) : daysLeft >= 0 ? (
-          <div className="badge badge-warning gap-1"><Clock className="w-3 h-3" /> {daysLeft}d left</div>
+          <div className="badge badge-warning gap-1"><Clock className="w-3 h-3" /> {t("study.daysLeft", { days: daysLeft })}</div>
         ) : (
-          <div className="badge badge-error">Past</div>
+          <div className="badge badge-error">{t("study.past")}</div>
         )}
       </div>
 
@@ -78,7 +80,7 @@ function WeekendMeetingSection({
         onClick={() => haptics.light()}
       >
         <ExternalLink className="w-4 h-4" />
-        View Watchtower Study
+        {t("study.viewWatchtower")}
       </a>
 
       {!isPrepared && progress.progress < 100 && (
@@ -87,7 +89,7 @@ function WeekendMeetingSection({
           className="btn btn-primary btn-sm w-full gap-2"
         >
           <Check className="w-4 h-4" />
-          Mark All Complete
+          {t("study.markAllComplete")}
         </button>
       )}
     </div>

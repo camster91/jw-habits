@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, X, Bot, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import useProgressStore from '../stores/progressStore.js';
@@ -14,6 +15,7 @@ import {
 import { NotificationItem, WeeklyNotificationItem } from '../components/settings/NotificationItems.js';
 
 function Settings() {
+  const { t } = useTranslation();
   const toast = useToast();
   const { clearAll } = useProgressStore();
   const {
@@ -50,15 +52,15 @@ function Settings() {
       setNotificationsEnabled(true);
       const settings = useSettingsStore.getState();
       initializeReminders(settings);
-      toast.success('Notifications enabled');
+      toast.success(t("settings.notificationsEnabled"));
     } else {
-      toast.error('Permission denied');
+      toast.error(t("settings.permissionDenied"));
     }
   };
 
   const handleDisableNotifications = () => {
     setNotificationsEnabled(false);
-    toast.info('Notifications disabled');
+    toast.info(t("settings.notificationsDisabled"));
   };
 
   const handleToggleNotification = (key: string) => {
@@ -71,9 +73,9 @@ function Settings() {
   };
 
   const handleClearData = () => {
-    if (confirm('This will clear all data. Continue?')) {
+    if (confirm(t("settings.clearConfirm"))) {
       clearAll();
-      toast.success('Data cleared');
+      toast.success(t("settings.dataCleared"));
       window.location.reload();
     }
   };
@@ -84,7 +86,7 @@ function Settings() {
       await Promise.all(cacheNames.map(name => caches.delete(name)));
     }
     window.location.reload();
-    toast.success('Checking for updates...');
+    toast.success(t("settings.checkingUpdates"));
   };
 
   const handleTestAi = async () => {
@@ -108,16 +110,16 @@ function Settings() {
 
       if (response.ok) {
         setAiTestStatus('success');
-        toast.success('AI connection successful');
+        toast.success(t("settings.aiSuccess"));
       } else {
         const err = await response.text();
         setAiTestStatus('error');
-        toast.error(`AI error: ${response.status}`);
+        toast.error(t("settings.aiError", { status: response.status }));
         console.error('Ollama test failed:', err);
       }
     } catch (error) {
       setAiTestStatus('error');
-      toast.error('AI connection failed');
+      toast.error(t("settings.aiFailed"));
       console.error('Ollama test error:', error);
     }
   };
@@ -149,7 +151,7 @@ function Settings() {
     a.download = `jw-habits-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('Data exported');
+    toast.success(t("settings.dataExported"));
   };
 
   const [importModal, setImportModal] = useState<{ data: any; isOldFormat: boolean; versionMismatch: boolean } | null>(null);
@@ -184,7 +186,7 @@ function Settings() {
 
         const hasKnownKeys = STORAGE_KEYS.some((key) => key in storeData);
         if (!isOldFormat && !hasKnownKeys) {
-          toast.error('Invalid backup file format');
+          toast.error(t("settings.invalidFormat"));
           return;
         }
 
@@ -192,7 +194,7 @@ function Settings() {
         pendingImportData.current = { storeData, isOldFormat, versionMismatch };
         setImportModal({ data: parsed, isOldFormat, versionMismatch });
       } catch {
-        toast.error('Failed to import data');
+        toast.error(t("settings.importFailed"));
       }
     };
     input.click();
@@ -214,21 +216,21 @@ function Settings() {
 
     setImportModal(null);
     pendingImportData.current = null;
-    toast.success('Data imported successfully! Refreshing...');
+    toast.success(t("settings.importSuccess"));
     setTimeout(() => window.location.reload(), 1000);
   };
 
   const cancelImport = () => {
     setImportModal(null);
     pendingImportData.current = null;
-    toast.info('Import cancelled');
+    toast.info(t("settings.importCancelled"));
   };
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       <PageHeader
-        title="Settings"
-        subtitle="Customize your experience"
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
         gradient="from-primary via-primary to-blue-700"
         shadow
         noBlurs
@@ -236,26 +238,26 @@ function Settings() {
       <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
-            <h2 className="card-title text-lg"><Bell className="w-5 h-5" /> Notifications</h2>
+            <h2 className="card-title text-lg"><Bell className="w-5 h-5" /> {t("settings.notifications")}</h2>
             <div className="divider my-2"></div>
             {!notificationSupported ? (
-              <div className="alert alert-warning">Notifications not supported.</div>
+              <div className="alert alert-warning">{t("settings.notSupported")}</div>
             ) : notificationPermission === 'denied' ? (
-              <div className="alert alert-error">Notifications blocked.</div>
+              <div className="alert alert-error">{t("settings.blocked")}</div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-base-200/50 rounded-xl">
-                  <div><p className="font-medium">Enable Reminders</p></div>
+                  <div><p className="font-medium">{t("settings.enableReminders")}</p></div>
                   {notificationsEnabled ? (
-                    <button onClick={handleDisableNotifications} className="btn btn-sm btn-outline">Disable</button>
+                    <button onClick={handleDisableNotifications} className="btn btn-sm btn-outline">{t("settings.disable")}</button>
                   ) : (
-                    <button onClick={handleEnableNotifications} className="btn btn-sm btn-primary">Enable</button>
+                    <button onClick={handleEnableNotifications} className="btn btn-sm btn-primary">{t("settings.enable")}</button>
                   )}
                 </div>
                 {notificationsEnabled && (
                   <div className="space-y-2">
-                    <NotificationItem icon={BookOpen} label="Daily Text" enabled={notifications?.dailyText?.enabled ?? true} onToggle={() => handleToggleNotification('dailyText')} onTimeChange={(time) => handleSetNotificationTime('dailyText', time)} time={notifications?.dailyText?.time ?? '07:00'} />
-                    <NotificationItem icon={Heart} label="Bible Reading" enabled={notifications?.bibleReading?.enabled ?? true} onToggle={() => handleToggleNotification('bibleReading')} onTimeChange={(time) => handleSetNotificationTime('bibleReading', time)} time={notifications?.bibleReading?.time ?? '20:00'} />
+                    <NotificationItem icon={BookOpen} label={t("settings.dailyText")} enabled={notifications?.dailyText?.enabled ?? true} onToggle={() => handleToggleNotification('dailyText')} onTimeChange={(time) => handleSetNotificationTime('dailyText', time)} time={notifications?.dailyText?.time ?? '07:00'} />
+                    <NotificationItem icon={Heart} label={t("settings.bibleReading")} enabled={notifications?.bibleReading?.enabled ?? true} onToggle={() => handleToggleNotification('bibleReading')} onTimeChange={(time) => handleSetNotificationTime('bibleReading', time)} time={notifications?.bibleReading?.time ?? '20:00'} />
                   </div>
                 )}
               </div>
@@ -264,43 +266,43 @@ function Settings() {
         </div>
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
-            <h2 className="card-title text-lg">Appearance</h2>
+            <h2 className="card-title text-lg">{t("settings.appearance")}</h2>
             <div className="divider my-2"></div>
             <button onClick={toggleTheme} className="btn btn-outline w-full justify-start">
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-              {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+              {theme === 'light' ? t("settings.darkMode") : t("settings.lightMode")}
             </button>
           </div>
         </div>
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
-            <h2 className="card-title text-lg">Data Management</h2>
+            <h2 className="card-title text-lg">{t("settings.dataManagement")}</h2>
             <div className="divider my-2"></div>
-            <button onClick={handleExportData} className="btn btn-outline w-full justify-start"><Download className="w-5 h-5" /> Export Data</button>
-            <button onClick={handleImportData} className="btn btn-outline w-full justify-start"><Upload className="w-5 h-5" /> Import Data</button>
-            <button onClick={handleClearData} className="btn btn-error btn-outline w-full justify-start"><Trash2 className="w-5 h-5" /> Clear All Data</button>
+            <button onClick={handleExportData} className="btn btn-outline w-full justify-start"><Download className="w-5 h-5" /> {t("settings.exportData")}</button>
+            <button onClick={handleImportData} className="btn btn-outline w-full justify-start"><Upload className="w-5 h-5" /> {t("settings.importData")}</button>
+            <button onClick={handleClearData} className="btn btn-error btn-outline w-full justify-start"><Trash2 className="w-5 h-5" /> {t("settings.clearAllData")}</button>
           </div>
         </div>
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
-            <h2 className="card-title text-lg"><Bot className="w-5 h-5" /> AI Assistant</h2>
+            <h2 className="card-title text-lg"><Bot className="w-5 h-5" /> {t("settings.aiAssistant")}</h2>
             <div className="divider my-2"></div>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-base-200/50 rounded-xl">
-                <div><p className="font-medium">AI Provider</p></div>
+                <div><p className="font-medium">{t("settings.aiProvider")}</p></div>
                 <select
                   className="select select-sm select-bordered"
                   value={ai.provider}
                   onChange={(e) => setAiSettings({ provider: e.target.value as 'ollama' | 'none' })}
                 >
-                  <option value="none">Disabled</option>
-                  <option value="ollama">Ollama Cloud / Local</option>
+                  <option value="none">{t("settings.disabled")}</option>
+                  <option value="ollama">{t("settings.ollama")}</option>
                 </select>
               </div>
               {ai.provider === 'ollama' && (
                 <>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-base-content/70">Base URL</label>
+                    <label className="text-sm font-medium text-base-content/70">{t("settings.baseUrl")}</label>
                     <input
                       type="text"
                       className="input input-bordered input-sm w-full"
@@ -311,7 +313,7 @@ function Settings() {
                     <p className="text-xs text-base-content/50">Cloud: ollama.com | Local: localhost:11434</p>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-base-content/70">API Key</label>
+                    <label className="text-sm font-medium text-base-content/70">{t("settings.apiKey")}</label>
                     <div className="flex gap-2">
                       <input
                         type={showApiKey ? 'text' : 'password'}
@@ -330,7 +332,7 @@ function Settings() {
                     <p className="text-xs text-base-content/50">Get key at ollama.com (account settings)</p>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-base-content/70">Model</label>
+                    <label className="text-sm font-medium text-base-content/70">{t("settings.model")}</label>
                     <input
                       type="text"
                       className="input input-bordered input-sm w-full"
@@ -348,7 +350,7 @@ function Settings() {
                     {aiTestStatus === 'testing' && <Loader2 className="w-4 h-4 animate-spin" />}
                     {aiTestStatus === 'success' && <CheckCircle2 className="w-4 h-4 text-success" />}
                     {aiTestStatus === 'error' && <XCircle className="w-4 h-4 text-error" />}
-                    Test Connection
+                    {t("settings.testConnection")}
                   </button>
                 </>
               )}
@@ -357,9 +359,9 @@ function Settings() {
         </div>
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
-            <h2 className="card-title text-lg"><RefreshCw className="w-5 h-5" /> App Updates</h2>
+            <h2 className="card-title text-lg"><RefreshCw className="w-5 h-5" /> {t("settings.appUpdates")}</h2>
             <div className="divider my-2"></div>
-            <button onClick={handleUpdateApp} className="btn btn-primary w-full justify-start"><RefreshCw className="w-5 h-5" /> Check for Updates</button>
+            <button onClick={handleUpdateApp} className="btn btn-primary w-full justify-start"><RefreshCw className="w-5 h-5" /> {t("settings.checkForUpdates")}</button>
           </div>
         </div>
       </div>
@@ -372,7 +374,7 @@ function Settings() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-warning" />
-                  Import Data
+                  {t("settings.importTitle")}
                 </h3>
                 <button onClick={cancelImport} className="btn btn-ghost btn-sm btn-circle">
                   <X className="w-4 h-4" />
@@ -382,25 +384,25 @@ function Settings() {
               {importModal.versionMismatch && (
                 <div className="alert alert-warning mb-3">
                   <AlertTriangle className="w-5 h-5" />
-                  <span className="text-sm">This backup was created by a different version of the app. Some data may not import correctly.</span>
+                  <span className="text-sm">{t("settings.versionMismatch")}</span>
                 </div>
               )}
               {importModal.isOldFormat && (
                 <div className="alert alert-info mb-3">
-                  <span className="text-sm">This is a legacy backup file. Only progress and settings data will be imported.</span>
+                  <span className="text-sm">{t("settings.oldFormat")}</span>
                 </div>
               )}
               <p className="text-base-content/70 mb-4">
-                This will <strong>replace all your current data</strong> with the imported backup. This action cannot be undone.
+                {t("settings.importWarning")}
               </p>
               {importModal.data.exportedAt && (
                 <p className="text-xs text-base-content/50 mb-4">
-                  Backup created: {new Date(importModal.data.exportedAt).toLocaleString()}
+                  {t("settings.backupCreated", { date: new Date(importModal.data.exportedAt).toLocaleString() })}
                 </p>
               )}
               <div className="flex gap-2 justify-end">
-                <button onClick={cancelImport} className="btn btn-ghost">Cancel</button>
-                <button onClick={confirmImport} className="btn btn-error">Replace Data</button>
+                <button onClick={cancelImport} className="btn btn-ghost">{t("settings.cancel")}</button>
+                <button onClick={confirmImport} className="btn btn-error">{t("settings.replaceData")}</button>
               </div>
             </div>
           </div>

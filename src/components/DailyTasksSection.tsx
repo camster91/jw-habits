@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { BookOpen, CheckCircle2, Flame, PenLine, Save, BookHeart, Globe, ExternalLink } from 'lucide-react';
 import useProgressStore from '../stores/progressStore.js';
 import useNewsStore from '../stores/newsStore.js';
@@ -9,6 +10,7 @@ import { getDailyTextLink } from '../utils/jwLibraryLinks.js';
 import { haptics } from '../utils/native.js';
 
 function DailyTasksSection() {
+  const { t } = useTranslation();
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const [showNotes, setShowNotes] = useState(false);
@@ -86,7 +88,7 @@ function DailyTasksSection() {
         <div className="card-body p-4">
           <div className="flex items-center gap-3 mb-2">
             <BookOpen className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-lg">Daily Text</h3>
+            <h3 className="font-semibold text-lg">{t('today.dailyText')}</h3>
           </div>
           <button
             onClick={handleDailyTextCheck}
@@ -96,11 +98,11 @@ function DailyTasksSection() {
                 : 'bg-base-200'
             }`}
           >
-            <span className="font-medium">Read today's text</span>
+            <span className="font-medium">{t('today.readText')}</span>
             {dailyTextProgress.readScripture ? <CheckCircle2 className="w-6 h-6" /> : <div className="w-6 h-6 rounded-full border-2 border-base-content/20" />}
           </button>
           <button onClick={handleOpenJW} className="btn btn-outline btn-sm mt-2 w-full gap-2">
-            <Globe className="w-4 h-4" /> Open on JW.org
+            <Globe className="w-4 h-4" /> {t('today.openOnJw')}
           </button>
         </div>
       </div>
@@ -111,25 +113,25 @@ function DailyTasksSection() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <Flame className="w-5 h-5 text-warning" />
-              <h3 className="font-semibold text-lg">Daily Check-in</h3>
+              <h3 className="font-semibold text-lg">{t('today.checkIn')}</h3>
             </div>
             {dailyCheckStreak > 0 && (
               <div className="flex items-center gap-1 text-sm font-bold text-warning">
-                <Flame className="w-4 h-4" /> {dailyCheckStreak} day streak
+                <Flame className="w-4 h-4" /> {dailyCheckStreak} {dailyCheckStreak === 1 ? t('stats.day') : t('stats.days')} streak
               </div>
             )}
           </div>
           <p className="text-sm text-base-content/60 mb-3">
             {hasCheckedToday
-              ? "You checked in today! Tap to see what's new."
-              : "Check in and see what's new on JW.org."}
+              ? t('today.checkedInToday')
+              : t('today.checkInDesc')}
           </p>
           <button
             onClick={handleDailyCheck}
             className={`btn w-full gap-2 ${hasCheckedToday ? 'btn-outline btn-sm' : 'btn-primary'}`}
           >
             <ExternalLink className="w-4 h-4" />
-            {hasCheckedToday ? "What's New" : 'Check in now'}
+            {hasCheckedToday ? t('today.whatsNew') : t('today.checkInNow')}
           </button>
         </div>
       </div>
@@ -142,9 +144,9 @@ function DailyTasksSection() {
             className="flex items-center gap-3 w-full"
           >
             <BookHeart className="w-5 h-5 text-accent" />
-            <h3 className="font-semibold text-lg flex-1 text-left">Daily Reflection</h3>
+            <h3 className="font-semibold text-lg flex-1 text-left">{t('today.reflection')}</h3>
             <span className="text-xs text-base-content/50">
-              {showNotes ? 'Hide' : noteSaved ? 'Saved' : 'Optional'}
+              {showNotes ? t('today.hide') : noteSaved ? t('today.saved') : t('today.reflectionOptional')}
             </span>
           </button>
           {showNotes && (
@@ -156,11 +158,11 @@ function DailyTasksSection() {
                   setNoteSaved(false);
                 }}
                 className="textarea textarea-bordered w-full"
-                placeholder="What did you learn today?"
+                placeholder={t('today.reflectionPlaceholder')}
                 rows={3}
               />
               <button onClick={handleSaveNote} className={`btn btn-sm w-full ${noteSaved ? 'btn-success' : 'btn-primary'}`}>
-                <Save className="w-4 h-4" /> {noteSaved ? 'Saved' : 'Save'}
+                <Save className="w-4 h-4" /> {noteSaved ? t('today.saved') : t('today.save')}
               </button>
             </div>
           )}

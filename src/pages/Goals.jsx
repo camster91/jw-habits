@@ -1,4 +1,5 @@
 import { Target, FolderKanban } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import GoalsTab from '../components/GoalsTab';
 import ProjectsTab from '../components/ProjectsTab';
 import PageHeader from '../components/PageHeader';
@@ -7,12 +8,13 @@ import { haptics } from '../utils/native';
 
 function Goals() {
   const [activeTab, setActiveTab] = useState('goals');
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       <PageHeader
-        title="Goals"
-        subtitle="Set and track your spiritual goals"
+        title={t('goals.title')}
+        subtitle={t('goals.subtitle')}
         icon={Target}
         gradient="from-amber-500 via-amber-600 to-orange-600"
         blurColor="orange"
@@ -30,7 +32,7 @@ function Goals() {
             }`}
           >
             <Target className="w-4 h-4" />
-            Goals
+            {t('goals.goalsTab')}
           </button>
           <button
             onClick={() => { haptics.light(); setActiveTab('projects'); }}
@@ -41,7 +43,7 @@ function Goals() {
             }`}
           >
             <FolderKanban className="w-4 h-4" />
-            Projects
+            {t('goals.projectsTab')}
           </button>
         </div>
 

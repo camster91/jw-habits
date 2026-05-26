@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import {
   Users,
@@ -19,6 +20,7 @@ import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
 
 function FamilyWorshipCard() {
+  const { t } = useTranslation();
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
@@ -35,7 +37,7 @@ function FamilyWorshipCard() {
   const worshipStreak = progressStore.getFamilyWorshipStreak();
 
   const [topicText, setTopicText] = useState(() => worship?.topic || '');
-  const [notesText, setNotesText] = useState(() => worship?.notes || '');
+  const [notesText, setText] = useState(() => worship?.notes || '');
 
   const {
     toggleFamilyWorshipComplete,
@@ -98,7 +100,7 @@ function FamilyWorshipCard() {
     }
   };
 
-  const handleSaveNotes = () => {
+  const handleSave = () => {
     if (notesText.trim()) {
       haptics.light();
       updateFamilyWorship(weekKey, { notes: notesText.trim() });
@@ -119,15 +121,15 @@ function FamilyWorshipCard() {
           <Users className={`w-6 h-6 ${worship.completed ? 'text-success' : 'text-purple-500'}`} />
         </div>
         <div className="flex-1 text-left">
-          <h3 className="font-bold">Family Worship</h3>
+          <h3 className="font-bold">{t('familyWorship.heading')}</h3>
           <p className="text-sm text-base-content/50">
-            Week of {weekLabel}
+            {t('familyWorship.weekOf', { start: format(weekStart, 'MMM d'), end: format(weekEnd, 'MMM d') })}
           </p>
         </div>
         {worshipStreak > 0 && (
           <div className="badge badge-warning gap-1 mr-2">
             <Flame className="w-3 h-3 animate-flame" />
-            {worshipStreak} week{worshipStreak !== 1 ? 's' : ''}
+            {worshipStreak} {worshipStreak === 1 ? t('stats.week') : t('stats.weeks')}
           </div>
         )}
         {worship.completed ? (
@@ -157,7 +159,7 @@ function FamilyWorshipCard() {
             {worship.completed && <Check className="w-4 h-4 text-white" />}
           </div>
           <span className={`font-medium ${worship.completed ? 'text-success' : ''}`}>
-            {worship.completed ? 'Completed this week!' : 'Mark as complete'}
+            {worship.completed ? t('familyWorship.completed') : t('familyWorship.markComplete')}
           </span>
         </button>
       </div>
@@ -169,23 +171,23 @@ function FamilyWorshipCard() {
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-medium text-base-content/70">
               <BookOpen className="w-4 h-4" />
-              Topic / Theme
+              
             </label>
             <input
               type="text"
               value={topicText}
               onChange={(e) => setTopicText(e.target.value)}
               onBlur={handleSaveTopic}
-              placeholder="What will you study this week?"
+              placeholder=""
               className="input input-bordered w-full"
             />
           </div>
 
-          {/* Study Links Section */}
+          {/*  Section */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-medium text-base-content/70">
               <Link2 className="w-4 h-4" />
-              Study Links
+              
             </label>
 
             {/* Existing Links */}
@@ -216,21 +218,21 @@ function FamilyWorshipCard() {
               </div>
             )}
 
-            {/* Add Link Form */}
+            {/*  Form */}
             {showAddLink ? (
               <div className="space-y-2 p-3 bg-base-200/30 rounded-xl">
                 <input
                   type="text"
                   value={newLinkTitle}
                   onChange={(e) => setNewLinkTitle(e.target.value)}
-                  placeholder="Link title (e.g., 'Watchtower Article')"
+                  placeholder=""
                   className="input input-bordered input-sm w-full"
                 />
                 <input
                   type="url"
                   value={newLinkUrl}
                   onChange={(e) => setNewLinkUrl(e.target.value)}
-                  placeholder="URL (e.g., jw.org/...)"
+                  placeholder=""
                   className="input input-bordered input-sm w-full"
                 />
                 <div className="flex gap-2">
@@ -239,7 +241,7 @@ function FamilyWorshipCard() {
                     disabled={!newLinkTitle.trim() || !newLinkUrl.trim()}
                     className="btn btn-primary btn-sm flex-1"
                   >
-                    Add Link
+                    
                   </button>
                   <button
                     onClick={() => {
@@ -249,7 +251,7 @@ function FamilyWorshipCard() {
                     }}
                     className="btn btn-ghost btn-sm"
                   >
-                    Cancel
+                    
                   </button>
                 </div>
               </div>
@@ -262,22 +264,22 @@ function FamilyWorshipCard() {
                 className="flex items-center justify-center gap-2 w-full p-3 border-2 border-dashed border-base-300 rounded-xl text-base-content/50 active:bg-base-200 transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Add Study Link
+                
               </button>
             )}
           </div>
 
-          {/* Notes */}
+          {/*  */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-medium text-base-content/70">
               <PenLine className="w-4 h-4" />
-              Notes
+              
             </label>
             <textarea
               value={notesText}
-              onChange={(e) => setNotesText(e.target.value)}
-              onBlur={handleSaveNotes}
-              placeholder="Planning notes, discussion points, activities..."
+              onChange={(e) => setText(e.target.value)}
+              onBlur={handleSave}
+              placeholder=""
               className="textarea textarea-bordered w-full min-h-[80px]"
               rows={3}
             />

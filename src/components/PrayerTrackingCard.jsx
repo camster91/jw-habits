@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { Sun, CloudSun, Moon, Check, Heart, Flame, Star } from 'lucide-react';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
@@ -7,31 +8,32 @@ import { haptics } from '../utils/native';
 const PRAYER_TIMES = [
   {
     id: 'morning',
-    label: 'Morning Prayer',
+    labelKey: 'today.morningPrayer',
     icon: Sun,
-    description: 'Start your day with Jehovah',
+    descKey: 'today.morningPrayerDesc',
     color: 'text-amber-500',
     bgColor: 'bg-amber-500/10'
   },
   {
     id: 'afternoon',
-    label: 'Afternoon Prayer',
+    labelKey: 'today.afternoonPrayer',
     icon: CloudSun,
-    description: 'Pray during the day',
+    descKey: 'today.afternoonPrayerDesc',
     color: 'text-sky-500',
     bgColor: 'bg-sky-500/10'
   },
   {
     id: 'evening',
-    label: 'Evening Prayer',
+    labelKey: 'today.eveningPrayer',
     icon: Moon,
-    description: 'End your day in prayer',
+    descKey: 'today.eveningPrayerDesc',
     color: 'text-indigo-500',
     bgColor: 'bg-indigo-500/10'
   },
 ];
 
 function PrayerTrackingCard() {
+  const { t } = useTranslation();
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const {
@@ -75,15 +77,15 @@ function PrayerTrackingCard() {
           <Heart className={`w-6 h-6 ${allComplete ? 'text-success' : 'text-pink-500'}`} />
         </div>
         <div className="flex-1">
-          <h3 className="font-bold">Daily Prayers</h3>
+          <h3 className="font-bold">{t('today.prayers')}</h3>
           <p className="text-sm text-base-content/50">
-            {completedCount}/3 prayers today
+            {completedCount}/3 {t('today.prayersToday')}
           </p>
         </div>
         {prayerStreak > 0 && (
           <div className="badge badge-warning gap-1 animate-pulse">
             <Flame className="w-3 h-3 animate-flame" />
-            {prayerStreak} day{prayerStreak !== 1 ? 's' : ''}
+            {prayerStreak} {prayerStreak === 1 ? t('stats.day') : t('stats.days')}
           </div>
         )}
       </div>
@@ -92,7 +94,7 @@ function PrayerTrackingCard() {
       {allComplete && (
         <div className="mx-4 mb-3 flex items-center justify-center gap-2 p-3 bg-success/10 rounded-xl text-success">
           <Star className="w-4 h-4" />
-          <span className="font-medium text-sm">All prayers complete for today!</span>
+          <span className="font-medium text-sm">{t('today.allPrayersComplete')}</span>
         </div>
       )}
 
@@ -115,9 +117,9 @@ function PrayerTrackingCard() {
             </div>
             <div className="flex-1 text-left">
               <span className={`font-medium block ${prayers[prayer.id] ? 'text-success' : ''}`}>
-                {prayer.label}
+                {t(prayer.labelKey)}
               </span>
-              <span className="text-xs text-base-content/50">{prayer.description}</span>
+              <span className="text-xs text-base-content/50">{t(prayer.descKey)}</span>
             </div>
             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
               prayers[prayer.id]

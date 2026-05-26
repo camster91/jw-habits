@@ -115,8 +115,8 @@ function Links() {
     <div className="min-h-screen bg-base-200 pb-24">
       {/* Header */}
       <PageHeader
-        title="JW.org Links"
-        subtitle="Quick access to JW.org content"
+        title={t('links.title')}
+        subtitle={t('links.subtitle')}
         gradient="from-primary via-primary to-blue-700"
         shadow
       />
@@ -128,7 +128,7 @@ function Links() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40" />
           <input
             type="text"
-            placeholder="Search links..."
+            placeholder={t('links.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input input-bordered w-full pl-10"
@@ -151,13 +151,13 @@ function Links() {
         )}
 
         {filteredCategories.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-primary/20 flex items-center justify-center">
-              <Search className="w-8 h-8 text-primary/50" />
-            </div>
-            <p className="font-medium text-base-content/70">No links found</p>
-            <p className="text-sm text-base-content/50 mt-1">Try a different search term</p>
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-primary/20 flex items-center justify-center">
+            <Search className="w-8 h-8 text-primary/50" />
           </div>
+          <p className="font-medium text-base-content/70">{t('links.noLinksFound')}</p>
+          <p className="text-sm text-base-content/50 mt-1">{t('links.tryDifferent')}</p>
+        </div>
         ) : (
           filteredCategories.map((category) => (
             <div key={category.title} className="card bg-base-100 shadow-xl">

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Check, CheckCircle2, Clock, ExternalLink, Music } from 'lucide-react';
 import { haptics } from '../utils/native';
 import MeetingSection from './MeetingSection';
@@ -14,6 +15,7 @@ function MidweekMeetingSection({
   onPartToggle,
   onMarkAllComplete,
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
@@ -26,11 +28,11 @@ function MidweekMeetingSection({
           )}
         </div>
         {isPrepared ? (
-          <div className="badge badge-success gap-1"><Check className="w-3 h-3" /> Prepared</div>
+          <div className="badge badge-success gap-1"><Check className="w-3 h-3" /> {t("study.prepared")}</div>
         ) : daysLeft >= 0 ? (
-          <div className="badge badge-warning gap-1"><Clock className="w-3 h-3" /> {daysLeft}d left</div>
+          <div className="badge badge-warning gap-1"><Clock className="w-3 h-3" /> {t("study.daysLeft", { days: daysLeft })}</div>
         ) : (
-          <div className="badge badge-error">Past</div>
+          <div className="badge badge-error">{t("study.past")}</div>
         )}
       </div>
 
@@ -54,20 +56,20 @@ function MidweekMeetingSection({
       {/* Meeting Sections */}
       <div className="space-y-2">
         <MeetingSection
-          title="Treasures From God's Word"
+          title={t("study.treasures")}
           color="bg-amber-500"
           parts={parts.treasures}
           onPartToggle={onPartToggle}
           defaultExpanded={true}
         />
         <MeetingSection
-          title="Apply Yourself to the Ministry"
+          title={t("study.ministry")}
           color="bg-emerald-500"
           parts={parts.ministry}
           onPartToggle={onPartToggle}
         />
         <MeetingSection
-          title="Living as Christians"
+          title={t("study.living")}
           color="bg-rose-500"
           parts={parts.living}
           onPartToggle={onPartToggle}
@@ -90,7 +92,7 @@ function MidweekMeetingSection({
         onClick={() => haptics.light()}
       >
         <ExternalLink className="w-4 h-4" />
-        Open Workbook on WOL
+        {t("study.openWorkbook")}
       </a>
 
       {!isPrepared && progress.progress < 100 && (
@@ -99,7 +101,7 @@ function MidweekMeetingSection({
           className="btn btn-primary btn-sm w-full gap-2"
         >
           <Check className="w-4 h-4" />
-          Mark All Complete
+          {t("study.markAllComplete")}
         </button>
       )}
     </div>

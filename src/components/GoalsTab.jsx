@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Target, Plus, Check, Trash2, ChevronDown, ChevronUp, Star, BookOpen, Users, Heart, Clock } from 'lucide-react';
 import useGoalsStore from '../stores/goalsStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
 
 const CATEGORIES = [
-  { id: 'spiritual', label: 'Spiritual', color: 'badge-primary', icon: BookOpen },
-  { id: 'ministry', label: 'Ministry', color: 'badge-secondary', icon: Users },
-  { id: 'personal', label: 'Personal', color: 'badge-accent', icon: Heart },
+  { id: 'spiritual', labelKey: 'goals.categories.spiritual', color: 'badge-primary', icon: BookOpen },
+  { id: 'ministry', labelKey: 'goals.categories.ministry', color: 'badge-secondary', icon: Users },
+  { id: 'personal', labelKey: 'goals.categories.personal', color: 'badge-accent', icon: Heart },
 ];
 
 // Suggested goals based on JW.org spiritual activities
@@ -63,6 +64,7 @@ const SUGGESTED_GOALS = [
 ];
 
 function GoalsTab() {
+  const { t } = useTranslation();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [newGoal, setNewGoal] = useState({ title: '', description: '', category: 'spiritual' });
@@ -119,8 +121,8 @@ function GoalsTab() {
             <Target className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold">Goals</h3>
-            <p className="text-xs text-base-content/50">{activeGoals.length} active</p>
+            <h3 className="font-bold">{t("goals.goalsTab")}</h3>
+            <p className="text-xs text-base-content/50">{activeGoals.length} {t("goals.active")}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -133,7 +135,7 @@ function GoalsTab() {
             className="btn btn-ghost btn-sm"
           >
             <Star className="w-4 h-4" />
-            Ideas
+            {t("goals.ideas")}
           </button>
           <button
             onClick={() => {
@@ -144,7 +146,7 @@ function GoalsTab() {
             className="btn btn-primary btn-sm"
           >
             <Plus className="w-4 h-4" />
-            New
+            {t("goals.new")}
           </button>
         </div>
       </div>
@@ -155,7 +157,7 @@ function GoalsTab() {
           <div className="card-body p-4">
             <h4 className="font-semibold text-amber-800 flex items-center gap-2">
               <Star className="w-4 h-4" />
-              Goal Ideas
+              {t("goals.goalIdeas")}
             </h4>
             <div className="grid gap-2 mt-2">
               {SUGGESTED_GOALS.map((suggested, index) => {
@@ -194,14 +196,14 @@ function GoalsTab() {
         <form onSubmit={handleAddGoal} className="card bg-base-100 shadow-md p-4 space-y-3">
           <input
             type="text"
-            placeholder="What's your goal?"
+            placeholder={t("goals.whatsYourGoal")}
             value={newGoal.title}
             onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
             className="input input-bordered w-full"
             autoFocus
           />
           <textarea
-            placeholder="Add details (optional)..."
+            placeholder={t("goals.addDetails")}
             value={newGoal.description}
             onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
             className="textarea textarea-bordered w-full"
@@ -218,17 +220,17 @@ function GoalsTab() {
                   className={`badge gap-1 ${newGoal.category === cat.id ? cat.color : 'badge-ghost'}`}
                 >
                   <Icon className="w-3 h-3" />
-                  {cat.label}
+                  {t(cat.labelKey)}
                 </button>
               );
             })}
           </div>
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => setShowAddForm(false)} className="btn btn-ghost btn-sm">
-              Cancel
+              {t("familyWorship.cancel")}
             </button>
             <button type="submit" className="btn btn-primary btn-sm">
-              Add Goal
+              {t("goals.addGoal")}
             </button>
           </div>
         </form>
@@ -240,14 +242,14 @@ function GoalsTab() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
             <Target className="w-8 h-8 text-amber-500" />
           </div>
-          <p className="font-medium text-base-content/70">No goals yet</p>
-          <p className="text-sm text-base-content/50 mt-1">Set a spiritual goal to work toward</p>
+          <p className="font-medium text-base-content/70">{t("goals.noGoals")}</p>
+          <p className="text-sm text-base-content/50 mt-1"></p>
           <button
             onClick={() => setShowSuggestions(true)}
             className="btn btn-primary btn-sm mt-4"
           >
             <Star className="w-4 h-4" />
-            Browse Ideas
+            {t("goals.browseIdeas")}
           </button>
         </div>
       ) : (
@@ -277,7 +279,7 @@ function GoalsTab() {
                         {categoryInfo && (
                           <span className={`badge badge-sm gap-1 ${categoryInfo.color}`}>
                             <Icon className="w-3 h-3" />
-                            {categoryInfo.label}
+                            {t(categoryInfo.labelKey)}
                           </span>
                         )}
                       </div>
@@ -335,7 +337,7 @@ function GoalsTab() {
           >
             <span className="flex items-center gap-2">
               <Check className="w-4 h-4" />
-              Completed ({completedGoals.length})
+              {t("goals.completed")} ({completedGoals.length})
             </span>
             {showCompleted ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>

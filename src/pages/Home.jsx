@@ -9,18 +9,29 @@ import PageHeader from '../components/PageHeader';
 
 function Home() {
   const today = new Date();
-  const greeting = getGreeting();
   const { openDrawer } = useDrawer();
+  const { t } = useTranslation();
+
+  const greeting = (() => {
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      return { text: t('greeting.morning'), icon: Sun };
+    }
+    if (hour < 17) {
+      return { text: t('greeting.afternoon'), icon: CloudSun };
+    }
+    return { text: t('greeting.evening'), icon: Moon };
+  })();
+
   const GreetingIcon = greeting.icon;
   const formattedDate = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       {/* Header */}
       <PageHeader
         title={greeting.text}
-        subtitle="Build your spiritual habits"
+        subtitle={t('greeting.subtitle')}
         gradient="from-primary via-primary to-blue-700"
         titleSize="text-3xl"
         contentClass="pb-10"
@@ -47,7 +58,7 @@ function Home() {
         <section className="animate-fade-in-up">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
-              Today
+              {t('today.title')}
             </h2>
           </div>
           <div className="space-y-3">
@@ -64,7 +75,7 @@ function Home() {
         <section className="animate-fade-in-up" style={{ animationDelay: '250ms' }}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
-              Bible Reading
+              {t('bibleReading.heading')}
             </h2>
           </div>
           <BibleReadingCard />
@@ -74,7 +85,7 @@ function Home() {
         <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
-              This Week
+              {t('familyWorship.title')}
             </h2>
           </div>
           <FamilyWorshipCard />
@@ -83,17 +94,6 @@ function Home() {
       </main>
     </div>
   );
-}
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) {
-    return { text: 'Good Morning', icon: Sun };
-  }
-  if (hour < 17) {
-    return { text: 'Good Afternoon', icon: CloudSun };
-  }
-  return { text: 'Good Evening', icon: Moon };
 }
 
 export default Home;

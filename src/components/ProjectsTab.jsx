@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FolderKanban, Plus, Trash2, ChevronDown, ChevronRight, Star, Lightbulb, Users, BookOpen, Mic } from 'lucide-react';
 import useGoalsStore from '../stores/goalsStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
 
 const CATEGORIES = [
-  { id: 'congregation', label: 'Congregation', color: 'badge-primary', icon: Users },
-  { id: 'ministry', label: 'Ministry', color: 'badge-secondary', icon: BookOpen },
-  { id: 'personal', label: 'Personal', color: 'badge-accent', icon: Mic },
+  { id: 'congregation', labelKey: 'goals.categories.congregation', color: 'badge-primary', icon: Users },
+  { id: 'ministry', labelKey: 'goals.categories.ministry', color: 'badge-secondary', icon: BookOpen },
+  { id: 'personal', labelKey: 'goals.categories.personal', color: 'badge-accent', icon: Mic },
 ];
 
 // Suggested projects based on JW.org spiritual activities
@@ -119,6 +120,7 @@ const SUGGESTED_PROJECTS = [
 ];
 
 function ProjectsTab() {
+  const { t } = useTranslation();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [newProject, setNewProject] = useState({ title: '', description: '', category: 'personal' });
@@ -185,8 +187,8 @@ function ProjectsTab() {
             <FolderKanban className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold">Projects</h3>
-            <p className="text-xs text-base-content/50">{activeProjects.length} active</p>
+            <h3 className="font-bold">{t("goals.projectsTab")}</h3>
+            <p className="text-xs text-base-content/50">{activeProjects.length} {t("goals.active")}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -199,7 +201,7 @@ function ProjectsTab() {
             className="btn btn-ghost btn-sm"
           >
             <Lightbulb className="w-4 h-4" />
-            Ideas
+            {t("goals.ideas")}
           </button>
           <button
             onClick={() => {
@@ -210,7 +212,7 @@ function ProjectsTab() {
             className="btn btn-primary btn-sm"
           >
             <Plus className="w-4 h-4" />
-            New
+            {t("goals.new")}
           </button>
         </div>
       </div>
@@ -221,7 +223,7 @@ function ProjectsTab() {
           <div className="card-body p-4">
             <h4 className="font-semibold text-purple-800 flex items-center gap-2">
               <Star className="w-4 h-4" />
-              Project Ideas
+              {t("goals.projectIdeas")}
             </h4>
             <div className="grid gap-2 mt-2">
               {SUGGESTED_PROJECTS.map((suggested, index) => {
@@ -242,11 +244,11 @@ function ProjectsTab() {
                       <p className="font-medium text-sm">{suggested.title}</p>
                       <p className="text-xs text-base-content/60 truncate">{suggested.description}</p>
                       {suggested.tasks && (
-                        <p className="text-xs text-purple-600 mt-1">{suggested.tasks.length} tasks included</p>
+                        <p className="text-xs text-purple-600 mt-1">{t("goals.tasksIncluded", { count: suggested.tasks.length })}</p>
                       )}
                     </div>
                     {isAlreadyAdded ? (
-                      <span className="text-xs text-success">Added</span>
+                      <span className="text-xs text-success">{t("goals.added")}</span>
                     ) : (
                       <Plus className="w-4 h-4 text-purple-600" />
                     )}
@@ -263,14 +265,14 @@ function ProjectsTab() {
         <form onSubmit={handleAddProject} className="card bg-base-100 shadow-md p-4 space-y-3">
           <input
             type="text"
-            placeholder="Project name..."
+            placeholder={t("goals.projectName")}
             value={newProject.title}
             onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
             className="input input-bordered w-full"
             autoFocus
           />
           <textarea
-            placeholder="Description (optional)..."
+            placeholder={t("goals.descriptionOptional")}
             value={newProject.description}
             onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
             className="textarea textarea-bordered w-full"
@@ -287,17 +289,17 @@ function ProjectsTab() {
                   className={`badge gap-1 ${newProject.category === cat.id ? cat.color : 'badge-ghost'}`}
                 >
                   <Icon className="w-3 h-3" />
-                  {cat.label}
+                  {t(cat.labelKey)}
                 </button>
               );
             })}
           </div>
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => setShowAddForm(false)} className="btn btn-ghost btn-sm">
-              Cancel
+              {t("familyWorship.cancel")}
             </button>
             <button type="submit" className="btn btn-primary btn-sm">
-              Create Project
+              {t("goals.createProject")}
             </button>
           </div>
         </form>
@@ -309,14 +311,14 @@ function ProjectsTab() {
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
             <FolderKanban className="w-8 h-8 text-purple-500" />
           </div>
-          <p className="font-medium text-base-content/70">No projects yet</p>
-          <p className="text-sm text-base-content/50 mt-1">Start a project to organize tasks</p>
+          <p className="font-medium text-base-content/70">{t("goals.noProjects")}</p>
+          <p className="text-sm text-base-content/50 mt-1"></p>
           <button
             onClick={() => setShowSuggestions(true)}
             className="btn btn-primary btn-sm mt-4"
           >
             <Lightbulb className="w-4 h-4" />
-            Browse Ideas
+            {t("goals.browseIdeas")}
           </button>
         </div>
       ) : (
@@ -345,7 +347,7 @@ function ProjectsTab() {
                         <h4 className="font-medium">{project.title}</h4>
                         {categoryInfo && (
                           <span className={`badge badge-sm ${categoryInfo.color}`}>
-                            {categoryInfo.label}
+                            {t(categoryInfo.labelKey)}
                           </span>
                         )}
                       </div>
@@ -433,7 +435,7 @@ function ProjectsTab() {
                       >
                         <input
                           type="text"
-                          placeholder="Add a task..."
+                          placeholder={t("goals.addTask")}
                           value={newTaskTitle}
                           onChange={(e) => setNewTaskTitle(e.target.value)}
                           className="input input-bordered input-xs flex-1"

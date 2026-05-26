@@ -1,14 +1,17 @@
 import { BookOpen } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import MeetingCard from '../components/MeetingCard';
 import DeeperStudySection from '../components/DeeperStudySection';
 import PageHeader from '../components/PageHeader';
 
 function Study() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       <PageHeader
-        title="Study"
-        subtitle="Meeting prep & deeper study"
+        title={t('study.title')}
+        subtitle={t('study.subtitle')}
         icon={BookOpen}
         gradient="from-blue-500 via-indigo-500 to-purple-600"
       />

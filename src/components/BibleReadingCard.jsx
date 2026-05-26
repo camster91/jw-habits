@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Book, ExternalLink, Clock, CheckCircle2, Check, Settings2, RotateCcw, ChevronRight } from 'lucide-react';
 import { haptics } from '../utils/native';
 import useProgressStore from '../stores/progressStore';
@@ -7,6 +8,7 @@ import useSettingsStore, { READING_PACE_OPTIONS } from '../stores/settingsStore'
 import BIBLE_READING_SCHEDULE, { getBibleReading, getChaptersList, getBibleChapterLink } from '../utils/bibleReadingSchedule';
 
 function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
+  const { t } = useTranslation();
   const [showReadingSettings, setShowReadingSettings] = useState(false);
   const [selectedBook, setSelectedBook] = useState('');
 
@@ -77,8 +79,8 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
             <Book className={`w-6 h-6 ${isBibleComplete ? 'text-success' : 'text-secondary'}`} />
           </div>
           <div className="flex-1">
-            <h3 className="font-bold">Daily Bible Reading</h3>
-            <p className="text-sm text-base-content/50">Day {effectiveScheduleDay}{bibleReadingSchedule?.useCustomSchedule ? ' (Custom)' : ''}</p>
+            <h3 className="font-bold">{t('bibleReading.heading')}</h3>
+            <p className="text-sm text-base-content/50">{t('bibleReading.day', { num: effectiveScheduleDay })}{bibleReadingSchedule?.useCustomSchedule ? ` (${t('bibleReading.custom')})` : ''}</p>
           </div>
           <div className="flex items-center gap-2">
             {isBibleComplete ? (
@@ -92,7 +94,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
                 setShowReadingSettings(!showReadingSettings);
               }}
               className="btn btn-ghost btn-sm btn-square"
-              title="Customize reading schedule"
+              title={t('bibleReading.customize')}
             >
               <Settings2 className="w-5 h-5 text-base-content/50" />
             </button>
@@ -103,21 +105,21 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
         {showReadingSettings && (
           <div className="mx-4 mb-3 p-4 bg-base-200 rounded-2xl shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h4 className="font-bold text-sm">Reading Schedule Settings</h4>
+              <h4 className="font-bold text-sm">{t('bibleReading.readingScheduleSettings')}</h4>
               {bibleReadingSchedule?.useCustomSchedule && (
                 <button
                   onClick={handleResetSchedule}
                   className="btn btn-ghost btn-sm gap-1.5 text-warning"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  Reset
+                  {t('bibleReading.reset')}
                 </button>
               )}
             </div>
 
             {/* Pace Selector */}
             <div className="mb-5">
-              <p className="text-xs font-semibold text-base-content/60 uppercase tracking-wide mb-2">Reading Pace</p>
+              <p className="text-xs font-semibold text-base-content/60 uppercase tracking-wide mb-2">{t('bibleReading.readingPace')}</p>
               <div className="grid grid-cols-4 gap-2">
                 {READING_PACE_OPTIONS.map((option) => (
                   <button
@@ -139,10 +141,10 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
               </div>
             </div>
 
-            <div className="divider my-0 text-xs font-medium text-base-content/40">STARTING POINT</div>
+            <div className="divider my-0 text-xs font-medium text-base-content/40">{t('bibleReading.startingPoint')}</div>
 
             <p className="text-xs text-base-content/60 mb-3 mt-3">
-              Select a Bible book and chapter to start from today.
+              
             </p>
 
             {/* Book Selector */}
@@ -152,7 +154,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
                 value={selectedBook}
                 onChange={(e) => setSelectedBook(e.target.value)}
               >
-                <option value="">Choose a Bible book...</option>
+                <option value="">{t('bibleReading.chooseBook')}</option>
                 {uniqueBooks.map((book) => (
                   <option key={book} value={book}>{book}</option>
                 ))}
@@ -171,7 +173,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
                     >
                       <div>
                         <span className="font-semibold text-sm">{entry.book} {entry.chapters}</span>
-                        <span className="text-xs text-base-content/40 ml-2 bg-base-300/50 px-1.5 py-0.5 rounded">~{entry.time} min</span>
+                        <span className="text-xs text-base-content/40 ml-2 bg-base-300/50 px-1.5 py-0.5 rounded">~{entry.time} {t('bibleReading.min')}</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-base-content/30" />
                     </button>
@@ -198,7 +200,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
               <p className="font-bold text-lg text-secondary">{todayReading.book} {todayReading.chapters}</p>
               <div className="flex items-center gap-1 text-sm text-base-content/50 mt-1">
                 <Clock className="w-4 h-4" />
-                <span>~{todayReading.time} minutes</span>
+                <span>~{todayReading.time} {t('bibleReading.minutes')}</span>
               </div>
             </div>
             <a
@@ -209,7 +211,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
               onClick={() => haptics.light()}
             >
               <ExternalLink className="w-4 h-4" />
-              Open in JW Library
+              {t('bibleReading.openInLibrary')}
             </a>
           </div>
         </div>
@@ -217,7 +219,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
 
       {/* Chapter Progress */}
       <div className="px-4 pb-4">
-        <p className="text-xs text-base-content/50 mb-2 font-medium">Mark chapters as complete</p>
+        <p className="text-xs text-base-content/50 mb-2 font-medium">{t('bibleReading.markComplete')}</p>
         <div className="flex flex-wrap gap-2">
           {chapters.map((chapter, index) => {
             const isComplete = chapterProgress[index];

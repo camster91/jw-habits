@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, CheckCircle2, ExternalLink } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 import useProgressStore from '../stores/progressStore';
@@ -14,6 +15,7 @@ function getWorkbookWolLink(docid) {
 }
 
 function MeetingCard() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('midweek');
   const [workbookData, setWorkbookData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -197,7 +199,7 @@ function MeetingCard() {
       <div className="card bg-base-100 shadow-sm rounded-2xl">
         <div className="card-body items-center py-8">
           <div className="loading loading-spinner loading-md text-accent"></div>
-          <p className="text-sm text-base-content/50">Loading meetings...</p>
+          <p className="text-sm text-base-content/50">{t("study.loading")}</p>
         </div>
       </div>
     );
@@ -208,14 +210,14 @@ function MeetingCard() {
       <div className="card bg-base-100 shadow-sm rounded-2xl">
         <div className="card-body items-center py-8">
           <Calendar className="w-8 h-8 text-base-content/30" />
-          <p className="text-sm text-base-content/50">Could not load meeting data</p>
+          <p className="text-sm text-base-content/50">{t("study.loadError")}</p>
           <a
             href={JW_ORG_SECTIONS.meetingWorkbooks}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-primary btn-sm mt-2"
           >
-            <ExternalLink className="w-4 h-4" /> Open on JW.org
+            <ExternalLink className="w-4 h-4" /> {t("study.openOnJw")}
           </a>
         </div>
       </div>
@@ -257,7 +259,7 @@ function MeetingCard() {
                     : 'bg-base-200 text-base-content/60'
                 }`}
               >
-                {tab === 'midweek' ? 'Midweek' : 'Weekend'}
+                {tab === 'midweek' ? t("study.midweek") : t("study.weekend")}
                 {isPrepared && <CheckCircle2 className="w-4 h-4" />}
               </button>
             );
