@@ -152,6 +152,10 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
     {
       name: 'jw-progress-settings',
       storage: createSafeStorage('jw-progress-settings') as any,
+      partialize: (state) => {
+        const { ai: _ai, ...rest } = state;
+        return rest;
+      },
     }
   )
 );
