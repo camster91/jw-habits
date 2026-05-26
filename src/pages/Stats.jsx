@@ -7,50 +7,52 @@ import PageHeader from '../components/PageHeader';
 
 function Stats() {
   const [showAllAchievements, setShowAllAchievements] = useState(false);
+  const [statsData, setStatsData] = useState(null);
 
-  const getDailyTextStreak = useProgressStore((s) => s.getDailyTextStreak);
-  const getBibleReadingStreak = useProgressStore((s) => s.getBibleReadingStreak);
-  const getPrayerStreak = useProgressStore((s) => s.getPrayerStreak);
-  const getFamilyWorshipStreak = useProgressStore((s) => s.getFamilyWorshipStreak);
-  const getCompletionRate = useProgressStore((s) => s.getCompletionRate);
+  try {
+    const getDailyTextStreak = useProgressStore((s) => s.getDailyTextStreak);
+    const getBibleReadingStreak = useProgressStore((s) => s.getBibleReadingStreak);
+    const getPrayerStreak = useProgressStore((s) => s.getPrayerStreak);
+    const getFamilyWorshipStreak = useProgressStore((s) => s.getFamilyWorshipStreak);
+    const getCompletionRate = useProgressStore((s) => s.getCompletionRate);
 
-  const getAllAchievements = useGamificationStore((s) => s.getAllAchievements);
-  const getStats = useGamificationStore((s) => s.getStats);
-  const getLevel = useGamificationStore((s) => s.getLevel);
-  const getPointsToNextLevel = useGamificationStore((s) => s.getPointsToNextLevel);
+    const getAllAchievements = useGamificationStore((s) => s.getAllAchievements);
+    const getStats = useGamificationStore((s) => s.getStats);
+    const getLevel = useGamificationStore((s) => s.getLevel);
+    const getPointsToNextLevel = useGamificationStore((s) => s.getPointsToNextLevel);
 
-  const dailyTextStreak = getDailyTextStreak();
-  const bibleReadingStreak = getBibleReadingStreak();
-  const prayerStreak = getPrayerStreak();
-  const familyWorshipStreak = getFamilyWorshipStreak();
-  const dailyText7Day = getCompletionRate('dailyText', 7);
-  const dailyText30Day = getCompletionRate('dailyText', 30);
-  const bibleReading7Day = getCompletionRate('bibleReading', 7);
-  const bibleReading30Day = getCompletionRate('bibleReading', 30);
+    const dailyTextStreak = getDailyTextStreak?.() ?? 0;
+    const bibleReadingStreak = getBibleReadingStreak?.() ?? 0;
+    const prayerStreak = getPrayerStreak?.() ?? 0;
+    const familyWorshipStreak = getFamilyWorshipStreak?.() ?? 0;
+    const dailyText7Day = getCompletionRate?.('dailyText', 7) ?? 0;
+    const dailyText30Day = getCompletionRate?.('dailyText', 30) ?? 0;
+    const bibleReading7Day = getCompletionRate?.('bibleReading', 7) ?? 0;
+    const bibleReading30Day = getCompletionRate?.('bibleReading', 30) ?? 0;
 
-  const stats = getStats();
-  const level = getLevel();
-  const pointsToNext = getPointsToNextLevel();
-  const achievements = getAllAchievements();
-  const unlockedAchievements = achievements.filter(a => a.unlocked);
-  const lockedAchievements = achievements.filter(a => !a.unlocked);
+    const stats = getStats?.() ?? {};
+    const level = getLevel?.() ?? 1;
+    const pointsToNext = getPointsToNextLevel?.() ?? 100;
+    const achievements = getAllAchievements?.() ?? [];
+    const unlockedAchievements = achievements.filter(a => a.unlocked);
+    const lockedAchievements = achievements.filter(a => !a.unlocked);
 
-  const displayedAchievements = showAllAchievements
-    ? achievements
-    : [...unlockedAchievements.slice(0, 4), ...lockedAchievements.slice(0, 2)];
+    const displayedAchievements = showAllAchievements
+      ? achievements
+      : [...unlockedAchievements.slice(0, 4), ...lockedAchievements.slice(0, 2)];
 
-  return (
-    <div className="min-h-screen bg-base-200 pb-24">
-      {/* Header */}
-      <PageHeader
-        title="Your Progress"
-        subtitle="Track your spiritual journey"
-        icon={TrendingUp}
-        gradient="from-primary via-primary to-emerald-700"
-        iconBare
-        shadow
-        blurColor="emerald"
-      />
+    return (
+      <div className="min-h-screen bg-base-200 pb-24">
+        {/* Header */}
+        <PageHeader
+          title="Your Progress"
+          subtitle="Track your spiritual journey"
+          icon={TrendingUp}
+          gradient="from-primary via-primary to-emerald-700"
+          iconBare
+          shadow
+          blurColor="emerald"
+        />
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 space-y-6 max-w-2xl">
@@ -347,7 +349,19 @@ function Stats() {
         </div>
       </div>
     </div>
-  );
+    );
+  } catch (e) {
+    console.error('Stats page error:', e);
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <div className="text-center">
+          <TrendingUp className="w-12 h-12 text-primary mx-auto mb-4" />
+          <p className="text-lg font-semibold">Unable to load statistics</p>
+          <p className="text-sm text-base-content/60 mt-2">Please try again later</p>
+        </div>
+      </div>
+    );
+  }
 }
 
 export default Stats;
