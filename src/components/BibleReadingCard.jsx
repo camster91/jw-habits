@@ -93,7 +93,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
                 haptics.light();
                 setShowReadingSettings(!showReadingSettings);
               }}
-              className="btn btn-ghost btn-sm btn-square"
+              className="btn btn-ghost btn-sm btn-square ml-2"
               title={t('bibleReading.customize')}
             >
               <Settings2 className="w-5 h-5 text-base-content/50" />

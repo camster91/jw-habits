@@ -26,14 +26,19 @@ function InstallPrompt() {
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    // Show banner after a short delay
     if (canInstall && !isAppInstalled && !dismissed) {
-      const timer = setTimeout(() => {
-        setShowBanner(true);
-      }, 3000);
-      return () => clearTimeout(timer);
+      const showTimer = setTimeout(() => setShowBanner(true), 3000);
+      return () => clearTimeout(showTimer);
     }
   }, [canInstall, isAppInstalled, dismissed]);
+
+  useEffect(() => {
+    if (!showBanner) return;
+    const autoDismiss = setTimeout(() => {
+      handleDismiss();
+    }, 10000);
+    return () => clearTimeout(autoDismiss);
+  }, [showBanner]);
 
   const handleInstall = async () => {
     haptics.medium();
@@ -58,9 +63,9 @@ function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-40 animate-slide-up">
-      <div className="card bg-gradient-to-r from-primary to-secondary text-white shadow-xl">
-        <div className="card-body p-4">
+    <div className="fixed bottom-16 left-0 right-0 z-40 animate-slide-up">
+      <div className="bg-primary/95 backdrop-blur-sm text-white shadow-lg border-t border-white/10">
+        <div className="px-4 py-3">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-white/20 rounded-xl">
               <Smartphone className="w-6 h-6" />
@@ -82,14 +87,14 @@ function InstallPrompt() {
           <div className="flex gap-2 mt-3">
             <button
               onClick={handleInstall}
-              className="btn btn-sm flex-1 bg-white text-primary hover:bg-white/90"
+              className="btn btn-sm flex-1 btn-primary"
             >
               <Download className="w-4 h-4" />
               Install App
             </button>
             <button
               onClick={handleDismiss}
-              className="btn btn-sm btn-ghost text-white"
+              className="btn btn-sm btn-ghost text-white/80 hover:text-white hover:bg-white/10"
             >
               Maybe Later
             </button>

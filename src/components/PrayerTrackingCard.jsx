@@ -108,7 +108,7 @@ function PrayerTrackingCard() {
             onClick={() => handlePrayerCheck(prayer.id)}
             className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all active:scale-[0.98] ${
               prayers[prayer.id]
-                ? 'bg-success/10'
+                ? 'bg-success/10 opacity-60'
                 : 'bg-base-200/50 active:bg-base-200'
             }`}
           >

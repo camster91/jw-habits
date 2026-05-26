@@ -92,14 +92,14 @@ function DailyTasksSection() {
           </div>
           <button
             onClick={handleDailyTextCheck}
-            className={`w-full p-4 rounded-xl flex items-center justify-between transition-all ${
+            className={`w-full p-4 rounded-xl flex items-center justify-between transition-all active:scale-[0.98] ${
               dailyTextProgress.readScripture
-                ? 'bg-success/10 text-success-content'
-                : 'bg-base-200'
+                ? 'bg-success/10 text-success'
+                : 'bg-base-200 hover:bg-base-300'
             }`}
           >
-            <span className="font-medium">{t('today.readText')}</span>
-            {dailyTextProgress.readScripture ? <CheckCircle2 className="w-6 h-6" /> : <div className="w-6 h-6 rounded-full border-2 border-base-content/20" />}
+            <span className={`font-medium ${dailyTextProgress.readScripture ? 'text-success' : ''}`}>{t('today.readText')}</span>
+            {dailyTextProgress.readScripture ? <CheckCircle2 className="w-6 h-6 text-success" /> : <div className="w-6 h-6 rounded-full border-2 border-base-content/30" />}
           </button>
           <button onClick={handleOpenJW} className="btn btn-outline btn-sm mt-2 w-full gap-2">
             <Globe className="w-4 h-4" /> {t('today.openOnJw')}

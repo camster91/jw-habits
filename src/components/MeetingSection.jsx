@@ -35,12 +35,12 @@ function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = f
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-1.5 bg-base-200 rounded-full overflow-hidden">
+          <div className="w-12 h-1.5 bg-base-300 rounded-full overflow-hidden">
             <div
               className={`h-full transition-all duration-300 ${
                 isComplete ? 'bg-success' : progress > 0 ? 'bg-primary' : 'bg-base-300'
               }`}
-              style={{ width: `${progress}%` }}
+              style={{ width: `${Math.max(progress, 3)}%` }}
             />
           </div>
           {isExpanded ? (
