@@ -8,7 +8,7 @@ const useServiceStore = create(
       entries: [],
       monthlyGoalHours: 10,
 
-      // Add a new service entry
+      // ── Add entry ────────────────────────────────────────────
       addEntry: (entry) =>
         set((state) => ({
           entries: [
@@ -18,25 +18,33 @@ const useServiceStore = create(
               id: crypto.randomUUID(),
               date: entry.date || new Date().toISOString().split('T')[0],
               hours: Number(entry.hours) || 0,
+              // New fields — track beyond just hours
+              placements: Number(entry.placements) || 0,
+              returnVisits: Number(entry.returnVisits) || 0,
+              bibleStudies: Number(entry.bibleStudies) || 0,
+              startTime: entry.startTime || null,
+              endTime: entry.endTime || null,
+              breaks: Number(entry.breaks) || 0,
               note: entry.note || '',
+              type: entry.type || 'field-service',
               createdAt: new Date().toISOString(),
             },
           ],
         })),
 
-      // Remove an entry by id
+      // ── Remove entry ─────────────────────────────────────────
       removeEntry: (id) =>
         set((state) => ({
           entries: state.entries.filter((entry) => entry.id !== id),
         })),
 
-      // Update monthly goal hours
+      // ── Monthly goal ─────────────────────────────────────────
       setMonthlyGoal: (hours) =>
         set(() => ({
           monthlyGoalHours: Number(hours) || 10,
         })),
 
-      // Get start of current week (Sunday)
+      // ── Date helpers ─────────────────────────────────────────
       getWeekStart: () => {
         const now = new Date();
         const day = now.getDay();
@@ -46,46 +54,84 @@ const useServiceStore = create(
         return weekStart.toISOString().split('T')[0];
       },
 
-      // Get start of current month
       getMonthStart: () => {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
       },
 
-      // Get today's entries
+      // ── Filtered queries ─────────────────────────────────────
       getTodaysEntries: () => {
         const today = new Date().toISOString().split('T')[0];
         return get().entries.filter((entry) => entry.date === today);
       },
 
-      // Get this week's entries
       getWeeklyEntries: () => {
         const weekStart = get().getWeekStart();
         return get().entries.filter((entry) => entry.date >= weekStart);
       },
 
-      // Get this month's entries
       getMonthlyEntries: () => {
         const monthStart = get().getMonthStart();
         return get().entries.filter((entry) => entry.date >= monthStart);
       },
 
-      // Get weekly total hours
+      // ── Totals ───────────────────────────────────────────────
       getWeeklyTotal: () => {
         const weeklyEntries = get().getWeeklyEntries();
         return weeklyEntries.reduce((sum, entry) => sum + entry.hours, 0);
       },
 
-      // Get monthly total hours
       getMonthlyTotal: () => {
         const monthlyEntries = get().getMonthlyEntries();
         return monthlyEntries.reduce((sum, entry) => sum + entry.hours, 0);
+      },
+
+      // ── New: Placement/Return Visit/Bible Study totals ────────
+      getWeeklyPlacements: () => {
+        return get().getWeeklyEntries().reduce((sum, e) => sum + (e.placements || 0), 0);
+      },
+
+      getWeeklyReturnVisits: () => {
+        return get().getWeeklyEntries().reduce((sum, e) => sum + (e.returnVisits || 0), 0);
+      },
+
+      getWeeklyBibleStudies: () => {
+        return get().getWeeklyEntries().reduce((sum, e) => sum + (e.bibleStudies || 0), 0);
+      },
+
+      getMonthlyPlacements: () => {
+        return get().getMonthlyEntries().reduce((sum, e) => sum + (e.placements || 0), 0);
+      },
+
+      getMonthlyReturnVisits: () => {
+        return get().getMonthlyEntries().reduce((sum, e) => sum + (e.returnVisits || 0), 0);
+      },
+
+      getMonthlyBibleStudies: () => {
+        return get().getMonthlyEntries().reduce((sum, e) => sum + (e.bibleStudies || 0), 0);
+      },
+
+      // ── Today's totals ───────────────────────────────────────
+      getTodaysHours: () => {
+        return get().getTodaysEntries().reduce((sum, e) => sum + e.hours, 0);
+      },
+
+      getTodaysPlacements: () => {
+        return get().getTodaysEntries().reduce((sum, e) => sum + (e.placements || 0), 0);
+      },
+
+      getTodaysReturnVisits: () => {
+        return get().getTodaysEntries().reduce((sum, e) => sum + (e.returnVisits || 0), 0);
+      },
+
+      getTodaysBibleStudies: () => {
+        return get().getTodaysEntries().reduce((sum, e) => sum + (e.bibleStudies || 0), 0);
       },
     }),
     {
       name: 'jw-service-storage',
       storage: createSafeStorage('jw-service-storage'),
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         entries: state.entries,
         monthlyGoalHours: state.monthlyGoalHours,

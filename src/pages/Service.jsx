@@ -1,16 +1,17 @@
-import { useState } from 'react';
-import { Cross, Plus, Trash2, Calendar, Clock, Target, ChevronDown } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Cross, Plus, Trash2, Calendar, Clock, Target, ChevronDown, BookOpen, Users, MessageSquare, Timer, BarChart3 } from 'lucide-react';
 import PageHeader from '../components/PageHeader';
 import useServiceStore from '../stores/serviceStore';
+import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
 import { useToast } from '../components/Toast';
 
 const ENTRY_TYPES = [
-  { id: 'field-service', label: 'Field Service', color: 'badge-primary' },
-  { id: 'return-visit', label: 'Return Visit', color: 'badge-secondary' },
-  { id: 'bible-study', label: 'Bible Study', color: 'badge-accent' },
-  { id: 'door-to-door', label: 'Door-to-Door', color: 'badge-info' },
-  { id: 'other', label: 'Other', color: 'badge-neutral' },
+  { id: 'field-service', label: 'Field Service', icon: Cross, color: 'badge-primary' },
+  { id: 'return-visit', label: 'Return Visit', icon: Users, color: 'badge-secondary' },
+  { id: 'bible-study', label: 'Bible Study', icon: BookOpen, color: 'badge-accent' },
+  { id: 'door-to-door', label: 'Door-to-Door', icon: MessageSquare, color: 'badge-info' },
+  { id: 'other', label: 'Other', icon: BarChart3, color: 'badge-neutral' },
 ];
 
 const QUICK_ADD_HOURS = [1, 2, 3];
@@ -25,6 +26,14 @@ function Service() {
   const [goalInput, setGoalInput] = useState('');
   const [selectedType, setSelectedType] = useState('field-service');
 
+  // ── New form fields ──────────────────────────────────────
+  const [placements, setPlacements] = useState('');
+  const [returnVisits, setReturnVisits] = useState('');
+  const [bibleStudies, setBibleStudies] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [breaks, setBreaks] = useState('0.5');
+
   const {
     addEntry,
     removeEntry,
@@ -33,59 +42,91 @@ function Service() {
     getWeeklyEntries,
     getWeeklyTotal,
     getMonthlyTotal,
+    getWeeklyPlacements,
+    getWeeklyReturnVisits,
+    getWeeklyBibleStudies,
+    getMonthlyPlacements,
+    getMonthlyReturnVisits,
+    getMonthlyBibleStudies,
+    getTodaysHours,
+    getTodaysPlacements,
+    getTodaysReturnVisits,
+    getTodaysBibleStudies,
     monthlyGoalHours,
   } = useServiceStore();
+
+  const addServiceActivity = useGamificationStore((s) => s.addServiceActivity);
 
   const todaysEntries = getTodaysEntries();
   const weeklyEntries = getWeeklyEntries();
   const weeklyTotal = getWeeklyTotal();
   const monthlyTotal = getMonthlyTotal();
+  const weeklyPlacements = getWeeklyPlacements();
+  const weeklyReturnVisits = getWeeklyReturnVisits();
+  const weeklyBibleStudies = getWeeklyBibleStudies();
   const monthProgress = monthlyGoalHours > 0 ? Math.min((monthlyTotal / monthlyGoalHours) * 100, 100) : 0;
+
+  // ── Auto-calculate hours from start/end/breaks ───────────
+  const computedHours = useMemo(() => {
+    if (!startTime || !endTime) return null;
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    let diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff < 0) diff += 24 * 60; // overnight
+    diff = diff / 60 - (Number(breaks) || 0);
+    return Math.max(0, Math.round(diff * 10) / 10);
+  }, [startTime, endTime, breaks]);
+
+  const resetForm = () => {
+    setCustomHours('');
+    setNote('');
+    setPlacements('');
+    setReturnVisits('');
+    setBibleStudies('');
+    setStartTime('');
+    setEndTime('');
+    setBreaks('0.5');
+    setShowCustom(false);
+  };
 
   const handleQuickAdd = (h) => {
     haptics.light();
-    addEntry({
-      type: selectedType,
-      hours: h,
-      date: new Date().toISOString().split('T')[0],
-      note: '',
-    });
+    addEntry({ type: selectedType, hours: h, date: new Date().toISOString().split('T')[0] });
+    addServiceActivity(h, 0, 0);
     toast('success', `Added ${h}h entry`);
   };
 
   const handleCustomAdd = () => {
-    const h = parseFloat(customHours);
-    if (!h || h <= 0) {
-      toast('error', 'Please enter valid hours');
-      return;
-    }
+    const h = computedHours ?? parseFloat(customHours);
+    if (!h || h <= 0) { toast('error', 'Please enter valid hours'); return; }
     haptics.light();
+    const rv = parseInt(returnVisits) || 0;
+    const p = parseInt(placements) || 0;
+    const bs = parseInt(bibleStudies) || 0;
     addEntry({
       type: selectedType,
       hours: h,
       date: new Date().toISOString().split('T')[0],
       note: note.trim(),
+      placements: p,
+      returnVisits: rv,
+      bibleStudies: bs,
+      startTime: startTime || null,
+      endTime: endTime || null,
+      breaks: breaks ? Number(breaks) : 0,
     });
-    setCustomHours('');
-    setNote('');
-    setShowCustom(false);
+    addServiceActivity(h, rv + bs, p);
+    resetForm();
     toast('success', `Added ${h}h entry`);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const h = parseFloat(hours);
-    if (!h || h <= 0) {
-      toast('error', 'Please enter valid hours');
-      return;
-    }
+    if (!h || h <= 0) { toast('error', 'Please enter valid hours'); return; }
     haptics.success();
-    addEntry({
-      type: selectedType,
-      hours: h,
-      date: new Date().toISOString().split('T')[0],
-      note: note.trim(),
-    });
+    addEntry({ type: selectedType, hours: h, date: new Date().toISOString().split('T')[0], note: note.trim() });
+    addServiceActivity(h, 0, 0);
     setHours('');
     setNote('');
     toast('success', `Added ${h}h entry`);
@@ -99,10 +140,7 @@ function Service() {
 
   const handleSetGoal = () => {
     const goal = parseFloat(goalInput);
-    if (!goal || goal <= 0) {
-      toast('error', 'Please enter a valid goal');
-      return;
-    }
+    if (!goal || goal <= 0) { toast('error', 'Please enter a valid goal'); return; }
     haptics.success();
     setMonthlyGoal(goal);
     setGoalInput('');
@@ -115,45 +153,47 @@ function Service() {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-
     if (dateStr === today.toISOString().split('T')[0]) return 'Today';
     if (dateStr === yesterday.toISOString().split('T')[0]) return 'Yesterday';
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
-  const getTypeLabel = (typeId) => {
-    return ENTRY_TYPES.find((t) => t.id === typeId)?.label || typeId;
-  };
+  const getTypeMeta = (typeId) => ENTRY_TYPES.find((t) => t.id === typeId) || ENTRY_TYPES[0];
 
-  const getTypeColor = (typeId) => {
-    return ENTRY_TYPES.find((t) => t.id === typeId)?.color || 'badge-neutral';
-  };
-
-  const renderEntry = (entry) => (
-    <div key={entry.id} className="flex items-center justify-between py-3 px-1">
-      <div className="flex items-center gap-3">
-        <div className="flex flex-col">
-          <span className="text-sm font-medium">{formatDate(entry.date)}</span>
-          <span className={`badge badge-sm ${getTypeColor(entry.type)} mt-1`}>
-            {getTypeLabel(entry.type)}
-          </span>
+  const renderEntry = (entry) => {
+    const meta = getTypeMeta(entry.type);
+    const Icon = meta.icon;
+    return (
+      <div key={entry.id} className="flex items-center justify-between py-3 px-1">
+        <div className="flex items-center gap-3">
+          <Icon className="w-4 h-4 text-base-content/40" />
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{formatDate(entry.date)}</span>
+            <span className={`badge badge-sm ${meta.color} mt-1`}>{meta.label}</span>
+            {entry.note && <span className="text-xs text-base-content/50 mt-0.5 truncate max-w-[200px]">{entry.note}</span>}
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 text-xs text-base-content/60">
+            {entry.placements > 0 && <span title="Placements">📚{entry.placements}</span>}
+            {entry.returnVisits > 0 && <span title="Return Visits">🔄{entry.returnVisits}</span>}
+            {entry.bibleStudies > 0 && <span title="Bible Studies">📖{entry.bibleStudies}</span>}
+          </div>
+          <div className="flex items-center gap-1 text-primary font-semibold">
+            <Clock className="w-4 h-4" />
+            <span>{entry.hours}h</span>
+          </div>
+          <button
+            onClick={() => handleDelete(entry.id)}
+            className="btn btn-ghost btn-sm btn-circle text-error/60 hover:text-error hover:bg-error/10"
+            aria-label="Delete entry"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1 text-primary font-semibold">
-          <Clock className="w-4 h-4" />
-          <span>{entry.hours}h</span>
-        </div>
-        <button
-          onClick={() => handleDelete(entry.id)}
-          className="btn btn-ghost btn-sm btn-circle text-error/60 hover:text-error hover:bg-error/10"
-          aria-label="Delete entry"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
@@ -166,7 +206,7 @@ function Service() {
       />
 
       <main className="container mx-auto px-4 pt-4 space-y-4 max-w-2xl">
-        {/* Weekly Summary Card */}
+        {/* ── Weekly Summary Card (enhanced) ─────────────── */}
         <section className="card bg-base-100 shadow-sm">
           <div className="card-body p-4">
             <div className="flex items-center justify-between mb-3">
@@ -175,49 +215,63 @@ function Service() {
                 <span className="font-semibold">This Week</span>
               </div>
               <button
-                onClick={() => {
-                  haptics.light();
-                  setShowGoalModal(true);
-                  setGoalInput(String(monthlyGoalHours));
-                }}
+                onClick={() => { haptics.light(); setShowGoalModal(true); setGoalInput(String(monthlyGoalHours)); }}
                 className="btn btn-ghost btn-sm gap-1"
               >
                 <Target className="w-4 h-4" />
                 <span className="text-xs">{monthlyGoalHours}h goal</span>
               </button>
             </div>
+
+            {/* Hours */}
             <div className="text-4xl font-bold text-primary">{weeklyTotal}h</div>
             <p className="text-sm text-base-content/60 mt-1">
-              {todaysEntries.length > 0
-                ? `${todaysEntries.reduce((s, e) => s + e.hours, 0)}h today`
-                : 'No entries today'}
+              {getTodaysHours() > 0 ? `${getTodaysHours()}h today` : 'No entries today'}
             </p>
+
+            {/* Placements / Return Visits / Bible Studies */}
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="text-center p-2 rounded-lg bg-primary/5">
+                <div className="text-lg font-bold text-primary">{weeklyPlacements}</div>
+                <div className="text-xs text-base-content/50">Placements</div>
+              </div>
+              <div className="text-center p-2 rounded-lg bg-secondary/5">
+                <div className="text-lg font-bold text-secondary">{weeklyReturnVisits}</div>
+                <div className="text-xs text-base-content/50">Return Visits</div>
+              </div>
+              <div className="text-center p-2 rounded-lg bg-accent/5">
+                <div className="text-lg font-bold text-accent">{weeklyBibleStudies}</div>
+                <div className="text-xs text-base-content/50">Bible Studies</div>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Monthly Goal Progress */}
+        {/* ── Monthly Goal Progress ────────────────────────── */}
         <section className="card bg-base-100 shadow-sm">
           <div className="card-body p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Monthly Goal</span>
-              <span className="text-sm text-base-content/60">
-                {monthlyTotal}h / {monthlyGoalHours}h
-              </span>
+              <span className="text-sm text-base-content/60">{monthlyTotal}h / {monthlyGoalHours}h</span>
             </div>
             <progress
               className={`progress ${monthProgress >= 100 ? 'progress-success' : 'progress-primary'} w-full`}
-              value={monthProgress}
-              max="100"
+              value={monthProgress} max="100"
             />
             <p className="text-xs text-base-content/50 mt-1">
-              {monthProgress >= 100
-                ? 'Goal reached! 🎉'
-                : `${Math.round(monthProgress)}% of monthly goal`}
+              {monthProgress >= 100 ? 'Goal reached! 🎉' : `${Math.round(monthProgress)}% of monthly goal`}
             </p>
+
+            {/* Monthly placements/visits/studies */}
+            <div className="grid grid-cols-3 gap-2 mt-3 text-xs text-base-content/50">
+              <span>📚 {getMonthlyPlacements()} placements</span>
+              <span>🔄 {getMonthlyReturnVisits()} visits</span>
+              <span>📖 {getMonthlyBibleStudies()} studies</span>
+            </div>
           </div>
         </section>
 
-        {/* Entry Type Selector */}
+        {/* ── Entry Type Selector ──────────────────────────── */}
         <section className="card bg-base-100 shadow-sm">
           <div className="card-body p-4">
             <h3 className="text-sm font-medium mb-2">Entry Type</h3>
@@ -225,13 +279,8 @@ function Service() {
               {ENTRY_TYPES.map((type) => (
                 <button
                   key={type.id}
-                  onClick={() => {
-                    haptics.light();
-                    setSelectedType(type.id);
-                  }}
-                  className={`btn btn-sm ${
-                    selectedType === type.id ? 'btn-primary' : 'btn-ghost'
-                  }`}
+                  onClick={() => { haptics.light(); setSelectedType(type.id); }}
+                  className={`btn btn-sm ${selectedType === type.id ? 'btn-primary' : 'btn-ghost'}`}
                 >
                   {type.label}
                 </button>
@@ -240,26 +289,18 @@ function Service() {
           </div>
         </section>
 
-        {/* Quick Add Buttons */}
+        {/* ── Quick Add Buttons ────────────────────────────── */}
         <section className="card bg-base-100 shadow-sm">
           <div className="card-body p-4">
             <h3 className="text-sm font-medium mb-3">Quick Add</h3>
             <div className="flex gap-2">
               {QUICK_ADD_HOURS.map((h) => (
-                <button
-                  key={h}
-                  onClick={() => handleQuickAdd(h)}
-                  className="btn btn-primary flex-1 gap-1"
-                >
-                  <Plus className="w-4 h-4" />
-                  {h}h
+                <button key={h} onClick={() => handleQuickAdd(h)} className="btn btn-primary flex-1 gap-1">
+                  <Plus className="w-4 h-4" />{h}h
                 </button>
               ))}
               <button
-                onClick={() => {
-                  haptics.light();
-                  setShowCustom(!showCustom);
-                }}
+                onClick={() => { haptics.light(); setShowCustom(!showCustom); }}
                 className="btn btn-ghost flex-1 gap-1"
               >
                 <ChevronDown className={`w-4 h-4 transition-transform ${showCustom ? 'rotate-180' : ''}`} />
@@ -267,104 +308,149 @@ function Service() {
               </button>
             </div>
 
-            {/* Custom Hours Input */}
+            {/* ── Custom Hours Form (enhanced) ─────────────── */}
             {showCustom && (
-              <div className="mt-4 space-y-3">
+              <div className="mt-4 space-y-3 animate-fade-in-up">
+                {/* Hours — quick hours input */}
                 <div className="form-control">
+                  <label className="label py-1"><span className="label-text text-xs">Hours</span></label>
                   <input
-                    type="number"
-                    placeholder="Hours (e.g. 1.5)"
-                    className="input input-bordered w-full"
-                    value={customHours}
-                    onChange={(e) => setCustomHours(e.target.value)}
-                    min="0"
-                    step="0.5"
+                    type="number" placeholder="e.g. 1.5"
+                    className="input input-bordered input-sm w-full"
+                    value={customHours} onChange={(e) => setCustomHours(e.target.value)}
+                    min="0" step="0.5"
                   />
                 </div>
+
+                {/* OR time range */}
+                <div className="divider text-xs text-base-content/40 my-1">or enter time range</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs">Start</span></label>
+                    <input
+                      type="time" className="input input-bordered input-sm w-full"
+                      value={startTime} onChange={(e) => setStartTime(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs">End</span></label>
+                    <input
+                      type="time" className="input input-bordered input-sm w-full"
+                      value={endTime} onChange={(e) => setEndTime(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs">Breaks (h)</span></label>
+                    <input
+                      type="number" className="input input-bordered input-sm w-full"
+                      value={breaks} onChange={(e) => setBreaks(e.target.value)}
+                      min="0" step="0.25"
+                    />
+                  </div>
+                </div>
+                {computedHours !== null && (
+                  <div className="flex items-center gap-2 p-2 rounded bg-success/10 text-success text-sm">
+                    <Timer className="w-4 h-4" />
+                    Computed: <strong>{computedHours}h</strong>
+                  </div>
+                )}
+
+                {/* ── Placements / Return Visits / Bible Studies ── */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs">📚 Placements</span></label>
+                    <input
+                      type="number" placeholder="0"
+                      className="input input-bordered input-sm w-full"
+                      value={placements} onChange={(e) => setPlacements(e.target.value)}
+                      min="0"
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs">🔄 R. Visits</span></label>
+                    <input
+                      type="number" placeholder="0"
+                      className="input input-bordered input-sm w-full"
+                      value={returnVisits} onChange={(e) => setReturnVisits(e.target.value)}
+                      min="0"
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label py-1"><span className="label-text text-xs">📖 B. Studies</span></label>
+                    <input
+                      type="number" placeholder="0"
+                      className="input input-bordered input-sm w-full"
+                      value={bibleStudies} onChange={(e) => setBibleStudies(e.target.value)}
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Note */}
                 <div className="form-control">
                   <input
-                    type="text"
-                    placeholder="Note (optional)"
-                    className="input input-bordered w-full"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
+                    type="text" placeholder="Note (optional)"
+                    className="input input-bordered input-sm w-full"
+                    value={note} onChange={(e) => setNote(e.target.value)}
                   />
                 </div>
-                <button onClick={handleCustomAdd} className="btn btn-primary w-full">
-                  Add Entry
-                </button>
+
+                <div className="flex gap-2">
+                  <button onClick={handleCustomAdd} className="btn btn-primary flex-1">Add Entry</button>
+                  <button onClick={resetForm} className="btn btn-ghost btn-sm">Cancel</button>
+                </div>
               </div>
             )}
           </div>
         </section>
 
-        {/* Today's Entries */}
+        {/* ── Today's Entries ──────────────────────────────── */}
         {todaysEntries.length > 0 && (
           <section className="card bg-base-100 shadow-sm">
             <div className="card-body p-4">
               <h3 className="text-sm font-medium mb-2">Today</h3>
-              <div className="divide-y divide-base-300">
-                {todaysEntries.map(renderEntry)}
-              </div>
+              <div className="divide-y divide-base-300">{todaysEntries.map(renderEntry)}</div>
             </div>
           </section>
         )}
 
-        {/* This Week's Entries */}
+        {/* ── This Week's Entries ───────────────────────────── */}
         {weeklyEntries.length > 0 && (
           <section className="card bg-base-100 shadow-sm">
             <div className="card-body p-4">
               <h3 className="text-sm font-medium mb-2">This Week</h3>
-              <div className="divide-y divide-base-300">
-                {weeklyEntries.map(renderEntry)}
-              </div>
+              <div className="divide-y divide-base-300">{weeklyEntries.map(renderEntry)}</div>
             </div>
           </section>
         )}
 
-        {/* Empty State */}
+        {/* ── Empty State ───────────────────────────────────── */}
         {weeklyEntries.length === 0 && (
           <section className="card bg-base-100 shadow-sm">
             <div className="card-body p-8 text-center">
               <Cross className="w-12 h-12 mx-auto text-base-content/20 mb-3" />
               <p className="text-base-content/60">No service entries this week</p>
-              <p className="text-sm text-base-content/40 mt-1">
-                Tap a quick add button to log your time
-              </p>
+              <p className="text-sm text-base-content/40 mt-1">Tap a quick add button to log your time</p>
             </div>
           </section>
         )}
       </main>
 
-      {/* Monthly Goal Modal */}
+      {/* ── Monthly Goal Modal ─────────────────────────────── */}
       {showGoalModal && (
         <div className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-lg mb-4">Set Monthly Goal</h3>
             <div className="form-control mb-4">
-              <label className="label">
-                <span className="label-text">Goal (hours)</span>
-              </label>
+              <label className="label"><span className="label-text">Goal (hours)</span></label>
               <input
-                type="number"
-                placeholder="e.g. 20"
-                className="input input-bordered"
-                value={goalInput}
-                onChange={(e) => setGoalInput(e.target.value)}
-                min="1"
-                step="1"
+                type="number" placeholder="e.g. 20" className="input input-bordered"
+                value={goalInput} onChange={(e) => setGoalInput(e.target.value)} min="1" step="1"
               />
             </div>
             <div className="modal-action">
-              <button
-                onClick={() => setShowGoalModal(false)}
-                className="btn btn-ghost"
-              >
-                Cancel
-              </button>
-              <button onClick={handleSetGoal} className="btn btn-primary">
-                Save Goal
-              </button>
+              <button onClick={() => setShowGoalModal(false)} className="btn btn-ghost">Cancel</button>
+              <button onClick={handleSetGoal} className="btn btn-primary">Save Goal</button>
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => setShowGoalModal(false)} />

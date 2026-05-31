@@ -54,6 +54,10 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'early_bird', name: 'Early Bird', description: 'Complete Daily Text before 7am', icon: '🌅', points: 25, category: 'special' },
   { id: 'weekend_warrior', name: 'Weekend Warrior', description: 'Complete all activities on a weekend', icon: '🎉', points: 30, category: 'special' },
   { id: 'perfect_day', name: 'Perfect Day', description: 'Complete Daily Text, all prayers, and Bible reading in one day', icon: '💯', points: 50, category: 'special' },
+  // ── Service achievements ──────────────────────────────────
+  { id: 'first_service', name: 'First Service', description: 'Log your first field service entry', icon: '🚪', points: 15, category: 'service' },
+  { id: 'service_10h', name: 'Dedicated Server', description: 'Log 10 hours of field service', icon: '⏱️', points: 50, category: 'service' },
+  { id: 'service_50h', name: 'Field Veteran', description: 'Log 50 hours of field service', icon: '🛡️', points: 150, category: 'service' },
 ];
 
 interface UserAchievement {
@@ -79,6 +83,8 @@ interface GamificationState {
   projectsCompleted: number;
   meetingsPrepared: number;
   prayersCompleted: number;
+  serviceEntries: number;
+  serviceHours: number;
   recentAchievements: Achievement[];
   unlockedAchievements: UserAchievement[];
 }
@@ -125,6 +131,7 @@ interface GamificationActions {
   recordPrayerCompleted: () => void;
   recordPrayerCompletion: (allDone: boolean) => void;
   recordFamilyWorshipCompletion: () => void;
+  recordServiceActivity: (hours: number, contacts: number, placements: number) => void;
   checkAndUnlockAchievements: () => void;
   clearRecentAchievements: () => void;
 }
@@ -149,6 +156,8 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
       projectsCompleted: 0,
       meetingsPrepared: 0,
       prayersCompleted: 0,
+      serviceEntries: 0,
+      serviceHours: 0,
       recentAchievements: [],
       unlockedAchievements: [],
 
@@ -330,6 +339,19 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
         get().addPoints(25);
       },
 
+      recordServiceActivity: (hours, contacts, placements) => {
+        set((state) => ({
+          serviceEntries: state.serviceEntries + 1,
+          serviceHours: state.serviceHours + hours,
+        }));
+        const today = format(new Date(), 'yyyy-MM-dd');
+        get().updateStreak(today);
+        // Points: 10 per hour + 5 per contact/placement + 10 base
+        const points = Math.round(hours * 10) + (contacts || 0) * 5 + (placements || 0) * 5 + 10;
+        get().addPoints(points);
+        get().checkAndUnlockAchievements();
+      },
+
       checkAndUnlockAchievements: () => {
         const state = get();
         const newAchievements: UserAchievement[] = [];
@@ -373,6 +395,9 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
           level_10: state.points >= 900,
           level_25: state.points >= 2400,
           level_50: state.points >= 4900,
+          first_service: state.serviceEntries >= 1,
+          service_10h: state.serviceHours >= 10,
+          service_50h: state.serviceHours >= 50,
         };
 
         const alreadyUnlocked = new Set(state.unlockedAchievements.map(a => a.id));
@@ -428,6 +453,8 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
         projectsCompleted: state.projectsCompleted,
         meetingsPrepared: state.meetingsPrepared,
         prayersCompleted: state.prayersCompleted,
+        serviceEntries: state.serviceEntries,
+        serviceHours: state.serviceHours,
         unlockedAchievements: state.unlockedAchievements,
       }),
     }
