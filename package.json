@@ -4,6 +4,9 @@
   "version": "4.0.0",
   "type": "module",
   "description": "Build daily spiritual habits: daily text, Bible reading, meeting prep, and more",
+  "overrides": {
+    "ws": ">=8.20.1"
+  },
   "scripts": {
     "dev": "vite",
     "start": "npm run dev:full",
