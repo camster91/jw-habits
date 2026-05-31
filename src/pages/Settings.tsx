@@ -66,10 +66,14 @@ function Settings() {
   const handleToggleNotification = (key: string) => {
     toggleNotification(key as keyof Notifications);
     haptics.light();
+    // Re-schedule after toggle
+    setTimeout(() => initializeReminders(useSettingsStore.getState()), 50);
   };
 
   const handleSetNotificationTime = (key: string, time: string) => {
     setNotificationTime(key as keyof Notifications, time);
+    // Re-schedule after time change
+    setTimeout(() => initializeReminders(useSettingsStore.getState()), 50);
   };
 
   const handleClearData = () => {
@@ -256,8 +260,56 @@ function Settings() {
                 </div>
                 {notificationsEnabled && (
                   <div className="space-y-2">
-                    <NotificationItem icon={BookOpen} label={t("settings.dailyText")} enabled={notifications?.dailyText?.enabled ?? true} onToggle={() => handleToggleNotification('dailyText')} onTimeChange={(time) => handleSetNotificationTime('dailyText', time)} time={notifications?.dailyText?.time ?? '07:00'} />
-                    <NotificationItem icon={Heart} label={t("settings.bibleReading")} enabled={notifications?.bibleReading?.enabled ?? true} onToggle={() => handleToggleNotification('bibleReading')} onTimeChange={(time) => handleSetNotificationTime('bibleReading', time)} time={notifications?.bibleReading?.time ?? '20:00'} />
+                    {/* Daily notifications */}
+                    <NotificationItem icon={BookOpen} label={notifications?.dailyText?.label ?? t("settings.dailyText")} description="Read today's scripture text" enabled={notifications?.dailyText?.enabled ?? true} onToggle={() => handleToggleNotification('dailyText')} onTimeChange={(time) => handleSetNotificationTime('dailyText', time)} time={notifications?.dailyText?.time ?? '07:00'} color="text-primary" />
+                    <NotificationItem icon={Heart} label={notifications?.bibleReading?.label ?? t("settings.bibleReading")} description="Daily Bible reading reminder" enabled={notifications?.bibleReading?.enabled ?? true} onToggle={() => handleToggleNotification('bibleReading')} onTimeChange={(time) => handleSetNotificationTime('bibleReading', time)} time={notifications?.bibleReading?.time ?? '20:00'} color="text-accent" />
+                    <NotificationItem icon={Flame} label={notifications?.streakMotivation?.label ?? "Keep Your Streak"} description="Stay consistent with your habits" enabled={notifications?.streakMotivation?.enabled ?? true} onToggle={() => handleToggleNotification('streakMotivation')} onTimeChange={(time) => handleSetNotificationTime('streakMotivation', time)} time={notifications?.streakMotivation?.time ?? '10:00'} color="text-warning" />
+
+                    {/* Prayer notifications */}
+                    <div className="pt-2">
+                      <p className="text-xs font-semibold text-base-content/40 uppercase tracking-wider px-1 mb-1">Prayer Reminders</p>
+                      <NotificationItem icon={Heart} label={notifications?.morningPrayer?.label ?? t("settings.morningPrayer")} enabled={notifications?.morningPrayer?.enabled ?? true} onToggle={() => handleToggleNotification('morningPrayer')} onTimeChange={(time) => handleSetNotificationTime('morningPrayer', time)} time={notifications?.morningPrayer?.time ?? '06:30'} color="text-info" />
+                      <NotificationItem icon={Heart} label={notifications?.afternoonPrayer?.label ?? t("settings.afternoonPrayer")} enabled={notifications?.afternoonPrayer?.enabled ?? true} onToggle={() => handleToggleNotification('afternoonPrayer')} onTimeChange={(time) => handleSetNotificationTime('afternoonPrayer', time)} time={notifications?.afternoonPrayer?.time ?? '12:00'} color="text-info" />
+                      <NotificationItem icon={Heart} label={notifications?.eveningPrayer?.label ?? t("settings.eveningPrayer")} enabled={notifications?.eveningPrayer?.enabled ?? true} onToggle={() => handleToggleNotification('eveningPrayer')} onTimeChange={(time) => handleSetNotificationTime('eveningPrayer', time)} time={notifications?.eveningPrayer?.time ?? '21:00'} color="text-info" />
+                    </div>
+
+                    {/* Weekly notifications */}
+                    <div className="pt-2">
+                      <p className="text-xs font-semibold text-base-content/40 uppercase tracking-wider px-1 mb-1">Weekly Reminders</p>
+                      <WeeklyNotificationItem
+                        icon={Calendar}
+                        label={notifications?.meetingPrep?.label ?? "Meeting Preparation"}
+                        description="Remind the day before midweek and weekend meetings"
+                        enabled={notifications?.meetingPrep?.enabled ?? true}
+                        onToggle={() => handleToggleNotification('meetingPrep')}
+                        onTimeChange={(time) => handleSetNotificationTime('meetingPrep', time)}
+                        time={notifications?.meetingPrep?.time ?? '19:00'}
+                        meetingDays={notifications?.meetingPrep?.meetingDays ?? [4, 0]}
+                        onMeetingDaysChange={(days) => {
+                          const store = useSettingsStore.getState();
+                          store.updateNotification('meetingPrep', { meetingDays: days });
+                          initializeReminders(useSettingsStore.getState());
+                        }}
+                        color="text-secondary"
+                        isMeetingPrep
+                      />
+                      <WeeklyNotificationItem
+                        icon={Users}
+                        label={notifications?.familyWorship?.label ?? "Family Worship"}
+                        description="Weekly family worship reminder"
+                        enabled={notifications?.familyWorship?.enabled ?? true}
+                        onToggle={() => handleToggleNotification('familyWorship')}
+                        onTimeChange={(time) => handleSetNotificationTime('familyWorship', time)}
+                        time={notifications?.familyWorship?.time ?? '19:00'}
+                        dayOfWeek={notifications?.familyWorship?.dayOfWeek ?? 1}
+                        onDayChange={(day) => {
+                          const store = useSettingsStore.getState();
+                          store.updateNotification('familyWorship', { dayOfWeek: day });
+                          initializeReminders(useSettingsStore.getState());
+                        }}
+                        color="text-error"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
