@@ -139,7 +139,9 @@
     "deeperStudy": "Deeper Study",
     "researchTools": "Research & learning tools",
     "studyIdeas": "Study Project Ideas",
-    "quickAccess": "Quick Access"
+    "quickAccess": "Quick Access",
+    "meetingsTab": "Meetings",
+    "readingTab": "Reading"
   },
   "goals": {
     "title": "Goals",
