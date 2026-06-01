@@ -1,4 +1,5 @@
-import { Sun, Moon, CloudSun, Menu, Sparkles } from 'lucide-react';
+import { Sun, Moon, CloudSun, Menu, Sparkles, Search } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import PrayerTrackingCard from '../components/PrayerTrackingCard';
@@ -6,6 +7,7 @@ import FamilyWorshipCard from '../components/FamilyWorshipCard';
 import BibleReadingCard from '../components/BibleReadingCard';
 import UnifiedDashboardCard from '../components/UnifiedDashboardCard';
 import StreakRing from '../components/StreakRing';
+import HabitHeatmap from '../components/HabitHeatmap';
 import { useDrawer } from '../hooks/useDrawer';
 import useGamificationStore from '../stores/gamificationStore';
 import PageHeader from '../components/PageHeader';
@@ -52,9 +54,14 @@ function Home() {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="text-xs font-medium text-white/50 tracking-wide uppercase">
-              {t('appName')}
-            </span>
+            <div className="flex items-center gap-2">
+              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/60">
+                ⌘K
+              </kbd>
+              <span className="text-xs font-medium text-white/50 tracking-wide uppercase">
+                {t('appName')}
+              </span>
+            </div>
           </div>
         }
       />
@@ -138,6 +145,21 @@ function Home() {
             </h2>
           </div>
           <FamilyWorshipCard />
+        </section>
+
+        {/* ── Heatmap — yearly habit visualization ── */}
+        <section className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+          <div className="card bg-base-100 shadow-md border border-base-300/50">
+            <div className="card-body p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-1 h-4 rounded-full bg-info" />
+                <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
+                  Last 6 months
+                </h2>
+              </div>
+              <HabitHeatmap weeks={26} />
+            </div>
+          </div>
         </section>
 
         {/* Bottom spacer for nav */}

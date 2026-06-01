@@ -9,6 +9,7 @@ import UpdatePrompt from './components/UpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import AchievementPopup from './components/AchievementPopup';
 import SideDrawer from './components/SideDrawer';
+import CommandPalette from './components/CommandPalette';
 import useNotificationReminders from './hooks/useNotificationReminders';
 
 // Lazy load non-critical pages for better initial load performance
@@ -61,6 +62,9 @@ function App() {
 
               {/* Achievement Popup */}
               <AchievementPopup />
+
+              {/* Command Palette (Cmd+K) */}
+              <CommandPalette />
             </div>
           </SideDrawer>
         </Router>

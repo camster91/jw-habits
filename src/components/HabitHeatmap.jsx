@@ -1,0 +1,142 @@
+import { useMemo } from 'react';
+import { format } from 'date-fns';
+import useProgressStore from '../stores/progressStore';
+
+/**
+ * HabitHeatmap — GitHub-style yearly heatmap of habit completion.
+ * Each cell is a day. Intensity = number of habits completed that day.
+ */
+export default function HabitHeatmap({ weeks = 26, className = '' }) {
+  const dailyTexts = useProgressStore((s) => s.dailyTexts);
+  const prayers = useProgressStore((s) => s.prayers);
+  const familyWorship = useProgressStore((s) => s.familyWorship);
+  const bibleReadings = useProgressStore((s) => s.bibleReadings);
+  const getBibleReadingProgress = useProgressStore((s) => s.getBibleReadingProgress);
+
+  const data = useMemo(() => {
+    const result = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Walk back N weeks
+    const start = new Date(today);
+    start.setDate(start.getDate() - start.getDay() - (weeks - 1) * 7);
+
+    const cursor = new Date(start);
+    while (cursor <= today) {
+      const key = format(cursor, 'yyyy-MM-dd');
+      const dayOfYear = String(Math.ceil((cursor - new Date(cursor.getFullYear(), 0, 0)) / 86400000));
+      let count = 0;
+
+      // Daily text
+      if (dailyTexts[key]?.readScripture || dailyTexts[key]?.read) count += 1;
+      // Prayers (any done)
+      const p = prayers[key];
+      if (p?.morning || p?.afternoon || p?.evening) count += 1;
+      // All 3 prayers
+      if (p?.morning && p?.afternoon && p?.evening) count += 1;
+      // Bible reading
+      if (bibleReadings[dayOfYear]?.read || bibleReadings[dayOfYear]?.progress === 100) count += 1;
+      // Family worship (check by week)
+      const weekKey = format(cursor, "yyyy-'W'II");
+      // Skip — week-based, harder to attribute to single day
+
+      result[key] = count;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return result;
+  }, [dailyTexts, prayers, bibleReadings, weeks, getBibleReadingProgress]);
+
+  // Group into weeks (columns)
+  const grid = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - start.getDay() - (weeks - 1) * 7);
+    const cols = [];
+    for (let w = 0; w < weeks; w++) {
+      const col = [];
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(start);
+        day.setDate(day.getDate() + w * 7 + d);
+        const key = format(day, 'yyyy-MM-dd');
+        col.push({ date: key, count: data[key] || 0 });
+      }
+      cols.push(col);
+    }
+    return cols;
+  }, [data, weeks]);
+
+  const intensity = (count) => {
+    if (count === 0) return 'bg-base-300';
+    if (count === 1) return 'bg-primary/30';
+    if (count === 2) return 'bg-primary/55';
+    if (count === 3) return 'bg-primary/80';
+    return 'bg-primary';
+  };
+
+  // Month labels
+  const monthLabels = useMemo(() => {
+    const labels = [];
+    let lastMonth = -1;
+    grid.forEach((col, i) => {
+      const d = new Date(col[0].date);
+      if (d.getMonth() !== lastMonth) {
+        lastMonth = d.getMonth();
+        labels.push({ week: i, label: d.toLocaleDateString('en-US', { month: 'short' }) });
+      }
+    });
+    return labels;
+  }, [grid]);
+
+  return (
+    <div className={`overflow-x-auto ${className}`}>
+      <div className="inline-block min-w-full">
+        {/* Month labels */}
+        <div className="flex gap-1 ml-6 mb-1">
+          {monthLabels.map(({ week, label }) => (
+            <div key={`${week}-${label}`} className="text-[10px] text-base-content/50 font-medium">
+              {label}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-1">
+          {/* Day labels */}
+          <div className="flex flex-col gap-1 text-[10px] text-base-content/50 justify-around mr-1 w-5">
+            <span>S</span>
+            <span>M</span>
+            <span>T</span>
+            <span>W</span>
+            <span>T</span>
+            <span>F</span>
+            <span>S</span>
+          </div>
+
+          <div className="flex gap-1">
+            {grid.map((col, i) => (
+              <div key={i} className="flex flex-col gap-1">
+                {col.map((cell) => (
+                  <div
+                    key={cell.date}
+                    title={`${cell.date} — ${cell.count} habit${cell.count === 1 ? '' : 's'}`}
+                    className={`w-3 h-3 rounded-sm transition-transform hover:scale-150 ${intensity(cell.count)}`}
+                    aria-label={`${cell.date} ${cell.count}`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-1.5 mt-2 text-[10px] text-base-content/50">
+          <span>Less</span>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className={`w-3 h-3 rounded-sm ${intensity(i)}`} />
+          ))}
+          <span>More</span>
+        </div>
+      </div>
+    </div>
+  );
+}
