@@ -1,54 +1,57 @@
-# App Store Listing Content - JW News
+# App Store Listing Content — JW Habits 4.1.0
 
 ## App Name
-JW News
+JW Habits
 
 ## Subtitle (30 chars max)
-Daily spiritual news & habits
+Spiritual habit tracker
 
 ## iOS Keywords (100 chars max, comma-separated)
-jw,jehovah,witness,news,bible,daily,text,reading,spiritual,habits,progress,tracker
+jw,jehovah,witness,bible,daily,text,reading,spiritual,habits,progress,tracker,prayer,meeting,service,family,study,streak,goals
 
 ## Promotional Text (170 chars max)
-Stay updated with the latest JW.org news and build consistent spiritual habits. Track your daily Bible reading and spiritual routine in one beautiful app.
+Track your daily spiritual routine — daily text, prayer, Bible reading, meetings, service, family worship. New: command palette & 6-month habit heatmap.
 
 ## Description (4000 chars max)
-JW News helps Jehovah's Witnesses stay connected with the latest news from JW.org while building consistent spiritual habits.
+JW Habits helps Jehovah's Witnesses build consistent daily spiritual routines — all your daily disciplines in one beautifully designed app.
 
-**Features:**
+**What's new in 4.1:**
+- ⚡ Command palette (Cmd+K) — jump anywhere, run any action, navigate all 6 apps
+- 📊 6-month habit heatmap — visualize your consistency at a glance
+- 📈 7-day service hours bar chart on the Service tab
+- 🌐 Live JW.org newsfeed widget on the dashboard
+- 🔗 Cross-app integration with jw-video, jw-music, jw-study
+- 🐛 Bug fixes, perf, accessibility
 
-📰 JW.org News Feed
-- Browse the latest articles, magazines, and videos from JW.org
-- Filter by category: Articles, Magazines, Videos
-- Read offline with automatic caching
-- Share articles with friends and family
+**Daily spiritual disciplines:**
+- 📖 Daily Text — quick log + reflection prompt
+- 🙏 Prayers (morning, afternoon, evening) with streak tracking
+- 📚 Bible reading — 366-day schedule, chapter-by-chapter
+- 🏛️ Meeting prep — midweek + weekend with timer
+- 🚪 Field service — placements, return visits, Bible studies, time tracking
+- 👨‍👩‍👧 Family worship — topic, notes, study links
 
-📖 Daily Bible Reading
-- Track your Bible reading progress
-- Set daily reading goals
-- Visual progress indicators
-- Reading streak counter
+**Gamification:**
+- 38 unlockable achievements
+- XP, levels, streaks across every category
+- Confetti and achievement popups
 
-✨ Spiritual Habits
-- Daily Text reminders
-- Meeting preparation checklist
-- Field service tracking
-- Personal study timer
+**Stats & insights:**
+- Current and longest streaks
+- 7-day and 30-day completion rates
+- 6-month GitHub-style habit heatmap
+- Service hours trends
 
-📊 Progress Statistics
-- View your spiritual routine over time
-- Achievement badges for consistency
-- Weekly and monthly progress reports
-- Export your data
+**Privacy & data:**
+- 100% offline — all data stored locally on your device
+- No account required
+- No tracking, no analytics, no third parties
+- Export your data anytime
 
-🔔 Smart Notifications
-- Daily Text reminders
-- Bible reading notifications
-- Meeting reminders
-- Custom reminder schedules
-
-**Privacy:**
-JW News respects your privacy. All data is stored locally on your device. No account required. No data shared with third parties.
+**Cross-app integration (optional):**
+- One tap to watch latest JW Broadcasting (jw-video.ashbi.ca)
+- Play Kingdom Songs (jw-music.ashbi.ca)
+- Search scriptures with semantic AI (study.ashbi.ca)
 
 **Note:**
 This is an unofficial app created by a fellow Witness. It is not affiliated with or endorsed by JW.org or the Watch Tower Bible and Tract Society.
@@ -59,7 +62,7 @@ For questions or feedback, contact: support@ashbi.ca
 ---
 
 ## Android Short Description (80 chars max)
-JW.org news and spiritual habit tracker for Jehovah's Witnesses.
+Spiritual habit tracker for Jehovah's Witnesses — daily text, prayer, reading, meeting.
 
 ## Android Full Description (4000 chars max)
 [Same as iOS description above]
@@ -69,25 +72,21 @@ JW.org news and spiritual habit tracker for Jehovah's Witnesses.
 ## Screenshots Needed
 
 ### iOS
-1. Home screen showing daily tasks
-2. News feed with articles
-3. Bible reading progress
-4. Statistics/achievements
-5. Settings/notifications
-6. Dark mode view
+1. Home dashboard with greeting, streak ring, daily tasks
+2. Heatmap visualization (6 months)
+3. Service tab with 7-day bar chart
+4. Study tab with meeting prep
+5. Stats page with achievements
+6. Command palette open (Cmd+K)
+7. Dark mode
 
-### Android
-1. Home screen
-2. News feed
-3. Bible reading
-4. Statistics
-5. Settings
+### Android (same as iOS)
 
 ---
 
 ## App Store Category
 Primary: Lifestyle
-Secondary: News
+Secondary: Productivity
 
 ## Content Rating
 Age: 4+
@@ -95,5 +94,5 @@ Mild References: Infrequent/Mild Religious Themes
 
 ## Contact Information
 Support Email: support@ashbi.ca
-Marketing URL: https://ashbi.ca/jw-news
-Privacy Policy: https://ashbi.ca/jw-news/privacy
+Marketing URL: https://ashbi.ca
+Privacy Policy: https://ashbi.ca/privacy

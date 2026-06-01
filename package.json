@@ -1,7 +1,7 @@
 {
   "name": "jw-habits",
   "private": true,
-  "version": "4.0.0",
+  "version": "4.1.0",
   "type": "module",
   "description": "Build daily spiritual habits: daily text, Bible reading, meeting prep, and more",
   "overrides": {
