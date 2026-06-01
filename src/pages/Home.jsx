@@ -2,12 +2,14 @@ import { Sun, Moon, CloudSun, Menu, Sparkles, Search } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
+import SmartSuggestions from '../components/SmartSuggestions';
 import PrayerTrackingCard from '../components/PrayerTrackingCard';
 import FamilyWorshipCard from '../components/FamilyWorshipCard';
 import BibleReadingCard from '../components/BibleReadingCard';
 import UnifiedDashboardCard from '../components/UnifiedDashboardCard';
 import StreakRing from '../components/StreakRing';
 import HabitHeatmap from '../components/HabitHeatmap';
+import '../components/SmartSuggestions.css';
 import { useDrawer } from '../hooks/useDrawer';
 import useGamificationStore from '../stores/gamificationStore';
 import PageHeader from '../components/PageHeader';
@@ -102,6 +104,11 @@ function Home() {
 
       {/* ── Main Content ── */}
       <main className="container mx-auto px-4 pt-5 space-y-6 max-w-2xl">
+        {/* ── Smart Suggestions ── */}
+        <section className="animate-fade-in-up" style={{ animationDelay: '30ms' }}>
+          <SmartSuggestions />
+        </section>
+
         {/* ── Unified Dashboard ── */}
         <section className="animate-fade-in-up" style={{ animationDelay: '50ms' }}>
           <UnifiedDashboardCard />
