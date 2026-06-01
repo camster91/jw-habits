@@ -1,0 +1,94 @@
+name: Deploy to Coolify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Build Docker image
+        run: |
+          cat > Dockerfile << 'EOF'
+          FROM nginx:alpine
+          COPY dist /usr/share/nginx/html
+          COPY nginx.conf /etc/nginx/conf.d/default.conf
+          EOF
+          cat > nginx.conf << 'EOF'
+          server {
+              listen 80;
+              root /usr/share/nginx/html;
+              index index.html;
+              location / {
+                  try_files $uri $uri/ /index.html;
+              }
+              location /assets {
+                  expires 1y;
+                  add_header Cache-Control "public, immutable";
+              }
+          }
+          EOF
+
+      - name: Save build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # Skip if Coolify secrets not configured (private repo workflow)
+    if: ${{ vars.COOLIFY_DEPLOY == 'true' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+
+      - name: Deploy to Coolify via SSH
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.COOLIFY_HOST }}
+          username: ${{ secrets.COOLIFY_USER }}
+          key: ${{ secrets.COOLIFY_SSH_KEY }}
+          source: "dist/,Dockerfile,nginx.conf"
+          target: "/tmp/jw-habits-deploy/"
+          strip_components: 0
+        continue-on-error: true
+
+      - name: Build image on Coolify server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.COOLIFY_HOST }}
+          username: ${{ secrets.COOLIFY_USER }}
+          key: ${{ secrets.COOLIFY_SSH_KEY }}
+          script: |
+            cd /tmp/jw-habits-deploy
+            docker build -t jw-habits:latest . 2>&1 | tail -5
+            docker stop jw-habits 2>/dev/null || true
+            docker rm jw-habits 2>/dev/null || true
+            docker run -d --name jw-habits --network coolify --restart unless-stopped \
+              -l "traefik.enable=true" \
+              -l "traefik.http.routers.jw-habits.rule=Host(\`jw-habits.ashbi.ca\`)" \
+              -l "traefik.http.routers.jw-habits.entrypoints=https" \
+              -l "traefik.http.routers.jw-habits.tls=true" \
+              -l "traefik.http.services.jw-habits.loadbalancer.server.port=80" \
+              jw-habits:latest
+            echo "Deployed at $(date)"
