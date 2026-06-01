@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, CheckCircle2, Flame, PenLine, Save, BookHeart, Globe, ExternalLink } from 'lucide-react';
+import { BookOpen, CheckCircle2, Flame, PenLine, Save, BookHeart, Globe, ExternalLink, Newspaper } from 'lucide-react';
 import useProgressStore from '../stores/progressStore.js';
 import useNewsStore from '../stores/newsStore.js';
 import useMemoriesStore from '../stores/memoriesStore.js';
 import useGamificationStore from '../stores/gamificationStore.js';
 import { getDailyTextLink } from '../utils/jwLibraryLinks.js';
 import { haptics } from '../utils/native.js';
+import NewsfeedItems from './NewsfeedItems';
 
 function DailyTasksSection() {
   const { t } = useTranslation();
@@ -133,6 +134,7 @@ function DailyTasksSection() {
             <ExternalLink className="w-4 h-4" />
             {hasCheckedToday ? t('today.whatsNew') : t('today.checkInNow')}
           </button>
+          <NewsfeedItems />
         </div>
       </div>
 
