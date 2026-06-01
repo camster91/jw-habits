@@ -1,8 +1,8 @@
-# JW-News (Daily Spiritual Habits Tracker)
+# JW Daily Habits Tracker
 
 **A spiritual habits tracking app for building consistent daily routines.**
 
-JW-News is a mobile-first progressive web application designed to help users build and maintain daily spiritual habits. Built with React 19 and Capacitor, it offers a native app experience across iOS, Android, and web platforms.
+JW Daily Habits Tracker is a mobile-first progressive web application designed to help users build and maintain daily spiritual habits. Built with React 19 and Capacitor, it offers a native app experience across iOS, Android, and web platforms.
 
 ## Tech Stack
 
@@ -68,8 +68,8 @@ JW-News is a mobile-first progressive web application designed to help users bui
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/camster91/JW-News.git
-   cd JW-News
+   git clone https://github.com/camster91/jw-daily-habits-tracker.git
+   cd jw-daily-habits-tracker
    ```
 
 2. **Install dependencies**
@@ -136,7 +136,7 @@ npm run android:bundle          # Play Store bundle
 ## Project Structure
 
 ```
-JW-News/
+jw-daily-habits-tracker/
 ├── src/
 │   ├── components/        # Reusable UI components
 │   ├── pages/             # Route components
@@ -183,7 +183,7 @@ JW-News/
 ```json
 {
   "appId": "com.jwnews.habits",
-  "appName": "JW-News",
+  "appName": "JW Daily Habits",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
