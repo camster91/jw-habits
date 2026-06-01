@@ -53,6 +53,7 @@ function Service() {
     getTodaysReturnVisits,
     getTodaysBibleStudies,
     monthlyGoalHours,
+    entries,
   } = useServiceStore();
 
   const addServiceActivity = useGamificationStore((s) => s.addServiceActivity);

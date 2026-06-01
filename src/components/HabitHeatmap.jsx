@@ -7,10 +7,10 @@ import useProgressStore from '../stores/progressStore';
  * Each cell is a day. Intensity = number of habits completed that day.
  */
 export default function HabitHeatmap({ weeks = 26, className = '' }) {
-  const dailyTexts = useProgressStore((s) => s.dailyTexts);
-  const prayers = useProgressStore((s) => s.prayers);
-  const familyWorship = useProgressStore((s) => s.familyWorship);
-  const bibleReadings = useProgressStore((s) => s.bibleReadings);
+  const dailyTexts = useProgressStore((s) => s.dailyTexts) || {};
+  const prayers = useProgressStore((s) => s.prayers) || {};
+  const familyWorship = useProgressStore((s) => s.familyWorship) || {};
+  const bibleReadings = useProgressStore((s) => s.bibleReadings) || {};
   const getBibleReadingProgress = useProgressStore((s) => s.getBibleReadingProgress);
 
   const data = useMemo(() => {

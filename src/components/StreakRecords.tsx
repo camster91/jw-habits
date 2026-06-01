@@ -29,8 +29,9 @@ export default function StreakRecords() {
   const getFamilyWorshipStreak = useProgressStore((s) => s.getFamilyWorshipStreak);
 
   // Read historical bests from gamification store
-  const longestStreak = useGamificationStore((s) => s.longestStreak);
-  const achievements = useGamificationStore((s) => s.achievements);
+  const longestStreak = useGamificationStore((s) => s.longestStreak) || 0;
+  const achievements = useGamificationStore((s) => s.achievements) || [];
+  const unlockedAchievements = useGamificationStore((s) => s.unlockedAchievements) || [];
 
   const records: StreakRecord[] = useMemo(() => {
     const today = new Date();
