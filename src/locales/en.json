@@ -66,6 +66,7 @@
   },
   "familyWorship": {
     "title": "THIS WEEK",
+    "shortTitle": "Fam. Worship",
     "heading": "Family Worship",
     "weekOf": "Week of {{start}} - {{end}}",
     "markComplete": "Mark as complete",
@@ -81,6 +82,9 @@
     "notes": "Notes",
     "notesPlaceholder": "Planning notes, discussion points, activities..."
   },
+  "prayer": {
+    "title": "Prayer"
+  },
   "stats": {
     "title": "Your Progress",
     "subtitle": "Track your spiritual journey",
@@ -89,6 +93,9 @@
     "xpToNext": "XP to next",
     "streak": "Streak",
     "bible": "Bible",
+    "meetings": "Meetings",
+    "prayer": "Prayer",
+    "familyWorship": "Fam. Worship",
     "goals": "Goals",
     "notes": "Notes",
     "achievements": "Achievements",
