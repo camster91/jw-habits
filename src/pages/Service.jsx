@@ -66,6 +66,27 @@ function Service() {
   const weeklyBibleStudies = getWeeklyBibleStudies();
   const monthProgress = monthlyGoalHours > 0 ? Math.min((monthlyTotal / monthlyGoalHours) * 100, 100) : 0;
 
+  // Last 7 days of service hours (for the bar chart)
+  const last7Days = useMemo(() => {
+    const days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const hours = entries
+        .filter((e) => e.date === dateStr)
+        .reduce((sum, e) => sum + (e.durationMinutes || 0), 0) / 60;
+      days.push({
+        date: dateStr,
+        label: d.toLocaleDateString('en-US', { weekday: 'short' })[0],
+        hours,
+      });
+    }
+    return days;
+  }, [entries]);
+  const last7DaysTotal = last7Days.reduce((s, d) => s + d.hours, 0);
+
   // ── Auto-calculate hours from start/end/breaks ───────────
   const computedHours = useMemo(() => {
     if (!startTime || !endTime) return null;
@@ -267,6 +288,39 @@ function Service() {
               <span>📚 {getMonthlyPlacements()} placements</span>
               <span>🔄 {getMonthlyReturnVisits()} visits</span>
               <span>📖 {getMonthlyBibleStudies()} studies</span>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 7-Day Service Hours Chart ──────────────────── */}
+        <section className="card bg-base-100 shadow-sm">
+          <div className="card-body p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Last 7 days</h3>
+              <span className="text-xs text-base-content/50">
+                {last7DaysTotal.toFixed(1)}h total
+              </span>
+            </div>
+            <div className="flex items-end justify-between gap-1 h-24">
+              {last7Days.map((day) => {
+                const maxHours = Math.max(...last7Days.map((d) => d.hours), 1);
+                const heightPct = Math.max((day.hours / maxHours) * 100, day.hours > 0 ? 6 : 0);
+                return (
+                  <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="relative w-full flex-1 flex items-end">
+                      <div
+                        className={`w-full rounded-t ${day.hours > 0 ? 'bg-primary' : 'bg-base-300'}`}
+                        style={{ height: `${heightPct}%` }}
+                        title={`${day.date}: ${day.hours.toFixed(1)}h`}
+                      />
+                    </div>
+                    <span className="text-[10px] text-base-content/50 font-medium">{day.label}</span>
+                    <span className="text-[10px] text-base-content/70 font-bold -mt-0.5">
+                      {day.hours > 0 ? day.hours.toFixed(1) : '·'}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
