@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import SmartSuggestions from '../components/SmartSuggestions';
+import StreakRecords from '../components/StreakRecords';
 import PrayerTrackingCard from '../components/PrayerTrackingCard';
 import FamilyWorshipCard from '../components/FamilyWorshipCard';
 import BibleReadingCard from '../components/BibleReadingCard';
@@ -107,6 +108,11 @@ function Home() {
         {/* ── Smart Suggestions ── */}
         <section className="animate-fade-in-up" style={{ animationDelay: '30ms' }}>
           <SmartSuggestions />
+        </section>
+
+        {/* ── Streak Records ── */}
+        <section className="animate-fade-in-up" style={{ animationDelay: '40ms' }}>
+          <StreakRecords />
         </section>
 
         {/* ── Unified Dashboard ── */}
