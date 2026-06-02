@@ -10,8 +10,8 @@ import OfflineIndicator from './components/OfflineIndicator';
 import AchievementPopup from './components/AchievementPopup';
 import SideDrawer from './components/SideDrawer';
 import CommandPalette from './components/CommandPalette';
-import QuickAddFAB from '../components/QuickAddFAB';
-import '../components/QuickAddFAB.css';
+import QuickAddFAB from './components/QuickAddFAB';
+import './components/QuickAddFAB.css';
 import useNotificationReminders from './hooks/useNotificationReminders';
 
 // Lazy load non-critical pages for better initial load performance
