@@ -35,10 +35,21 @@ function PageLoader() {
 function App() {
   useNotificationReminders();
 
+  // Use Vite's base URL as React Router basename — works for both
+  // Coolify (/) and GH Pages (/jw-habits/) without code changes
+  const routerBasename = (() => {
+    try {
+      const base = import.meta.env.BASE_URL;
+      return base === '/' ? '/' : base.replace(/\/$/, '');
+    } catch {
+      return '/';
+    }
+  })();
+
   return (
     <ErrorBoundary>
       <ToastProvider>
-        <Router>
+        <Router basename={routerBasename}>
           <SideDrawer>
             <div className="app">
               {/* PWA Components */}
