@@ -30,7 +30,8 @@ export default function StreakRecords() {
 
   // Read historical bests from gamification store
   const longestStreak = useGamificationStore((s) => s.longestStreak) || 0;
-  const achievements = useGamificationStore((s) => s.achievements) || [];
+  const longestPrayerStreak = useGamificationStore((s) => s.longestPrayerStreak) || 0;
+  const longestFamilyWorshipStreak = useGamificationStore((s) => s.longestFamilyWorshipStreak) || 0;
   const unlockedAchievements = useGamificationStore((s) => s.unlockedAchievements) || [];
 
   const records: StreakRecord[] = useMemo(() => {
@@ -68,22 +69,16 @@ export default function StreakRecords() {
       else break;
     }
 
-    // Historical bests — scan all stored data
-    // For now, we store bests from just what the gamification store tracks
-    // Plus some simple heuristics
-
+    // Historical bests — from store tracking
     const dtAllTimeBest = Math.max(dtStreak, longestStreak);
-
-    // Find "best daily text streak" from achievements
-    const dtAchievement = achievements.find((a) => a.id?.includes('daily-text-streak'));
-    const prAchievement = achievements.find((a) => a.id?.includes('prayer-streak'));
-    const brAchievement = achievements.find((a) => a.id?.includes('bible-streak'));
+    const prAllTimeBest = Math.max(prStreak, longestPrayerStreak);
+    const fwAllTimeBest = Math.max(getFamilyWorshipStreak(), longestFamilyWorshipStreak);
 
     return [
       {
         label: 'Daily Text',
         current: dtStreak,
-        best: Math.max(dtStreak, dtAllTimeBest),
+        best: dtAllTimeBest,
         unit: 'day',
         emoji: '📖',
         isCurrentBest: dtStreak >= dtAllTimeBest,
@@ -91,10 +86,10 @@ export default function StreakRecords() {
       {
         label: 'Prayer',
         current: prStreak,
-        best: Math.max(prStreak, 7), // default floor at 7 days
+        best: prAllTimeBest,
         unit: 'day',
         emoji: '🙏',
-        isCurrentBest: prStreak >= 7,
+        isCurrentBest: prStreak >= prAllTimeBest,
       },
       {
         label: 'Bible Reading',
@@ -107,13 +102,13 @@ export default function StreakRecords() {
       {
         label: 'Family Worship',
         current: getFamilyWorshipStreak(),
-        best: Math.max(getFamilyWorshipStreak(), 4),
+        best: fwAllTimeBest,
         unit: 'week',
         emoji: '👨‍👩‍👧',
-        isCurrentBest: getFamilyWorshipStreak() >= 4,
+        isCurrentBest: getFamilyWorshipStreak() >= fwAllTimeBest,
       },
     ];
-  }, [dailyTexts, prayers, bibleReadings, familyWorship, longestStreak, achievements, getFamilyWorshipStreak]);
+  }, [dailyTexts, prayers, bibleReadings, familyWorship, longestStreak, longestPrayerStreak, longestFamilyWorshipStreak, getFamilyWorshipStreak]);
 
   const allCurrentBests = records.every((r) => r.isCurrentBest);
 
