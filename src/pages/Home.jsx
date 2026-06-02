@@ -104,7 +104,7 @@ function Home() {
       </div>
 
       {/* ── Main Content ── */}
-      <main className="container mx-auto px-4 pt-5 space-y-6 max-w-2xl">
+      <main className="container mx-auto px-4 pt-4 space-y-4 max-w-2xl">
         {/* ── Smart Suggestions ── */}
         <section className="animate-fade-in-up" style={{ animationDelay: '30ms' }}>
           <SmartSuggestions />

@@ -196,33 +196,33 @@ export default function SmartSuggestions() {
   if (visible.length === 0) return null;
 
   return (
-    <section className="smart-suggestions">
-      <div className="smart-suggestions-header">
+    <section className="bg-base-100 border border-base-300/50 rounded-xl p-4 mb-4">
+      <div className="flex items-center gap-2 mb-2">
         <Sparkles className="w-4 h-4 text-accent" />
-        <h2>For you</h2>
-        <span className="smart-suggestions-badge">on-device</span>
+        <h2 className="text-sm font-semibold">For you</h2>
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/10 text-accent font-medium">on-device</span>
       </div>
-      <div className="smart-suggestions-list">
+      <div className="space-y-2">
         {visible.map((s) => (
-          <article key={s.id} className="smart-suggestion">
-            <span className="smart-suggestion-emoji">{s.emoji}</span>
-            <div className="smart-suggestion-body">
-              <h3>{s.title}</h3>
-              <p>{s.body}</p>
+          <div key={s.id} className="flex gap-3 p-2.5 rounded-lg bg-base-200/50 hover:bg-base-200 transition-colors group">
+            <span className="text-lg flex-shrink-0">{s.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium leading-snug">{s.title}</p>
+              <p className="text-xs text-base-content/60 leading-snug mt-0.5">{s.body}</p>
               {s.action && (
-                <a href={s.action.href} className="smart-suggestion-action">
+                <a href={s.action.href} className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-primary hover:underline">
                   {s.action.label} <ArrowRight className="w-3 h-3" />
                 </a>
               )}
             </div>
             <button
-              className="smart-suggestion-dismiss"
+              className="flex-shrink-0 text-base-content/30 hover:text-base-content/60 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={() => handleDismiss(s.id)}
               aria-label="Dismiss"
             >
               <X className="w-3 h-3" />
             </button>
-          </article>
+          </div>
         ))}
       </div>
     </section>
