@@ -22,6 +22,9 @@ const Stats = lazy(() => import('./pages/Stats'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Links = lazy(() => import('./pages/Links'));
 const SharePage = lazy(() => import('./pages/Share'));
+const IdeasPage = lazy(() => import('./pages/IdeasPage'));
+const StudyReading = lazy(() => import('./pages/StudyReading'));
+const DeeperStudyPage = lazy(() => import('./pages/DeeperStudyPage'));
 
 // Loading fallback component
 function PageLoader() {
@@ -60,12 +63,15 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/study" element={<Study />} />
+                  <Route path="/study/reading" element={<StudyReading />} />
+                  <Route path="/study/deeper-study" element={<DeeperStudyPage />} />
                   <Route path="/goals" element={<Goals />} />
                   <Route path="/service" element={<Service />} />
                   <Route path="/stats" element={<Stats />} />
                   <Route path="/links" element={<Links />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/share" element={<SharePage />} />
+                  <Route path="/ideas" element={<IdeasPage />} />
                 </Routes>
               </Suspense>
               <BottomNav />
