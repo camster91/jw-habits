@@ -6,6 +6,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './components/Toast';
 import InstallPrompt from './components/InstallPrompt';
 import UpdatePrompt from './components/UpdatePrompt';
+import Onboarding from './components/Onboarding';
 import OfflineIndicator from './components/OfflineIndicator';
 import AchievementPopup from './components/AchievementPopup';
 import SideDrawer from './components/SideDrawer';
@@ -67,7 +68,7 @@ function App() {
                   <Route path="/study/deeper-study" element={<DeeperStudyPage />} />
                   <Route path="/goals" element={<Goals />} />
                   <Route path="/service" element={<Service />} />
-                  <Route path="/stats" element={<Stats />} />
+                  <Route path="/statistics" element={<Stats />} />
                   <Route path="/links" element={<Links />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/share" element={<SharePage />} />
@@ -87,6 +88,9 @@ function App() {
 
               {/* Quick-Add FAB (log service from any tab) */}
               <QuickAddFAB />
+
+              {/* Onboarding — shown only on first visit */}
+              <Onboarding />
             </div>
           </SideDrawer>
         </Router>

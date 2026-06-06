@@ -244,6 +244,24 @@
     "importFailed": "Failed to import data",
     "invalidFormat": "Invalid backup file format"
   },
+  "onboarding": {
+    "welcome": "Welcome to JW Habits",
+    "welcomeDesc": "Track your daily spiritual habits, build streaks, and grow spiritually — all in one place.",
+    "getStarted": "Get Started",
+    "next": "Next",
+    "skip": "Skip",
+    "featureBible": "Daily Bible Reading",
+    "featureBibleDesc": "Follow a 366-day reading schedule with progress tracking and JW Library integration.",
+    "featurePrayer": "Prayer Tracking",
+    "featurePrayerDesc": "Log morning, afternoon, and evening prayers with streaks to keep you consistent.",
+    "featureFamily": "Family Worship",
+    "featureFamilyDesc": "Plan and track your weekly family worship sessions with notes and study links.",
+    "featureGoals": "Goals & Projects",
+    "featureGoalsDesc": "Set spiritual goals, break them into tasks, and celebrate progress with achievements.",
+    "allSet": "You're All Set!",
+    "allSetDesc": "Start your day with the daily text, build your streak, and keep growing spiritually.",
+    "startTracking": "Start Tracking"
+  },
   "errors": {
     "statsLoad": "Unable to load statistics",
     "tryAgain": "Please try again later"

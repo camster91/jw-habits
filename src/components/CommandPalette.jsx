@@ -24,7 +24,7 @@ export default function CommandPalette() {
     { id: 'nav-home', label: 'Home', description: 'Dashboard', icon: Home, group: 'Navigate', shortcut: 'G H', perform: () => navigate('/') },
     { id: 'nav-study', label: 'Study', description: 'Meeting prep & deeper study', icon: BookOpen, group: 'Navigate', shortcut: 'G S', perform: () => navigate('/study') },
     { id: 'nav-goals', label: 'Goals', description: 'Set and track spiritual goals', icon: Target, group: 'Navigate', shortcut: 'G G', perform: () => navigate('/goals') },
-    { id: 'nav-stats', label: 'Stats', description: 'Streaks, achievements, progress', icon: BarChart3, group: 'Navigate', shortcut: 'G T', perform: () => navigate('/stats') },
+    { id: 'nav-stats', label: 'Statistics', description: 'Streaks, achievements, progress', icon: BarChart3, group: 'Navigate', shortcut: 'G T', perform: () => navigate('/statistics') },
     { id: 'nav-links', label: 'Quick Links', description: 'JW.org resources', icon: Link2, group: 'Navigate', perform: () => navigate('/links') },
     { id: 'nav-settings', label: 'Settings', description: 'App preferences', icon: Settings, group: 'Navigate', perform: () => navigate('/settings') },
 

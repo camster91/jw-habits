@@ -11,7 +11,7 @@ function SideDrawer({ children }) {
     const location = useLocation();
     const { t } = useTranslation();
     const DRAWER_ITEMS = [
-        { path: '/stats', icon: BarChart3, label: t('nav.statistics'), description: t('nav.statisticsDesc') },
+        { path: '/statistics', icon: BarChart3, label: t('nav.statistics'), description: t('nav.statisticsDesc') },
         { path: '/links', icon: Link2, label: t('nav.quickLinks'), description: t('nav.quickLinksDesc') },
         { path: '/settings', icon: Settings, label: t('nav.settings'), description: t('nav.settingsDesc') },
     ];
