@@ -8,7 +8,6 @@ import PageHeader from '../components/PageHeader';
 
 function Stats() {
   const [showAllAchievements, setShowAllAchievements] = useState(false);
-  const [statsData, setStatsData] = useState(null);
   const { t } = useTranslation();
 
   // Hooks must be called unconditionally and in the same order on every render.

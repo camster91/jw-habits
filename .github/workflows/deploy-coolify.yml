@@ -63,7 +63,7 @@ jobs:
           name: dist
 
       - name: Deploy to Coolify via SSH
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.COOLIFY_HOST }}
           username: ${{ secrets.COOLIFY_USER }}
@@ -74,7 +74,7 @@ jobs:
         continue-on-error: true
 
       - name: Build image on Coolify server
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.COOLIFY_HOST }}
           username: ${{ secrets.COOLIFY_USER }}

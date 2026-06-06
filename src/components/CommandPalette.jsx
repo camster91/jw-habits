@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Search, BookOpen, Heart, Users, Home, BarChart3, Settings, Link2, Target, Music, Video, Calendar, Trophy, Sparkles, Plus, X } from 'lucide-react';
 import useGamificationStore from '../stores/gamificationStore';
 import useProgressStore from '../stores/progressStore';
-import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 
 /**
@@ -15,12 +14,10 @@ export default function CommandPalette() {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const recordDailyTextCompletion = useGamificationStore((s) => s.recordDailyTextCompletion);
   const markDailyTextRead = useProgressStore((s) => s.markDailyTextRead);
-  const getDailyTextStreak = useProgressStore((s) => s.getDailyTextStreak);
 
   // Build items
   const items = useMemo(() => [
@@ -59,7 +56,6 @@ export default function CommandPalette() {
 
   useEffect(() => {
     if (open) {
-      setQuery('');
       setActiveIndex(0);
     }
   }, [open]);

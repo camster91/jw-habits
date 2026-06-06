@@ -27,7 +27,6 @@ function DailyTasksSection() {
     const existingReflection = getReflection(today);
     useEffect(() => {
         if (existingReflection && !noteText) {
-            setNoteText(existingReflection);
             setNoteSaved(true);
         }
     }, [existingReflection, noteText]);

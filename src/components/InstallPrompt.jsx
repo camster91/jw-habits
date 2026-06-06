@@ -32,14 +32,6 @@ function InstallPrompt() {
     }
   }, [canInstall, isAppInstalled, dismissed]);
 
-  useEffect(() => {
-    if (!showBanner) return;
-    const autoDismiss = setTimeout(() => {
-      handleDismiss();
-    }, 10000);
-    return () => clearTimeout(autoDismiss);
-  }, [showBanner]);
-
   const handleInstall = async () => {
     haptics.medium();
     const result = await promptInstall();
@@ -57,6 +49,14 @@ function InstallPrompt() {
     dismissUntil.setDate(dismissUntil.getDate() + 7);
     localStorage.setItem('installPromptDismissed', dismissUntil.toISOString());
   };
+
+  useEffect(() => {
+    if (!showBanner) return;
+    const autoDismiss = setTimeout(() => {
+      handleDismiss();
+    }, 10000);
+    return () => clearTimeout(autoDismiss);
+  }, [showBanner]);
 
   if (!showBanner || dismissed || isAppInstalled) {
     return null;

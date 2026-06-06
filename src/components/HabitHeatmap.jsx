@@ -9,9 +9,7 @@ import useProgressStore from '../stores/progressStore';
 export default function HabitHeatmap({ weeks = 26, className = '' }) {
   const dailyTexts = useProgressStore((s) => s.dailyTexts) || {};
   const prayers = useProgressStore((s) => s.prayers) || {};
-  const familyWorship = useProgressStore((s) => s.familyWorship) || {};
   const bibleReadings = useProgressStore((s) => s.bibleReadings) || {};
-  const getBibleReadingProgress = useProgressStore((s) => s.getBibleReadingProgress);
 
   const data = useMemo(() => {
     const result = {};
@@ -38,14 +36,13 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
       // Bible reading
       if (bibleReadings[dayOfYear]?.read || bibleReadings[dayOfYear]?.progress === 100) count += 1;
       // Family worship (check by week)
-      const weekKey = format(cursor, "yyyy-'W'II");
-      // Skip — week-based, harder to attribute to single day
+      // Week-based — skip, harder to attribute to single day
 
       result[key] = count;
       cursor.setDate(cursor.getDate() + 1);
     }
     return result;
-  }, [dailyTexts, prayers, bibleReadings, weeks, getBibleReadingProgress]);
+  }, [dailyTexts, prayers, bibleReadings, weeks]);
 
   // Group into weeks (columns)
   const grid = useMemo(() => {

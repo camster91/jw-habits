@@ -1,5 +1,4 @@
 import { Sun, Moon, CloudSun, Menu, Sparkles, Search } from 'lucide-react';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import SmartSuggestions from '../components/SmartSuggestions';

@@ -49,9 +49,6 @@ function Service() {
     getMonthlyReturnVisits,
     getMonthlyBibleStudies,
     getTodaysHours,
-    getTodaysPlacements,
-    getTodaysReturnVisits,
-    getTodaysBibleStudies,
     monthlyGoalHours,
     entries,
   } = useServiceStore();
@@ -139,18 +136,6 @@ function Service() {
     });
     addServiceActivity(h, rv + bs, p);
     resetForm();
-    toast('success', `Added ${h}h entry`);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const h = parseFloat(hours);
-    if (!h || h <= 0) { toast('error', 'Please enter valid hours'); return; }
-    haptics.success();
-    addEntry({ type: selectedType, hours: h, date: new Date().toISOString().split('T')[0], note: note.trim() });
-    addServiceActivity(h, 0, 0);
-    setHours('');
-    setNote('');
     toast('success', `Added ${h}h entry`);
   };
 

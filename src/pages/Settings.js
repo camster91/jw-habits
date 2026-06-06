@@ -71,7 +71,6 @@ function Settings() {
     const handleTestAi = async () => {
         setAiTestStatus('testing');
         try {
-            const { chatWithOllama } = await import('../utils/ollama.js');
             const baseUrl = ai.ollamaBaseUrl || 'https://ollama.com';
             const apiKey = ai.ollamaApiKey;
             const headers = { 'Content-Type': 'application/json' };

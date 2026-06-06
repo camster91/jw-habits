@@ -18,11 +18,6 @@ function formatDate(dateStr) {
   }
 }
 
-function cleanDescription(raw) {
-  // Remove "Video (duration):" prefix
-  return raw.replace(/^(Video|Audio|Article|Publication)\s*\([^)]*\):\s*/, '').trim();
-}
-
 export default function NewsfeedItems() {
   const { items, loading } = useNewsfeed();
 

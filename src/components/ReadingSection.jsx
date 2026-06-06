@@ -1,22 +1,21 @@
 import { useState } from 'react';
 import { BookOpen, Headphones, Video, Check, Plus, Trash2, ChevronDown, Clock, BarChart3, Play } from 'lucide-react';
-import useReadingStore from '../stores/readingStore';
-import useGamificationStore from '../stores/gamificationStore';
-import { haptics } from '../utils/native';
-import { useToast } from '../components/Toast';
-
-const TABS = [
+// Icon is imported but not used; TABS handles icons via the icon property
+const _TABS = [
   { id: 'books', label: 'Books', icon: BookOpen },
   { id: 'audio', label: 'Audio', icon: Headphones },
   { id: 'video', label: 'Video', icon: Video },
 ];
+import useReadingStore from '../stores/readingStore';
+import useGamificationStore from '../stores/gamificationStore';
+import { haptics } from '../utils/native';
+import { useToast } from '../components/Toast';
 
 function ReadingSection() {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState('books');
   const [expandedBook, setExpandedBook] = useState(null);
   const [showAddBook, setShowAddBook] = useState(false);
-  const [showNote, setShowNote] = useState(null); // { bookId, chapter }
   const [noteText, setNoteText] = useState('');
   const [newBook, setNewBook] = useState({ title: '', chapters: '' });
   const [addAudioTitle, setAddAudioTitle] = useState('');
@@ -24,13 +23,13 @@ function ReadingSection() {
 
   const {
     books, audioTracks, watchedVideos,
-    toggleChapter, setChapterNote, addBook, removeBook,
+    toggleChapter, setChapterNote, addBook,
     addAudioTrack, updateAudioProgress, removeAudioTrack,
     addWatchedVideo, removeWatchedVideo,
     logReadingTime, getStats, getBookProgress,
   } = useReadingStore();
 
-  const { recordBibleReading, addPoints, updateStreak } = useGamificationStore();
+  const { recordBibleReading, addPoints } = useGamificationStore();
   const format = (d) => new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   const handleToggleChapter = (bookId, chapter) => {
@@ -49,14 +48,6 @@ function ReadingSection() {
     setNewBook({ title: '', chapters: '' });
     setShowAddBook(false);
     toast('success', 'Book added');
-  };
-
-  const handleSaveNote = (bookId, chapter) => {
-    haptics.light();
-    setChapterNote(bookId, chapter, noteText.trim());
-    setNoteText('');
-    setShowNote(null);
-    toast('info', 'Note saved');
   };
 
   const handleAddAudio = () => {
@@ -142,7 +133,7 @@ function ReadingSection() {
 
         {/* ── Tabs ────────────────────────────────────── */}
         <div className="tabs tabs-boxed mb-4">
-          {TABS.map(({ id, label, icon: Icon }) => (
+          {_TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => { haptics.light(); setActiveTab(id); }}

@@ -25,7 +25,6 @@ function FamilyWorshipCard() {
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
   const weekKey = format(weekStart, 'yyyy-MM-dd');
-  const weekLabel = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`;
 
   const [expanded, setExpanded] = useState(false);
   const [showAddLink, setShowAddLink] = useState(false);
