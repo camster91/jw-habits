@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Sparkles, X, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import useProgressStore from '../stores/progressStore';
-import useGamificationStore from '../stores/gamificationStore';
+import useProgressStore from '../stores/progressStore.js';
+import useGamificationStore from '../stores/gamificationStore.js';
 import { format, differenceInDays, subDays, getDay, startOfWeek } from 'date-fns';
+// @ts-expect-error - CSS modules aren't typed; the bundler handles this.
 import './SmartSuggestions.css';
 
 interface Suggestion {
@@ -23,10 +24,10 @@ interface Suggestion {
 export default function SmartSuggestions() {
   const { t } = useTranslation();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-  const dailyTexts = useProgressStore((s) => s.dailyTexts);
-  const prayers = useProgressStore((s) => s.prayers);
-  const bibleReadings = useProgressStore((s) => s.bibleReadings);
-  const familyWorship = useProgressStore((s) => s.familyWorship);
+  const dailyTexts = useProgressStore((s: { dailyTexts: Record<string, { readScripture?: boolean; read?: boolean; progress?: number }> }) => s.dailyTexts);
+  const prayers = useProgressStore((s: { prayers: Record<string, { morning: boolean; afternoon: boolean; evening: boolean }> }) => s.prayers);
+  const bibleReadings = useProgressStore((s: { bibleReadings: Record<string, { read?: boolean; progress?: number }> }) => s.bibleReadings);
+  const familyWorship = useProgressStore((s: { familyWorship: Record<string, { completed: boolean; date: string | null; topic: string; notes: string }> }) => s.familyWorship);
 
   // Load dismissed from localStorage
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { ExternalLink, Newspaper, BookOpen, Video, Library, Radio, Book, Music, Users, HelpCircle, MapPin, Calendar, Heart, Baby, GraduationCap, Search, Globe, Headphones, MessageCircle, Building2, Star, Gift, Smartphone, X } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import PageHeader from '../components/PageHeader';
 
@@ -94,6 +95,7 @@ const linkCategories = [
 ];
 
 function Links() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredCategories = useMemo(() => {

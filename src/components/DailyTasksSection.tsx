@@ -8,7 +8,7 @@ import useMemoriesStore from '../stores/memoriesStore.js';
 import useGamificationStore from '../stores/gamificationStore.js';
 import { getDailyTextLink } from '../utils/jwLibraryLinks.js';
 import { haptics } from '../utils/native.js';
-import NewsfeedItems from './NewsfeedItems';
+import NewsfeedItems from './NewsfeedItems.jsx';
 
 function DailyTasksSection() {
   const { t } = useTranslation();

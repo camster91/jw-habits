@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trophy, TrendingUp, Flame } from 'lucide-react';
-import useGamificationStore from '../stores/gamificationStore';
-import useProgressStore from '../stores/progressStore';
+import useGamificationStore from '../stores/gamificationStore.js';
+import useProgressStore from '../stores/progressStore.js';
 import { format } from 'date-fns';
 
 interface StreakRecord {
@@ -22,17 +22,17 @@ export default function StreakRecords() {
   const { t } = useTranslation();
 
   // Read current streaks
-  const dailyTexts = useProgressStore((s) => s.dailyTexts);
-  const prayers = useProgressStore((s) => s.prayers);
-  const bibleReadings = useProgressStore((s) => s.bibleReadings);
-  const familyWorship = useProgressStore((s) => s.familyWorship);
-  const getFamilyWorshipStreak = useProgressStore((s) => s.getFamilyWorshipStreak);
+  const dailyTexts = useProgressStore((s: { dailyTexts: Record<string, { readScripture?: boolean; read?: boolean }> }) => s.dailyTexts);
+  const prayers = useProgressStore((s: { prayers: Record<string, { morning: boolean; afternoon: boolean; evening: boolean }> }) => s.prayers);
+  const bibleReadings = useProgressStore((s: { bibleReadings: Record<string, { read?: boolean; progress?: number }> }) => s.bibleReadings);
+  const familyWorship = useProgressStore((s: { familyWorship: Record<string, unknown> }) => s.familyWorship);
+  const getFamilyWorshipStreak = useProgressStore((s: { getFamilyWorshipStreak: () => number }) => s.getFamilyWorshipStreak);
 
   // Read historical bests from gamification store
-  const longestStreak = useGamificationStore((s) => s.longestStreak) || 0;
-  const longestPrayerStreak = useGamificationStore((s) => s.longestPrayerStreak) || 0;
-  const longestFamilyWorshipStreak = useGamificationStore((s) => s.longestFamilyWorshipStreak) || 0;
-  const unlockedAchievements = useGamificationStore((s) => s.unlockedAchievements) || [];
+  const longestStreak = useGamificationStore((s: { longestStreak: number }) => s.longestStreak) || 0;
+  const longestPrayerStreak = useGamificationStore((s: { longestPrayerStreak: number }) => s.longestPrayerStreak) || 0;
+  const longestFamilyWorshipStreak = useGamificationStore((s: { longestFamilyWorshipStreak: number }) => s.longestFamilyWorshipStreak) || 0;
+  const unlockedAchievements = useGamificationStore((s: { unlockedAchievements: unknown[] }) => s.unlockedAchievements) || [];
 
   const records: StreakRecord[] = useMemo(() => {
     const today = new Date();

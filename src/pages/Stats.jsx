@@ -11,37 +11,69 @@ function Stats() {
   const [statsData, setStatsData] = useState(null);
   const { t } = useTranslation();
 
+  // Hooks must be called unconditionally and in the same order on every render.
+  // Moving them outside the try/catch avoids the React "rules-of-hooks" violation
+  // and the silent inconsistent-state bugs that come from a hook throwing inside
+  // a try block.
+  const getDailyTextStreak = useProgressStore((s) => s.getDailyTextStreak);
+  const getBibleReadingStreak = useProgressStore((s) => s.getBibleReadingStreak);
+  const getPrayerStreak = useProgressStore((s) => s.getPrayerStreak);
+  const getFamilyWorshipStreak = useProgressStore((s) => s.getFamilyWorshipStreak);
+  const getCompletionRate = useProgressStore((s) => s.getCompletionRate);
+
+  const getAllAchievements = useGamificationStore((s) => s.getAllAchievements);
+  const getStats = useGamificationStore((s) => s.getStats);
+  const getLevel = useGamificationStore((s) => s.getLevel);
+  const getPointsToNextLevel = useGamificationStore((s) => s.getPointsToNextLevel);
+
+  let dailyTextStreak = 0;
+  let bibleReadingStreak = 0;
+  let prayerStreak = 0;
+  let familyWorshipStreak = 0;
+  let dailyText7Day = 0;
+  let dailyText30Day = 0;
+  let bibleReading7Day = 0;
+  let bibleReading30Day = 0;
+  let stats = {};
+  let level = 1;
+  let pointsToNext = 100;
+  let achievements = [];
+  let unlockedAchievements = [];
+  let lockedAchievements = [];
+  let displayedAchievements = [];
+
   try {
-    const getDailyTextStreak = useProgressStore((s) => s.getDailyTextStreak);
-    const getBibleReadingStreak = useProgressStore((s) => s.getBibleReadingStreak);
-    const getPrayerStreak = useProgressStore((s) => s.getPrayerStreak);
-    const getFamilyWorshipStreak = useProgressStore((s) => s.getFamilyWorshipStreak);
-    const getCompletionRate = useProgressStore((s) => s.getCompletionRate);
+    dailyTextStreak = getDailyTextStreak?.() ?? 0;
+    bibleReadingStreak = getBibleReadingStreak?.() ?? 0;
+    prayerStreak = getPrayerStreak?.() ?? 0;
+    familyWorshipStreak = getFamilyWorshipStreak?.() ?? 0;
+    dailyText7Day = getCompletionRate?.('dailyText', 7) ?? 0;
+    dailyText30Day = getCompletionRate?.('dailyText', 30) ?? 0;
+    bibleReading7Day = getCompletionRate?.('bibleReading', 7) ?? 0;
+    bibleReading30Day = getCompletionRate?.('bibleReading', 30) ?? 0;
 
-    const getAllAchievements = useGamificationStore((s) => s.getAllAchievements);
-    const getStats = useGamificationStore((s) => s.getStats);
-    const getLevel = useGamificationStore((s) => s.getLevel);
-    const getPointsToNextLevel = useGamificationStore((s) => s.getPointsToNextLevel);
+    stats = getStats?.() ?? {};
+    level = getLevel?.() ?? 1;
+    pointsToNext = getPointsToNextLevel?.() ?? 100;
+    achievements = getAllAchievements?.() ?? [];
+    unlockedAchievements = achievements.filter(a => a.unlocked);
+    lockedAchievements = achievements.filter(a => !a.unlocked);
 
-    const dailyTextStreak = getDailyTextStreak?.() ?? 0;
-    const bibleReadingStreak = getBibleReadingStreak?.() ?? 0;
-    const prayerStreak = getPrayerStreak?.() ?? 0;
-    const familyWorshipStreak = getFamilyWorshipStreak?.() ?? 0;
-    const dailyText7Day = getCompletionRate?.('dailyText', 7) ?? 0;
-    const dailyText30Day = getCompletionRate?.('dailyText', 30) ?? 0;
-    const bibleReading7Day = getCompletionRate?.('bibleReading', 7) ?? 0;
-    const bibleReading30Day = getCompletionRate?.('bibleReading', 30) ?? 0;
-
-    const stats = getStats?.() ?? {};
-    const level = getLevel?.() ?? 1;
-    const pointsToNext = getPointsToNextLevel?.() ?? 100;
-    const achievements = getAllAchievements?.() ?? [];
-    const unlockedAchievements = achievements.filter(a => a.unlocked);
-    const lockedAchievements = achievements.filter(a => !a.unlocked);
-
-    const displayedAchievements = showAllAchievements
+    displayedAchievements = showAllAchievements
       ? achievements
       : [...unlockedAchievements.slice(0, 4), ...lockedAchievements.slice(0, 2)];
+  } catch (e) {
+    console.error('Stats page data error:', e);
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <div className="text-center">
+          <TrendingUp className="w-12 h-12 text-primary mx-auto mb-4" />
+          <p className="text-lg font-semibold">Unable to load statistics</p>
+          <p className="text-sm text-base-content/60 mt-2">Please try again later</p>
+        </div>
+      </div>
+    );
+  }
 
     return (
       <div className="min-h-screen bg-base-200 pb-24">
@@ -352,18 +384,6 @@ function Stats() {
       </div>
     </div>
     );
-  } catch (e) {
-    console.error('Stats page error:', e);
-    return (
-      <div className="min-h-screen bg-base-200 flex items-center justify-center">
-        <div className="text-center">
-          <TrendingUp className="w-12 h-12 text-primary mx-auto mb-4" />
-          <p className="text-lg font-semibold">Unable to load statistics</p>
-          <p className="text-sm text-base-content/60 mt-2">Please try again later</p>
-        </div>
-      </div>
-    );
-  }
 }
 
 export default Stats;
