@@ -128,15 +128,15 @@ export default function StreakRecords() {
             <div className="streak-record-body">
               <span className="streak-record-label">{r.label}</span>
               <div className="streak-record-values">
-                <div className="streak-record-current flex items-baseline gap-1">
+                <div className="streak-record-current flex items-baseline gap-1 flex-wrap">
                   <span className="streak-number text-lg font-bold">{r.current || 0}</span>
                   <span className="streak-unit text-xs text-base-content/60">{r.unit}{r.current !== 1 ? 's' : ''}</span>
                   <span className="streak-tag text-[10px] text-base-content/40 ml-2">current</span>
                 </div>
-                <div className="streak-record-best flex items-baseline gap-1 mt-0.5">
-                  <Flame className="w-3 h-3 text-warning" />
+                <div className="streak-record-best flex items-baseline gap-1 flex-wrap mt-0.5">
+                  <Flame className="w-3 h-3 text-warning shrink-0" />
                   <span className="streak-number text-sm font-semibold">{r.best || 0}</span>
-                  <span className="streak-unit text-[10px] text-base-content/40">best</span>
+                  <span className="streak-unit text-[10px] text-base-content/40">{r.unit}{r.best !== 1 ? 's' : ''} best</span>
                 </div>
               </div>
             </div>

@@ -225,6 +225,11 @@ input[type="range"]::-webkit-slider-thumb {
 /* Bottom nav improvements */
 .btm-nav {
   @apply backdrop-blur-lg bg-base-200/90;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
 }
 
 .btm-nav > * {

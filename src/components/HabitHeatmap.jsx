@@ -20,8 +20,11 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
     const start = new Date(today);
     start.setDate(start.getDate() - start.getDay() - (weeks - 1) * 7);
 
+    // Stop at the last day of the previous month (skip current month)
+    const lastOfPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+
     const cursor = new Date(start);
-    while (cursor <= today) {
+    while (cursor <= lastOfPrevMonth) {
       const key = format(cursor, 'yyyy-MM-dd');
       const dayOfYear = String(Math.ceil((cursor - new Date(cursor.getFullYear(), 0, 0)) / 86400000));
       let count = 0;
@@ -46,15 +49,24 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
 
   // Group into weeks (columns)
   const grid = useMemo(() => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Walk back full weeks from today to find the Sunday start of the range
+    const start = new Date(today);
     start.setDate(start.getDate() - start.getDay() - (weeks - 1) * 7);
+
+    // Stop at the last day of the previous month (skip current month)
+    const lastOfPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+
     const cols = [];
     for (let w = 0; w < weeks; w++) {
       const col = [];
       for (let d = 0; d < 7; d++) {
         const day = new Date(start);
         day.setDate(day.getDate() + w * 7 + d);
+        // Skip any day beyond the previous month's last day
+        if (day > lastOfPrevMonth) break;
         const key = format(day, 'yyyy-MM-dd');
         col.push({ date: key, count: data[key] || 0 });
       }
