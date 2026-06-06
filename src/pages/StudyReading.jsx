@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ReadingSection from '../components/ReadingSection';
