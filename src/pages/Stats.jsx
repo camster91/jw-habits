@@ -81,7 +81,6 @@ function Stats() {
           title={t('stats.title')}
           subtitle={t('stats.subtitle')}
           icon={TrendingUp}
-          gradient="from-primary via-primary to-emerald-700"
           iconBare
           shadow
           blurColor="emerald"

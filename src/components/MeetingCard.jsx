@@ -4,7 +4,7 @@ import { Calendar, CheckCircle2, ExternalLink } from 'lucide-react';
 import { format, startOfWeek, addDays } from 'date-fns';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
-import { getWorkbookForWeek, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
+import { getWorkbookForWeek, getISOWeekString, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { haptics } from '../utils/native';
 import MidweekMeetingSection from './MidweekMeetingSection';
 import WeekendMeetingSection from './WeekendMeetingSection';
@@ -22,7 +22,7 @@ function MeetingCard() {
   const [loadError, setLoadError] = useState(false);
 
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const weekOf = format(weekStart, 'yyyy-MM-dd');
+  const weekOf = getISOWeekString(new Date());
   const midweekDate = format(addDays(weekStart, 2), 'EEEE, MMMM d');
   const weekendDate = format(addDays(weekStart, 5), 'EEEE, MMMM d');
 

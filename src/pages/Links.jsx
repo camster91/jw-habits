@@ -119,7 +119,6 @@ function Links() {
       <PageHeader
         title={t('links.title')}
         subtitle={t('links.subtitle')}
-        gradient="from-primary via-primary to-blue-700"
         shadow
       />
 

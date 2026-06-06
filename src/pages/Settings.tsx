@@ -235,7 +235,6 @@ function Settings() {
       <PageHeader
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}
-        gradient="from-primary via-primary to-blue-700"
         shadow
         noBlurs
       />

@@ -12,7 +12,6 @@ function StudyReading() {
         title={t('study.readingTab')}
         subtitle={t('bibleReading.title')}
         icon={BookOpen}
-        gradient="from-primary via-primary to-blue-700"
       />
 
       <main className="container mx-auto px-4 pt-4 space-y-4 max-w-2xl">

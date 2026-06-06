@@ -8,6 +8,18 @@ const BLUR_VARIANTS = {
   emerald: 'bg-emerald-300/10',
 };
 
+/** Theme-aware gradient defaults per color family */
+const GRADIENT_DEFAULTS = {
+  blue: {
+    light: 'from-primary via-primary to-blue-700',
+    dark: 'from-primary via-primary to-blue-900',
+  },
+  emerald: {
+    light: 'from-primary via-primary to-emerald-700',
+    dark: 'from-primary via-primary to-emerald-900',
+  },
+};
+
 /**
  * Reusable gradient page header with decorative blur circles.
  *
@@ -29,7 +41,7 @@ export default function PageHeader({
   title,
   subtitle,
   icon: Icon,
-  gradient = 'from-primary via-primary to-blue-700',
+  gradient,
   actions,
   children,
   blurColor = 'blue',
@@ -40,6 +52,12 @@ export default function PageHeader({
   subtitleClass,
   contentClass,
 }) {
+  // Auto-detect dark mode to use a darker gradient endpoint
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const resolvedGradient = gradient ?? (isDark
+    ? 'from-primary via-primary to-blue-900'
+    : 'from-primary via-primary to-blue-700');
+
   const blurClass = BLUR_VARIANTS[blurColor] || BLUR_VARIANTS.blue;
 
   const defaultSubtitleClass = Icon
@@ -48,7 +66,7 @@ export default function PageHeader({
 
   return (
     <header
-      className={`relative bg-gradient-to-br ${gradient} text-primary-content${shadow ? ' shadow-lg' : ''}`}
+      className={`relative bg-gradient-to-br ${resolvedGradient} text-primary-content${shadow ? ' shadow-lg' : ''}`}
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       {!noBlurs && (

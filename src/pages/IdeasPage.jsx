@@ -12,7 +12,6 @@ function IdeasPage() {
         title={t('goals.ideas')}
         subtitle={t('goals.browseIdeas')}
         icon={Target}
-        gradient="from-primary via-primary to-blue-700"
         blurColor="orange"
       />
 

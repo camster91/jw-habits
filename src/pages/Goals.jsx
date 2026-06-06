@@ -16,7 +16,6 @@ function Goals() {
         title={t('goals.title')}
         subtitle={t('goals.subtitle')}
         icon={Target}
-        gradient="from-primary via-primary to-blue-700"
         blurColor="orange"
       />
 

@@ -44,7 +44,6 @@ function Home() {
       <PageHeader
         title={greeting.text}
         subtitle={t('greeting.subtitle')}
-        gradient="from-primary via-primary to-blue-700"
         titleSize="text-3xl"
         contentClass="pb-6"
         actions={
