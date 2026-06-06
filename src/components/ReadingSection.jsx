@@ -16,14 +16,13 @@ function ReadingSection() {
   const [activeTab, setActiveTab] = useState('books');
   const [expandedBook, setExpandedBook] = useState(null);
   const [showAddBook, setShowAddBook] = useState(false);
-  const [noteText, setNoteText] = useState('');
   const [newBook, setNewBook] = useState({ title: '', chapters: '' });
   const [addAudioTitle, setAddAudioTitle] = useState('');
   const [addVideoTitle, setAddVideoTitle] = useState('');
 
   const {
     books, audioTracks, watchedVideos,
-    toggleChapter, setChapterNote, addBook,
+    toggleChapter, addBook,
     addAudioTrack, updateAudioProgress, removeAudioTrack,
     addWatchedVideo, removeWatchedVideo,
     logReadingTime, getStats, getBookProgress,
@@ -133,13 +132,13 @@ function ReadingSection() {
 
         {/* ── Tabs ────────────────────────────────────── */}
         <div className="tabs tabs-boxed mb-4">
-          {_TABS.map(({ id, label, icon: Icon }) => (
+          {_TABS.map(({ id, label, icon }) => (
             <button
               key={id}
               onClick={() => { haptics.light(); setActiveTab(id); }}
               className={`tab tab-sm gap-1 ${activeTab === id ? 'tab-active' : ''}`}
             >
-              <Icon className="w-4 h-4" />
+              {icon && <icon className="w-4 h-4" />}
               {label}
             </button>
           ))}

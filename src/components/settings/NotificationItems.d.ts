@@ -1,3 +1,4 @@
+import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 export interface NotificationItemProps {
     icon: LucideIcon;
@@ -9,7 +10,7 @@ export interface NotificationItemProps {
     onTimeChange: (time: string) => void;
     color?: string;
 }
-export declare function NotificationItem({ icon: Icon, label, description, enabled, time, onToggle, onTimeChange, color }: NotificationItemProps): import("react/jsx-runtime").JSX.Element;
+export declare function NotificationItem({ icon: Icon, label, description, enabled, time, onToggle, onTimeChange, color }: NotificationItemProps): React.JSX.Element;
 export interface WeeklyNotificationItemProps {
     icon: LucideIcon;
     label: string;
@@ -25,5 +26,5 @@ export interface WeeklyNotificationItemProps {
     color?: string;
     isMeetingPrep?: boolean;
 }
-export declare function WeeklyNotificationItem({ icon: Icon, label, description, enabled, time, dayOfWeek, meetingDays, onToggle, onTimeChange, onDayChange, onMeetingDaysChange, color, isMeetingPrep }: WeeklyNotificationItemProps): import("react/jsx-runtime").JSX.Element;
+export declare function WeeklyNotificationItem({ icon: Icon, label, description, enabled, time, dayOfWeek, meetingDays, onToggle, onTimeChange, onDayChange, onMeetingDaysChange, color, isMeetingPrep }: WeeklyNotificationItemProps): React.JSX.Element;
 //# sourceMappingURL=NotificationItems.d.ts.map

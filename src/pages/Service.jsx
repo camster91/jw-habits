@@ -18,7 +18,6 @@ const QUICK_ADD_HOURS = [1, 2, 3];
 
 function Service() {
   const toast = useToast();
-  const [hours, setHours] = useState('');
   const [note, setNote] = useState('');
   const [customHours, setCustomHours] = useState('');
   const [showCustom, setShowCustom] = useState(false);

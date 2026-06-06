@@ -10,6 +10,7 @@ import { format } from 'date-fns';
  * No social/sharing — just personal gamification.
  */
 export default function StreakRecords() {
+    const { t } = useTranslation();
     // Read current streaks
     const dailyTexts = useProgressStore((s) => s.dailyTexts);
     const prayers = useProgressStore((s) => s.prayers);
@@ -20,8 +21,10 @@ export default function StreakRecords() {
     const longestStreak = useGamificationStore((s) => s.longestStreak) || 0;
     const longestPrayerStreak = useGamificationStore((s) => s.longestPrayerStreak) || 0;
     const longestFamilyWorshipStreak = useGamificationStore((s) => s.longestFamilyWorshipStreak) || 0;
+    const unlockedAchievements = useGamificationStore((s) => s.unlockedAchievements) || [];
     const records = useMemo(() => {
         const today = new Date();
+        const todayKey = format(today, 'yyyy-MM-dd');
         // Daily text: current streak
         let dtStreak = 0;
         for (let i = 0; i < 365; i++) {
@@ -94,7 +97,7 @@ export default function StreakRecords() {
                 isCurrentBest: getFamilyWorshipStreak() >= fwAllTimeBest,
             },
         ];
-    }, [dailyTexts, prayers, bibleReadings, longestStreak, longestPrayerStreak, longestFamilyWorshipStreak, getFamilyWorshipStreak]);
+    }, [dailyTexts, prayers, bibleReadings, familyWorship, longestStreak, longestPrayerStreak, longestFamilyWorshipStreak, getFamilyWorshipStreak]);
     const allCurrentBests = records.every((r) => r.isCurrentBest);
     return (_jsxs("section", { className: "streak-records", children: [allCurrentBests && records.some((r) => r.current > 0) && (_jsxs("div", { className: "streak-banner", children: [_jsx(Trophy, { className: "w-4 h-4 text-warning" }), _jsx("span", { children: "You're at your best right now!" })] })), _jsx("div", { className: "streak-records-grid", children: records.map((r) => (_jsxs("div", { className: `streak-record ${r.isCurrentBest ? 'best' : ''}`, children: [_jsx("span", { className: "streak-record-emoji", children: r.emoji }), _jsxs("div", { className: "streak-record-body", children: [_jsx("span", { className: "streak-record-label", children: r.label }), _jsxs("div", { className: "streak-record-values", children: [_jsxs("div", { className: "streak-record-current flex items-baseline gap-1", children: [_jsx("span", { className: "streak-number text-lg font-bold", children: r.current || 0 }), _jsxs("span", { className: "streak-unit text-xs text-base-content/60", children: [r.unit, r.current !== 1 ? 's' : ''] }), _jsx("span", { className: "streak-tag text-[10px] text-base-content/40 ml-2", children: "current" })] }), _jsxs("div", { className: "streak-record-best flex items-baseline gap-1 mt-0.5", children: [_jsx(Flame, { className: "w-3 h-3 text-warning" }), _jsx("span", { className: "streak-number text-sm font-semibold", children: r.best || 0 }), _jsx("span", { className: "streak-unit text-[10px] text-base-content/40", children: "best" })] })] })] }), r.isCurrentBest && r.current > 0 && (_jsx("div", { className: "streak-record-badge", children: _jsx(TrendingUp, { className: "w-3 h-3" }) }))] }, r.label))) })] }));
 }

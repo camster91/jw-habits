@@ -54,12 +54,6 @@ export default function CommandPalette() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  useEffect(() => {
-    if (open) {
-      setActiveIndex(0);
-    }
-  }, [open]);
-
   const filtered = query
     ? items.filter(
         (i) =>

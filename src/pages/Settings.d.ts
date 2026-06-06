@@ -1,3 +1,3 @@
-declare function Settings(): import("react/jsx-runtime").JSX.Element;
+declare function Settings(): import("react").JSX.Element;
 export default Settings;
 //# sourceMappingURL=Settings.d.ts.map

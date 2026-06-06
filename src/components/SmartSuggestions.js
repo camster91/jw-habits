@@ -1,8 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useMemo, useState } from 'react';
 import { Sparkles, X, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import useProgressStore from '../stores/progressStore.js';
-import { format, subDays, getDay, startOfWeek } from 'date-fns';
+import useGamificationStore from '../stores/gamificationStore.js';
+import { format, differenceInDays, subDays, getDay, startOfWeek } from 'date-fns';
 // @ts-expect-error - CSS modules aren't typed; the bundler handles this.
 import './SmartSuggestions.css';
 /**
@@ -10,6 +12,7 @@ import './SmartSuggestions.css';
  * Heuristic, on-device, no AI call. Privacy-first.
  */
 export default function SmartSuggestions() {
+    const { t } = useTranslation();
     const [dismissed, setDismissed] = useState(new Set());
     const dailyTexts = useProgressStore((s) => s.dailyTexts);
     const prayers = useProgressStore((s) => s.prayers);
@@ -19,10 +22,8 @@ export default function SmartSuggestions() {
     useEffect(() => {
         try {
             const raw = localStorage.getItem('jw-smart-suggestions-dismissed');
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                setDismissed(new Set(parsed));
-            }
+            if (raw)
+                setDismissed(new Set(JSON.parse(raw)));
         }
         catch { /* ignore */ }
     }, []);
@@ -87,6 +88,7 @@ export default function SmartSuggestions() {
         // 4. Bible reading streak warning — close to broken
         let streak = 0;
         for (let i = 0; i < 30; i++) {
+            const d = format(subDays(today, i), 'yyyy-MM-dd');
             const dayOfYear = String(Math.ceil((subDays(today, i).getTime() - new Date(subDays(today, i).getFullYear(), 0, 0).getTime()) / 86400000));
             if (bibleReadings[dayOfYear]?.read || bibleReadings[dayOfYear]?.progress === 100) {
                 streak++;
