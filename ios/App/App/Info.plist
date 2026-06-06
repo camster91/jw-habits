@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>JW News</string>
+	    <string>JW Habits</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -33,9 +33,13 @@
 		<string>arm64</string>
 	</array>
 	<key>NSCalendarsUsageDescription</key>
-	<string>JW News uses your calendar to set reminders for meetings and study schedules.</string>
+	<string>JW Habits uses your calendar to set reminders for meetings and study schedules.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This app does not track you.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>JW Habits sends notifications to remind you about daily habits, goals, and spiritual activities.</string>
+	<key>NSPushNotificationsUsageDescription</key>
+	<string>JW Habits sends push notifications to remind you about daily habits, goals, and spiritual activities.</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

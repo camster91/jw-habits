@@ -8,7 +8,7 @@ android {
         applicationId "com.ashbi.jwnews"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 410
+        versionCode 411
         versionName "4.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -25,9 +25,9 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('jw-habits-release.keystore')
+            storeFile file('/Users/biancabienaime/keys/jw-habits-release.keystore')
             storePassword System.getenv('KEYSTORE_PASSWORD')
-            keyAlias 'jw-habits'
+            keyAlias 'jwhabits'
             keyPassword System.getenv('KEY_PASSWORD')
         }
     }
