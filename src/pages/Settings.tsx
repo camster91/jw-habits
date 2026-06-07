@@ -394,6 +394,7 @@ function Settings() {
                       <button
                         onClick={() => setShowApiKey(!showApiKey)}
                         className="btn btn-sm btn-ghost"
+                        aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
                       >
                         {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -445,7 +446,7 @@ function Settings() {
                   <AlertTriangle className="w-5 h-5 text-warning" />
                   {t("settings.importTitle")}
                 </h3>
-                <button onClick={cancelImport} className="btn btn-ghost btn-sm btn-circle">
+                <button onClick={cancelImport} className="btn btn-ghost btn-sm btn-circle" aria-label="Cancel import">
                   <X className="w-4 h-4" />
                 </button>
               </div>

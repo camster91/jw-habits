@@ -131,6 +131,7 @@ function AchievementPopup() {
         <button
           onClick={handleClose}
           className="absolute top-3 right-3 btn btn-ghost btn-sm btn-circle text-white/80 hover:text-white"
+          aria-label="Close achievement"
         >
           <X className="w-5 h-5" />
         </button>
