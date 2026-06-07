@@ -2,6 +2,7 @@ import { Sun, Moon, CloudSun, Menu, Sparkles, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import SmartSuggestions from '../components/SmartSuggestions';
+import TodaysFocus from '../components/TodaysFocus';
 import StreakRecords from '../components/StreakRecords';
 import PrayerTrackingCard from '../components/PrayerTrackingCard';
 import FamilyWorshipCard from '../components/FamilyWorshipCard';
@@ -105,9 +106,9 @@ function Home() {
 
       {/* ── Main Content ── */}
       <main className="container mx-auto px-4 pt-4 space-y-4 max-w-2xl">
-        {/* ── Smart Suggestions ── */}
+        {/* ── Today's Focus — single opinionated suggestion card ── */}
         <section className="animate-fade-in-up" style={{ animationDelay: '30ms' }}>
-          <SmartSuggestions />
+          <TodaysFocus />
         </section>
 
         {/* ── Streak Records ── */}

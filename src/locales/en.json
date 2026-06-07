@@ -264,6 +264,21 @@
     "allSetDesc": "Start your day with the daily text, build your streak, and keep growing spiritually.",
     "startTracking": "Start Tracking"
   },
+  "focus": {
+    "dailyTextTitle": "Read today's daily text",
+    "dailyTextBody": "A great way to start your day — takes 3 minutes.",
+    "openDailyText": "Read now",
+    "familyWorshipTitle": "Plan this week's family worship",
+    "familyWorshipBody": "Pick a topic and 15 minutes. We'll track it for you.",
+    "planIt": "Plan it",
+    "prayerTitle": "Say your prayer",
+    "prayerBody": "{{done}}/3 prayers today. One minute of conversation with Jehovah.",
+    "morning": "morning",
+    "afternoon": "afternoon",
+    "evening": "evening",
+    "allDoneTitle": "You're all caught up",
+    "allDoneBody": "Daily text done, prayers said, family worship planned. Come back tomorrow."
+  },
   "errors": {
     "statsLoad": "Unable to load statistics",
     "tryAgain": "Please try again later"
