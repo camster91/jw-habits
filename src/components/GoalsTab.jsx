@@ -4,6 +4,7 @@ import { Target, Plus, Check, Trash2, ChevronDown, ChevronUp, Star, BookOpen, Us
 import useGoalsStore from '../stores/goalsStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
+import { useToast } from './Toast';
 
 const CATEGORIES = [
   { id: 'spiritual', labelKey: 'goals.categories.spiritual', color: 'badge-primary', icon: BookOpen },
@@ -65,6 +66,7 @@ const SUGGESTED_GOALS = [
 
 function GoalsTab() {
   const { t } = useTranslation();
+  const toast = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [newGoal, setNewGoal] = useState({ title: '', description: '', category: 'spiritual' });
@@ -78,9 +80,17 @@ function GoalsTab() {
 
   const handleAddGoal = (e) => {
     e.preventDefault();
-    if (!newGoal.title.trim()) return;
+    const title = newGoal.title.trim();
+    if (title.length < 3) {
+      toast.error(t('goals.titleTooShort'));
+      return;
+    }
+    if (title.length > 80) {
+      toast.error(t('goals.titleTooLong'));
+      return;
+    }
     haptics.success();
-    addGoal(newGoal);
+    addGoal({ ...newGoal, title });
     setNewGoal({ title: '', description: '', category: 'spiritual' });
     setShowAddForm(false);
   };
@@ -194,20 +204,30 @@ function GoalsTab() {
       {/* Add Form */}
       {showAddForm && (
         <form onSubmit={handleAddGoal} className="card bg-base-100 shadow-md p-4 space-y-3">
-          <input
-            type="text"
-            placeholder={t("goals.whatsYourGoal")}
-            value={newGoal.title}
-            onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-            className="input input-bordered w-full"
-            autoFocus
-          />
+          <div>
+            <input
+              type="text"
+              placeholder={t("goals.whatsYourGoal")}
+              value={newGoal.title}
+              onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value.slice(0, 80) })}
+              className="input input-bordered w-full"
+              maxLength={80}
+              minLength={3}
+              required
+              autoFocus
+            />
+            <div className="flex justify-between mt-1 text-[10px] text-base-content/40">
+              <span>3-80 characters</span>
+              <span>{newGoal.title.length}/80</span>
+            </div>
+          </div>
           <textarea
             placeholder={t("goals.addDetails")}
             value={newGoal.description}
-            onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+            onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value.slice(0, 280) })}
             className="textarea textarea-bordered w-full"
             rows={2}
+            maxLength={280}
           />
           <div className="flex gap-2">
             {CATEGORIES.map((cat) => {

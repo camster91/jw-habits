@@ -4,6 +4,7 @@ import { FolderKanban, Plus, Trash2, ChevronDown, ChevronRight, Star, Lightbulb,
 import useGoalsStore from '../stores/goalsStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
+import { useToast } from './Toast';
 
 const CATEGORIES = [
   { id: 'congregation', labelKey: 'goals.categories.congregation', color: 'badge-primary', icon: Users },
@@ -121,6 +122,7 @@ const SUGGESTED_PROJECTS = [
 
 function ProjectsTab() {
   const { t } = useTranslation();
+  const toast = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [newProject, setNewProject] = useState({ title: '', description: '', category: 'personal' });
@@ -142,9 +144,17 @@ function ProjectsTab() {
 
   const handleAddProject = (e) => {
     e.preventDefault();
-    if (!newProject.title.trim()) return;
+    const title = newProject.title.trim();
+    if (title.length < 3) {
+      toast.error(t('goals.titleTooShort'));
+      return;
+    }
+    if (title.length > 80) {
+      toast.error(t('goals.titleTooLong'));
+      return;
+    }
     haptics.success();
-    addProject(newProject);
+    addProject({ ...newProject, title });
     setNewProject({ title: '', description: '', category: 'personal' });
     setShowAddForm(false);
   };

@@ -1,3 +1,6 @@
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+
 // Mapping of blur color keys to Tailwind classes
 // Full class strings must be present in source for JIT compiler
 const BLUR_VARIANTS = {
@@ -52,8 +55,19 @@ export default function PageHeader({
   subtitleClass,
   contentClass,
 }) {
-  // Auto-detect dark mode to use a darker gradient endpoint
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  // Auto-detect dark mode to use a darker gradient endpoint.
+  // Subscribe to the data-theme attribute so toggling theme at runtime
+  // re-renders the header (otherwise the gradient is frozen on first render).
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark'
+  );
+  useEffect(() => {
+    const obs = new MutationObserver(() => {
+      setIsDark(document.documentElement.getAttribute('data-theme') === 'dark');
+    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
+  }, []);
   const resolvedGradient = gradient ?? (isDark
     ? 'from-primary via-primary to-blue-900'
     : 'from-primary via-primary to-blue-700');

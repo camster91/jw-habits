@@ -17,6 +17,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { haptics } from '../utils/native';
+import useSettingsStore from '../stores/settingsStore';
 
 const STORAGE_KEY = 'jw-habits-onboarded';
 
@@ -63,6 +64,8 @@ export default function Onboarding() {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [name, setName] = useState('');
+  const setUserName = useSettingsStore((s) => s.setUserName);
 
   useEffect(() => {
     // Show onboarding only if not yet completed
@@ -75,6 +78,7 @@ export default function Onboarding() {
 
   const handleDismiss = () => {
     haptics.success();
+    if (name.trim()) setUserName(name.trim());
     markOnboarded();
     setVisible(false);
   };
@@ -124,6 +128,23 @@ export default function Onboarding() {
               <p className="mt-2 text-base-content/60 text-sm leading-relaxed">
                 {t('onboarding.welcomeDesc')}
               </p>
+              <div className="mt-5">
+                <label className="block text-left text-xs font-medium text-base-content/60 mb-1.5">
+                  Your first name (optional)
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value.slice(0, 30))}
+                  placeholder="e.g. Sarah"
+                  className="input input-bordered w-full text-center text-lg"
+                  maxLength={30}
+                  autoComplete="given-name"
+                />
+                <p className="mt-1.5 text-[10px] text-base-content/40">
+                  Stored on this device only. You can change it later in Settings.
+                </p>
+              </div>
             </div>
           ) : isLastPage ? (
             /* Done page */

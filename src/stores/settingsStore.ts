@@ -35,6 +35,7 @@ interface SettingsState {
   bibleReadingSchedule: BibleReadingSchedule;
   notificationsEnabled: boolean;
   theme: 'light' | 'dark';
+  userName: string;
   ai: {
     provider: 'ollama' | 'none';
     ollamaBaseUrl: string;
@@ -49,6 +50,7 @@ interface SettingsActions {
   setNotificationTime: (key: keyof Notifications, time: string) => void;
   updateNotification: (key: keyof Notifications, updates: Partial<NotificationSetting>) => void;
   setTheme: (theme: 'light' | 'dark') => void;
+  setUserName: (name: string) => void;
   setBibleReadingSchedule: (schedule: Partial<BibleReadingSchedule>) => void;
   getEffectiveScheduleDay: () => number;
   setBibleReadingStartDay: (day: number) => void;
@@ -83,6 +85,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
       bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS,
       notificationsEnabled: false,
       theme: 'light',
+      userName: '',
       ai: {
         provider: 'none',
         ollamaBaseUrl: 'https://ollama.com',
@@ -116,6 +119,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           },
         })),
       setTheme: (theme) => set({ theme }),
+      setUserName: (name) => set({ userName: name }),
       setBibleReadingSchedule: (schedule) =>
         set((state) => ({
           bibleReadingSchedule: { ...state.bibleReadingSchedule, ...schedule },

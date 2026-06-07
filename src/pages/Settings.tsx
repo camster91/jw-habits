@@ -28,6 +28,8 @@ function Settings() {
     setNotificationTime,
     setTheme,
     setAiSettings,
+    setUserName,
+    userName,
   } = useSettingsStore();
 
   const [showApiKey, setShowApiKey] = useState(false);
@@ -318,6 +320,22 @@ function Settings() {
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title text-lg">{t("settings.appearance")}</h2>
+            <div className="divider my-2"></div>
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Your name</span>
+              </label>
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value.slice(0, 30))}
+                placeholder="Your first name"
+                className="input input-bordered w-full"
+                maxLength={30}
+                autoComplete="given-name"
+              />
+              <p className="text-xs text-base-content/50 mt-1">Used in the home greeting. Stored on this device only.</p>
+            </div>
             <div className="divider my-2"></div>
             <button onClick={toggleTheme} className="btn btn-outline w-full justify-start">
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}

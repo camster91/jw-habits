@@ -165,6 +165,8 @@
     "projectName": "Project name...",
     "descriptionOptional": "Description (optional)...",
     "addGoal": "Add Goal",
+    "titleTooShort": "Goal title must be at least 3 characters",
+    "titleTooLong": "Goal title must be 80 characters or less",
     "createProject": "Create Project",
     "noGoals": "No goals yet",
     "setGoal": "Set a spiritual goal to work toward",

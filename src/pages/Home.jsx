@@ -12,6 +12,7 @@ import HabitHeatmap from '../components/HabitHeatmap';
 import '../components/SmartSuggestions.css';
 import { useDrawer } from '../hooks/useDrawer';
 import useGamificationStore from '../stores/gamificationStore';
+import useSettingsStore from '../stores/settingsStore';
 import PageHeader from '../components/PageHeader';
 
 function Home() {
@@ -19,6 +20,7 @@ function Home() {
   const { openDrawer } = useDrawer();
   const { t } = useTranslation();
   const currentStreak = useGamificationStore((s) => s.currentStreak);
+  const userName = useSettingsStore((s) => s.userName);
 
   const greeting = (() => {
     const hour = new Date().getHours();
@@ -79,7 +81,7 @@ function Home() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-lg font-bold text-base-content truncate">
-                    {greeting.text}, Cam
+                    {greeting.text}{userName ? `, ${userName}` : ''}
                   </h2>
                   <p className="text-sm text-base-content/60 mt-0.5">
                     {formattedDate}
