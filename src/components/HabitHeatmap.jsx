@@ -88,6 +88,7 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
     const labels = [];
     let lastMonth = -1;
     grid.forEach((col, i) => {
+      if (!col || col.length === 0) return; // guard against empty columns
       const d = new Date(col[0].date);
       if (d.getMonth() !== lastMonth) {
         lastMonth = d.getMonth();
