@@ -48,22 +48,22 @@ function MeetingCard() {
         const data = await getWorkbookForWeek(new Date());
         setWorkbookData(data);
 
-        if (data?.midweek) {
-          const midweekPartKeys = [
-            'treasures_talk',
-            'treasures_spiritualGems',
-            'treasures_bibleReading',
-            'ministry_assignment1',
-            'ministry_assignment2',
-            'ministry_assignment3',
-            'living_part1',
-            'living_cbs'
-          ];
-          if (data.midweek.living?.part2) {
-            midweekPartKeys.splice(7, 0, 'living_part2');
-          }
-          initMeetingParts(weekOf, 'midweek', midweekPartKeys);
+        // Always initialize parts, even if there's no workbook for this week.
+        // Without this, Mark All Complete has nothing to mark.
+        const midweekPartKeys = [
+          'treasures_talk',
+          'treasures_spiritualGems',
+          'treasures_bibleReading',
+          'ministry_assignment1',
+          'ministry_assignment2',
+          'ministry_assignment3',
+          'living_part1',
+          'living_cbs'
+        ];
+        if (data?.midweek?.living?.part2) {
+          midweekPartKeys.splice(7, 0, 'living_part2');
         }
+        initMeetingParts(weekOf, 'midweek', midweekPartKeys);
 
         const weekendPartKeys = ['watchtower'];
         initMeetingParts(weekOf, 'weekend', weekendPartKeys);
