@@ -37,7 +37,7 @@ export default function TodaysFocus() {
         body: t('focus.dailyTextBody', hour < 12
           ? 'A great way to start your day — takes 3 minutes.'
           : 'Take 3 minutes to read today\'s scripture.'),
-        action: { label: t('focus.openDailyText', 'Read now'), href: 'https://wol.jw.org/wol/dt/r1/lp-e/' + todayKey },
+        action: { label: t('focus.openDailyText', 'Read now'), href: 'https://www.jw.org/en/library/brochures/Examining-the-Scriptures-Daily-2026/' },
         primary: true,
       };
     }
