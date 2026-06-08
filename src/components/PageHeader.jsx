@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-
 // Mapping of blur color keys to Tailwind classes
 // Full class strings must be present in source for JIT compiler
 const BLUR_VARIANTS = {

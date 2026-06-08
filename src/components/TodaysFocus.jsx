@@ -2,8 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sparkles, ArrowRight, BookOpen, Heart, Users, Calendar } from 'lucide-react';
 import useProgressStore from '../stores/progressStore.js';
-import useGamificationStore from '../stores/gamificationStore.js';
-import { format, subDays, getDay } from 'date-fns';
+import { format, getDay } from 'date-fns';
 
 /**
  * Today'sFocus — a single, opinionated card that highlights the ONE thing
@@ -20,8 +19,6 @@ export default function TodaysFocus() {
   const dailyTexts = useProgressStore((s) => s.dailyTexts);
   const prayers = useProgressStore((s) => s.prayers);
   const familyWorship = useProgressStore((s) => s.familyWorship);
-  const recordDailyTextCompletion = useGamificationStore((s) => s.recordDailyTextCompletion);
-  const recordPrayerCompletion = useGamificationStore((s) => s.recordPrayerCompletion);
 
   const focus = useMemo(() => {
     const today = new Date();
