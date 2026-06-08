@@ -71,6 +71,7 @@ function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = f
                     onPartToggle(part.key, e.target.checked);
                   }}
                   className="checkbox checkbox-sm checkbox-primary"
+                  aria-label={`${part.title} (${part.duration} min)`}
                 />
               </div>
               <div className="flex-1 min-w-0">
