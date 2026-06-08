@@ -111,6 +111,23 @@ export default function StreakRecords() {
   }, [dailyTexts, prayers, bibleReadings, familyWorship, longestStreak, longestPrayerStreak, longestFamilyWorshipStreak, getFamilyWorshipStreak]);
 
   const allCurrentBests = records.every((r) => r.isCurrentBest);
+  // First-time user: no current activity AND gamification store has no
+  // real bests (longestStreak === 0, etc.) — the default "best: 7" on Bible
+  // Reading is a UI fallback, not real data.
+  const isFirstTime = records.every((r) => r.current === 0) &&
+    longestStreak === 0 && longestPrayerStreak === 0 && longestFamilyWorshipStreak === 0;
+
+  if (isFirstTime) {
+    return (
+      <section className="card bg-base-100 shadow-sm border border-base-200 rounded-2xl p-5 text-center animate-fade-in-up">
+        <div className="text-3xl mb-2">🌱</div>
+        <h3 className="font-semibold text-base-content">Start your first streak today</h3>
+        <p className="text-sm text-base-content/60 mt-1 leading-snug max-w-xs mx-auto">
+          Read the daily text, say your prayers, and check in here daily. Your first streak starts on day one.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="streak-records">
