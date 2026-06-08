@@ -50,6 +50,13 @@ export function createStorageErrorHandler(storeName) {
 /**
  * Custom storage that wraps localStorage with quota error handling.
  * Falls back to in-memory storage when localStorage is unavailable.
+ *
+ * Applies JSON.stringify in setItem and JSON.parse in getItem because
+ * Zustand's persist middleware does NOT do that for us when we pass
+ * a raw StateStorage (that only happens with createJSONStorage).
+ * Without this, every stored value was being coerced to the literal
+ * string "[object Object]" by localStorage.setItem, and every reload
+ * lost all user data.
  */
 export function createSafeStorage(storeName) {
   const errorHandler = createStorageErrorHandler(storeName);
@@ -57,7 +64,15 @@ export function createSafeStorage(storeName) {
   return {
     getItem: (name) => {
       try {
-        return localStorage.getItem(name);
+        const raw = localStorage.getItem(name);
+        if (raw === null) return null;
+        try {
+          return JSON.parse(raw);
+        } catch {
+          // Legacy non-JSON value (e.g. pre-fix "[object Object]") — return null so
+          // the store starts fresh rather than crashing on a corrupt blob.
+          return null;
+        }
       } catch (error) {
         errorHandler(error);
         return null;
@@ -65,7 +80,7 @@ export function createSafeStorage(storeName) {
     },
     setItem: (name, value) => {
       try {
-        localStorage.setItem(name, value);
+        localStorage.setItem(name, JSON.stringify(value));
       } catch (error) {
         errorHandler(error);
       }
