@@ -7,11 +7,14 @@ import useProgressStore from '../stores/progressStore';
  * Each cell is a day. Intensity = number of habits completed that day.
  */
 export default function HabitHeatmap({ weeks = 26, className = '' }) {
-  const dailyTexts = useProgressStore((s) => s.dailyTexts) || {};
-  const prayers = useProgressStore((s) => s.prayers) || {};
-  const bibleReadings = useProgressStore((s) => s.bibleReadings) || {};
+  const dailyTexts = useProgressStore((s) => s.dailyTexts);
+  const prayers = useProgressStore((s) => s.prayers);
+  const bibleReadings = useProgressStore((s) => s.bibleReadings);
 
   const data = useMemo(() => {
+    const dt = dailyTexts || {};
+    const pr = prayers || {};
+    const br = bibleReadings || {};
     const result = {};
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -30,14 +33,14 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
       let count = 0;
 
       // Daily text
-      if (dailyTexts[key]?.readScripture || dailyTexts[key]?.read) count += 1;
+      if (dt[key]?.readScripture || dt[key]?.read) count += 1;
       // Prayers (any done)
-      const p = prayers[key];
+      const p = pr[key];
       if (p?.morning || p?.afternoon || p?.evening) count += 1;
       // All 3 prayers
       if (p?.morning && p?.afternoon && p?.evening) count += 1;
       // Bible reading
-      if (bibleReadings[dayOfYear]?.read || bibleReadings[dayOfYear]?.progress === 100) count += 1;
+      if (br[dayOfYear]?.read || br[dayOfYear]?.progress === 100) count += 1;
       // Family worship (check by week)
       // Week-based — skip, harder to attribute to single day
 
