@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Book, ExternalLink, Clock, CheckCircle2, Check, Settings2, RotateCcw, ChevronRight } from 'lucide-react';
 import { haptics } from '../utils/native';
@@ -11,6 +11,16 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
   const { t } = useTranslation();
   const [showReadingSettings, setShowReadingSettings] = useState(false);
   const [selectedBook, setSelectedBook] = useState('');
+
+  // Defensive: if no schedule day was passed, compute today's calendar day of year
+  // so we don't store chapter progress under the literal key "undefined".
+  const fallbackScheduleDay = useMemo(() => {
+    if (effectiveScheduleDay) return effectiveScheduleDay;
+    const start = new Date(new Date().getFullYear(), 0, 0);
+    const diff = new Date().getTime() - start.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  }, [effectiveScheduleDay]);
+  const safeScheduleDay = fallbackScheduleDay;
 
   const {
     getBibleChapterProgress,
@@ -26,12 +36,12 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
     resetBibleReadingSchedule,
   } = useSettingsStore();
 
-  const todayReading = getBibleReading(effectiveScheduleDay);
+  const todayReading = getBibleReading(safeScheduleDay);
   const chapters = getChaptersList(todayReading.chapters);
-  const chapterProgress = getBibleChapterProgress(effectiveScheduleDay);
+  const chapterProgress = getBibleChapterProgress(safeScheduleDay);
   const completedChapters = chapters.filter((_, i) => chapterProgress[i]);
   const bibleProgress = Math.round((completedChapters.length / chapters.length) * 100);
-  const isBibleComplete = isBibleReadingComplete(effectiveScheduleDay);
+  const isBibleComplete = isBibleReadingComplete(safeScheduleDay);
 
   // Get unique books from schedule for the dropdown
   const uniqueBooks = [...new Set(BIBLE_READING_SCHEDULE.filter(r => !r.isReview).map(r => r.book))];
@@ -57,7 +67,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
 
   const handleChapterToggle = (index) => {
     haptics.light();
-    toggleBibleChapter(effectiveScheduleDay, index);
+    toggleBibleChapter(safeScheduleDay, index);
 
     // Check if all chapters are now complete
     const newProgress = { ...chapterProgress, [index]: !chapterProgress[index] };

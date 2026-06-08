@@ -321,15 +321,21 @@ const useProgressStore = create<ProgressState & ProgressActions>()(
         return Math.round((completed / days) * 100);
       },
 
-      toggleBibleChapter: (dayOfYear, chapterIndex) => set((state) => ({
+      toggleBibleChapter: (dayOfYear, chapterIndex) => set((state) => {
+        // Guard: if no dayOfYear was passed, fall back to today's day of year.
+        // Without this, old callers that didn't pass the prop stored progress
+        // under the literal key "undefined".
+        const safeDay = dayOfYear ?? String(Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000));
+        return {
         bibleChapters: {
           ...state.bibleChapters,
-          [dayOfYear]: {
+          [safeDay]: {
             ...(state.bibleChapters[dayOfYear] || {}),
             [chapterIndex]: !(state.bibleChapters[dayOfYear] || {})[chapterIndex]
           }
         }
-      })),
+        };
+      }),
 
       getBibleChapterProgress: (dayOfYear) => {
         const state = get();

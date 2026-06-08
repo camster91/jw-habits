@@ -22,6 +22,8 @@ function Home() {
   const { t } = useTranslation();
   const currentStreak = useGamificationStore((s) => s.currentStreak);
   const userName = useSettingsStore((s) => s.userName);
+  const getEffectiveScheduleDay = useSettingsStore((s) => s.getEffectiveScheduleDay);
+  const effectiveScheduleDay = getEffectiveScheduleDay();
 
   const greeting = (() => {
     const hour = new Date().getHours();
@@ -147,7 +149,7 @@ function Home() {
               {t('bibleReading.heading')}
             </h2>
           </div>
-          <BibleReadingCard />
+          <BibleReadingCard effectiveScheduleDay={effectiveScheduleDay} />
         </section>
 
         {/* ── Family Worship ── */}
