@@ -61,6 +61,7 @@ export default function NewsfeedItems() {
               alt=""
               className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-base-300"
               loading="lazy"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           ) : (
             <div className="w-10 h-10 rounded-lg bg-base-300 flex-shrink-0 flex items-center justify-center">
