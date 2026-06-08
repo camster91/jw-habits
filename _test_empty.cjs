@@ -7,20 +7,12 @@ const { chromium } = require('playwright');
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('jw-habits-onboarded', 'true'); });
   await page.goto('https://jw-habits.ashbi.ca/?bust=' + Date.now());
   await page.waitForTimeout(5000);
-  // Force reload
-  await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForTimeout(3000);
   const text = await page.textContent('body');
   const hasEmpty = text.includes('Start your first streak today');
-  const oldZeroDays = text.match(/0\s*days\s*current/g)?.length || 0;
+  const oldZeros = text.match(/0\s*days\s*current/g)?.length || 0;
+  const oldStreakSection = await page.$('section.streak-records');
   console.log('Empty state shown:', hasEmpty);
-  console.log('Old "0 days current":', oldZeroDays);
-  // Also check what the StreakRecords shows
-  const streakSection = await page.$('section.streak-records');
-  if (streakSection) {
-    console.log('Streak section still rendered (old behavior)');
-  } else {
-    console.log('Streak section NOT rendered (new behavior)');
-  }
+  console.log('"0 days current" count:', oldZeros);
+  console.log('Old streak section present:', !!oldStreakSection);
   await browser.close();
 })();
