@@ -4,13 +4,10 @@ import { format, startOfWeek, endOfWeek } from 'date-fns';
 import {
   Users,
   Check,
-  CheckCircle2,
   Plus,
   Link2,
   Trash2,
   ExternalLink,
-  ChevronDown,
-  ChevronUp,
   PenLine,
   Flame,
   BookOpen
@@ -107,185 +104,182 @@ function FamilyWorshipCard() {
   };
 
   return (
-    <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
-      {/* Header - Tappable to expand */}
+    <div className="ios-grouped">
+      {/* Header row */}
       <button
         onClick={() => {
           haptics.light();
           setExpanded(!expanded);
         }}
-        className="flex items-center gap-3 p-4 w-full active:bg-base-200/50 transition-colors"
+        className="ios-row w-full text-left"
+        style={{ background: 'transparent', border: 0, margin: 0 }}
       >
-        <div className={`p-3 rounded-2xl ${worship.completed ? 'bg-success/10' : 'bg-secondary/10'}`}>
-          <Users className={`w-6 h-6 ${worship.completed ? 'text-success' : 'text-secondary'}`} />
+        <div className="ios-icon orange">
+          <Users className="w-4 h-4" />
         </div>
-        <div className="flex-1 text-left">
-          <h3 className="font-bold">{t('familyWorship.heading')}</h3>
-          <p className="text-sm text-base-content/50">
+        <div className="body">
+          <div className="title">{t('familyWorship.heading')}</div>
+          <div className="sub">
             {t('familyWorship.weekOf', { start: format(weekStart, 'MMM d'), end: format(weekEnd, 'MMM d') })}
-          </p>
+          </div>
         </div>
         {worshipStreak > 0 && (
-          <div className="badge badge-warning gap-1 mr-2">
-            <Flame className="w-3 h-3 animate-flame" />
-            {worshipStreak} {worshipStreak === 1 ? t('stats.week') : t('stats.weeks')}
-          </div>
+          <span className="ios-pill" style={{ background: 'rgba(255,149,0,0.14)', color: 'var(--ios-orange)' }}>
+            <Flame className="w-3 h-3" /> {worshipStreak}
+          </span>
         )}
-        {worship.completed ? (
-          <CheckCircle2 className="w-6 h-6 text-success" />
-        ) : expanded ? (
-          <ChevronUp className="w-5 h-5 text-base-content/30" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-base-content/30" />
-        )}
+        <svg className="ios-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {expanded ? (
+            <polyline points="18 15 12 9 6 15"></polyline>
+          ) : (
+            <polyline points="6 9 12 15 18 9"></polyline>
+          )}
+        </svg>
       </button>
 
-      {/* Completion Toggle */}
-      <div className="px-4 pb-3">
-        <button
-          onClick={handleToggleComplete}
-          className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all active:scale-[0.98] ${
-            worship.completed
-              ? 'bg-success/10'
-              : 'bg-base-200/50 active:bg-base-200'
-          }`}
-        >
-          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-            worship.completed
-              ? 'bg-success border-success'
-              : 'border-base-content/20'
-          }`}>
-            {worship.completed && <Check className="w-4 h-4 text-white" />}
-          </div>
-          <span className={`font-medium ${worship.completed ? 'text-success' : ''}`}>
+      {/* Completion toggle row */}
+      <button
+        onClick={handleToggleComplete}
+        className={`ios-row w-full text-left ${worship.completed ? 'done' : ''}`}
+        style={{ background: 'transparent', border: 0, margin: 0 }}
+      >
+        <div className={`ios-check ${worship.completed ? 'done' : ''}`}>
+          {worship.completed && (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          )}
+        </div>
+        <div className="body">
+          <div className="title">
             {worship.completed ? t('familyWorship.completed') : t('familyWorship.markComplete')}
-          </span>
-        </button>
-      </div>
+          </div>
+        </div>
+      </button>
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="px-4 pb-4 space-y-4 border-t border-base-200 pt-4">
-          {/* Topic/Theme */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-base-content/70">
-              <BookOpen className="w-4 h-4" />
-              
-            </label>
-            <input
-              type="text"
-              value={topicText}
-              onChange={(e) => setTopicText(e.target.value)}
-              onBlur={handleSaveTopic}
-              placeholder=""
-              className="input input-bordered w-full"
-            />
+        <>
+          {/* Topic/Theme row */}
+          <div className="ios-row">
+            <div className="ios-icon" style={{ background: 'rgba(0,122,255,0.14)' }}>
+              <BookOpen className="w-4 h-4" style={{ color: 'var(--ios-blue)' }} />
+            </div>
+            <div className="body">
+              <input
+                type="text"
+                value={topicText}
+                onChange={(e) => setTopicText(e.target.value)}
+                onBlur={handleSaveTopic}
+                placeholder=""
+                className="input input-bordered w-full"
+                style={{ height: 36, fontSize: 15 }}
+              />
+            </div>
           </div>
 
-          {/*  Section */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-base-content/70">
-              <Link2 className="w-4 h-4" />
-              
-            </label>
-
-            {/* Existing Links */}
-            {worship.studyLinks && worship.studyLinks.length > 0 && (
-              <div className="space-y-2">
-                {worship.studyLinks.map((link) => (
-                  <div
-                    key={link.id}
-                    className="flex items-center gap-2 p-3 bg-base-200/50 rounded-xl"
-                  >
-                    <button
-                      onClick={() => handleOpenLink(link.url)}
-                      className="flex-1 flex items-center gap-2 text-left active:opacity-70"
-                    >
-                      <ExternalLink className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="text-sm font-medium text-primary truncate">
-                        {link.title}
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => handleRemoveLink(link.id)}
-                      className="p-2 rounded-lg active:bg-base-300"
-                    >
-                      <Trash2 className="w-4 h-4 text-error" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/*  Form */}
-            {showAddLink ? (
-              <div className="space-y-2 p-3 bg-base-200/30 rounded-xl">
-                <input
-                  type="text"
-                  value={newLinkTitle}
-                  onChange={(e) => setNewLinkTitle(e.target.value)}
-                  placeholder=""
-                  className="input input-bordered input-sm w-full"
-                />
-                <input
-                  type="url"
-                  value={newLinkUrl}
-                  onChange={(e) => setNewLinkUrl(e.target.value)}
-                  placeholder=""
-                  className="input input-bordered input-sm w-full"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAddLink}
-                    disabled={!newLinkTitle.trim() || !newLinkUrl.trim()}
-                    className="btn btn-primary btn-sm flex-1"
-                  >
-                    
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowAddLink(false);
-                      setNewLinkTitle('');
-                      setNewLinkUrl('');
-                    }}
-                    className="btn btn-ghost btn-sm"
-                  >
-                    
-                  </button>
+          {/* Study Links section */}
+          {worship.studyLinks && worship.studyLinks.length > 0 && (
+            worship.studyLinks.map((link) => (
+              <div key={link.id} className="ios-row">
+                <div className="ios-icon" style={{ background: 'rgba(74,111,164,0.14)' }}>
+                  <ExternalLink className="w-4 h-4" style={{ color: 'var(--ios-jw-blue)' }} />
                 </div>
+                <button
+                  onClick={() => handleOpenLink(link.url)}
+                  className="body text-left"
+                  style={{ background: 'transparent', border: 0, margin: 0, padding: 0 }}
+                >
+                  <div className="title">{link.title}</div>
+                </button>
+                <button
+                  onClick={() => handleRemoveLink(link.id)}
+                  className="p-2 -mr-2"
+                  style={{ background: 'transparent', border: 0 }}
+                >
+                  <Trash2 className="w-4 h-4" style={{ color: 'var(--ios-red)' }} />
+                </button>
               </div>
-            ) : (
-              <button
-                onClick={() => {
-                  haptics.light();
-                  setShowAddLink(true);
-                }}
-                className="flex items-center justify-center gap-2 w-full p-3 border-2 border-dashed border-base-300 rounded-xl text-base-content/50 active:bg-base-200 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                
-              </button>
-            )}
-          </div>
+            ))
+          )}
 
-          {/*  */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-base-content/70">
-              <PenLine className="w-4 h-4" />
-              
-            </label>
-            <textarea
-              value={notesText}
-              onChange={(e) => setText(e.target.value)}
-              onBlur={handleSave}
-              placeholder=""
-              className="textarea textarea-bordered w-full min-h-[80px]"
-              rows={3}
-            />
+          {/* Add Study Link row */}
+          {showAddLink ? (
+            <div className="ios-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+              <input
+                type="text"
+                value={newLinkTitle}
+                onChange={(e) => setNewLinkTitle(e.target.value)}
+                placeholder=""
+                className="input input-bordered w-full"
+                style={{ height: 36, fontSize: 15 }}
+              />
+              <input
+                type="url"
+                value={newLinkUrl}
+                onChange={(e) => setNewLinkUrl(e.target.value)}
+                placeholder=""
+                className="input input-bordered w-full"
+                style={{ height: 36, fontSize: 15 }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddLink}
+                  disabled={!newLinkTitle.trim() || !newLinkUrl.trim()}
+                  className="btn btn-primary btn-sm flex-1"
+                >
+                  {t('common.add')}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddLink(false);
+                    setNewLinkTitle('');
+                    setNewLinkUrl('');
+                  }}
+                  className="btn btn-ghost btn-sm"
+                >
+                  {t('common.cancel')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => {
+                haptics.light();
+                setShowAddLink(true);
+              }}
+              className="ios-row w-full text-left"
+              style={{ background: 'transparent', border: 0, margin: 0 }}
+            >
+              <div className="ios-icon" style={{ background: 'rgba(0,122,255,0.14)' }}>
+                <Plus className="w-4 h-4" style={{ color: 'var(--ios-blue)' }} />
+              </div>
+              <div className="body">
+                <div className="title" style={{ color: 'var(--ios-blue)' }}>{t('familyWorship.addStudyLink')}</div>
+              </div>
+            </button>
+          )}
+
+          {/* Notes row */}
+          <div className="ios-row" style={{ paddingTop: 8, paddingBottom: 12 }}>
+            <div className="ios-icon" style={{ background: 'rgba(88,86,214,0.14)', alignSelf: 'flex-start', marginTop: 2 }}>
+              <PenLine className="w-4 h-4" style={{ color: 'var(--ios-indigo)' }} />
+            </div>
+            <div className="body" style={{ paddingTop: 0 }}>
+              <textarea
+                value={notesText}
+                onChange={(e) => setText(e.target.value)}
+                onBlur={handleSave}
+                placeholder=""
+                className="textarea textarea-bordered w-full"
+                rows={3}
+                style={{ minHeight: 80, fontSize: 15 }}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
-    </article>
+    </div>
   );
 }
 
