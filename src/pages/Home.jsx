@@ -19,6 +19,7 @@ function Home() {
   const currentStreak = useGamificationStore((s) => s.currentStreak);
   const longestStreak = useGamificationStore((s) => s.longestStreak);
   const userName = useSettingsStore((s) => s.userName);
+  const publisherStatus = useSettingsStore((s) => s.publisherStatus);
   const getEffectiveScheduleDay = useSettingsStore((s) => s.getEffectiveScheduleDay);
   const effectiveScheduleDay = getEffectiveScheduleDay();
 
@@ -118,6 +119,15 @@ function Home() {
                 <div className="stat">Week <strong>{currentStreak}/7</strong></div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Pioneer service hours hero — shown only for pioneers */}
+        {publisherStatus === 'pioneer' && (
+          <div className="ios-pioneer-hero">
+            <div className="label">Service hours</div>
+            <div className="title">Coming soon</div>
+            <div className="body">Full tracking is on the way.</div>
           </div>
         )}
 

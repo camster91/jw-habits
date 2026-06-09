@@ -123,6 +123,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
         })),
       setTheme: (theme) => set({ theme }),
       setUserName: (name) => set({ userName: name }),
+      setPublisherStatus: (status) => set({ publisherStatus: status }),
       setBibleReadingSchedule: (schedule) =>
         set((state) => ({
           bibleReadingSchedule: { ...state.bibleReadingSchedule, ...schedule },

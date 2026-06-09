@@ -60,12 +60,20 @@ const FEATURES = [
   },
 ];
 
+const PUBLISHER_OPTIONS = [
+  { value: 'pioneer', label: 'Pioneer', sub: 'Full-time ministry' },
+  { value: 'regular', label: 'Regular Publisher', sub: 'Monthly ministry' },
+  { value: 'none', label: 'Not currently publishing', sub: 'Personal habits only' },
+];
+
 export default function Onboarding() {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [name, setName] = useState('');
+  const [publisherStatus, setPublisherStatus] = useState<'pioneer' | 'regular' | 'none'>('none');
   const setUserName = useSettingsStore((s) => s.setUserName);
+  const setPublisherStatusAction = useSettingsStore((s) => s.setPublisherStatus);
 
   useEffect(() => {
     // Show onboarding only if not yet completed
@@ -79,20 +87,23 @@ export default function Onboarding() {
   const handleDismiss = () => {
     haptics.success();
     if (name.trim()) setUserName(name.trim());
+    setPublisherStatusAction(publisherStatus);
     markOnboarded();
     setVisible(false);
   };
 
   const handleNext = () => {
     haptics.light();
-    if (currentPage < FEATURES.length) {
+    if (currentPage < FEATURES.length + 1) {
       setCurrentPage((p) => p + 1);
     }
   };
 
   if (!visible) return null;
 
-  const isLastPage = currentPage === FEATURES.length;
+  // Publisher status step is after all features (FEATURES.length) and before "All Set"
+  const isPublisherStep = currentPage === FEATURES.length + 1;
+  const isLastPage = currentPage === FEATURES.length + 2;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center animate-fade-in-up">
@@ -146,6 +157,48 @@ export default function Onboarding() {
                 </p>
               </div>
             </div>
+          ) : isPublisherStep ? (
+            /* Publisher status step */
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-base-content">
+                What's your publishing status?
+              </h2>
+              <p className="mt-2 text-base-content/60 text-sm leading-relaxed">
+                This helps us personalize your experience.
+              </p>
+              <div className="mt-5 space-y-2">
+                {PUBLISHER_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      haptics.light();
+                      setPublisherStatus(opt.value);
+                    }}
+                    className={`ios-pill-btn w-full text-left px-4 py-3 rounded-xl border-2 transition-all flex items-center gap-3 ${
+                      publisherStatus === opt.value
+                        ? 'border-primary bg-primary/10'
+                        : 'border-base-300 bg-base-100'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                        publisherStatus === opt.value
+                          ? 'border-primary bg-primary'
+                          : 'border-base-300'
+                      }`}
+                    >
+                      {publisherStatus === opt.value && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-base-content">{opt.label}</div>
+                      <div className="text-xs text-base-content/50">{opt.sub}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : isLastPage ? (
             /* Done page */
             <div className="text-center">
@@ -189,7 +242,7 @@ export default function Onboarding() {
           {/* Page dots */}
           {!isLastPage && (
             <div className="flex justify-center gap-2 mt-6">
-              {[0, ...FEATURES.map((_, i) => i + 1)].map((page) => (
+              {[0, 1, 2, 3, 4, 5, 6].slice(0, FEATURES.length + 2).map((page) => (
                 <div
                   key={page}
                   className={`h-1.5 rounded-full transition-all ${
@@ -214,10 +267,17 @@ export default function Onboarding() {
               </button>
             ) : (
               <button
-                onClick={currentPage === 0 ? handleNext : handleNext}
+                onClick={handleNext}
                 className="btn btn-primary w-full btn-touch text-white font-semibold shadow-lg"
               >
-                {currentPage === 0 ? t('onboarding.getStarted') : (
+                {isPublisherStep ? (
+                  <>
+                    {t('onboarding.next')}
+                    <ChevronRight className="w-5 h-5" />
+                  </>
+                ) : currentPage === 0 ? (
+                  t('onboarding.getStarted')
+                ) : (
                   <>
                     {t('onboarding.next')}
                     <ChevronRight className="w-5 h-5" />
