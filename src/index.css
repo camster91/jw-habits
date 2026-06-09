@@ -442,6 +442,45 @@
     text-decoration: none;
   }
   .ios-footer a:hover { text-decoration: underline; }
+
+  /* iOS frosted tab bar — 78% opaque, 20px backdrop blur, 180% saturation */
+  .ios-tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 0.5px solid var(--ios-separator, rgba(60, 60, 67, 0.12));
+    display: flex;
+    padding: 6px 0;
+    z-index: 40;
+  }
+  [data-theme="dark"] .ios-tab-bar {
+    background: rgba(28, 28, 30, 0.78);
+  }
+  .ios-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: var(--ios-label-3, #8E8E93);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 4px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.2s;
+  }
+  .ios-tab.active { color: var(--ios-blue, #007AFF); }
+  .ios-tab:active { opacity: 0.6; }
+  .ios-tab-icon { width: 26px; height: 26px; }
+  .ios-tab.active .ios-tab-icon { fill: var(--ios-blue, #007AFF); }
+  .ios-tab-label { font-size: 10px; font-weight: 500; line-height: 1; }
 }
 
 /* iOS system colors as CSS vars (overridable for dark mode) */
@@ -697,23 +736,9 @@ input[type="range"]::-webkit-slider-thumb {
   @apply transition-all duration-200;
 }
 
-/* Bottom nav improvements */
-.btm-nav {
-  @apply backdrop-blur-lg bg-base-200/90;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 40;
-}
-
-.btm-nav > * {
-  @apply transition-all duration-150;
-}
-
-.btm-nav > *.active {
-  @apply text-primary scale-105;
-}
+/* Bottom nav: replaced by .ios-tab-bar (Phase 1.5) — kept for backwards compat
+   but unused in current routes. Safe to delete in a later cleanup. */
+.btm-nav { display: none; }
 
 /* Loading skeleton shimmer */
 .animate-shimmer {

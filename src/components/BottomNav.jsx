@@ -28,22 +28,23 @@ function BottomNav() {
 
   return (
     <nav
-      className="btm-nav btm-nav-lg bg-base-200 border-t"
+      className="ios-tab-bar"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Main navigation"
     >
       {navItems.map((item) => {
         const active = isActive(item.path);
+        const Icon = item.icon;
         return (
           <button
             key={item.path}
-            className={active ? 'active' : ''}
+            className={`ios-tab ${active ? 'active' : ''}`}
             onClick={() => handleNavClick(item.path)}
             aria-label={item.label}
             aria-current={active ? 'page' : undefined}
           >
-            <item.icon className="w-5 h-5" aria-hidden="true" />
-            <span className="btm-nav-label text-xs">{item.label}</span>
+            <Icon className="ios-tab-icon" aria-hidden="true" />
+            <span className="ios-tab-label">{item.label}</span>
           </button>
         );
       })}

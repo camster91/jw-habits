@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
-import { Sun, CloudSun, Moon, Check, Heart, Flame, Star } from 'lucide-react';
+import { Sun, CloudSun, Moon, Heart, Flame } from 'lucide-react';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
@@ -70,69 +70,55 @@ function PrayerTrackingCard() {
   };
 
   return (
-    <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-3 p-4">
-        <div className={`p-3 rounded-2xl ${allComplete ? 'bg-success/10' : 'bg-primary/10'}`}>
-          <Heart className={`w-6 h-6 ${allComplete ? 'text-success' : 'text-primary'}`} />
+    <div className="ios-grouped">
+      {/* Header row — also serves as the prayer card's identity */}
+      <div className="ios-row" style={{ minHeight: 56 }}>
+        <div className="ios-icon" style={{ background: allComplete ? 'var(--ios-green)' : 'rgba(255,59,48,0.14)' }}>
+          <Heart style={{ color: allComplete ? 'white' : 'var(--ios-red)' }} />
         </div>
-        <div className="flex-1">
-          <h3 className="font-bold">{t('today.prayers')}</h3>
-          <p className="text-sm text-base-content/50">
-            {completedCount}/3 {t('today.prayersToday')}
-          </p>
+        <div className="body">
+          <div className="title">{t('today.prayers')}</div>
+          <div className="sub">{completedCount}/3 {t('today.prayersToday')}</div>
         </div>
         {prayerStreak > 0 && (
-          <div className="badge badge-secondary gap-1">
-            <Flame className="w-3 h-3 animate-flame" />
-            {prayerStreak} {prayerStreak === 1 ? t('stats.day') : t('stats.days')}
-          </div>
+          <span className="ios-pill" style={{ background: 'rgba(255,149,0,0.14)', color: 'var(--ios-orange)' }}>
+            <Flame className="w-3 h-3" /> {prayerStreak}
+          </span>
         )}
       </div>
 
-      {/* All Complete Banner */}
-      {allComplete && (
-        <div className="mx-4 mb-3 flex items-center justify-center gap-2 p-3 bg-success/10 rounded-xl text-success">
-          <Star className="w-4 h-4" />
-          <span className="font-medium text-sm">{t('today.allPrayersComplete')}</span>
-        </div>
-      )}
-
-      {/* Prayer Checklist */}
-      <div className="px-4 pb-4 space-y-2">
-        {PRAYER_TIMES.map((prayer) => {
-          const Icon = prayer.icon;
-          return (
+      {/* Prayer rows — one per prayer time */}
+      {PRAYER_TIMES.map((prayer) => {
+        const Icon = prayer.icon;
+        return (
           <button
             key={prayer.id}
             onClick={() => handlePrayerCheck(prayer.id)}
-            className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all active:scale-[0.98] ${
-              prayers[prayer.id]
-                ? 'bg-success/10 opacity-60'
-                : 'bg-base-200/50 active:bg-base-200'
-            }`}
+            className={`ios-row ${prayers[prayer.id] ? 'done' : ''}`}
+            style={{ background: 'transparent', border: 0, width: '100%', textAlign: 'left', margin: 0 }}
           >
-            <div className={`p-2 rounded-lg ${prayers[prayer.id] ? 'bg-success/20' : prayer.bgColor}`}>
-              <Icon className={`w-5 h-5 ${prayers[prayer.id] ? 'text-success' : prayer.color}`} />
+            <div className="ios-icon" style={{
+              background: prayers[prayer.id]
+                ? 'var(--ios-green)'
+                : (prayer.id === 'morning' ? 'var(--ios-orange)' : prayer.id === 'afternoon' ? 'rgba(0,122,255,0.14)' : 'rgba(88,86,214,0.14)')
+            }}>
+              <Icon style={{ color: prayers[prayer.id] ? 'white' : (prayer.id === 'morning' ? 'var(--ios-orange)' : prayer.id === 'afternoon' ? 'var(--ios-blue)' : 'var(--ios-indigo)') }} />
             </div>
-            <div className="flex-1 text-left">
-              <span className={`font-medium block ${prayers[prayer.id] ? 'text-success' : ''}`}>
-                {t(prayer.labelKey)}
-              </span>
-              <span className="text-xs text-base-content/50">{t(prayer.descKey)}</span>
+            <div className="body">
+              <div className="title">{t(prayer.labelKey)}</div>
+              <div className="sub">{t(prayer.descKey)}</div>
             </div>
-            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-              prayers[prayer.id]
-                ? 'bg-success border-success'
-                : 'border-base-content/20'
-            }`}>
-              {prayers[prayer.id] && <Check className="w-4 h-4 text-white" />}
+            <div className={`ios-check ${prayers[prayer.id] ? 'done' : ''}`}>
+              {prayers[prayer.id] && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              )}
             </div>
           </button>
         );
-        })}
-      </div>
-    </article>
+      })}
+    </div>
   );
 }
 

@@ -130,9 +130,9 @@ function Home() {
         {/* Unified Dashboard — fast at-a-glance check */}
         <UnifiedDashboardCard />
 
-        {/* Today's habits — grouped list */}
+        {/* Today's habits — PrayerTrackingCard renders its own iOS group */}
         <h2 className="ios-section-h">{t('today.title', 'Today')}</h2>
-        <div className="ios-grouped">
+        <div className="space-y-2">
           <DailyTasksSection />
           <PrayerTrackingCard />
         </div>
