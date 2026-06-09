@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, CheckCircle2, Flame, PenLine, Save, BookHeart, Globe, ExternalLink, Newspaper } from 'lucide-react';
+import { BookOpen, CheckCircle2, Globe, ExternalLink, BookHeart, PenLine, Save } from 'lucide-react';
 import useProgressStore from '../stores/progressStore.js';
 import useNewsStore from '../stores/newsStore.js';
 import useMemoriesStore from '../stores/memoriesStore.js';
@@ -83,90 +83,115 @@ function DailyTasksSection() {
 
   return (
     <div className="space-y-4">
-      {/* Daily Text */}
-      <div className="card bg-base-100 shadow-md">
-        <div className="card-body p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <BookOpen className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold text-lg">{t('today.dailyText')}</h3>
+      <div className="ios-grouped">
+        {/* Daily Text */}
+        <div
+          className={`ios-row${dailyTextProgress.readScripture ? ' done' : ''}`}
+          onClick={handleDailyTextCheck}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleDailyTextCheck()}
+        >
+          <div className="ios-icon jw-blue">
+            <BookOpen size={16} />
           </div>
-          <button
-            onClick={handleDailyTextCheck}
-            className={`w-full p-4 rounded-xl flex items-center justify-between transition-all active:scale-[0.98] ${
-              dailyTextProgress.readScripture
-                ? 'bg-success/10 text-success'
-                : 'bg-base-200 hover:bg-base-300'
-            }`}
-          >
-            <span className={`font-medium ${dailyTextProgress.readScripture ? 'text-success' : ''}`}>{t('today.readText')}</span>
-            {dailyTextProgress.readScripture ? <CheckCircle2 className="w-6 h-6 text-success" /> : <div className="w-6 h-6 rounded-full border-2 border-base-content/30" />}
-          </button>
-          <button onClick={handleOpenJW} className="btn btn-outline btn-sm mt-2 w-full gap-2">
-            <Globe className="w-4 h-4" /> {t('today.openOnJw')}
-          </button>
-        </div>
-      </div>
-
-      {/* Daily Check-in */}
-      <div className="card bg-base-100 shadow-md">
-        <div className="card-body p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <Flame className="w-5 h-5 text-warning" />
-              <h3 className="font-semibold text-lg">{t('today.checkIn')}</h3>
-            </div>
-            {dailyCheckStreak > 0 && (
-              <div className="flex items-center gap-1 text-sm font-bold text-warning">
-                <Flame className="w-4 h-4" /> {dailyCheckStreak} {dailyCheckStreak === 1 ? t('stats.day') : t('stats.days')} streak
-              </div>
-            )}
+          <div className="body">
+            <div className="title">{t('today.dailyText')}</div>
+            <div className="sub">{t('today.readText')}</div>
           </div>
-          <p className="text-sm text-base-content/60 mb-3">
-            {hasCheckedToday
-              ? t('today.checkedInToday')
-              : t('today.checkInDesc')}
-          </p>
-          <button
-            onClick={handleDailyCheck}
-            className={`btn w-full gap-2 ${hasCheckedToday ? 'btn-outline btn-sm' : 'btn-primary'}`}
-          >
-            <ExternalLink className="w-4 h-4" />
-            {hasCheckedToday ? t('today.whatsNew') : t('today.checkInNow')}
-          </button>
-        </div>
-      </div>
-
-      {/* Daily Reflection */}
-      <div className="card bg-base-100 shadow-md">
-        <div className="card-body p-4">
-          <button
-            onClick={() => setShowNotes(!showNotes)}
-            className="flex items-center gap-3 w-full"
-          >
-            <BookHeart className="w-5 h-5 text-accent" />
-            <h3 className="font-semibold text-lg flex-1 text-left">{t('today.reflection')}</h3>
-            <span className="text-xs text-base-content/50">
-              {showNotes ? t('today.hide') : noteSaved ? t('today.saved') : t('today.reflectionOptional')}
-            </span>
-          </button>
-          {showNotes && (
-            <div className="mt-3 space-y-2">
-              <textarea
-                value={noteText}
-                onChange={(e) => {
-                  setNoteText(e.target.value);
-                  setNoteSaved(false);
-                }}
-                className="textarea textarea-bordered w-full"
-                placeholder={t('today.reflectionPlaceholder')}
-                rows={3}
-              />
-              <button onClick={handleSaveNote} className={`btn btn-sm w-full ${noteSaved ? 'btn-success' : 'btn-primary'}`}>
-                <Save className="w-4 h-4" /> {noteSaved ? t('today.saved') : t('today.save')}
-              </button>
+          {dailyTextProgress.readScripture ? (
+            <div className="ios-check done">
+              <CheckCircle2 size={14} />
             </div>
+          ) : (
+            <div className="ios-check" />
           )}
         </div>
+
+        {/* Open on JW.org */}
+        <div
+          className="ios-row"
+          onClick={handleOpenJW}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && handleOpenJW()}
+        >
+          <div className="ios-icon jw-blue">
+            <Globe size={16} />
+          </div>
+          <div className="body">
+            <div className="title">{t('today.openOnJw')}</div>
+            <div className="sub">jw.org</div>
+          </div>
+          <div className="ios-chev">
+            <ExternalLink size={20} />
+          </div>
+        </div>
+
+        {/* Separator */}
+        <div className="ios-row">
+          <div className="ios-icon teal">
+            <ExternalLink size={16} />
+          </div>
+          <div className="body">
+            <div className="title">{t('today.checkIn')}</div>
+            <div className="sub">
+              {dailyCheckStreak > 0
+                ? `${dailyCheckStreak} ${dailyCheckStreak === 1 ? t('stats.day') : t('stats.days')} streak`
+                : t('today.checkInDesc')}
+            </div>
+          </div>
+          <div
+            className={`ios-check${hasCheckedToday ? ' done' : ''}`}
+            onClick={handleDailyCheck}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && handleDailyCheck()}
+          >
+            {hasCheckedToday && <CheckCircle2 size={14} />}
+          </div>
+        </div>
+
+        {/* Daily Reflection */}
+        <div className="ios-row" onClick={() => setShowNotes(!showNotes)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setShowNotes(!showNotes)}>
+          <div className="ios-icon jw-gold">
+            <BookHeart size={16} />
+          </div>
+          <div className="body">
+            <div className="title">{t('today.reflection')}</div>
+            <div className="sub">
+              {showNotes ? t('today.hide') : noteSaved ? t('today.saved') : t('today.reflectionOptional')}
+            </div>
+          </div>
+          <div className="ios-chev">
+            <PenLine size={16} />
+          </div>
+        </div>
+
+        {showNotes && (
+          <div className="ios-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '8px' }}>
+            <textarea
+              value={noteText}
+              onChange={(e) => {
+                setNoteText(e.target.value);
+                setNoteSaved(false);
+              }}
+              className="textarea textarea-bordered w-full"
+              placeholder={t('today.reflectionPlaceholder')}
+              rows={3}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSaveNote();
+              }}
+              className={`btn btn-sm w-full${noteSaved ? ' btn-success' : ' btn-primary'}`}
+            >
+              <Save className="w-4 h-4" /> {noteSaved ? t('today.saved') : t('today.save')}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
