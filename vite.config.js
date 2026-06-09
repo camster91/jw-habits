@@ -13,14 +13,11 @@ export default defineConfig({
         manualChunks(id) {
           // Split vendor libraries into separate chunks
           if (id.includes('node_modules')) {
-            if (id.includes('react-dom') || id.includes('react/')) {
+            // Anything that depends on react (or IS react) goes in vendor-react.
+            // We match by package-name patterns that import React.createContext.
+            if (id.includes('react-dom') || id.includes('/react/') || id.includes('/react-router') || id.includes('react-i18next') || id.includes('zustand')) {
+              if (id.includes('zustand')) return 'vendor-zustand';
               return 'vendor-react';
-            }
-            if (id.includes('zustand')) {
-              return 'vendor-zustand';
-            }
-            if (id.includes('react-router-dom')) {
-              return 'vendor-router';
             }
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
