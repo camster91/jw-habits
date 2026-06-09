@@ -4,6 +4,53 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        // Enable CSS code splitting per chunk
+        cssCodeSplit: true,
+        // Manual chunks for route-level code splitting
+        manualChunks(id) {
+          // Split vendor libraries into separate chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom') || id.includes('react/')) {
+              return 'vendor-react';
+            }
+            if (id.includes('zustand')) {
+              return 'vendor-zustand';
+            }
+            if (id.includes('react-router-dom')) {
+              return 'vendor-router';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('date-fns')) {
+              return 'vendor-date-fns';
+            }
+            if (id.includes('@tanstack')) {
+              return 'vendor-tanstack';
+            }
+            return 'vendor-misc';
+          }
+          // Split each page into its own chunk
+          if (id.includes('/pages/')) {
+            const pageName = id.split('/pages/')[1].split('.')[0];
+            return `page-${pageName}`;
+          }
+          // Split stores into separate chunks
+          if (id.includes('/stores/')) {
+            const storeName = id.split('/stores/')[1].split('.')[0];
+            return `store-${storeName}`;
+          }
+          // Split components into a shared chunk
+          if (id.includes('/components/')) {
+            return 'components';
+          }
+        }
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({
