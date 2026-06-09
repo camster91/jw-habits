@@ -81,39 +81,38 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
   };
 
   return (
-    <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="p-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-3 rounded-2xl ${isBibleComplete ? 'bg-success/10' : 'bg-secondary/10'}`}>
-            <Book className={`w-6 h-6 ${isBibleComplete ? 'text-success' : 'text-secondary'}`} />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold">{t('bibleReading.heading')}</h3>
-            <p className="text-sm text-base-content/50">{t('bibleReading.day', { num: effectiveScheduleDay })}{bibleReadingSchedule?.useCustomSchedule ? ` (${t('bibleReading.custom')})` : ''}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {isBibleComplete ? (
-              <CheckCircle2 className="w-6 h-6 text-success" />
-            ) : (
-              <span className="text-lg font-bold text-secondary">{bibleProgress}%</span>
-            )}
-            <button
-              onClick={() => {
-                haptics.light();
-                setShowReadingSettings(!showReadingSettings);
-              }}
-              className="btn btn-ghost btn-sm btn-square ml-2"
-              title={t('bibleReading.customize')}
-            >
-              <Settings2 className="w-5 h-5 text-base-content/50" />
-            </button>
+    <article className="ios-grouped">
+      {/* Header row */}
+      <div className="ios-row">
+        <div className="ios-icon jw-gold">
+          <Book className="w-4 h-4" />
+        </div>
+        <div className="body">
+          <div className="title">{t('bibleReading.heading')}</div>
+          <div className="sub">
+            {t('bibleReading.day', { num: effectiveScheduleDay })} — {todayReading.book} {todayReading.chapters}
           </div>
         </div>
+        <button
+          onClick={() => {
+            haptics.light();
+            setShowReadingSettings(!showReadingSettings);
+          }}
+          className="p-2 -mr-2"
+        >
+          <Settings2 className="w-5 h-5 text-base-content/50" />
+        </button>
+        {isBibleComplete ? (
+          <CheckCircle2 className="w-6 h-6 text-success" />
+        ) : (
+          <span className="text-lg font-bold text-secondary">{bibleProgress}%</span>
+        )}
+      </div>
 
-        {/* Bible Reading Settings Panel */}
-        {showReadingSettings && (
-          <div className="mx-4 mb-3 p-4 bg-base-200 rounded-2xl shadow-sm">
+      {/* Reading Settings Panel */}
+      {showReadingSettings && (
+        <div className="px-4 pb-4">
+          <div className="bg-base-200 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-bold text-sm">{t('bibleReading.readingScheduleSettings')}</h4>
               {bibleReadingSchedule?.useCustomSchedule && (
@@ -154,7 +153,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
             <div className="divider my-0 text-xs font-medium text-base-content/40">{t('bibleReading.startingPoint')}</div>
 
             <p className="text-xs text-base-content/60 mb-3 mt-3">
-              
+              {t('bibleReading.customizeHint')}
             </p>
 
             {/* Book Selector */}
@@ -201,67 +200,69 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
               </div>
             )}
           </div>
-        )}
-
-        {/* Reading Info */}
-        <div className="mt-3 p-3 bg-base-200/50 rounded-xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-bold text-lg text-secondary">{todayReading.book} {todayReading.chapters}</p>
-              <div className="flex items-center gap-1 text-sm text-base-content/50 mt-1">
-                <Clock className="w-4 h-4" />
-                <span>~{todayReading.time} {t('bibleReading.minutes')}</span>
-              </div>
-            </div>
-            <a
-              href={getBibleChapterLink(todayReading.book, parseInt(todayReading.chapters.split('-')[0]) || 1)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary btn-sm gap-1"
-              onClick={() => haptics.light()}
-            >
-              <ExternalLink className="w-4 h-4" />
-              {t('bibleReading.openInLibrary')}
-            </a>
-          </div>
         </div>
+      )}
+
+      {/* Reading info row */}
+      <div className="ios-row">
+        <div className="ios-icon jw-gold">
+          <Clock className="w-4 h-4" />
+        </div>
+        <div className="body">
+          <div className="title">{todayReading.book} {todayReading.chapters}</div>
+          <div className="sub">~{todayReading.time} {t('bibleReading.minutes')}</div>
+        </div>
+        <a
+          href={getBibleChapterLink(todayReading.book, parseInt(todayReading.chapters.split('-')[0]) || 1)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ios-row min-h-[44px] gap-2 px-3"
+          onClick={() => haptics.light()}
+        >
+          <ExternalLink className="w-4 h-4 text-primary" />
+          <span className="text-sm text-primary font-medium">{t('bibleReading.openInLibrary')}</span>
+          <ChevronRight className="ios-chev ml-auto" />
+        </a>
       </div>
 
-      {/* Chapter Progress */}
-      <div className="px-4 pb-4">
-        <p className="text-xs text-base-content/50 mb-2 font-medium">{t('bibleReading.markComplete')}</p>
-        <div className="flex flex-wrap gap-2">
-          {chapters.map((chapter, index) => {
-            const isComplete = chapterProgress[index];
-            return (
-              <button
-                key={index}
-                onClick={() => handleChapterToggle(index)}
-                className={`py-2.5 px-3 rounded-xl font-medium text-sm transition-all active:scale-95 flex items-center justify-center gap-1 min-w-[44px] border-2 ${
-                  isComplete
-                    ? 'bg-success text-white border-success'
-                    : 'bg-base-100 text-base-content/60 border-base-300 hover:border-primary/40'
-                }`}
-              >
-                {isComplete && <Check className="w-3 h-3" />}
-                {chapter}
-              </button>
-            );
-          })}
-        </div>
+      {/* Chapter buttons as iOS rows */}
+      {chapters.map((chapter, index) => {
+        const isComplete = chapterProgress[index];
+        return (
+          <button
+            key={index}
+            onClick={() => handleChapterToggle(index)}
+            className={`ios-row w-full text-left ${isComplete ? 'done' : ''}`}
+          >
+            <div className={`ios-icon ${isComplete ? 'green' : 'jw-gold'}`}>
+              {isComplete ? (
+                <Check className="w-3.5 h-3.5" />
+              ) : (
+                <span className="text-xs font-bold text-white">{index + 1}</span>
+              )}
+            </div>
+            <div className="body">
+              <div className="title">{chapter}</div>
+            </div>
+            <div className={`ios-check ${isComplete ? 'done' : ''}`}>
+              {isComplete && <Check className="w-3.5 h-3.5" />}
+            </div>
+          </button>
+        );
+      })}
 
-        {/* Visual progress bar */}
-        <div className="mt-3 h-2 bg-base-200 rounded-full overflow-hidden">
+      {/* Progress bar */}
+      <div className="px-4 pb-4">
+        <div className="h-2 bg-base-200 rounded-full overflow-hidden">
           <div
             className={`h-full transition-all duration-300 ${isBibleComplete ? 'bg-success' : 'bg-secondary'}`}
             style={{ width: `${bibleProgress}%` }}
           />
         </div>
-
         {isBibleComplete && (
           <div className="mt-3 flex items-center justify-center gap-2 text-success text-sm font-medium">
             <CheckCircle2 className="w-4 h-4" />
-            Today&apos;s reading complete!
+            {t('bibleReading.complete')}
           </div>
         )}
       </div>
