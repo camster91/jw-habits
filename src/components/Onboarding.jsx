@@ -13,7 +13,7 @@ import {
   Target,
   Star,
   ChevronRight,
-  Sparkles,
+  ArrowRight,
   CheckCircle,
 } from 'lucide-react';
 import { haptics } from '../utils/native';
@@ -261,7 +261,8 @@ export default function Onboarding() {
             </div>
           )}
 
-          {/* CTA Button */}
+          {/* CTA Button — on the welcome page (page 0), "Get Started" dismisses
+              the modal immediately and goes to home. Otherwise, advance. */}
           <div className="mt-6">
             {isLastPage ? (
               <button
@@ -271,24 +272,21 @@ export default function Onboarding() {
                 <Star className="w-5 h-5" />
                 {t('onboarding.startTracking')}
               </button>
+            ) : currentPage === 0 ? (
+              <button
+                onClick={handleDismiss}
+                className="btn btn-primary w-full btn-touch text-white font-semibold shadow-lg"
+              >
+                <ArrowRight className="w-5 h-5" />
+                {t('onboarding.getStarted')}
+              </button>
             ) : (
               <button
                 onClick={handleNext}
                 className="btn btn-primary w-full btn-touch text-white font-semibold shadow-lg"
               >
-                {isPublisherStep ? (
-                  <>
-                    {t('onboarding.next')}
-                    <ChevronRight className="w-5 h-5" />
-                  </>
-                ) : currentPage === 0 ? (
-                  t('onboarding.getStarted')
-                ) : (
-                  <>
-                    {t('onboarding.next')}
-                    <ChevronRight className="w-5 h-5" />
-                  </>
-                )}
+                {t('onboarding.next')}
+                <ChevronRight className="w-5 h-5" />
               </button>
             )}
           </div>
