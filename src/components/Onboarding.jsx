@@ -14,6 +14,7 @@ import {
   Star,
   ChevronRight,
   ArrowRight,
+  Sparkles,
   CheckCircle,
 } from 'lucide-react';
 import { haptics } from '../utils/native';
