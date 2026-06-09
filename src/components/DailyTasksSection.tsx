@@ -8,7 +8,6 @@ import useMemoriesStore from '../stores/memoriesStore.js';
 import useGamificationStore from '../stores/gamificationStore.js';
 import { getDailyTextLink } from '../utils/jwLibraryLinks.js';
 import { haptics } from '../utils/native.js';
-import NewsfeedItems from './NewsfeedItems.jsx';
 
 function DailyTasksSection() {
   const { t } = useTranslation();
@@ -134,7 +133,6 @@ function DailyTasksSection() {
             <ExternalLink className="w-4 h-4" />
             {hasCheckedToday ? t('today.whatsNew') : t('today.checkInNow')}
           </button>
-          <NewsfeedItems />
         </div>
       </div>
 

@@ -36,6 +36,7 @@ interface SettingsState {
   notificationsEnabled: boolean;
   theme: 'light' | 'dark';
   userName: string;
+  publisherStatus: 'pioneer' | 'regular' | 'none';
   ai: {
     provider: 'ollama' | 'none';
     ollamaBaseUrl: string;
@@ -51,6 +52,7 @@ interface SettingsActions {
   updateNotification: (key: keyof Notifications, updates: Partial<NotificationSetting>) => void;
   setTheme: (theme: 'light' | 'dark') => void;
   setUserName: (name: string) => void;
+  setPublisherStatus: (status: 'pioneer' | 'regular' | 'none') => void;
   setBibleReadingSchedule: (schedule: Partial<BibleReadingSchedule>) => void;
   getEffectiveScheduleDay: () => number;
   setBibleReadingStartDay: (day: number) => void;

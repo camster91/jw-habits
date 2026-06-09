@@ -119,10 +119,12 @@ export default function StreakRecords() {
 
   if (isFirstTime) {
     return (
-      <section className="card bg-base-100 shadow-sm border border-base-200 rounded-2xl p-5 text-center animate-fade-in-up">
-        <div className="text-3xl mb-2">🌱</div>
-        <h3 className="font-semibold text-base-content">Start your first streak today</h3>
-        <p className="text-sm text-base-content/60 mt-1 leading-snug max-w-xs mx-auto">
+      <section className="ios-empty">
+        <div className="art">
+          <Flame />
+        </div>
+        <h3 className="h">Start your first streak today</h3>
+        <p className="sub">
           Read the daily text, say your prayers, and check in here daily. Your first streak starts on day one.
         </p>
       </section>
@@ -130,7 +132,9 @@ export default function StreakRecords() {
   }
 
   return (
-    <section className="streak-records">
+    <section>
+      <h2 className="ios-section-h">Personal bests</h2>
+
       {allCurrentBests && records.some((r) => r.current > 0) && (
         <div className="streak-banner">
           <Trophy className="w-4 h-4 text-warning" />
@@ -138,28 +142,23 @@ export default function StreakRecords() {
         </div>
       )}
 
-      <div className="streak-records-grid">
+      <div className="ios-stats-grid">
         {records.map((r) => (
-          <div key={r.label} className={`streak-record ${r.isCurrentBest ? 'best' : ''}`}>
-            <span className="streak-record-emoji">{r.emoji}</span>
-            <div className="streak-record-body">
-              <span className="streak-record-label">{r.label}</span>
-              <div className="streak-record-values">
-                <div className="streak-record-current flex items-baseline gap-1 flex-wrap">
-                  <span className="streak-number text-lg font-bold">{r.current || 0}</span>
-                  <span className="streak-unit text-xs text-base-content/60">{r.unit}{r.current !== 1 ? 's' : ''}</span>
-                  <span className="streak-tag text-[10px] text-base-content/40 ml-2">current</span>
-                </div>
-                <div className="streak-record-best flex items-baseline gap-1 flex-wrap mt-0.5">
-                  <Flame className="w-3 h-3 text-warning shrink-0" />
-                  <span className="streak-number text-sm font-semibold">{r.best || 0}</span>
-                  <span className="streak-unit text-[10px] text-base-content/40">{r.unit}{r.best !== 1 ? 's' : ''} best</span>
-                </div>
-              </div>
+          <div key={r.label} className="ios-stat-card">
+            <div className="label">{r.label}</div>
+            <div className="val">
+              {r.current || 0}
+              <span className="unit">{r.unit}{r.current !== 1 ? 's' : ''}</span>
             </div>
-            {r.isCurrentBest && r.current > 0 && (
-              <div className="streak-record-badge">
+            {r.isCurrentBest && r.current > 0 ? (
+              <div className="trend">
                 <TrendingUp className="w-3 h-3" />
+                personal best
+              </div>
+            ) : (
+              <div className="trend" style={{ color: 'var(--ios-label-3, #8E8E93)' }}>
+                <Flame className="w-3 h-3" />
+                best: {r.best || 0}
               </div>
             )}
           </div>
