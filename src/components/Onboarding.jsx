@@ -71,7 +71,7 @@ export default function Onboarding() {
   const [visible, setVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [name, setName] = useState('');
-  const [publisherStatus, setPublisherStatus] = useState<'pioneer' | 'regular' | 'none'>('none');
+  const [publisherStatus, setPublisherStatus] = useState('none');
   const setUserName = useSettingsStore((s) => s.setUserName);
   const setPublisherStatusAction = useSettingsStore((s) => s.setPublisherStatus);
 
@@ -87,7 +87,13 @@ export default function Onboarding() {
   const handleDismiss = () => {
     haptics.success();
     if (name.trim()) setUserName(name.trim());
-    setPublisherStatusAction(publisherStatus);
+    // Guard: after rehydration, function actions can be undefined.
+    // The persist middleware doesn't store functions, so on first load the
+    // initial state has them, but if anything has set state to the rehydrated
+    // shape, the function may be missing.
+    if (typeof setPublisherStatusAction === 'function') {
+      setPublisherStatusAction(publisherStatus);
+    }
     markOnboarded();
     setVisible(false);
   };

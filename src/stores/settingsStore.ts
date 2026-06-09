@@ -160,6 +160,12 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
     {
       name: 'jw-progress-settings',
       storage: createSafeStorage('jw-progress-settings') as any,
+      // Persist plain data fields. AI keys are excluded to avoid storing secrets
+      // in localStorage. We do NOT exclude action functions because zustand's
+      // persist middleware would then drop them from the live state after
+      // rehydration, causing selectors like useSettingsStore(s => s.setX) to
+      // return undefined. JSON.stringify already drops function values, so
+      // there's no security/correctness benefit to excluding them here.
       partialize: (state) => {
         const { ai: _ai, ...rest } = state;
         return rest;
