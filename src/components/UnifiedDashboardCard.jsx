@@ -85,7 +85,7 @@ export default function UnifiedDashboardCard() {
                       ? 'bg-primary'
                       : i === currentStreak % 7 && currentStreak > 0
                         ? 'bg-primary/40 animate-pulse'
-                        : 'bg-base-300'
+                        : 'bg-base-content/20'
                   }`}
                 />
               ))}

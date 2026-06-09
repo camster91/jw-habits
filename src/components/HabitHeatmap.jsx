@@ -140,7 +140,7 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
         {/* Legend */}
         <div className="flex items-center gap-1 mt-2 text-[10px] text-base-content/50">
           <span>Less</span>
-          <div className="day" style={{ background: 'var(--ios-separator)' }}></div>
+          <div className="day" style={{ background: 'rgba(84, 84, 88, 0.6)' }}></div>
           <div className="day l1"></div>
           <div className="day l2"></div>
           <div className="day l3"></div>
