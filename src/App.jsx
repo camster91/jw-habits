@@ -26,6 +26,7 @@ const SharePage = lazy(() => import('./pages/Share'));
 const IdeasPage = lazy(() => import('./pages/IdeasPage'));
 const StudyReading = lazy(() => import('./pages/StudyReading'));
 const DeeperStudyPage = lazy(() => import('./pages/DeeperStudyPage'));
+const About = lazy(() => import('./pages/About'));
 
 // Loading fallback component
 function PageLoader() {
@@ -73,6 +74,7 @@ function App() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/share" element={<SharePage />} />
                   <Route path="/ideas" element={<IdeasPage />} />
+                  <Route path="/about" element={<About />} />
                 </Routes>
               </Suspense>
               <BottomNav />
