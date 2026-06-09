@@ -96,6 +96,7 @@ function PrayerTrackingCard() {
             onClick={() => handlePrayerCheck(prayer.id)}
             className={`ios-row ${prayers[prayer.id] ? 'done' : ''}`}
             style={{ background: 'transparent', border: 0, width: '100%', textAlign: 'left', margin: 0 }}
+            aria-label={`Mark ${prayer.id} prayer complete`}
           >
             <div className="ios-icon" style={{
               background: prayers[prayer.id]

@@ -72,7 +72,7 @@ function Home() {
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/70">
               {t('appName', 'JW Habits')}
             </span>
           </div>

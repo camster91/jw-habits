@@ -222,6 +222,7 @@ function ReadingSection() {
                   <button
                     onClick={() => removeAudioTrack(track.id)}
                     className="btn btn-ghost btn-xs btn-circle text-error/60"
+                    aria-label="Remove audio track"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -255,6 +256,7 @@ function ReadingSection() {
                 <button
                   onClick={() => removeWatchedVideo(video.id)}
                   className="btn btn-ghost btn-xs btn-circle text-error/60"
+                  aria-label="Remove video"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
