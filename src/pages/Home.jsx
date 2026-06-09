@@ -11,6 +11,7 @@ import HabitHeatmap from '../components/HabitHeatmap';
 import { useDrawer } from '../hooks/useDrawer';
 import useGamificationStore from '../stores/gamificationStore';
 import useSettingsStore from '../stores/settingsStore';
+import useServiceStore from '../stores/serviceStore';
 
 function Home() {
   const today = new Date();
@@ -22,6 +23,19 @@ function Home() {
   const publisherStatus = useSettingsStore((s) => s.publisherStatus);
   const getEffectiveScheduleDay = useSettingsStore((s) => s.getEffectiveScheduleDay);
   const effectiveScheduleDay = getEffectiveScheduleDay();
+
+  // Service hours (Pioneer hero)
+  const serviceMonthlyGoal = useServiceStore((s) => s.monthlyGoalHours);
+  const serviceMonthlyTotal = useServiceStore((s) => s.getMonthlyTotal());
+  const serviceWeeklyTotal = useServiceStore((s) => s.getWeeklyTotal());
+  const serviceMonthlyPct = serviceMonthlyGoal > 0
+    ? Math.min(100, Math.round((serviceMonthlyTotal / serviceMonthlyGoal) * 100))
+    : 0;
+  // Days left in the current month
+  const todayDate = new Date();
+  const lastOfMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).getDate();
+  const daysLeftInMonth = Math.max(0, lastOfMonth - todayDate.getDate());
+
 
   // Time-of-day aware greeting (iOS HIG)
   const greetingText = (() => {
@@ -125,9 +139,40 @@ function Home() {
         {/* Pioneer service hours hero — shown only for pioneers */}
         {publisherStatus === 'pioneer' && (
           <div className="ios-pioneer-hero">
-            <div className="label">Service hours</div>
-            <div className="title">Coming soon</div>
-            <div className="body">Full tracking is on the way.</div>
+            <div className="label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Service this month</span>
+              <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.85 }}>
+                {daysLeftInMonth} day{daysLeftInMonth === 1 ? '' : 's'} left
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 4 }}>
+              <div className="ios-ring" style={{ width: 64, height: 64 }}>
+                <svg viewBox="0 0 100 100">
+                  <circle className="track" cx="50" cy="50" r="42" strokeWidth="12" style={{ stroke: 'rgba(255,255,255,0.18)' }} />
+                  <circle
+                    className="progress"
+                    cx="50" cy="50" r="42"
+                    strokeWidth="12"
+                    strokeDasharray="263.9"
+                    strokeDashoffset={263.9 - 263.9 * (serviceMonthlyPct / 100)}
+                    style={{ stroke: 'white' }}
+                  />
+                </svg>
+                <div className="ring-label">
+                  <div className="pct" style={{ fontSize: 14 }}>{serviceMonthlyPct}%</div>
+                </div>
+              </div>
+              <div>
+                <div className="title" style={{ lineHeight: 1 }}>
+                  {serviceMonthlyTotal.toFixed(1)}h of {serviceMonthlyGoal}h
+                </div>
+                <div className="body">
+                  {serviceMonthlyGoal - serviceMonthlyTotal > 0
+                    ? `${(serviceMonthlyGoal - serviceMonthlyTotal).toFixed(1)}h to reach your goal · ${serviceWeeklyTotal.toFixed(1)}h this week`
+                    : 'Goal reached for this month!'}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
