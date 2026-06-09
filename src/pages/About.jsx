@@ -192,6 +192,28 @@ export default function About() {
           </div>
         </div>
 
+        <h2 className="ios-section-h">App privacy policy</h2>
+        <div className="ios-grouped">
+          <a
+            href="https://ashbi.ca/privacy/jw-habits.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ios-row"
+            style={{ textDecoration: 'none' }}
+          >
+            <div className="ios-icon" style={{ background: 'var(--ios-purple, #AF52DE)' }}>
+              <ExternalLink style={{ color: 'white' }} />
+            </div>
+            <div className="body">
+              <div className="title">JW Habits privacy policy</div>
+              <div className="sub">Opens on ashbi.ca — what data we store (on-device only)</div>
+            </div>
+            <svg className="ios-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </a>
+        </div>
+
         <div className="ios-footer">
           JW Habits v4.1.0 · built by Ashbi Design
         </div>
