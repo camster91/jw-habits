@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, ArrowRight, BookOpen, Heart, Users, Calendar } from 'lucide-react';
+import { Sparkles, ArrowRight, BookOpen, Heart, Users } from 'lucide-react';
 import useProgressStore from '../stores/progressStore.js';
 import { format, getDay } from 'date-fns';
 
 /**
  * Today'sFocus — a single, opinionated card that highlights the ONE thing
- * the user should do next. Replaces the noisy "For you" card stack.
+ * the user should do next. Apple-style: muted JW blue gradient, no pill button,
+ * text-link CTA with chevron.
  *
  * Priority order:
  *   1. Daily text not read today (most important spiritual habit)
@@ -30,30 +31,22 @@ export default function TodaysFocus() {
     if (!dailyTexts[todayKey]?.readScripture && hour < 22) {
       return {
         id: 'daily-text',
-        icon: BookOpen,
-        color: 'text-accent',
-        bg: 'bg-accent/10',
-        title: t('focus.dailyTextTitle', 'Read today\'s daily text'),
+        title: t('focus.dailyTextTitle', "Read today's daily text"),
         body: t('focus.dailyTextBody', hour < 12
           ? 'A great way to start your day — takes 3 minutes.'
           : 'Take 3 minutes to read today\'s scripture.'),
         action: { label: t('focus.openDailyText', 'Read now'), href: 'https://www.jw.org/en/library/brochures/Examining-the-Scriptures-Daily-2026/' },
-        primary: true,
       };
     }
 
-    // 2. Family worship — check if this week is done (week starts Monday=1)
+    // 2. Family worship — check if this week is done
     const weekKey = format(today, "yyyy-'W'II");
     if (dayOfWeek >= 0 && !familyWorship[weekKey]?.completed) {
       return {
         id: 'family-worship',
-        icon: Users,
-        color: 'text-secondary',
-        bg: 'bg-secondary/10',
-        title: t('focus.familyWorshipTitle', 'Plan this week\'s family worship'),
-        body: t('focus.familyWorshipBody', 'Pick a topic and 15 minutes. We\'ll track it for you.'),
+        title: t('focus.familyWorshipTitle', "Plan this week's family worship"),
+        body: t('focus.familyWorshipBody', "Pick a topic and 15 minutes. We'll track it for you."),
         action: { label: t('focus.planIt', 'Plan it'), href: '/?focus=family' },
-        primary: false,
       };
     }
 
@@ -68,12 +61,8 @@ export default function TodaysFocus() {
       if (missing.length > 0) {
         return {
           id: 'prayer',
-          icon: Heart,
-          color: 'text-error',
-          bg: 'bg-error/10',
           title: t('focus.prayerTitle', `Say your ${missing[0]} prayer`),
           body: t('focus.prayerBody', `${doneCount}/3 prayers today. One minute of conversation with Jehovah.`),
-          primary: false,
         };
       }
     }
@@ -81,46 +70,29 @@ export default function TodaysFocus() {
     // 4. Default — everything is done
     return {
       id: 'all-done',
-      icon: Sparkles,
-      color: 'text-success',
-      bg: 'bg-success/10',
-      title: t('focus.allDoneTitle', 'You\'re all caught up'),
+      title: t('focus.allDoneTitle', "You're all caught up"),
       body: t('focus.allDoneBody', 'Daily text done, prayers said, family worship planned. Come back tomorrow.'),
-      primary: false,
     };
   }, [t, dailyTexts, prayers, familyWorship]);
 
-  const Icon = focus.icon;
-
   return (
-    <section
-      className={`rounded-2xl border ${focus.primary ? 'border-accent/30 bg-gradient-to-br from-accent/5 to-transparent' : 'border-base-300/50 bg-base-100'} shadow-sm overflow-hidden animate-fade-in-up`}
-    >
-      <div className="p-4 flex items-start gap-3">
-        <div className={`flex-shrink-0 w-10 h-10 rounded-xl ${focus.bg} flex items-center justify-center`}>
-          <Icon className={`w-5 h-5 ${focus.color}`} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <h3 className="font-semibold text-sm text-base-content">{focus.title}</h3>
-            {focus.primary && (
-              <span className="text-[9px] uppercase tracking-wider font-bold text-accent">Suggested</span>
-            )}
-          </div>
-          <p className="text-xs text-base-content/60 leading-snug">{focus.body}</p>
-          {focus.action && (
-            <a
-              href={focus.action.href}
-              target={focus.action.href.startsWith('http') ? '_blank' : undefined}
-              rel={focus.action.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className={`inline-flex items-center gap-1 mt-2 text-xs font-semibold ${focus.color} hover:underline`}
-            >
-              {focus.action.label}
-              <ArrowRight className="w-3 h-3" />
-            </a>
-          )}
-        </div>
-      </div>
-    </section>
+    <div className="ios-focus-card animate-fade-in-up">
+      <div className="label">Today</div>
+      <div className="title">{focus.title}</div>
+      <div className="body">{focus.body}</div>
+      {focus.action && (
+        <a
+          href={focus.action.href}
+          target={focus.action.href.startsWith('http') ? '_blank' : undefined}
+          rel={focus.action.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+          className="cta"
+        >
+          {focus.action.label}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </a>
+      )}
+    </div>
   );
 }

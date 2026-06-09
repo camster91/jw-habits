@@ -1,186 +1,212 @@
-import { Sun, Moon, CloudSun, Menu, Sparkles, Search } from 'lucide-react';
+import { Menu, Sparkles, Info, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
-import SmartSuggestions from '../components/SmartSuggestions';
 import TodaysFocus from '../components/TodaysFocus';
 import StreakRecords from '../components/StreakRecords';
 import PrayerTrackingCard from '../components/PrayerTrackingCard';
 import FamilyWorshipCard from '../components/FamilyWorshipCard';
 import BibleReadingCard from '../components/BibleReadingCard';
 import UnifiedDashboardCard from '../components/UnifiedDashboardCard';
-import StreakRing from '../components/StreakRing';
 import HabitHeatmap from '../components/HabitHeatmap';
-import '../components/SmartSuggestions.css';
 import { useDrawer } from '../hooks/useDrawer';
 import useGamificationStore from '../stores/gamificationStore';
 import useSettingsStore from '../stores/settingsStore';
-import PageHeader from '../components/PageHeader';
 
 function Home() {
   const today = new Date();
   const { openDrawer } = useDrawer();
   const { t } = useTranslation();
   const currentStreak = useGamificationStore((s) => s.currentStreak);
+  const longestStreak = useGamificationStore((s) => s.longestStreak);
   const userName = useSettingsStore((s) => s.userName);
   const getEffectiveScheduleDay = useSettingsStore((s) => s.getEffectiveScheduleDay);
   const effectiveScheduleDay = getEffectiveScheduleDay();
 
-  const greeting = (() => {
+  // Time-of-day aware greeting (iOS HIG)
+  const greetingText = (() => {
     const hour = new Date().getHours();
-    if (hour < 12) {
-      return { text: t('greeting.morning'), icon: Sun, color: 'from-amber-400 to-orange-500' };
-    }
-    if (hour < 17) {
-      return { text: t('greeting.afternoon'), icon: CloudSun, color: 'from-sky-400 to-blue-500' };
-    }
-    return { text: t('greeting.evening'), icon: Moon, color: 'from-indigo-500 to-purple-600' };
+    if (hour < 5) return t('greeting.night', 'Good night');
+    if (hour < 12) return t('greeting.morning', 'Good morning');
+    if (hour < 17) return t('greeting.afternoon', 'Good afternoon');
+    if (hour < 21) return t('greeting.evening', 'Good evening');
+    return t('greeting.night', 'Good night');
   })();
 
-  const GreetingIcon = greeting.icon;
   const formattedDate = today.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
   });
 
+  // Fresh user: no streak history
+  const isFreshUser = currentStreak === 0 && longestStreak === 0;
+
   return (
     <div className="min-h-screen bg-base-200 pb-24">
-      {/* ── Hero Header ── */}
-      <PageHeader
-        title={greeting.text}
-        subtitle={t('greeting.subtitle')}
-        titleSize="text-3xl"
-        contentClass="pb-6"
-        actions={
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={openDrawer}
-              className="btn btn-ghost btn-sm btn-square text-white/80 hover:text-white -ml-2"
-              aria-label="Open menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/60">
-                ⌘K
-              </kbd>
-              <span className="text-xs font-medium text-white/50 tracking-wide uppercase">
-                {t('appName')}
-              </span>
-            </div>
-          </div>
-        }
-      />
-
-      {/* ── Hero Greeting + Mini Streak (overlaps header bottom) ── */}
-      <div className="container mx-auto px-4 -mt-6 max-w-2xl relative z-10">
-        <div className="animate-fade-in-up">
-          <div className="card bg-base-100 shadow-xl border border-base-300/50 overflow-hidden">
-            <div className="card-body p-5">
-              <div className="flex items-center gap-4">
-                {/* Animated greeting icon */}
-                <div className={`flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br ${greeting.color} flex items-center justify-center shadow-lg animate-gentle-pulse`}>
-                  <GreetingIcon className="w-7 h-7 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-lg font-bold text-base-content truncate">
-                    {greeting.text}{userName ? `, ${userName}` : ''}
-                  </h2>
-                  <p className="text-sm text-base-content/60 mt-0.5">
-                    {formattedDate}
-                  </p>
-                </div>
-                {/* Live streak ring */}
-                <div className="flex-shrink-0">
-                  <StreakRing
-                    current={currentStreak}
-                    longest={currentStreak}
-                    size={60}
-                    stroke={4}
-                    color="text-primary"
-                  />
-                </div>
-              </div>
-            </div>
+      {/* iOS-style top bar (replaces PageHeader gradient) */}
+      <div
+        className="sticky top-0 z-30 backdrop-blur-lg bg-base-200/80 border-b border-base-300/30"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        <div className="container mx-auto px-4 max-w-2xl flex items-center justify-between h-12">
+          <button
+            onClick={openDrawer}
+            className="btn btn-ghost btn-sm btn-square -ml-2 text-base-content/70"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/50">
+              {t('appName', 'JW Habits')}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* ── Main Content ── */}
-      <main className="container mx-auto px-4 pt-4 space-y-4 max-w-2xl">
-        {/* ── Today's Focus — single opinionated suggestion card ── */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '30ms' }}>
-          <TodaysFocus />
-        </section>
+      <div className="container mx-auto px-4 max-w-2xl">
+        {/* iOS large title */}
+        <h1 className="ios-large-title">
+          {greetingText}
+          {userName ? <span className="name">, {userName}</span> : ''}.
+          <span className="sub">{formattedDate}</span>
+        </h1>
 
-        {/* ── Streak Records ── */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '40ms' }}>
-          <StreakRecords />
-        </section>
-
-        {/* ── Unified Dashboard ── */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '50ms' }}>
-          <UnifiedDashboardCard />
-        </section>
-
-        {/* ── Daily Spiritual Routine ── */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
-              {t('today.title')}
-            </h2>
-          </div>
-          <div className="space-y-3">
-            <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-              <DailyTasksSection />
+        {/* Fresh user: welcoming empty state */}
+        {isFreshUser && (
+          <div className="ios-empty">
+            <div className="art">
+              <Sparkles className="w-7 h-7" />
             </div>
-            <div className="animate-fade-in-up" style={{ animationDelay: '250ms' }}>
-              <PrayerTrackingCard />
+            <div className="h">{t('home.startYourFirstDay', 'Start your first day')}</div>
+            <div className="sub">
+              {t('home.startYourFirstDayDesc',
+                'Read today\'s text and check in. That\'s it. Your first streak begins on day one.'
+              )}
             </div>
           </div>
-        </section>
+        )}
 
-        {/* ── Bible Reading ── */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-1 h-4 rounded-full bg-accent" />
-            <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
-              {t('bibleReading.heading')}
-            </h2>
-          </div>
-          <BibleReadingCard effectiveScheduleDay={effectiveScheduleDay} />
-        </section>
-
-        {/* ── Family Worship ── */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '350ms' }}>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-1 h-4 rounded-full bg-secondary" />
-            <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
-              {t('familyWorship.title')}
-            </h2>
-          </div>
-          <FamilyWorshipCard />
-        </section>
-
-        {/* ── Heatmap — yearly habit visualization ── */}
-        <section className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-          <div className="card bg-base-100 shadow-md border border-base-300/50">
-            <div className="card-body p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-1 h-4 rounded-full bg-info" />
-                <h2 className="text-sm font-bold text-base-content/70 uppercase tracking-wider">
-                  Last 6 months
-                </h2>
+        {/* iOS streak hero (ring + meta) */}
+        {!isFreshUser && (
+          <div className="ios-streak-hero">
+            <div className="ios-ring">
+              <svg viewBox="0 0 100 100">
+                <circle className="track" cx="50" cy="50" r="42" />
+                <circle
+                  className="progress"
+                  cx="50" cy="50" r="42"
+                  strokeDasharray="263.9"
+                  strokeDashoffset={263.9 - 263.9 * Math.min(currentStreak / 7, 1)}
+                />
+              </svg>
+              <div className="ring-label">
+                <div className="pct">{currentStreak}</div>
+                <div className="of">day{currentStreak === 1 ? '' : 's'}</div>
               </div>
-              <HabitHeatmap weeks={26} />
+            </div>
+            <div className="ios-streak-meta">
+              <div className="head">{t('home.currentStreak', 'Current streak')}</div>
+              <div className="sub">
+                {longestStreak > 0
+                  ? t('home.bestDays', { count: longestStreak, defaultValue: `Best ${longestStreak} days` })
+                  : t('home.startToday', 'Start your streak today.')}
+              </div>
+              <div className="stat-row">
+                <div className="stat">Best <strong>{longestStreak}</strong></div>
+                <div className="stat-sep"></div>
+                <div className="stat">Week <strong>{currentStreak}/7</strong></div>
+              </div>
             </div>
           </div>
-        </section>
+        )}
+
+        {/* Today's Focus — single opinionated suggestion card */}
+        <TodaysFocus />
+
+        {/* Streak Records — current personal bests per category */}
+        <StreakRecords />
+
+        {/* Unified Dashboard — fast at-a-glance check */}
+        <UnifiedDashboardCard />
+
+        {/* Today's habits — grouped list */}
+        <h2 className="ios-section-h">{t('today.title', 'Today')}</h2>
+        <div className="ios-grouped">
+          <DailyTasksSection />
+          <PrayerTrackingCard />
+        </div>
+
+        {/* Bible reading */}
+        <h2 className="ios-section-h">
+          {t('bibleReading.heading', 'Bible reading')}
+        </h2>
+        <BibleReadingCard effectiveScheduleDay={effectiveScheduleDay} />
+
+        {/* Family worship */}
+        <h2 className="ios-section-h">
+          {t('familyWorship.title', 'Family worship')}
+        </h2>
+        <FamilyWorshipCard />
+
+        {/* Heatmap — yearly habit visualization */}
+        <h2 className="ios-section-h">Last 6 months</h2>
+        <div className="ios-heatmap">
+          <div className="h-header">
+            <div className="h">Activity</div>
+            <div className="legend">
+              Less
+              <span className="legend-dot" style={{ background: 'var(--ios-separator)' }}></span>
+              <span className="legend-dot" style={{ background: 'rgba(0,122,255,0.4)' }}></span>
+              <span className="legend-dot" style={{ background: 'var(--ios-blue)' }}></span>
+              More
+            </div>
+          </div>
+          <HabitHeatmap weeks={26} />
+        </div>
+
+        {/* Secondary actions (visible on Day 1) */}
+        {isFreshUser && (
+          <>
+            <h2 className="ios-section-h">Get oriented</h2>
+            <div className="ios-grouped">
+              <a href="/about" className="ios-row" style={{ textDecoration: 'none' }}>
+                <div className="ios-icon" style={{ background: 'var(--ios-label-4)' }}>
+                  <Info />
+                </div>
+                <div className="body">
+                  <div className="title">How this app works</div>
+                  <div className="sub">3 minutes to read about what we track and why</div>
+                </div>
+                <svg className="ios-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </a>
+              <a href="/about" className="ios-row" style={{ textDecoration: 'none' }}>
+                <div className="ios-icon" style={{ background: 'rgba(0,122,255,0.14)', color: 'var(--ios-blue)' }}>
+                  <Shield />
+                </div>
+                <div className="body">
+                  <div className="title">Unofficial third-party tool</div>
+                  <div className="sub">Not affiliated with jw.org. See /about for full disclaimer.</div>
+                </div>
+                <svg className="ios-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </a>
+            </div>
+          </>
+        )}
+
+        {/* Unofficial disclaimer footer (always shown) */}
+        <div className="ios-footer">
+          Unofficial third-party tool. Not affiliated with jw.org.<br />
+          <a href="/about">Read full disclaimer →</a>
+        </div>
 
         {/* Bottom spacer for nav */}
         <div className="h-4" />
-      </main>
+      </div>
     </div>
   );
 }

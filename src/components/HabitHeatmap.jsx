@@ -79,11 +79,11 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
   }, [data, weeks]);
 
   const intensity = (count) => {
-    if (count === 0) return 'bg-base-300';
-    if (count === 1) return 'bg-primary/30';
-    if (count === 2) return 'bg-primary/55';
-    if (count === 3) return 'bg-primary/80';
-    return 'bg-primary';
+    if (count === 0) return '';
+    if (count === 1) return 'l1';
+    if (count === 2) return 'l2';
+    if (count === 3) return 'l3';
+    return 'l4';
   };
 
   // Month labels
@@ -105,9 +105,9 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
     <div className={`overflow-x-auto ${className}`}>
       <div className="inline-block min-w-full">
         {/* Month labels */}
-        <div className="flex gap-1 ml-6 mb-1">
+        <div className="flex gap-[2px] ml-6 mb-1">
           {monthLabels.map(({ week, label }) => (
-            <div key={`${week}-${label}`} className="text-[10px] text-base-content/50 font-medium">
+            <div key={`${week}-${label}`} className="text-[10px] text-base-content/50 font-medium" style={{ minWidth: '13px' }}>
               {label}
             </div>
           ))}
@@ -115,24 +115,20 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
 
         <div className="flex gap-1">
           {/* Day labels */}
-          <div className="flex flex-col gap-1 text-[10px] text-base-content/50 justify-around mr-1 w-5">
-            <span>S</span>
+          <div className="flex flex-col gap-[2px] text-[10px] text-base-content/50 justify-around mr-1 w-5">
             <span>M</span>
-            <span>T</span>
             <span>W</span>
-            <span>T</span>
             <span>F</span>
-            <span>S</span>
           </div>
 
-          <div className="flex gap-1">
+          <div className="flex gap-[2px]">
             {grid.map((col, i) => (
-              <div key={i} className="flex flex-col gap-1">
+              <div key={i} className="flex flex-col gap-[2px]">
                 {col.map((cell) => (
                   <div
                     key={cell.date}
                     title={`${cell.date} — ${cell.count} habit${cell.count === 1 ? '' : 's'}`}
-                    className={`w-3 h-3 rounded-sm transition-transform hover:scale-150 ${intensity(cell.count)}`}
+                    className={`day ${intensity(cell.count)}`}
                     aria-label={`${cell.date} ${cell.count}`}
                   />
                 ))}
@@ -142,11 +138,13 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-1.5 mt-2 text-[10px] text-base-content/50">
+        <div className="flex items-center gap-1 mt-2 text-[10px] text-base-content/50">
           <span>Less</span>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className={`w-3 h-3 rounded-sm ${intensity(i)}`} />
-          ))}
+          <div className="day" style={{ background: 'var(--ios-separator)' }}></div>
+          <div className="day l1"></div>
+          <div className="day l2"></div>
+          <div className="day l3"></div>
+          <div className="day l4"></div>
           <span>More</span>
         </div>
       </div>
