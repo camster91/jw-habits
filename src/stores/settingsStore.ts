@@ -88,6 +88,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
       notificationsEnabled: false,
       theme: 'light',
       userName: '',
+      publisherStatus: 'none',
       ai: {
         provider: 'none',
         ollamaBaseUrl: 'https://ollama.com',
