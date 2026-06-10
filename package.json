@@ -75,7 +75,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.23",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.3",
     "cors": "^2.8.6",
     "daisyui": "^4.12.24",
     "eslint": "^9.39.1",
