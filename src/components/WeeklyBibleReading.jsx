@@ -81,7 +81,7 @@ function WeeklyBibleReading() {
       <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
         <div className="card-body items-center py-8">
           <div className="loading loading-spinner loading-md text-secondary"></div>
-          <p className="text-sm text-base-content/50">Loading reading...</p>
+          <p className="text-sm text-base-content/70">Loading reading...</p>
         </div>
       </article>
     );
@@ -140,8 +140,8 @@ function WeeklyBibleReading() {
             <Book className={`w-6 h-6 ${isComplete ? 'text-success' : 'text-secondary'}`} />
           </div>
           <div className="flex-1">
-            <h3 className="font-bold">Weekly Bible Reading</h3>
-            <p className="text-sm text-base-content/50">{weekData.weekOf || weekKey}</p>
+            <h2 className="font-bold">Weekly Bible Reading</h2>
+            <p className="text-sm text-base-content/70">{weekData.weekOf || weekKey}</p>
           </div>
           <div className="flex items-center gap-2">
             {streak > 0 && (
@@ -163,7 +163,7 @@ function WeeklyBibleReading() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-bold text-lg text-secondary">{readingStr}</p>
-              <div className="flex items-center gap-1 text-sm text-base-content/50 mt-1">
+              <div className="flex items-center gap-1 text-sm text-base-content/70 mt-1">
                 <Clock className="w-4 h-4" />
                 <span>{chapters.length} chapters</span>
               </div>
@@ -186,7 +186,7 @@ function WeeklyBibleReading() {
 
       {/* Chapter checkboxes */}
       <div className="px-4 pb-4">
-        <p className="text-xs text-base-content/50 mb-2 font-medium">Mark chapters as complete</p>
+        <p className="text-xs text-base-content/70 mb-2 font-medium">Mark chapters as complete</p>
         <div className="grid grid-cols-4 gap-2">
           {chapters.map((chapter, index) => {
             const isChapterComplete = progress.chapters?.[index];
@@ -201,7 +201,7 @@ function WeeklyBibleReading() {
                   className={`w-full py-3 px-2 rounded-xl font-medium text-sm transition-all active:scale-95 flex items-center justify-center gap-1 ${
                     isChapterComplete
                       ? 'bg-success text-white'
-                      : 'bg-base-200 text-base-content/60'
+                      : 'bg-base-200 text-base-content/70'
                   }`}
                 >
                   {isChapterComplete && <Check className="w-3 h-3" />}

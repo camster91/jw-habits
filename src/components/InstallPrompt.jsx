@@ -71,7 +71,7 @@ function InstallPrompt() {
               <Smartphone className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold">Install JW Habits</h3>
+              <h2 className="font-bold">Install JW Habits</h2>
               <p className="text-sm text-white/80 mt-1">
                 Add to your home screen for the best experience with offline access
               </p>

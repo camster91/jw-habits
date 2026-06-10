@@ -231,14 +231,14 @@ function DeeperStudySection() {
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div className="text-left">
-            <h3 className="font-bold">{t("study.deeperStudy")}</h3>
-            <p className="text-xs text-base-content/50">{t("study.researchTools")}</p>
+            <h2 className="font-bold">{t("study.deeperStudy")}</h2>
+            <p className="text-xs text-base-content/70">{t("study.researchTools")}</p>
           </div>
         </div>
         {showDeeperStudy ? (
           <ChevronDown className="w-5 h-5 text-base-content/70" />
         ) : (
-          <ChevronRight className="w-5 h-5 text-base-content/30" />
+          <ChevronRight className="w-5 h-5 text-base-content/70" />
         )}
       </button>
 
@@ -311,9 +311,9 @@ function DeeperStudySection() {
                           <span className="text-2xl">{item.icon}</span>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm">{item.title}</p>
-                            <p className="text-xs text-base-content/50 line-clamp-1">{item.description}</p>
+                            <p className="text-xs text-base-content/70 line-clamp-1">{item.description}</p>
                           </div>
-                          <ExternalLink className="w-4 h-4 text-base-content/30 flex-shrink-0" />
+                          <ExternalLink className="w-4 h-4 text-base-content/70 flex-shrink-0" />
                         </a>
                       ))}
                     </div>

@@ -146,7 +146,7 @@ class ErrorBoundary extends Component {
 
                 <button
                   onClick={this.handleClearAndReload}
-                  className="btn btn-ghost btn-sm text-base-content/60"
+                  className="btn btn-ghost btn-sm text-base-content/70"
                 >
                   Clear cache and reload
                 </button>
@@ -161,7 +161,7 @@ class ErrorBoundary extends Component {
               </div>
 
               {/* Support Message */}
-              <p className="text-xs text-base-content/50 mt-4">
+              <p className="text-xs text-base-content/70 mt-4">
                 If this problem persists, try clearing your browser cache or reinstalling the app.
               </p>
             </div>

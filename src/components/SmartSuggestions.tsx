@@ -209,7 +209,7 @@ export default function SmartSuggestions() {
             <span className="text-lg flex-shrink-0">{s.emoji}</span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium leading-snug">{s.title}</p>
-              <p className="text-xs text-base-content/60 leading-snug mt-0.5">{s.body}</p>
+              <p className="text-xs text-base-content/70 leading-snug mt-0.5">{s.body}</p>
               {s.action && (
                 <a href={s.action.href} className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-primary hover:underline">
                   {s.action.label} <ArrowRight className="w-3 h-3" />
@@ -217,7 +217,7 @@ export default function SmartSuggestions() {
               )}
             </div>
             <button
-              className="flex-shrink-0 text-base-content/70 hover:text-base-content/60 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="flex-shrink-0 text-base-content/70 hover:text-base-content/70 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={() => handleDismiss(s.id)}
               aria-label="Dismiss"
             >

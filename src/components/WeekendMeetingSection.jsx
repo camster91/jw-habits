@@ -36,7 +36,7 @@ function WeekendMeetingSection({
             style={{ width: `${progress.progress || 0}%` }}
           />
         </div>
-        <span className="text-xs font-medium text-base-content/50">{progress.progress || 0}%</span>
+        <span className="text-xs font-medium text-base-content/70">{progress.progress || 0}%</span>
       </div>
 
       <div className="space-y-2">
@@ -46,7 +46,7 @@ function WeekendMeetingSection({
               <Book className="w-5 h-5 text-primary flex-shrink-0" />
               <div className="flex-1">
                 <p className="font-medium text-sm">{part.title}</p>
-                <p className="text-xs text-base-content/50">{part.duration} minutes</p>
+                <p className="text-xs text-base-content/70">{part.duration} minutes</p>
               </div>
             </div>
           ) : (
@@ -63,8 +63,8 @@ function WeekendMeetingSection({
                 className="checkbox checkbox-sm checkbox-primary"
               />
               <div className="flex-1">
-                <p className={`font-medium text-sm ${part.completed ? 'line-through text-base-content/40' : ''}`}>{part.title}</p>
-                <p className="text-xs text-base-content/50">{part.duration} minutes</p>
+                <p className={`font-medium text-sm ${part.completed ? 'line-through text-base-content/70' : ''}`}>{part.title}</p>
+                <p className="text-xs text-base-content/70">{part.duration} minutes</p>
               </div>
               {part.completed && <Check className="w-4 h-4 text-success" />}
             </label>

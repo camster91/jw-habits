@@ -65,12 +65,12 @@ export default function UnifiedDashboardCard() {
             color="text-primary"
           />
           <div className="min-w-0">
-            <h3 className="text-base font-bold text-base-content">
+            <h2 className="text-base font-bold text-base-content">
               {currentStreak > 0
                 ? `${currentStreak}-Day Streak`
                 : 'Start Your Streak'}
-            </h3>
-            <p className="text-xs text-base-content/50 mt-0.5">
+            </h2>
+            <p className="text-xs text-base-content/70 mt-0.5">
               {currentStreak > 0
                 ? `Best: ${longestStreak} days · Keep going!`
                 : 'Complete your daily text to begin'}
@@ -109,7 +109,7 @@ export default function UnifiedDashboardCard() {
                 <span className="text-lg font-bold text-base-content tabular-nums">
                   {metric.value}
                 </span>
-                <span className="text-[10px] text-base-content/40 text-center leading-tight mt-0.5">
+                <span className="text-[10px] text-base-content/70 text-center leading-tight mt-0.5">
                   {metric.label}
                 </span>
               </div>

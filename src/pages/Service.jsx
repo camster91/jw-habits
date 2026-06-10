@@ -172,15 +172,15 @@ function Service() {
     return (
       <div key={entry.id} className="flex items-center justify-between py-3 px-1">
         <div className="flex items-center gap-3">
-          <Icon className="w-4 h-4 text-base-content/40" />
+          <Icon className="w-4 h-4 text-base-content/70" />
           <div className="flex flex-col">
             <span className="text-sm font-medium">{formatDate(entry.date)}</span>
             <span className={`badge badge-sm ${meta.color} mt-1`}>{meta.label}</span>
-            {entry.note && <span className="text-xs text-base-content/50 mt-0.5 truncate max-w-[200px]">{entry.note}</span>}
+            {entry.note && <span className="text-xs text-base-content/70 mt-0.5 truncate max-w-[200px]">{entry.note}</span>}
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-4 text-xs text-base-content/60">
+          <div className="flex items-center gap-4 text-xs text-base-content/70">
             {entry.placements > 0 && <span title="Placements">📚{entry.placements}</span>}
             {entry.returnVisits > 0 && <span title="Return Visits">🔄{entry.returnVisits}</span>}
             {entry.bibleStudies > 0 && <span title="Bible Studies">📖{entry.bibleStudies}</span>}
@@ -231,7 +231,7 @@ function Service() {
 
             {/* Hours */}
             <div className="text-4xl font-bold text-primary">{weeklyTotal}h</div>
-            <p className="text-sm text-base-content/60 mt-1">
+            <p className="text-sm text-base-content/70 mt-1">
               {getTodaysHours() > 0 ? `${getTodaysHours()}h today` : 'No entries today'}
             </p>
 
@@ -239,15 +239,15 @@ function Service() {
             <div className="grid grid-cols-3 gap-3 mt-4">
               <div className="text-center p-2 rounded-lg bg-primary/5">
                 <div className="text-lg font-bold text-primary">{weeklyPlacements}</div>
-                <div className="text-xs text-base-content/50">Placements</div>
+                <div className="text-xs text-base-content/70">Placements</div>
               </div>
               <div className="text-center p-2 rounded-lg bg-secondary/5">
                 <div className="text-lg font-bold text-secondary">{weeklyReturnVisits}</div>
-                <div className="text-xs text-base-content/50">Return Visits</div>
+                <div className="text-xs text-base-content/70">Return Visits</div>
               </div>
               <div className="text-center p-2 rounded-lg bg-accent/5">
                 <div className="text-lg font-bold text-accent">{weeklyBibleStudies}</div>
-                <div className="text-xs text-base-content/50">Bible Studies</div>
+                <div className="text-xs text-base-content/70">Bible Studies</div>
               </div>
             </div>
           </div>
@@ -258,18 +258,18 @@ function Service() {
           <div className="card-body p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Monthly Goal</span>
-              <span className="text-sm text-base-content/60">{monthlyTotal}h / {monthlyGoalHours}h</span>
+              <span className="text-sm text-base-content/70">{monthlyTotal}h / {monthlyGoalHours}h</span>
             </div>
             <progress
               className={`progress ${monthProgress >= 100 ? 'progress-success' : 'progress-primary'} w-full`}
               value={monthProgress} max="100"
             />
-            <p className="text-xs text-base-content/50 mt-1">
+            <p className="text-xs text-base-content/70 mt-1">
               {monthProgress >= 100 ? 'Goal reached! 🎉' : `${Math.round(monthProgress)}% of monthly goal`}
             </p>
 
             {/* Monthly placements/visits/studies */}
-            <div className="grid grid-cols-3 gap-2 mt-3 text-xs text-base-content/50">
+            <div className="grid grid-cols-3 gap-2 mt-3 text-xs text-base-content/70">
               <span>📚 {getMonthlyPlacements()} placements</span>
               <span>🔄 {getMonthlyReturnVisits()} visits</span>
               <span>📖 {getMonthlyBibleStudies()} studies</span>
@@ -281,8 +281,8 @@ function Service() {
         <section className="card bg-base-100 shadow-sm">
           <div className="card-body p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium">Last 7 days</h3>
-              <span className="text-xs text-base-content/50">
+              <h2 className="text-sm font-medium">Last 7 days</h2>
+              <span className="text-xs text-base-content/70">
                 {last7DaysTotal.toFixed(1)}h total
               </span>
             </div>
@@ -299,7 +299,7 @@ function Service() {
                         title={`${day.date}: ${day.hours.toFixed(1)}h`}
                       />
                     </div>
-                    <span className="text-[10px] text-base-content/50 font-medium">{day.label}</span>
+                    <span className="text-[10px] text-base-content/70 font-medium">{day.label}</span>
                     <span className="text-[10px] text-base-content/70 font-bold -mt-0.5">
                       {day.hours > 0 ? day.hours.toFixed(1) : '·'}
                     </span>
@@ -313,7 +313,7 @@ function Service() {
         {/* ── Entry Type Selector ──────────────────────────── */}
         <section className="card bg-base-100 shadow-sm">
           <div className="card-body p-4">
-            <h3 className="text-sm font-medium mb-2">Entry Type</h3>
+            <h2 className="text-sm font-medium mb-2">Entry Type</h2>
             <div className="flex flex-wrap gap-2">
               {ENTRY_TYPES.map((type) => (
                 <button
@@ -331,7 +331,7 @@ function Service() {
         {/* ── Quick Add Buttons ────────────────────────────── */}
         <section className="card bg-base-100 shadow-sm">
           <div className="card-body p-4">
-            <h3 className="text-sm font-medium mb-3">Quick Add</h3>
+            <h2 className="text-sm font-medium mb-3">Quick Add</h2>
             <div className="flex gap-2">
               {QUICK_ADD_HOURS.map((h) => (
                 <button key={h} onClick={() => handleQuickAdd(h)} className="btn btn-primary flex-1 gap-1">
@@ -362,7 +362,7 @@ function Service() {
                 </div>
 
                 {/* OR time range */}
-                <div className="divider text-xs text-base-content/40 my-1">or enter time range</div>
+                <div className="divider text-xs text-base-content/70 my-1">or enter time range</div>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="form-control">
                     <label className="label py-1"><span className="label-text text-xs">Start</span></label>
@@ -447,7 +447,7 @@ function Service() {
         {todaysEntries.length > 0 && (
           <section className="card bg-base-100 shadow-sm">
             <div className="card-body p-4">
-              <h3 className="text-sm font-medium mb-2">Today</h3>
+              <h2 className="text-sm font-medium mb-2">Today</h2>
               <div className="divide-y divide-base-300">{todaysEntries.map(renderEntry)}</div>
             </div>
           </section>
@@ -457,7 +457,7 @@ function Service() {
         {weeklyEntries.length > 0 && (
           <section className="card bg-base-100 shadow-sm">
             <div className="card-body p-4">
-              <h3 className="text-sm font-medium mb-2">This Week</h3>
+              <h2 className="text-sm font-medium mb-2">This Week</h2>
               <div className="divide-y divide-base-300">{weeklyEntries.map(renderEntry)}</div>
             </div>
           </section>
@@ -468,8 +468,8 @@ function Service() {
           <section className="card bg-base-100 shadow-sm">
             <div className="card-body p-8 text-center">
               <Cross className="w-12 h-12 mx-auto text-base-content/20 mb-3" />
-              <p className="text-base-content/60">No service entries this week</p>
-              <p className="text-sm text-base-content/40 mt-1">Tap a quick add button to log your time</p>
+              <p className="text-base-content/70">No service entries this week</p>
+              <p className="text-sm text-base-content/70 mt-1">Tap a quick add button to log your time</p>
             </div>
           </section>
         )}
@@ -479,7 +479,7 @@ function Service() {
       {showGoalModal && (
         <div className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg mb-4">Set Monthly Goal</h3>
+            <h2 className="font-bold text-lg mb-4">Set Monthly Goal</h2>
             <div className="form-control mb-4">
               <label className="label"><span className="label-text">Goal (hours)</span></label>
               <input

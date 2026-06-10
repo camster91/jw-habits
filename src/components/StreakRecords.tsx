@@ -123,7 +123,7 @@ export default function StreakRecords() {
         <div className="art">
           <Flame />
         </div>
-        <h3 className="h">Start your first streak today</h3>
+        <h2 className="h">Start your first streak today</h2>
         <p className="sub">
           Read the daily text, say your prayers, and check in here daily. Your first streak starts on day one.
         </p>

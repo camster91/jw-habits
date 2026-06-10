@@ -101,12 +101,12 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
           className="p-2 -mr-2"
           aria-label="Reading settings"
         >
-          <Settings2 className="w-5 h-5 text-base-content/50" />
+          <Settings2 className="w-5 h-5 text-base-content/70" />
         </button>
         {isBibleComplete ? (
           <CheckCircle2 className="w-6 h-6 text-success" />
         ) : (
-          <span className="text-lg font-bold text-secondary">{bibleProgress}%</span>
+          <span className="text-xl font-bold" style={{ color: '#3F7020' }}>{bibleProgress}%</span>
         )}
       </div>
 
@@ -129,7 +129,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
 
             {/* Pace Selector */}
             <div className="mb-5">
-              <p className="text-xs font-semibold text-base-content/60 uppercase tracking-wide mb-2">{t('bibleReading.readingPace')}</p>
+              <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wide mb-2">{t('bibleReading.readingPace')}</p>
               <div className="grid grid-cols-4 gap-2">
                 {READING_PACE_OPTIONS.map((option) => (
                   <button
@@ -151,9 +151,9 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
               </div>
             </div>
 
-            <div className="divider my-0 text-xs font-medium text-base-content/40">{t('bibleReading.startingPoint')}</div>
+            <div className="divider my-0 text-xs font-medium text-base-content/70">{t('bibleReading.startingPoint')}</div>
 
-            <p className="text-xs text-base-content/60 mb-3 mt-3">
+            <p className="text-xs text-base-content/70 mb-3 mt-3">
               {t('bibleReading.customizeHint')}
             </p>
 
@@ -183,7 +183,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
                     >
                       <div>
                         <span className="font-semibold text-sm">{entry.book} {entry.chapters}</span>
-                        <span className="text-xs text-base-content/40 ml-2 bg-base-300/50 px-1.5 py-0.5 rounded">~{entry.time} {t('bibleReading.min')}</span>
+                        <span className="text-xs text-base-content/70 ml-2 bg-base-300/50 px-1.5 py-0.5 rounded">~{entry.time} {t('bibleReading.min')}</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-base-content/70" />
                     </button>

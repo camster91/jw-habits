@@ -68,7 +68,7 @@ function Stats() {
         <div className="text-center">
           <TrendingUp className="w-12 h-12 text-primary mx-auto mb-4" />
           <p className="text-lg font-semibold">Unable to load statistics</p>
-          <p className="text-sm text-base-content/60 mt-2">Please try again later</p>
+          <p className="text-sm text-base-content/70 mt-2">Please try again later</p>
         </div>
       </div>
     );
@@ -122,19 +122,19 @@ function Stats() {
         <div className="grid grid-cols-4 gap-2 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
             <p className="text-2xl font-bold text-primary">{dailyTextStreak}</p>
-            <p className="text-xs text-base-content/60">{t('stats.streak')}</p>
+            <p className="text-xs text-base-content/70">{t('stats.streak')}</p>
           </div>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
             <p className="text-2xl font-bold text-secondary">{stats.bibleReadingsCompleted}</p>
-            <p className="text-xs text-base-content/60">{t('stats.bible')}</p>
+            <p className="text-xs text-base-content/70">{t('stats.bible')}</p>
           </div>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
             <p className="text-2xl font-bold text-accent">{stats.goalsCompleted}</p>
-            <p className="text-xs text-base-content/60">{t('stats.goals')}</p>
+            <p className="text-xs text-base-content/70">{t('stats.goals')}</p>
           </div>
           <div className="bg-base-100 rounded-xl p-3 text-center shadow">
             <p className="text-2xl font-bold text-info">{stats.reflectionsWritten}</p>
-            <p className="text-xs text-base-content/60">{t('stats.notes')}</p>
+            <p className="text-xs text-base-content/70">{t('stats.notes')}</p>
           </div>
         </div>
 
@@ -166,16 +166,16 @@ function Stats() {
                 >
                   <div className="flex items-start gap-2">
                     <span className="text-2xl">
-                      {achievement.unlocked ? achievement.icon : <Lock className="w-6 h-6 text-base-content/30" />}
+                      {achievement.unlocked ? achievement.icon : <Lock className="w-6 h-6 text-base-content/70" />}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className={`font-semibold text-sm truncate ${!achievement.unlocked && 'text-base-content/50'}`}>
+                      <p className={`font-semibold text-sm truncate ${!achievement.unlocked && 'text-base-content/70'}`}>
                         {achievement.name}
                       </p>
-                      <p className="text-xs text-base-content/60 line-clamp-2">
+                      <p className="text-xs text-base-content/70 line-clamp-2">
                         {achievement.description}
                       </p>
-                      <p className={`text-xs mt-1 font-medium ${achievement.unlocked ? 'text-amber-600' : 'text-base-content/40'}`}>
+                      <p className={`text-xs mt-1 font-medium ${achievement.unlocked ? 'text-amber-600' : 'text-base-content/70'}`}>
                         +{achievement.points} XP
                       </p>
                     </div>
@@ -359,7 +359,7 @@ function Stats() {
         {/* Motivational Message */}
         <div className="card bg-gradient-to-br from-primary to-secondary text-white shadow-xl animate-fade-in-up" style={{ animationDelay: '600ms' }}>
           <div className="card-body text-center">
-            <h3 className="text-xl font-bold mb-2">
+            <h2 className="text-xl font-bold mb-2">
               {level >= 10
                 ? "🏆 Outstanding Achievement!"
                 : level >= 5
@@ -367,7 +367,7 @@ function Stats() {
                 : level >= 2
                 ? "💪 Keep up the momentum!"
                 : "🌱 Every journey begins with a single step"}
-            </h3>
+            </h2>
             <p className="text-sm opacity-90">
               {level >= 10
                 ? "Your dedication to spiritual routine is truly inspiring!"

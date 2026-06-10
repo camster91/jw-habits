@@ -197,8 +197,8 @@ function ProjectsTab() {
             <FolderKanban className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-bold">{t("goals.projectsTab")}</h3>
-            <p className="text-xs text-base-content/50">{activeProjects.length} {t("goals.active")}</p>
+            <h2 className="font-bold">{t("goals.projectsTab")}</h2>
+            <p className="text-xs text-base-content/70">{activeProjects.length} {t("goals.active")}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -252,7 +252,7 @@ function ProjectsTab() {
                     <span className="text-2xl">{suggested.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{suggested.title}</p>
-                      <p className="text-xs text-base-content/60 truncate">{suggested.description}</p>
+                      <p className="text-xs text-base-content/70 truncate">{suggested.description}</p>
                       {suggested.tasks && (
                         <p className="text-xs text-secondary mt-1">{t("goals.tasksIncluded", { count: suggested.tasks.length })}</p>
                       )}
@@ -322,7 +322,7 @@ function ProjectsTab() {
             <FolderKanban className="w-8 h-8 text-secondary" />
           </div>
           <p className="font-medium text-base-content/70">{t("goals.noProjects")}</p>
-          <p className="text-sm text-base-content/50 mt-1"></p>
+          <p className="text-sm text-base-content/70 mt-1"></p>
           <button
             onClick={() => setShowSuggestions(true)}
             className="btn btn-primary btn-sm mt-4"
@@ -348,9 +348,9 @@ function ProjectsTab() {
                     onClick={() => toggleExpanded(project.id)}
                   >
                     {isExpanded ? (
-                      <ChevronDown className="w-4 h-4 text-base-content/60" />
+                      <ChevronDown className="w-4 h-4 text-base-content/70" />
                     ) : (
-                      <ChevronRight className="w-4 h-4 text-base-content/60" />
+                      <ChevronRight className="w-4 h-4 text-base-content/70" />
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -371,7 +371,7 @@ function ProjectsTab() {
                               style={{ width: `${progress}%` }}
                             />
                           </div>
-                          <span className="text-xs text-base-content/60">
+                          <span className="text-xs text-base-content/70">
                             {completedTasks}/{project.tasks.length}
                           </span>
                         </div>
@@ -383,7 +383,7 @@ function ProjectsTab() {
                         haptics.light();
                         deleteProject(project.id);
                       }}
-                      className="btn btn-ghost btn-xs text-base-content/40 hover:text-error"
+                      className="btn btn-ghost btn-xs text-base-content/70 hover:text-error"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -393,7 +393,7 @@ function ProjectsTab() {
                   {isExpanded && (
                     <div className="mt-3 pl-6 space-y-2">
                       {project.description && (
-                        <p className="text-sm text-base-content/60">{project.description}</p>
+                        <p className="text-sm text-base-content/70">{project.description}</p>
                       )}
 
                       {/* Tasks List */}
@@ -422,7 +422,7 @@ function ProjectsTab() {
                               />
                               <span
                                 className={`flex-1 text-sm ${
-                                  task.completed ? 'line-through text-base-content/50' : ''
+                                  task.completed ? 'line-through text-base-content/70' : ''
                                 }`}
                               >
                                 {task.title}

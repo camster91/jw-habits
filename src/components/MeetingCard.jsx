@@ -199,7 +199,7 @@ function MeetingCard() {
       <div className="card bg-base-100 shadow-sm rounded-2xl">
         <div className="card-body items-center py-8">
           <div className="loading loading-spinner loading-md text-accent"></div>
-          <p className="text-sm text-base-content/50">{t("study.loading")}</p>
+          <p className="text-sm text-base-content/70">{t("study.loading")}</p>
         </div>
       </div>
     );
@@ -238,7 +238,7 @@ function MeetingCard() {
           </div>
           <div className="flex-1">
             <h2 className="font-bold text-lg">This Week&apos;s Meetings</h2>
-            <p className="text-xs text-base-content/50">
+            <p className="text-xs text-base-content/70">
               {workbookData?.weekOf || format(weekStart, 'MMMM d') + ' - ' + format(addDays(weekStart, 6), 'MMMM d, yyyy')}
             </p>
           </div>
@@ -256,7 +256,7 @@ function MeetingCard() {
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all active:scale-95 ${
                   isActive
                     ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                    : 'bg-base-200 text-base-content/60'
+                    : 'bg-base-200 text-base-content/70'
                 }`}
               >
                 {tab === 'midweek' ? t("study.midweek") : t("study.weekend")}

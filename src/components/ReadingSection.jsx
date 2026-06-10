@@ -83,7 +83,7 @@ function ReadingSection() {
                   className={`w-8 h-8 rounded text-xs font-medium flex items-center justify-center transition-all ${
                     done
                       ? 'bg-primary text-primary-content scale-100'
-                      : 'bg-base-300 text-base-content/60 hover:bg-base-200 hover:scale-105'
+                      : 'bg-base-300 text-base-content/70 hover:bg-base-200 hover:scale-105'
                   }`}
                   aria-label={`Chapter ${ch}`}
                 >
@@ -93,7 +93,7 @@ function ReadingSection() {
             })}
           </div>
         ) : (
-          <p className="text-xs text-base-content/50">
+          <p className="text-xs text-base-content/70">
             {book.completedChapters.length} of {book.chapters} chapters — tap to expand (large book)
           </p>
         )}
@@ -101,7 +101,7 @@ function ReadingSection() {
           className="progress progress-primary w-full h-1.5"
           value={prog.pct} max="100"
         />
-        <span className="text-xs text-base-content/50">{prog.pct}% complete</span>
+        <span className="text-xs text-base-content/70">{prog.pct}% complete</span>
         {prog.finished && <span className="badge badge-success badge-sm ml-2">Finished!</span>}
       </div>
     );
@@ -114,19 +114,19 @@ function ReadingSection() {
         <div className="grid grid-cols-4 gap-2 mb-4 text-center text-sm">
           <div className="p-2 rounded bg-primary/5">
             <div className="font-bold text-primary">{stats.finishedBooks}</div>
-            <div className="text-xs text-base-content/50">Books done</div>
+            <div className="text-xs text-base-content/70">Books done</div>
           </div>
           <div className="p-2 rounded bg-secondary/5">
             <div className="font-bold text-secondary">{stats.totalChaptersCompleted}</div>
-            <div className="text-xs text-base-content/50">Chapters</div>
+            <div className="text-xs text-base-content/70">Chapters</div>
           </div>
           <div className="p-2 rounded bg-accent/5">
             <div className="font-bold text-accent">{Math.round(stats.audioMinutes / 60)}h</div>
-            <div className="text-xs text-base-content/50">Audio</div>
+            <div className="text-xs text-base-content/70">Audio</div>
           </div>
           <div className="p-2 rounded bg-info/5">
             <div className="font-bold text-info">{stats.videosWatched}</div>
-            <div className="text-xs text-base-content/50">Videos</div>
+            <div className="text-xs text-base-content/70">Videos</div>
           </div>
         </div>
 
@@ -158,7 +158,7 @@ function ReadingSection() {
                   >
                     <div>
                       <span className="text-sm font-medium">{book.title}</span>
-                      <span className="text-xs text-base-content/50 ml-2">
+                      <span className="text-xs text-base-content/70 ml-2">
                         {prog.completed}/{prog.total}
                       </span>
                     </div>
@@ -202,13 +202,13 @@ function ReadingSection() {
         {activeTab === 'audio' && (
           <div className="space-y-3">
             {audioTracks.length === 0 && (
-              <p className="text-sm text-base-content/50 text-center py-4">No audio tracks yet</p>
+              <p className="text-sm text-base-content/70 text-center py-4">No audio tracks yet</p>
             )}
             {audioTracks.map((track) => (
               <div key={track.id} className="flex items-center justify-between p-3 rounded-lg bg-base-200/50">
                 <div>
                   <span className="text-sm font-medium block">{track.title}</span>
-                  <span className="text-xs text-base-content/50">
+                  <span className="text-xs text-base-content/70">
                     {track.listened} min listened — since {format(track.startedAt)}
                   </span>
                 </div>
@@ -245,13 +245,13 @@ function ReadingSection() {
         {activeTab === 'video' && (
           <div className="space-y-3">
             {watchedVideos.length === 0 && (
-              <p className="text-sm text-base-content/50 text-center py-4">No videos watched yet</p>
+              <p className="text-sm text-base-content/70 text-center py-4">No videos watched yet</p>
             )}
             {watchedVideos.map((video) => (
               <div key={video.id} className="flex items-center justify-between p-3 rounded-lg bg-base-200/50">
                 <div>
                   <span className="text-sm font-medium block">{video.title}</span>
-                  <span className="text-xs text-base-content/50">Watched {format(video.watchedAt)}</span>
+                  <span className="text-xs text-base-content/70">Watched {format(video.watchedAt)}</span>
                 </div>
                 <button
                   onClick={() => removeWatchedVideo(video.id)}

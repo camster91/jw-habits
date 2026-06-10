@@ -126,7 +126,7 @@ function Links() {
       <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/70" />
           <input
             type="text"
             placeholder={t('links.searchPlaceholder')}
@@ -139,14 +139,14 @@ function Links() {
               onClick={() => setSearchQuery('')}
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
-              <X className="w-5 h-5 text-base-content/40" />
+              <X className="w-5 h-5 text-base-content/70" />
             </button>
           )}
         </div>
 
         {/* Search Results Label */}
         {searchQuery && (
-          <p className="text-sm text-base-content/60">
+          <p className="text-sm text-base-content/70">
             {filteredCategories.reduce((sum, cat) => sum + cat.links.length, 0)} link{filteredCategories.reduce((sum, cat) => sum + cat.links.length, 0) !== 1 ? 's' : ''} matching "{searchQuery}"
           </p>
         )}
@@ -157,7 +157,7 @@ function Links() {
             <Search className="w-8 h-8 text-primary/50" />
           </div>
           <p className="font-medium text-base-content/70">{t('links.noLinksFound')}</p>
-          <p className="text-sm text-base-content/50 mt-1">{t('links.tryDifferent')}</p>
+          <p className="text-sm text-base-content/70 mt-1">{t('links.tryDifferent')}</p>
         </div>
         ) : (
           filteredCategories.map((category) => (
@@ -176,7 +176,7 @@ function Links() {
                     >
                       <link.icon className="w-5 h-5 text-primary flex-shrink-0" />
                       <span className="flex-1 text-sm">{link.title}</span>
-                      <ExternalLink className={`w-4 h-4 flex-shrink-0 ${link.external ? 'text-primary' : 'text-base-content/40'}`} />
+                      <ExternalLink className={`w-4 h-4 flex-shrink-0 ${link.external ? 'text-primary' : 'text-base-content/70'}`} />
                     </a>
                   ))}
                 </div>

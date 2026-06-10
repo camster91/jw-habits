@@ -52,7 +52,7 @@ export function CardLoading() {
     <div className="card bg-base-100 shadow-md">
       <div className="card-body items-center justify-center py-8">
         <LoadingSpinner size="md" className="text-primary" />
-        <p className="text-sm text-base-content/60 mt-2">Loading...</p>
+        <p className="text-sm text-base-content/70 mt-2">Loading...</p>
       </div>
     </div>
   );

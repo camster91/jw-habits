@@ -63,7 +63,7 @@ function SharePage() {
                   <div className="flex items-start gap-3">
                     <FileText className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-xs font-medium text-base-content/50 uppercase tracking-wider">Title</p>
+                      <p className="text-xs font-medium text-base-content/70 uppercase tracking-wider">Title</p>
                       <p className="font-semibold text-base-content mt-0.5">{title}</p>
                     </div>
                   </div>
@@ -74,7 +74,7 @@ function SharePage() {
                   <div className="flex items-start gap-3">
                     <FileText className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-xs font-medium text-base-content/50 uppercase tracking-wider">Text</p>
+                      <p className="text-xs font-medium text-base-content/70 uppercase tracking-wider">Text</p>
                       <p className="text-base-content/80 mt-0.5 whitespace-pre-wrap">{text}</p>
                     </div>
                   </div>
@@ -85,7 +85,7 @@ function SharePage() {
                   <div className="flex items-start gap-3">
                     <LinkIcon className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-base-content/50 uppercase tracking-wider">URL</p>
+                      <p className="text-xs font-medium text-base-content/70 uppercase tracking-wider">URL</p>
                       <p className="text-primary mt-0.5 break-all text-sm">{url}</p>
                     </div>
                   </div>
@@ -122,7 +122,7 @@ function SharePage() {
               <Share2 className="w-10 h-10 text-blue-400" />
             </div>
             <h2 className="text-xl font-bold text-base-content/70">No Shared Content</h2>
-            <p className="text-sm text-base-content/50 mt-2 max-w-xs mx-auto">
+            <p className="text-sm text-base-content/70 mt-2 max-w-xs mx-auto">
               This page receives content shared from other apps. Try sharing a link or text to JW Habits.
             </p>
             <button

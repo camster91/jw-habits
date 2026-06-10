@@ -28,7 +28,7 @@ function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = f
           <div className="text-left">
             <span className="font-semibold text-sm">{title}</span>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-xs ${isComplete ? 'text-success' : 'text-base-content/50'}`}>
+              <span className={`text-xs ${isComplete ? 'text-success' : 'text-base-content/70'}`}>
                 {t("study.ofComplete", { completed: completedCount, total: totalCount })}
               </span>
             </div>
@@ -44,9 +44,9 @@ function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = f
             />
           </div>
           {isExpanded ? (
-            <ChevronDown className="w-5 h-5 text-base-content/40" />
+            <ChevronDown className="w-5 h-5 text-base-content/70" />
           ) : (
-            <ChevronRight className="w-5 h-5 text-base-content/40" />
+            <ChevronRight className="w-5 h-5 text-base-content/70" />
           )}
         </div>
       </button>
@@ -76,17 +76,17 @@ function MeetingSection({ title, color, parts, onPartToggle, defaultExpanded = f
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-sm font-medium ${part.completed ? 'line-through text-base-content/40' : ''}`}>
+                  <span className={`text-sm font-medium ${part.completed ? 'line-through text-base-content/70' : ''}`}>
                     {part.title}
                   </span>
                   {part.duration && (
-                    <span className="text-xs text-base-content/40 bg-base-200 px-1.5 py-0.5 rounded">
+                    <span className="text-xs text-base-content/70 bg-base-200 px-1.5 py-0.5 rounded">
                       {part.duration} {t("bibleReading.min")}
                     </span>
                   )}
                 </div>
                 {part.subtitle && (
-                  <p className="text-xs text-base-content/50 mt-1 line-clamp-2">{part.subtitle}</p>
+                  <p className="text-xs text-base-content/70 mt-1 line-clamp-2">{part.subtitle}</p>
                 )}
               </div>
               {part.completed && (

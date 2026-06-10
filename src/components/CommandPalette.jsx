@@ -81,7 +81,7 @@ export default function CommandPalette() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-base-300">
-          <Search className="w-5 h-5 text-base-content/50" />
+          <Search className="w-5 h-5 text-base-content/70" />
           <input
             autoFocus
             value={query}
@@ -103,25 +103,25 @@ export default function CommandPalette() {
               }
             }}
             placeholder="Search actions, navigate, or type a question..."
-            className="flex-1 bg-transparent outline-none text-base placeholder:text-base-content/40"
+            className="flex-1 bg-transparent outline-none text-base placeholder:text-base-content/70"
           />
-          <kbd className="hidden sm:block text-[10px] px-1.5 py-0.5 rounded bg-base-200 text-base-content/50">
+          <kbd className="hidden sm:block text-[10px] px-1.5 py-0.5 rounded bg-base-200 text-base-content/70">
             ESC
           </kbd>
-          <button onClick={() => setOpen(false)} className="text-base-content/40 hover:text-base-content">
+          <button onClick={() => setOpen(false)} className="text-base-content/70 hover:text-base-content">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="px-4 py-8 text-center text-base-content/50 text-sm">No results</div>
+            <div className="px-4 py-8 text-center text-base-content/70 text-sm">No results</div>
           ) : (
             Object.entries(grouped).map(([group, groupItems]) => {
               let flatIndex = filtered.indexOf(groupItems[0]);
               return (
                 <div key={group} className="py-2">
-                  <div className="px-4 py-1 text-[10px] font-semibold text-base-content/40 uppercase tracking-wider">
+                  <div className="px-4 py-1 text-[10px] font-semibold text-base-content/70 uppercase tracking-wider">
                     {group}
                   </div>
                   {groupItems.map((item, i) => {
@@ -140,15 +140,15 @@ export default function CommandPalette() {
                           isActive ? 'bg-primary/10' : ''
                         }`}
                       >
-                        <Icon className="w-4 h-4 text-base-content/60 flex-shrink-0" />
+                        <Icon className="w-4 h-4 text-base-content/70 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">{item.label}</div>
                           {item.description && (
-                            <div className="text-xs text-base-content/50 truncate">{item.description}</div>
+                            <div className="text-xs text-base-content/70 truncate">{item.description}</div>
                           )}
                         </div>
                         {item.shortcut && (
-                          <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-base-200 text-base-content/50">
+                          <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-base-200 text-base-content/70">
                             {item.shortcut}
                           </kbd>
                         )}

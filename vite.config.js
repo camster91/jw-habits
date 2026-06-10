@@ -7,8 +7,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Enable CSS code splitting per chunk
-        cssCodeSplit: true,
         // Per-page code splitting. We rely on React.lazy() in App.jsx
         // for routes, plus Vite's default vendor splitting. manualChunks
         // was tried and caused circular dependency issues (some chunks
@@ -34,10 +32,10 @@ export default defineConfig({
             const storeName = id.split('/stores/')[1].split('.')[0];
             return `store-${storeName}`;
           }
-          // Split components into a shared chunk
-          if (id.includes('/components/')) {
-            return 'components';
-          }
+          // NOTE: do NOT split /components/ into a shared chunk. That creates
+          // a circular dep with pages (page-Home imports components, but
+          // components may import from pages). The current behavior puts
+          // components in the per-page chunk they belong to.
         }
       }
     }

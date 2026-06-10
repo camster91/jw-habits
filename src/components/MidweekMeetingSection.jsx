@@ -22,7 +22,7 @@ function MidweekMeetingSection({
         <div className="flex items-center gap-2">
           <p className="font-semibold text-sm">{date}</p>
           {songs?.opening && (
-            <span className="flex items-center gap-1 text-xs text-base-content/40">
+            <span className="flex items-center gap-1 text-xs text-base-content/70">
               <Music className="w-3 h-3" /> {songs.opening}
             </span>
           )}
@@ -47,7 +47,7 @@ function MidweekMeetingSection({
             style={{ width: `${progress.progress || 0}%` }}
           />
         </div>
-        <span className="text-xs font-medium text-base-content/50">{progress.progress || 0}%</span>
+        <span className="text-xs font-medium text-base-content/70">{progress.progress || 0}%</span>
       </div>
 
       {/* Weekly Bible Reading - integrated into midweek */}
@@ -78,7 +78,7 @@ function MidweekMeetingSection({
 
       {/* Song info */}
       {songs && (
-        <div className="flex items-center justify-center gap-4 text-xs text-base-content/40 pt-1">
+        <div className="flex items-center justify-center gap-4 text-xs text-base-content/70 pt-1">
           {songs.middle && <span className="flex items-center gap-1"><Music className="w-3 h-3" /> Song {songs.middle}</span>}
           {songs.closing && <span className="flex items-center gap-1"><Music className="w-3 h-3" /> Song {songs.closing}</span>}
         </div>

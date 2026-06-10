@@ -27,7 +27,7 @@ function Goals() {
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all active:scale-95 ${
               activeTab === 'goals'
                 ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                : 'bg-base-200 text-base-content/60'
+                : 'bg-base-200 text-base-content/70'
             }`}
           >
             <Target className="w-4 h-4" />
@@ -38,7 +38,7 @@ function Goals() {
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all active:scale-95 ${
               activeTab === 'projects'
                 ? 'bg-primary text-white shadow-lg shadow-primary/25'
-                : 'bg-base-200 text-base-content/60'
+                : 'bg-base-200 text-base-content/70'
             }`}
           >
             <FolderKanban className="w-4 h-4" />

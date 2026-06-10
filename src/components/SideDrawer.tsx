@@ -76,7 +76,7 @@ function SideDrawer({ children }: SideDrawerProps) {
             <div className="flex items-center justify-between p-4 border-b border-base-200">
                 <div>
                 <h2 className="text-lg font-bold">{t('nav.more')}</h2>
-                <p className="text-xs text-base-content/50">{t('nav.moreSubtitle')}</p>
+                <p className="text-xs text-base-content/70">{t('nav.moreSubtitle')}</p>
               </div>
               <button
                 onClick={closeDrawer}
@@ -103,11 +103,11 @@ function SideDrawer({ children }: SideDrawerProps) {
                     }`}
                   >
                     <div className={`p-2 rounded-xl ${isActive ? 'bg-primary/15' : 'bg-base-200'}`}>
-                      <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-base-content/60'}`} />
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-base-content/70'}`} />
                     </div>
                     <div className="text-left">
                       <p className={`font-medium text-sm ${isActive ? 'text-primary' : ''}`}>{item.label}</p>
-                      <p className="text-xs text-base-content/50">{item.description}</p>
+                      <p className="text-xs text-base-content/70">{item.description}</p>
                     </div>
                   </button>
                 );
@@ -116,7 +116,7 @@ function SideDrawer({ children }: SideDrawerProps) {
 
             {/* Footer */}
             <div className="p-4 border-t border-base-200">
-              <p className="text-xs text-base-content/40 text-center">
+              <p className="text-xs text-base-content/70 text-center">
                 JW Habits
               </p>
             </div>

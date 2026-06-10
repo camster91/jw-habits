@@ -268,7 +268,7 @@ function Settings() {
 
                     {/* Prayer notifications */}
                     <div className="pt-2">
-                      <p className="text-xs font-semibold text-base-content/40 uppercase tracking-wider px-1 mb-1">Prayer Reminders</p>
+                      <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wider px-1 mb-1">Prayer Reminders</p>
                       <NotificationItem icon={Heart} label={notifications?.morningPrayer?.label ?? t("settings.morningPrayer")} enabled={notifications?.morningPrayer?.enabled ?? true} onToggle={() => handleToggleNotification('morningPrayer')} onTimeChange={(time) => handleSetNotificationTime('morningPrayer', time)} time={notifications?.morningPrayer?.time ?? '06:30'} color="text-info" />
                       <NotificationItem icon={Heart} label={notifications?.afternoonPrayer?.label ?? t("settings.afternoonPrayer")} enabled={notifications?.afternoonPrayer?.enabled ?? true} onToggle={() => handleToggleNotification('afternoonPrayer')} onTimeChange={(time) => handleSetNotificationTime('afternoonPrayer', time)} time={notifications?.afternoonPrayer?.time ?? '12:00'} color="text-info" />
                       <NotificationItem icon={Heart} label={notifications?.eveningPrayer?.label ?? t("settings.eveningPrayer")} enabled={notifications?.eveningPrayer?.enabled ?? true} onToggle={() => handleToggleNotification('eveningPrayer')} onTimeChange={(time) => handleSetNotificationTime('eveningPrayer', time)} time={notifications?.eveningPrayer?.time ?? '21:00'} color="text-info" />
@@ -276,7 +276,7 @@ function Settings() {
 
                     {/* Weekly notifications */}
                     <div className="pt-2">
-                      <p className="text-xs font-semibold text-base-content/40 uppercase tracking-wider px-1 mb-1">Weekly Reminders</p>
+                      <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wider px-1 mb-1">Weekly Reminders</p>
                       <WeeklyNotificationItem
                         icon={Calendar}
                         label={notifications?.meetingPrep?.label ?? "Meeting Preparation"}
@@ -334,7 +334,7 @@ function Settings() {
                 maxLength={30}
                 autoComplete="given-name"
               />
-              <p className="text-xs text-base-content/50 mt-1">Used in the home greeting. Stored on this device only.</p>
+              <p className="text-xs text-base-content/70 mt-1">Used in the home greeting. Stored on this device only.</p>
             </div>
             <div className="divider my-2"></div>
             <button onClick={toggleTheme} className="btn btn-outline w-full justify-start">
@@ -379,7 +379,7 @@ function Settings() {
                       onChange={(e) => setAiSettings({ ollamaBaseUrl: e.target.value })}
                       placeholder="https://ollama.com or http://localhost:11434"
                     />
-                    <p className="text-xs text-base-content/50">Cloud: ollama.com | Local: localhost:11434</p>
+                    <p className="text-xs text-base-content/70">Cloud: ollama.com | Local: localhost:11434</p>
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-base-content/70">{t("settings.apiKey")}</label>
@@ -399,7 +399,7 @@ function Settings() {
                         {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    <p className="text-xs text-base-content/50">Get key at ollama.com (account settings)</p>
+                    <p className="text-xs text-base-content/70">Get key at ollama.com (account settings)</p>
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-base-content/70">{t("settings.model")}</label>
@@ -410,7 +410,7 @@ function Settings() {
                       onChange={(e) => setAiSettings({ ollamaModel: e.target.value })}
                       placeholder="llama3.2, mistral-small3.1, deepseek-r1, etc."
                     />
-                    <p className="text-xs text-base-content/50">Cloud models: llama3.2, llama3.3, mistral-small3.1, qwen3, gemma3, phi4, deepseek-r1</p>
+                    <p className="text-xs text-base-content/70">Cloud models: llama3.2, llama3.3, mistral-small3.1, qwen3, gemma3, phi4, deepseek-r1</p>
                   </div>
                   <button
                     onClick={handleTestAi}
@@ -442,10 +442,10 @@ function Settings() {
           <div className="card bg-base-100 shadow-2xl w-full max-w-md">
             <div className="card-body">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-lg flex items-center gap-2">
+                <h2 className="font-bold text-lg flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-warning" />
                   {t("settings.importTitle")}
-                </h3>
+                </h2>
                 <button onClick={cancelImport} className="btn btn-ghost btn-sm btn-circle" aria-label="Cancel import">
                   <X className="w-4 h-4" />
                 </button>
@@ -466,7 +466,7 @@ function Settings() {
                 {t("settings.importWarning")}
               </p>
               {importModal.data.exportedAt && (
-                <p className="text-xs text-base-content/50 mb-4">
+                <p className="text-xs text-base-content/70 mb-4">
                   {t("settings.backupCreated", { date: new Date(importModal.data.exportedAt).toLocaleString() })}
                 </p>
               )}

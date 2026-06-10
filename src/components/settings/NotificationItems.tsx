@@ -31,7 +31,7 @@ export function NotificationItem({ icon: Icon, label, description = '', enabled,
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm">{label}</p>
-          <p className="text-xs text-base-content/50">{description}</p>
+          <p className="text-xs text-base-content/70">{description}</p>
         </div>
       </div>
       <div className="flex items-center gap-3">
@@ -94,7 +94,7 @@ export function WeeklyNotificationItem({
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm">{label}</p>
-            <p className="text-xs text-base-content/50">{description}</p>
+            <p className="text-xs text-base-content/70">{description}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -119,7 +119,7 @@ export function WeeklyNotificationItem({
         <div className="mt-3 ml-14 p-3 bg-base-100 rounded-xl">
           {isMeetingPrep ? (
             <div>
-              <p className="text-xs font-medium text-base-content/60 mb-2">Remind day before:</p>
+              <p className="text-xs font-medium text-base-content/70 mb-2">Remind day before:</p>
               <div className="flex flex-wrap gap-1.5">
                 {DAYS_OF_WEEK.map((day) => (
                   <button
@@ -144,7 +144,7 @@ export function WeeklyNotificationItem({
             </div>
           ) : (
             <div>
-              <p className="text-xs font-medium text-base-content/60 mb-2">Remind every:</p>
+              <p className="text-xs font-medium text-base-content/70 mb-2">Remind every:</p>
               <div className="flex flex-wrap gap-1.5">
                 {DAYS_OF_WEEK.map((day) => (
                   <button

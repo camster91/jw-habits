@@ -256,7 +256,7 @@ function Home() {
         {/* Unofficial disclaimer footer (always shown) */}
         <div className="ios-footer">
           Unofficial third-party tool. Not affiliated with jw.org.<br />
-          <a href="/about">Read full disclaimer →</a>
+          <a href="/about" className="font-bold text-[13px]" style={{ color: '#0055B3' }}>Read full disclaimer →</a>
         </div>
 
         {/* Bottom spacer for nav */}

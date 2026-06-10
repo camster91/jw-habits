@@ -143,11 +143,11 @@ export default function Onboarding() {
               <h2 className="text-2xl font-bold text-base-content">
                 {t('onboarding.welcome')}
               </h2>
-              <p className="mt-2 text-base-content/60 text-sm leading-relaxed">
+              <p className="mt-2 text-base-content/70 text-sm leading-relaxed">
                 {t('onboarding.welcomeDesc')}
               </p>
               <div className="mt-5">
-                <label className="block text-left text-xs font-medium text-base-content/60 mb-1.5">
+                <label className="block text-left text-xs font-medium text-base-content/70 mb-1.5">
                   Your first name (optional)
                 </label>
                 <input
@@ -159,7 +159,7 @@ export default function Onboarding() {
                   maxLength={30}
                   autoComplete="given-name"
                 />
-                <p className="mt-1.5 text-[10px] text-base-content/40">
+                <p className="mt-1.5 text-[10px] text-base-content/70">
                   Stored on this device only. You can change it later in Settings.
                 </p>
               </div>
@@ -170,7 +170,7 @@ export default function Onboarding() {
               <h2 className="text-2xl font-bold text-base-content">
                 What's your publishing status?
               </h2>
-              <p className="mt-2 text-base-content/60 text-sm leading-relaxed">
+              <p className="mt-2 text-base-content/70 text-sm leading-relaxed">
                 This helps us personalize your experience.
               </p>
               <div className="mt-5 space-y-2">
@@ -200,7 +200,7 @@ export default function Onboarding() {
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-base-content">{opt.label}</div>
-                      <div className="text-xs text-base-content/50">{opt.sub}</div>
+                      <div className="text-xs text-base-content/70">{opt.sub}</div>
                     </div>
                   </button>
                 ))}
@@ -217,7 +217,7 @@ export default function Onboarding() {
               <h2 className="text-2xl font-bold text-base-content">
                 {t('onboarding.allSet')}
               </h2>
-              <p className="mt-2 text-base-content/60 text-sm leading-relaxed">
+              <p className="mt-2 text-base-content/70 text-sm leading-relaxed">
                 {t('onboarding.allSetDesc')}
               </p>
             </div>
@@ -237,7 +237,7 @@ export default function Onboarding() {
                     <h2 className="text-xl font-bold text-base-content">
                       {t(feature.titleKey)}
                     </h2>
-                    <p className="mt-2 text-base-content/60 text-sm leading-relaxed">
+                    <p className="mt-2 text-base-content/70 text-sm leading-relaxed">
                       {t(feature.descKey)}
                     </p>
                   </>
@@ -296,7 +296,7 @@ export default function Onboarding() {
           {!isLastPage && (
             <button
               onClick={handleDismiss}
-              className="btn btn-ghost btn-sm w-full mt-2 text-base-content/40 hover:text-base-content/60"
+              className="btn btn-ghost btn-sm w-full mt-2 text-base-content/70 hover:text-base-content/70"
             >
               {t('onboarding.skip')}
             </button>

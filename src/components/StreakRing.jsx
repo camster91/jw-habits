@@ -65,7 +65,7 @@ export default function StreakRing({
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <div className="flex items-baseline gap-0.5">
           <span className="text-2xl font-black text-base-content">{current}</span>
-          <span className="text-xs font-medium text-base-content/40">days</span>
+          <span className="text-xs font-medium text-base-content/70">days</span>
         </div>
         <Flame className={`w-3.5 h-3.5 mt-0.5 ${current > 0 ? 'text-orange-500' : 'text-base-content/20'}`} />
       </div>
