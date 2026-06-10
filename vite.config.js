@@ -9,26 +9,20 @@ export default defineConfig({
       output: {
         // Enable CSS code splitting per chunk
         cssCodeSplit: true,
-        // Manual chunks for route-level code splitting
+        // Per-page code splitting. We rely on React.lazy() in App.jsx
+        // for routes, plus Vite's default vendor splitting. manualChunks
+        // was tried and caused circular dependency issues (some chunks
+        // were loaded before React, breaking createContext). The default
+        // splitter is safer.
         manualChunks(id) {
-          // Split vendor libraries into separate chunks
-          if (id.includes('node_modules')) {
-            // Anything that depends on react (or IS react) goes in vendor-react.
-            // We match by package-name patterns that import React.createContext.
-            if (id.includes('react-dom') || id.includes('/react/') || id.includes('/react-router') || id.includes('react-i18next') || id.includes('zustand')) {
-              if (id.includes('zustand')) return 'vendor-zustand';
-              return 'vendor-react';
-            }
-            if (id.includes('lucide-react')) {
-              return 'vendor-icons';
-            }
-            if (id.includes('date-fns')) {
-              return 'vendor-date-fns';
-            }
-            if (id.includes('@tanstack')) {
-              return 'vendor-tanstack';
-            }
-            return 'vendor-misc';
+          // Extract the npm package name from a node_modules path.
+          const pkgMatch = id.match(/node_modules\/((?:@[^/]+\/[^/]+)|[^/]+)/);
+          const pkg = pkgMatch ? pkgMatch[1] : null;
+          if (pkg) {
+            // Everything in node_modules goes in one vendor chunk. The default
+            // splitter also creates one, so this matches behavior but keeps
+            // the bundle shape predictable.
+            return 'vendor';
           }
           // Split each page into its own chunk
           if (id.includes('/pages/')) {
