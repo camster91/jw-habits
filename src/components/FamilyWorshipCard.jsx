@@ -196,6 +196,7 @@ function FamilyWorshipCard() {
                   onClick={() => handleRemoveLink(link.id)}
                   className="p-2 -mr-2"
                   style={{ background: 'transparent', border: 0 }}
+                  aria-label="Remove link"
                 >
                   <Trash2 className="w-4 h-4" style={{ color: 'var(--ios-red)' }} />
                 </button>

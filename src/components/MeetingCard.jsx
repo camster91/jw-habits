@@ -209,8 +209,8 @@ function MeetingCard() {
     return (
       <div className="card bg-base-100 shadow-sm rounded-2xl">
         <div className="card-body items-center py-8">
-          <Calendar className="w-8 h-8 text-base-content/30" />
-          <p className="text-sm text-base-content/50">{t("study.loadError")}</p>
+          <Calendar className="w-8 h-8 text-base-content/70" />
+          <p className="text-sm text-base-content/70">{t("study.loadError")}</p>
           <a
             href={JW_ORG_SECTIONS.meetingWorkbooks}
             target="_blank"

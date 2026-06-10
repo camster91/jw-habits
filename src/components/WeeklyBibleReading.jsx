@@ -91,8 +91,8 @@ function WeeklyBibleReading() {
     return (
       <article className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
         <div className="card-body items-center py-8">
-          <Book className="w-8 h-8 text-base-content/30" />
-          <p className="text-sm text-base-content/50">No weekly reading data available</p>
+          <Book className="w-8 h-8 text-base-content/70" />
+          <p className="text-sm text-base-content/70">No weekly reading data available</p>
         </div>
       </article>
     );

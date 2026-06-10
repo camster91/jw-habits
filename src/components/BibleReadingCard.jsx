@@ -99,6 +99,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
             setShowReadingSettings(!showReadingSettings);
           }}
           className="p-2 -mr-2"
+          aria-label="Reading settings"
         >
           <Settings2 className="w-5 h-5 text-base-content/50" />
         </button>
@@ -184,7 +185,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
                         <span className="font-semibold text-sm">{entry.book} {entry.chapters}</span>
                         <span className="text-xs text-base-content/40 ml-2 bg-base-300/50 px-1.5 py-0.5 rounded">~{entry.time} {t('bibleReading.min')}</span>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-base-content/30" />
+                      <ChevronRight className="w-5 h-5 text-base-content/70" />
                     </button>
                   ))}
                 </div>

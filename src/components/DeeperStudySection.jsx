@@ -236,7 +236,7 @@ function DeeperStudySection() {
           </div>
         </div>
         {showDeeperStudy ? (
-          <ChevronDown className="w-5 h-5 text-base-content/30" />
+          <ChevronDown className="w-5 h-5 text-base-content/70" />
         ) : (
           <ChevronRight className="w-5 h-5 text-base-content/30" />
         )}
@@ -294,7 +294,7 @@ function DeeperStudySection() {
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <span className="flex-1 font-bold text-left">{category.title}</span>
-                    <ChevronRight className={`w-5 h-5 text-base-content/30 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                    <ChevronRight className={`w-5 h-5 text-base-content/70 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                   </button>
 
                   {isExpanded && (

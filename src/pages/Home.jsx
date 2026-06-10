@@ -93,7 +93,7 @@ function Home() {
             <div className="art">
               <Sparkles className="w-7 h-7" />
             </div>
-            <div className="h">{t('home.startYourFirstDay', 'Start your first day')}</div>
+            <h2 className="h">{t('home.startYourFirstDay', 'Start your first day')}</h2>
             <div className="sub">
               {t('home.startYourFirstDayDesc',
                 'Read today\'s text and check in. That\'s it. Your first streak begins on day one.'

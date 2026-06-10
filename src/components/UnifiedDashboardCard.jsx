@@ -89,7 +89,7 @@ export default function UnifiedDashboardCard() {
                   }`}
                 />
               ))}
-              <span className="text-[10px] text-base-content/30 ml-1">7d</span>
+              <span className="text-[10px] text-base-content/70 ml-1">7d</span>
             </div>
           </div>
         </div>

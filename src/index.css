@@ -29,7 +29,7 @@
   .ios-large-title .sub {
     font-size: 15px;
     font-weight: 400;
-    color: var(--ios-label-3, #8E8E93);
+    color: var(--ios-label-2, #636366);
     display: block;
     margin-top: 4px;
     letter-spacing: 0;
@@ -103,7 +103,7 @@
   }
   .ios-row .sub {
     font-size: 13px;
-    color: var(--ios-label-3, #8E8E93);
+    color: var(--ios-label-2, #636366);
     margin-top: 1px;
   }
   .ios-row.done .title {
@@ -293,7 +293,7 @@
   }
   .ios-streak-meta .sub {
     font-size: 14px;
-    color: var(--ios-label-3, #8E8E93);
+    color: var(--ios-label-2, #636366);
     margin-top: 2px;
     font-weight: 400;
   }
@@ -433,7 +433,7 @@
   }
   .ios-empty .sub {
     font-size: 14px;
-    color: var(--ios-label-3, #8E8E93);
+    color: var(--ios-label-2, #636366);
     margin: 4px auto 0;
     line-height: 1.4;
     max-width: 280px;

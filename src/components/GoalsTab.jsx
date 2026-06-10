@@ -216,7 +216,7 @@ function GoalsTab() {
               required
               autoFocus
             />
-            <div className="flex justify-between mt-1 text-[10px] text-base-content/40">
+            <div className="flex justify-between mt-1 text-[10px] text-base-content/70">
               <span>3-80 characters</span>
               <span>{newGoal.title.length}/80</span>
             </div>
@@ -376,7 +376,7 @@ function GoalsTab() {
                       <span className="line-through text-base-content/50 flex-1">{goal.title}</span>
                       <button
                         onClick={() => deleteGoal(goal.id)}
-                        className="btn btn-ghost btn-xs text-base-content/30"
+                        className="btn btn-ghost btn-xs text-base-content/60"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>

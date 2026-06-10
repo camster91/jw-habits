@@ -217,7 +217,7 @@ export default function SmartSuggestions() {
               )}
             </div>
             <button
-              className="flex-shrink-0 text-base-content/30 hover:text-base-content/60 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="flex-shrink-0 text-base-content/70 hover:text-base-content/60 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={() => handleDismiss(s.id)}
               aria-label="Dismiss"
             >

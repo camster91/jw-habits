@@ -107,7 +107,7 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
         {/* Month labels */}
         <div className="flex gap-[2px] ml-6 mb-1">
           {monthLabels.map(({ week, label }) => (
-            <div key={`${week}-${label}`} className="text-[10px] text-base-content/50 font-medium" style={{ minWidth: '13px' }}>
+            <div key={`${week}-${label}`} className="text-[10px] text-base-content/70 font-medium" style={{ minWidth: '13px' }}>
               {label}
             </div>
           ))}
@@ -115,7 +115,7 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
 
         <div className="flex gap-1">
           {/* Day labels */}
-          <div className="flex flex-col gap-[2px] text-[10px] text-base-content/50 justify-around mr-1 w-5">
+          <div className="flex flex-col gap-[2px] text-[10px] text-base-content/70 justify-around mr-1 w-5">
             <span>M</span>
             <span>W</span>
             <span>F</span>
@@ -138,7 +138,7 @@ export default function HabitHeatmap({ weeks = 26, className = '' }) {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-1 mt-2 text-[10px] text-base-content/50">
+        <div className="flex items-center gap-1 mt-2 text-[10px] text-base-content/70">
           <span>Less</span>
           <div className="day" style={{ background: 'rgba(84, 84, 88, 0.6)' }}></div>
           <div className="day l1"></div>
