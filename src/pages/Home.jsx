@@ -1,4 +1,4 @@
-import { Menu, Sparkles, Info, Shield, TrendingUp } from 'lucide-react';
+import { Menu, Sparkles, Info, Shield, TrendingUp, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import TodaysFocus from '../components/TodaysFocus';
@@ -72,11 +72,19 @@ function Home() {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/70">
               {t('appName', 'JW Habits')}
             </span>
           </div>
+          <a
+            href="/settings"
+            className="btn btn-ghost btn-sm btn-square -mr-2 text-base-content/70"
+            aria-label="Settings (data export, import, dark mode)"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </a>
         </div>
       </div>
 
