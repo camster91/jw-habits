@@ -285,26 +285,40 @@ function Service() {
                 {last7DaysTotal.toFixed(1)}h total
               </span>
             </div>
-            <div className="flex items-end justify-between gap-1 h-24">
-              {last7Days.map((day) => {
-                const maxHours = Math.max(...last7Days.map((d) => d.hours), 1);
-                const heightPct = Math.max((day.hours / maxHours) * 100, day.hours > 0 ? 6 : 0);
-                return (
-                  <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="relative w-full flex-1 flex items-end">
-                      <div
-                        className={`w-full rounded-t ${day.hours > 0 ? 'bg-primary' : 'bg-base-300'}`}
-                        style={{ height: `${heightPct}%` }}
-                        title={`${day.date}: ${day.hours.toFixed(1)}h`}
-                      />
+            <div className="relative">
+              <div className="flex items-end justify-between gap-1 h-24">
+                {last7Days.map((day) => {
+                  const maxHours = Math.max(...last7Days.map((d) => d.hours), 1);
+                  const heightPct = Math.max((day.hours / maxHours) * 100, day.hours > 0 ? 6 : 0);
+                  return (
+                    <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
+                      <div className="relative w-full flex-1 flex items-end">
+                        <div
+                          className={`w-full rounded-t ${day.hours > 0 ? 'bg-primary' : 'bg-base-300'}`}
+                          style={{ height: `${heightPct}%` }}
+                          title={`${day.date}: ${day.hours.toFixed(1)}h`}
+                        />
+                      </div>
+                      <span className="text-[10px] text-base-content/70 font-medium">{day.label}</span>
+                      <span className="text-[10px] text-base-content/70 font-bold -mt-0.5">
+                        {day.hours > 0 ? day.hours.toFixed(1) : '·'}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-base-content/70 font-medium">{day.label}</span>
-                    <span className="text-[10px] text-base-content/70 font-bold -mt-0.5">
-                      {day.hours > 0 ? day.hours.toFixed(1) : '·'}
-                    </span>
+                  );
+                })}
+              </div>
+              {last7DaysTotal === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="bg-base-100/85 backdrop-blur-[1px] rounded-xl px-3 py-2 text-center">
+                    <p className="text-xs font-medium text-base-content/70">
+                      No service entries yet
+                    </p>
+                    <p className="text-[10px] text-base-content/50 mt-0.5">
+                      Tap a quick add button above to log your time
+                    </p>
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
           </div>
         </section>
