@@ -73,6 +73,19 @@ if (isNative) {
   });
 }
 
+// Apply persisted theme at app startup (before React mounts).
+// Without this, the theme only applied when the user visited Settings —
+// a fresh page-load with theme:'dark' in localStorage would render in light mode.
+try {
+  const persistedSettings = JSON.parse(localStorage.getItem('jw-progress-settings') || '{}');
+  const theme = persistedSettings?.state?.theme;
+  if (theme === 'dark' || theme === 'light') {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+} catch {
+  // Ignore malformed localStorage; default theme is light.
+}
+
 // Create root and render
 const container = document.getElementById('root');
 const root = createRoot(container);

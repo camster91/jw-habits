@@ -246,7 +246,7 @@ function ProjectsTab() {
                     className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
                       isAlreadyAdded
                         ? 'bg-base-200 opacity-50 cursor-not-allowed'
-                        : 'bg-white hover:bg-secondary/5 active:scale-[0.98]'
+                        : 'bg-base-100 hover:bg-secondary/5 active:scale-[0.98]'
                     }`}
                   >
                     <span className="text-2xl">{suggested.icon}</span>
