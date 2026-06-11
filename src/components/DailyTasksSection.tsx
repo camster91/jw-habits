@@ -8,6 +8,7 @@ import useMemoriesStore from '../stores/memoriesStore.js';
 import useGamificationStore from '../stores/gamificationStore.js';
 import { getDailyTextLink } from '../utils/jwLibraryLinks.js';
 import { haptics } from '../utils/native.js';
+import { formatRelativeDate } from '../utils/relativeDate.js';
 
 function DailyTasksSection() {
   const { t } = useTranslation();
@@ -160,7 +161,7 @@ function DailyTasksSection() {
           <div className="body">
             <div className="title">{t('today.reflection')}</div>
             <div className="sub">
-              {showNotes ? t('today.hide') : noteSaved ? t('today.saved') : t('today.reflectionOptional')}
+              {showNotes ? t('today.hide') : noteSaved ? `${t('today.saved')} · ${formatRelativeDate(today)}` : t('today.reflectionOptional')}
             </div>
           </div>
           <div className="ios-chev">

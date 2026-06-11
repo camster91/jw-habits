@@ -16,6 +16,7 @@ import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
 import { useToast } from './Toast';
+import { formatRelativeDate } from '../utils/relativeDate';
 
 function FamilyWorshipCard() {
   const { t } = useTranslation();
@@ -144,6 +145,11 @@ function FamilyWorshipCard() {
           <div className="title">{t('familyWorship.heading')}</div>
           <div className="sub">
             {t('familyWorship.weekOf', { start: format(weekStart, 'MMM d'), end: format(weekEnd, 'MMM d') })}
+            {familyWorshipRecord.completed && familyWorshipRecord.timestamp && (
+              <span className="ml-1.5 text-success/80 font-medium">
+                · {formatRelativeDate(familyWorshipRecord.timestamp)}
+              </span>
+            )}
           </div>
         </div>
         {familyWorshipStreakValue > 0 && (
