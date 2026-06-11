@@ -52,7 +52,7 @@ function Service() {
     entries,
   } = useServiceStore();
 
-  const addServiceActivity = useGamificationStore((s) => s.addServiceActivity);
+  const addServiceActivity = useGamificationStore((s) => s.recordServiceActivity);
 
   const todaysEntries = getTodaysEntries();
   const weeklyEntries = getWeeklyEntries();
@@ -111,12 +111,12 @@ function Service() {
     haptics.light();
     addEntry({ type: selectedType, hours: h, date: new Date().toISOString().split('T')[0] });
     addServiceActivity(h, 0, 0);
-    toast('success', `Added ${h}h entry`);
+    toast.success(`Added ${h}h entry`);
   };
 
   const handleCustomAdd = () => {
     const h = computedHours ?? parseFloat(customHours);
-    if (!h || h <= 0) { toast('error', 'Please enter valid hours'); return; }
+    if (!h || h <= 0) { toast.error('Please enter valid hours'); return; }
     haptics.light();
     const rv = parseInt(returnVisits) || 0;
     const p = parseInt(placements) || 0;
@@ -135,23 +135,23 @@ function Service() {
     });
     addServiceActivity(h, rv + bs, p);
     resetForm();
-    toast('success', `Added ${h}h entry`);
+    toast.success(`Added ${h}h entry`);
   };
 
   const handleDelete = (id) => {
     haptics.light();
     removeEntry(id);
-    toast('info', 'Entry removed');
+    toast.info('Entry removed');
   };
 
   const handleSetGoal = () => {
     const goal = parseFloat(goalInput);
-    if (!goal || goal <= 0) { toast('error', 'Please enter a valid goal'); return; }
+    if (!goal || goal <= 0) { toast.error('Please enter a valid goal'); return; }
     haptics.success();
     setMonthlyGoal(goal);
     setGoalInput('');
     setShowGoalModal(false);
-    toast('success', `Monthly goal set to ${goal}h`);
+    toast.success(`Monthly goal set to ${goal}h`);
   };
 
   const formatDate = (dateStr) => {

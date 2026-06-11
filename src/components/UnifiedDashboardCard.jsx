@@ -75,21 +75,37 @@ export default function UnifiedDashboardCard() {
                 ? `Best: ${longestStreak} days · Keep going!`
                 : 'Complete your daily text to begin'}
             </p>
-            {/* Mini streak bar */}
-            <div className="flex gap-1 mt-2">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 w-3 rounded-full transition-colors ${
-                    i < currentStreak % 7
-                      ? 'bg-primary'
-                      : i === currentStreak % 7 && currentStreak > 0
-                        ? 'bg-primary/40 animate-pulse'
-                        : 'bg-base-content/20'
-                  }`}
-                />
-              ))}
-              <span className="text-[10px] text-base-content/70 ml-1">7d</span>
+            {/* Mini streak bar — shows this week's progress */}
+            <div className="mt-2" aria-label="This week's streak">
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-[9px] uppercase tracking-wider text-base-content/60 font-semibold">
+                  This week
+                </span>
+                <span className="text-[10px] text-base-content/70 tabular-nums">
+                  {Math.min(currentStreak % 7 || (currentStreak > 0 ? 7 : 0), 7)}/7
+                </span>
+              </div>
+              <div className="flex gap-1">
+                {Array.from({ length: 7 }).map((_, i) => {
+                  const completedDays = currentStreak % 7;
+                  const totalDays = currentStreak > 0 && completedDays === 0 ? 7 : completedDays;
+                  const isDone = i < totalDays;
+                  const isToday = i === totalDays - 1 && currentStreak > 0 && completedDays > 0;
+                  return (
+                    <div
+                      key={i}
+                      className={`h-1.5 flex-1 rounded-full transition-colors ${
+                        isDone
+                          ? isToday
+                            ? 'bg-primary/50 ring-1 ring-primary animate-pulse'
+                            : 'bg-primary'
+                          : 'bg-base-content/15'
+                      }`}
+                      title={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i]}
+                    />
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

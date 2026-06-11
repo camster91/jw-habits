@@ -351,6 +351,36 @@ function Settings() {
             </button>
           </div>
         </div>
+
+        {/* Help & Tour — re-open the onboarding intro for users who skipped or want a refresher */}
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h2 className="card-title text-lg">
+              <BookOpen className="w-5 h-5" /> {t("settings.help", "Help & Tour")}
+            </h2>
+            <div className="divider my-2"></div>
+            <p className="text-sm text-base-content/70 mb-3">
+              {t("settings.helpDesc", "Take the quick tour again or read the about page for the full story.")}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  haptics.light();
+                  window.dispatchEvent(new CustomEvent('jw-habits:reopen-onboarding'));
+                }}
+                className="btn btn-outline w-full justify-start"
+              >
+                <RefreshCw className="w-5 h-5" /> {t("settings.replayTour", "Replay intro tour")}
+              </button>
+              <a
+                href="/about"
+                className="btn btn-outline w-full justify-start"
+              >
+                <BookOpen className="w-5 h-5" /> {t("settings.aboutApp", "About this app")}
+              </a>
+            </div>
+          </div>
+        </div>
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title text-lg">{t("settings.dataManagement")}</h2>

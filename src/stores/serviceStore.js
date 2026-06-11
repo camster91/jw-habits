@@ -10,27 +10,35 @@ const useServiceStore = create(
 
       // ── Add entry ────────────────────────────────────────────
       addEntry: (entry) =>
-        set((state) => ({
-          entries: [
-            ...state.entries,
-            {
-              ...entry,
-              id: crypto.randomUUID(),
-              date: entry.date || new Date().toISOString().split('T')[0],
-              hours: Number(entry.hours) || 0,
-              // New fields — track beyond just hours
-              placements: Number(entry.placements) || 0,
-              returnVisits: Number(entry.returnVisits) || 0,
-              bibleStudies: Number(entry.bibleStudies) || 0,
-              startTime: entry.startTime || null,
-              endTime: entry.endTime || null,
-              breaks: Number(entry.breaks) || 0,
-              note: entry.note || '',
-              type: entry.type || 'field-service',
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        })),
+        set((state) => {
+          const hours = Number(entry.hours) || 0;
+          const durationMinutes = Number(entry.durationMinutes) || Math.round(hours * 60);
+          return {
+            entries: [
+              ...state.entries,
+              {
+                ...entry,
+                id: crypto.randomUUID(),
+                date: entry.date || new Date().toISOString().split('T')[0],
+                hours,
+                // Always store durationMinutes so charts (e.g. last-7-days) work
+                // whether the entry came in via the FAB (passes durationMinutes
+                // directly) or the inline Quick Add (passes hours only).
+                durationMinutes,
+                // New fields — track beyond just hours
+                placements: Number(entry.placements) || 0,
+                returnVisits: Number(entry.returnVisits) || 0,
+                bibleStudies: Number(entry.bibleStudies) || 0,
+                startTime: entry.startTime || null,
+                endTime: entry.endTime || null,
+                breaks: Number(entry.breaks) || 0,
+                note: entry.note || '',
+                type: entry.type || 'field-service',
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          };
+        }),
 
       // ── Remove entry ─────────────────────────────────────────
       removeEntry: (id) =>

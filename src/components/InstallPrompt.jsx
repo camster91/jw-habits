@@ -1,6 +1,7 @@
 /**
  * InstallPrompt Component
- * Shows a banner prompting users to install the PWA
+ * Shows a small pill banner above the bottom nav, suggesting PWA install.
+ * Auto-dismisses after 10s; once dismissed, stays dismissed for 7 days.
  */
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,6 @@ import { Download, X, Smartphone } from 'lucide-react';
 import { usePWA } from '../hooks/usePWA';
 import { haptics } from '../utils/native';
 
-// Check if dismiss is still valid
 function isDismissedInitially() {
   const dismissedUntil = localStorage.getItem('installPromptDismissed');
   if (dismissedUntil) {
@@ -54,7 +54,7 @@ function InstallPrompt() {
     if (!showBanner) return;
     const autoDismiss = setTimeout(() => {
       handleDismiss();
-    }, 10000);
+    }, 12000);
     return () => clearTimeout(autoDismiss);
   }, [showBanner]);
 
@@ -63,43 +63,34 @@ function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-16 left-0 right-0 z-40 animate-slide-up">
-      <div className="bg-primary/95 backdrop-blur-sm text-white shadow-lg border-t border-white/10">
-        <div className="px-4 py-3">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-white/20 rounded-xl">
-              <Smartphone className="w-6 h-6" />
-            </div>
-            <div className="flex-1">
-              <h2 className="font-bold">Install JW Habits</h2>
-              <p className="text-sm text-white/80 mt-1">
-                Add to your home screen for the best experience with offline access
-              </p>
-            </div>
-            <button
-              onClick={handleDismiss}
-              className="btn btn-ghost btn-sm btn-circle text-white"
-              aria-label="Dismiss"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={handleInstall}
-              className="btn btn-sm flex-1 btn-primary"
-            >
-              <Download className="w-4 h-4" />
-              Install App
-            </button>
-            <button
-              onClick={handleDismiss}
-              className="btn btn-sm btn-ghost text-white/80 hover:text-white hover:bg-white/10"
-            >
-              Maybe Later
-            </button>
-          </div>
+    <div className="fixed top-14 left-3 right-3 z-30 animate-slide-down pointer-events-none">
+      <div
+        className="pointer-events-auto flex items-center gap-2.5 bg-base-100/95 backdrop-blur-md text-base-content shadow-lg border border-base-300/60 rounded-full pl-3 pr-2 py-2"
+        role="status"
+        aria-label="Install JW Habits"
+      >
+        <div className="p-1.5 bg-primary/10 rounded-full">
+          <Smartphone className="w-4 h-4 text-primary" />
         </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium leading-tight truncate">
+            Add to your home screen
+          </p>
+        </div>
+        <button
+          onClick={handleInstall}
+          className="btn btn-primary btn-xs gap-1 rounded-full"
+        >
+          <Download className="w-3 h-3" />
+          Install
+        </button>
+        <button
+          onClick={handleDismiss}
+          className="btn btn-ghost btn-xs btn-circle"
+          aria-label="Dismiss"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );

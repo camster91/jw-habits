@@ -37,7 +37,7 @@ function ReadingSection() {
     logReadingTime(5, 'book');
     addPoints(5);
     recordBibleReading?.();
-    toast('success', 'Chapter logged');
+    toast.success('Chapter logged');
   };
 
   const handleAddBook = () => {
@@ -46,7 +46,7 @@ function ReadingSection() {
     addBook({ title: newBook.title.trim(), chapters: parseInt(newBook.chapters) || 10 });
     setNewBook({ title: '', chapters: '' });
     setShowAddBook(false);
-    toast('success', 'Book added');
+    toast.success('Book added');
   };
 
   const handleAddAudio = () => {
@@ -54,7 +54,7 @@ function ReadingSection() {
     haptics.success();
     addAudioTrack({ title: addAudioTitle.trim() });
     setAddAudioTitle('');
-    toast('success', 'Audio track added');
+    toast.success('Audio track added');
   };
 
   const handleAddVideo = () => {
@@ -62,7 +62,7 @@ function ReadingSection() {
     haptics.success();
     addWatchedVideo({ title: addVideoTitle.trim() });
     setAddVideoTitle('');
-    toast('success', 'Video added');
+    toast.success('Video added');
   };
 
   const stats = getStats();
@@ -214,7 +214,7 @@ function ReadingSection() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => { updateAudioProgress(track.id, 10); logReadingTime(10, 'audio'); toast('info', '+10 min'); }}
+                    onClick={() => { updateAudioProgress(track.id, 10); logReadingTime(10, 'audio'); toast.info('+10 min'); }}
                     className="btn btn-ghost btn-xs gap-1"
                   >
                     <Play className="w-3 h-3" />+10m

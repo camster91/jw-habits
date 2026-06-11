@@ -7,15 +7,21 @@ import { useState } from 'react';
 import { haptics } from '../utils/native';
 
 function Goals() {
-  const [activeTab, setActiveTab] = useState('goals');
+  // Preselect tab + header from URL: /projects → projects, /goals → goals
+  const isProjectsRoute = typeof window !== 'undefined' && window.location?.pathname === '/projects';
+  const [activeTab, setActiveTab] = useState(isProjectsRoute ? 'projects' : 'goals');
   const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       <PageHeader
-        title={t('goals.title')}
-        subtitle={t('goals.subtitle')}
-        icon={Target}
+        title={activeTab === 'projects' ? t('goals.projectsTitle', 'Projects') : t('goals.title', 'Goals')}
+        subtitle={
+          activeTab === 'projects'
+            ? t('goals.projectsSubtitle', 'Group goals into bigger projects')
+            : t('goals.subtitle', 'Set and track your spiritual goals')
+        }
+        icon={activeTab === 'projects' ? FolderKanban : Target}
         blurColor="orange"
       />
 

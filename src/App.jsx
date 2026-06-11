@@ -18,6 +18,7 @@ import useNotificationReminders from './hooks/useNotificationReminders';
 // Lazy load non-critical pages for better initial load performance
 const Study = lazy(() => import('./pages/Study'));
 const Goals = lazy(() => import('./pages/Goals'));
+const Projects = lazy(() => import('./pages/Goals')); // alias — Goals page has Projects sub-tab
 const Service = lazy(() => import('./pages/Service'));
 const Stats = lazy(() => import('./pages/Stats'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -68,6 +69,7 @@ function App() {
                   <Route path="/study/reading" element={<StudyReading />} />
                   <Route path="/study/deeper-study" element={<DeeperStudyPage />} />
                   <Route path="/goals" element={<Goals />} />
+                  <Route path="/projects" element={<Projects />} />
                   <Route path="/service" element={<Service />} />
                   <Route path="/statistics" element={<Stats />} />
                   <Route path="/links" element={<Links />} />
@@ -75,6 +77,7 @@ function App() {
                   <Route path="/share" element={<SharePage />} />
                   <Route path="/ideas" element={<IdeasPage />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/onboarding" element={<Home />} />
                 </Routes>
               </Suspense>
               <BottomNav />

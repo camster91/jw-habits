@@ -1,4 +1,4 @@
-import { Menu, Sparkles, Info, Shield } from 'lucide-react';
+import { Menu, Sparkles, Info, Shield, TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import TodaysFocus from '../components/TodaysFocus';
@@ -8,6 +8,7 @@ import FamilyWorshipCard from '../components/FamilyWorshipCard';
 import BibleReadingCard from '../components/BibleReadingCard';
 import UnifiedDashboardCard from '../components/UnifiedDashboardCard';
 import HabitHeatmap from '../components/HabitHeatmap';
+import WelcomeBack from '../components/WelcomeBack';
 import { useDrawer } from '../hooks/useDrawer';
 import useGamificationStore from '../stores/gamificationStore';
 import useSettingsStore from '../stores/settingsStore';
@@ -86,6 +87,13 @@ function Home() {
           {userName ? <span className="name">, {userName}</span> : ''}.
           <span className="sub">{formattedDate}</span>
         </h1>
+
+        {/* Returning user: personalized welcome strip */}
+        {!isFreshUser && (
+          <div className="mb-2">
+            <WelcomeBack />
+          </div>
+        )}
 
         {/* Fresh user: welcoming empty state */}
         {isFreshUser && (
@@ -204,21 +212,50 @@ function Home() {
         </h2>
         <FamilyWorshipCard />
 
-        {/* Heatmap — yearly habit visualization */}
-        <h2 className="ios-section-h">Last 6 months</h2>
-        <div className="ios-heatmap">
-          <div className="h-header">
-            <div className="h">Activity</div>
-            <div className="legend">
-              Less
-              <span className="legend-dot" style={{ background: 'var(--ios-separator)' }}></span>
-              <span className="legend-dot" style={{ background: 'rgba(0,122,255,0.4)' }}></span>
-              <span className="legend-dot" style={{ background: 'var(--ios-blue)' }}></span>
-              More
+        {/* Fresh user: paint the destination — show what 30 days looks like */}
+        {isFreshUser && (
+          <section className="rounded-2xl border border-base-300/60 bg-base-100 p-4 animate-fade-in-up">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-1.5 rounded-full bg-primary/10 text-primary">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </div>
+              <h2 className="text-sm font-semibold text-base-content">What 30 days looks like</h2>
             </div>
-          </div>
-          <HabitHeatmap weeks={26} />
-        </div>
+            <div className="grid grid-cols-7 gap-1 mb-3">
+              {[0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1].map((v, i) => (
+                <div
+                  key={i}
+                  className={`h-3 rounded-sm ${v ? 'bg-primary' : 'bg-base-content/10'}`}
+                  title={`Day ${i + 1}`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-base-content/70 leading-relaxed">
+              A filled grid like this is what your home page becomes — every cell is a day you showed up.
+              A few quiet days in a row are normal. The grid doesn't have to be perfect to count.
+            </p>
+          </section>
+        )}
+
+        {/* Heatmap — yearly habit visualization (hidden for fresh users; replaced by preview above) */}
+        {!isFreshUser && (
+          <>
+            <h2 className="ios-section-h">Last 6 months</h2>
+            <div className="ios-heatmap">
+              <div className="h-header">
+                <div className="h">Activity</div>
+                <div className="legend">
+                  Less
+                  <span className="legend-dot" style={{ background: 'var(--ios-separator)' }}></span>
+                  <span className="legend-dot" style={{ background: 'rgba(0,122,255,0.4)' }}></span>
+                  <span className="legend-dot" style={{ background: 'var(--ios-blue)' }}></span>
+                  More
+                </div>
+              </div>
+              <HabitHeatmap weeks={26} />
+            </div>
+          </>
+        )}
 
         {/* Secondary actions (visible on Day 1) */}
         {isFreshUser && (

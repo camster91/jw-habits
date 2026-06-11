@@ -7,15 +7,25 @@ const ToastContext = createContext(null);
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback((message, type = 'info', duration = 4000) => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
+  const addToast = useCallback((message, options = {}) => {
+    // Backward compat: addToast(msg, type) still works
+    const opts = typeof options === 'string'
+      ? { type: options }
+      : options;
+    const {
+      type = 'info',
+      duration = 4000,
+      action = null, // { label, onClick }
+    } = opts;
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type, action, duration }]);
 
     if (duration > 0) {
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== id));
       }, duration);
     }
+    return id;
   }, []);
 
   const removeToast = useCallback((id) => {
@@ -23,10 +33,10 @@ export function ToastProvider({ children }) {
   }, []);
 
   const toast = {
-    success: (msg) => addToast(msg, 'success'),
-    error: (msg) => addToast(msg, 'error'),
-    info: (msg) => addToast(msg, 'info'),
-    warning: (msg) => addToast(msg, 'warning'),
+    success: (msg, opts) => addToast(msg, { ...opts, type: 'success' }),
+    error: (msg, opts) => addToast(msg, { ...opts, type: 'error' }),
+    info: (msg, opts) => addToast(msg, { ...opts, type: 'info' }),
+    warning: (msg, opts) => addToast(msg, { ...opts, type: 'warning' }),
   };
 
   return (
@@ -54,7 +64,7 @@ export function useToast() {
   return context;
 }
 
-function Toast({ message, type, onClose }) {
+function Toast({ message, type, onClose, action }) {
   const icons = {
     success: <CheckCircle className="w-5 h-5" />,
     error: <AlertCircle className="w-5 h-5" />,
@@ -69,6 +79,11 @@ function Toast({ message, type, onClose }) {
     warning: 'alert-warning',
   };
 
+  const handleAction = () => {
+    if (action?.onClick) action.onClick();
+    onClose();
+  };
+
   return (
     <div
       className={`alert ${alertClass[type]} shadow-lg`}
@@ -77,6 +92,15 @@ function Toast({ message, type, onClose }) {
     >
       {icons[type]}
       <span>{message}</span>
+      {action && (
+        <button
+          onClick={handleAction}
+          className="btn btn-ghost btn-xs font-semibold uppercase tracking-wide"
+          aria-label={action.label}
+        >
+          {action.label}
+        </button>
+      )}
       <button
         onClick={onClose}
         className="btn btn-ghost btn-xs"

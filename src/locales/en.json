@@ -62,7 +62,8 @@
     "chooseBook": "Choose a Bible book...",
     "markComplete": "Mark chapters as complete",
     "readingComplete": "Today's reading complete!",
-    "percentComplete": "{{percent}}%"
+    "percentComplete": "{{percent}}%",
+    "complete": "Reading complete"
   },
   "familyWorship": {
     "title": "THIS WEEK",
@@ -153,6 +154,8 @@
   "goals": {
     "title": "Goals",
     "subtitle": "Set and track your spiritual goals",
+    "projectsTitle": "Projects",
+    "projectsSubtitle": "Group goals into bigger projects",
     "goalsTab": "Goals",
     "projectsTab": "Projects",
     "active": "active",
@@ -228,6 +231,10 @@
     "appUpdates": "App Updates",
     "checkForUpdates": "Check for Updates",
     "checkingUpdates": "Checking for updates...",
+    "help": "Help & Tour",
+    "helpDesc": "Take the quick tour again or read the about page for the full story.",
+    "replayTour": "Replay intro tour",
+    "aboutApp": "About this app",
     "importTitle": "Import Data",
     "importWarning": "This will replace all your current data with the imported backup. This action cannot be undone.",
     "versionMismatch": "This backup was created by a different version of the app. Some data may not import correctly.",

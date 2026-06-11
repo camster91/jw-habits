@@ -15,9 +15,11 @@ import {
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
+import { useToast } from './Toast';
 
 function FamilyWorshipCard() {
   const { t } = useTranslation();
+  const toast = useToast();
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
@@ -47,11 +49,26 @@ function FamilyWorshipCard() {
 
   const handleToggleComplete = () => {
     haptics.light();
+    const wasCompleted = worship.completed;
     toggleFamilyWorshipComplete(weekKey);
 
-    if (!worship.completed) {
+    if (!wasCompleted) {
       haptics.success();
       recordFamilyWorshipCompletion();
+      // Offer an undo action — the completion is "locked in for the week" otherwise
+      toast.success('Family worship complete!', {
+        duration: 8000,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            haptics.warning();
+            toggleFamilyWorshipComplete(weekKey);
+            toast.info('Marked as not complete');
+          },
+        },
+      });
+    } else {
+      toast.info('Family worship marked as not complete');
     }
   };
 

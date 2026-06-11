@@ -85,6 +85,16 @@ export default function Onboarding() {
     }
   }, []);
 
+  // Listen for re-open events from Settings (or any other surface)
+  useEffect(() => {
+    const handleReopen = () => {
+      setCurrentPage(0);
+      setVisible(true);
+    };
+    window.addEventListener('jw-habits:reopen-onboarding', handleReopen);
+    return () => window.removeEventListener('jw-habits:reopen-onboarding', handleReopen);
+  }, []);
+
   const handleDismiss = () => {
     haptics.success();
     // Guard: after rehydration, function actions can be undefined.

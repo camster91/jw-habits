@@ -197,9 +197,24 @@ function MeetingCard() {
   if (loading) {
     return (
       <div className="card bg-base-100 shadow-sm rounded-2xl">
-        <div className="card-body items-center py-8">
-          <div className="loading loading-spinner loading-md text-accent"></div>
-          <p className="text-sm text-base-content/70">{t("study.loading")}</p>
+        <div className="card-body items-center py-10 gap-3">
+          <div className="relative">
+            <div className="loading loading-spinner loading-lg text-accent"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-accent/40" />
+            </div>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-sm font-medium text-base-content/80">{t("study.loading")}</p>
+            <p className="text-xs text-base-content/60">
+              Fetching this week's meeting workbook from jw.org
+            </p>
+          </div>
+          <div className="w-full max-w-xs space-y-2 mt-2">
+            <div className="h-3 bg-base-200 rounded animate-pulse"></div>
+            <div className="h-3 bg-base-200 rounded animate-pulse w-4/5"></div>
+            <div className="h-3 bg-base-200 rounded animate-pulse w-3/5"></div>
+          </div>
         </div>
       </div>
     );
