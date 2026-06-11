@@ -30,33 +30,39 @@ function FamilyWorshipCard() {
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
 
-  const progressStore = useProgressStore();
-  const worship = progressStore.getFamilyWorship(weekKey);
-  const worshipStreak = progressStore.getFamilyWorshipStreak();
+  // Per-field selectors — only re-render when these specific slices change.
+  // Note: getFamilyWorship(weekKey) returned a default-shaped object even when
+  // the store had no entry, so the consumer code expected non-null. Preserve
+  // that contract with a fallback here.
+  const familyWorshipRecord = useProgressStore((s) => s.familyWorship?.[weekKey]) || {
+    completed: false,
+    date: null,
+    topic: '',
+    notes: '',
+    studyLinks: [],
+    timestamp: null,
+  };
+  const familyWorshipStreakValue = useProgressStore((s) => s.getFamilyWorshipStreak());
+  const toggleFamilyWorshipComplete = useProgressStore((s) => s.toggleFamilyWorshipComplete);
+  const updateFamilyWorship = useProgressStore((s) => s.updateFamilyWorship);
+  const addStudyLink = useProgressStore((s) => s.addStudyLink);
+  const removeStudyLink = useProgressStore((s) => s.removeStudyLink);
 
-  const [topicText, setTopicText] = useState(() => worship?.topic || '');
-  const [notesText, setText] = useState(() => worship?.notes || '');
+  const [topicText, setTopicText] = useState(() => familyWorshipRecord?.topic || '');
+  const [notesText, setText] = useState(() => familyWorshipRecord?.notes || '');
 
-  const {
-    toggleFamilyWorshipComplete,
-    updateFamilyWorship,
-    addStudyLink,
-    removeStudyLink,
-  } = progressStore;
-
-  const gamificationStore = useGamificationStore();
-  const { recordFamilyWorshipCompletion } = gamificationStore;
+  const recordFamilyWorshipCompletion = useGamificationStore((s) => s.recordFamilyWorshipCompletion);
 
   const handleToggleComplete = () => {
     haptics.light();
-    const wasCompleted = worship.completed;
+    const wasCompleted = familyWorshipRecord.completed;
     toggleFamilyWorshipComplete(weekKey);
 
     if (!wasCompleted) {
       haptics.success();
       recordFamilyWorshipCompletion();
       // Offer an undo action — the completion is "locked in for the week" otherwise
-      toast.success('Family worship complete!', {
+      toast.success('Family familyWorshipRecord complete!', {
         duration: 8000,
         action: {
           label: 'Undo',
@@ -68,7 +74,7 @@ function FamilyWorshipCard() {
         },
       });
     } else {
-      toast.info('Family worship marked as not complete');
+      toast.info('Family familyWorshipRecord marked as not complete');
     }
   };
 
@@ -140,9 +146,9 @@ function FamilyWorshipCard() {
             {t('familyWorship.weekOf', { start: format(weekStart, 'MMM d'), end: format(weekEnd, 'MMM d') })}
           </div>
         </div>
-        {worshipStreak > 0 && (
+        {familyWorshipStreakValue > 0 && (
           <span className="ios-pill" style={{ background: 'rgba(255,149,0,0.14)', color: 'var(--ios-orange)' }}>
-            <Flame className="w-3 h-3" /> {worshipStreak}
+            <Flame className="w-3 h-3" /> {familyWorshipStreakValue}
           </span>
         )}
         <svg className="ios-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -157,11 +163,11 @@ function FamilyWorshipCard() {
       {/* Completion toggle row */}
       <button
         onClick={handleToggleComplete}
-        className={`ios-row w-full text-left ${worship.completed ? 'done' : ''}`}
+        className={`ios-row w-full text-left ${familyWorshipRecord.completed ? 'done' : ''}`}
         style={{ background: 'transparent', border: 0, margin: 0 }}
       >
-        <div className={`ios-check ${worship.completed ? 'done' : ''}`}>
-          {worship.completed && (
+        <div className={`ios-check ${familyWorshipRecord.completed ? 'done' : ''}`}>
+          {familyWorshipRecord.completed && (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
@@ -169,7 +175,7 @@ function FamilyWorshipCard() {
         </div>
         <div className="body">
           <div className="title">
-            {worship.completed ? t('familyWorship.completed') : t('familyWorship.markComplete')}
+            {familyWorshipRecord.completed ? t('familyWorship.completed') : t('familyWorship.markComplete')}
           </div>
         </div>
       </button>
@@ -196,8 +202,8 @@ function FamilyWorshipCard() {
           </div>
 
           {/* Study Links section */}
-          {worship.studyLinks && worship.studyLinks.length > 0 && (
-            worship.studyLinks.map((link) => (
+          {familyWorshipRecord.studyLinks && familyWorshipRecord.studyLinks.length > 0 && (
+            familyWorshipRecord.studyLinks.map((link) => (
               <div key={link.id} className="ios-row">
                 <div className="ios-icon" style={{ background: 'rgba(74,111,164,0.14)' }}>
                   <ExternalLink className="w-4 h-4" style={{ color: 'var(--ios-jw-blue)' }} />

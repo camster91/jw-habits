@@ -33,24 +33,23 @@ function Service() {
   const [endTime, setEndTime] = useState('');
   const [breaks, setBreaks] = useState('0.5');
 
-  const {
-    addEntry,
-    removeEntry,
-    setMonthlyGoal,
-    getTodaysEntries,
-    getWeeklyEntries,
-    getWeeklyTotal,
-    getMonthlyTotal,
-    getWeeklyPlacements,
-    getWeeklyReturnVisits,
-    getWeeklyBibleStudies,
-    getMonthlyPlacements,
-    getMonthlyReturnVisits,
-    getMonthlyBibleStudies,
-    getTodaysHours,
-    monthlyGoalHours,
-    entries,
-  } = useServiceStore();
+  // Per-field selectors — only re-render when these specific slices change
+  const addEntry = useServiceStore((s) => s.addEntry);
+  const removeEntry = useServiceStore((s) => s.removeEntry);
+  const setMonthlyGoal = useServiceStore((s) => s.setMonthlyGoal);
+  const getTodaysEntries = useServiceStore((s) => s.getTodaysEntries);
+  const getWeeklyEntries = useServiceStore((s) => s.getWeeklyEntries);
+  const getWeeklyTotal = useServiceStore((s) => s.getWeeklyTotal);
+  const getMonthlyTotal = useServiceStore((s) => s.getMonthlyTotal);
+  const getWeeklyPlacements = useServiceStore((s) => s.getWeeklyPlacements);
+  const getWeeklyReturnVisits = useServiceStore((s) => s.getWeeklyReturnVisits);
+  const getWeeklyBibleStudies = useServiceStore((s) => s.getWeeklyBibleStudies);
+  const getMonthlyPlacements = useServiceStore((s) => s.getMonthlyPlacements);
+  const getMonthlyReturnVisits = useServiceStore((s) => s.getMonthlyReturnVisits);
+  const getMonthlyBibleStudies = useServiceStore((s) => s.getMonthlyBibleStudies);
+  const getTodaysHours = useServiceStore((s) => s.getTodaysHours);
+  const monthlyGoalHours = useServiceStore((s) => s.monthlyGoalHours);
+  const entries = useServiceStore((s) => s.entries);
 
   const addServiceActivity = useGamificationStore((s) => s.recordServiceActivity);
 
