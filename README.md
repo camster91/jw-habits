@@ -212,6 +212,10 @@ npm run build
 # Deploy dist/ folder to static hosting
 ```
 
+### VPS Deploy
+
+To redeploy this app: tar the local repo, scp to `/root/jw-habits.tgz` on the host, then `ssh coolify "bash /root/jw-habits/scripts/deploy.sh"`. The image (`camster91/jw-habits:build-latest`) is built externally and pulled from Docker Hub on the host — the deploy script does not build locally. Caddy routes `jwhabits.ashbi.ca → 127.0.0.1:18080` (already configured on the host). No postgres, no env file, no bind-mounted volume.
+
 ### iOS App Store
 
 1. Build and open Xcode: `npm run mobile:ios`
