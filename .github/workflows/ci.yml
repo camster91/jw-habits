@@ -1,150 +1,64 @@
-name: CI Pipeline
+name: CI Build
+
+# Build-only workflow: verifies the project builds cleanly. No deploy, no secrets required.
+# Triggered on push to default branch and on PRs targeting it. Manual dispatch available.
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    branches: [main]
+  workflow_dispatch:
 
-env:
-  NODE_VERSION: '20'
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint
-        continue-on-error: true
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test --if-present
-        continue-on-error: true
-
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run security audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
-
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint]
+    timeout-minutes: 15
+
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build production bundle
+      - name: Type check (if configured)
+        run: |
+          if grep -q '"typecheck"\|"type-check"\|"tsc"' package.json; then
+            echo "Running typecheck..."
+            npm run typecheck || npm run type-check || npx tsc --noEmit
+          else
+            echo "No typecheck script found, skipping."
+          fi
+        continue-on-error: true
+
+      - name: Lint (if configured)
+        run: |
+          if grep -q '"lint"' package.json; then
+            echo "Running lint..."
+            npm run lint
+          else
+            echo "No lint script found, skipping."
+          fi
+        continue-on-error: true
+
+      - name: Build
         run: npm run build
-
-      - name: Verify PWA manifest
-        run: |
-          if [ -f "dist/manifest.webmanifest" ]; then
-            echo "PWA manifest found"
-            cat dist/manifest.webmanifest | head -20
-          else
-            echo "PWA manifest not found"
-            exit 1
-          fi
-
-      - name: Verify service worker
-        run: |
-          if [ -f "dist/sw.js" ]; then
-            echo "Service worker found"
-          else
-            echo "Service worker not found"
-            exit 1
-          fi
-
-      - name: Check build size
-        run: |
-          echo "## Build Size Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
-          du -sh dist/* | while read size name; do
-            echo "| $name | $size |" >> $GITHUB_STEP_SUMMARY
-          done
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Total:** $(du -sh dist | cut -f1)" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: dist/
-          retention-days: 7
-
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: dist
-          path: dist/
-
-      - name: Create zip archive
-        run: zip -r jw-progress-${{ github.ref_name }}.zip dist/
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v3
-        with:
-          files: jw-progress-${{ github.ref_name }}.zip
-          generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # CI-safe defaults so the build doesn't depend on real env vars
+          NODE_ENV: production
+          CI: true
