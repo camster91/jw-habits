@@ -42,6 +42,7 @@ describe('gamificationStore', () => {
         lastPrayerDate: null,
         familyWorshipStreak: 0,
         longestFamilyWorshipStreak: 0,
+        lastFamilyWorshipWeek: null,
         dailyTextCompletions: 0,
         reflectionsWritten: 0,
         newsRead: 0,
@@ -293,6 +294,70 @@ describe('gamificationStore', () => {
       });
 
       expect(useGamificationStore.getState().recentAchievements).toEqual([]);
+    });
+  });
+
+  describe('updateFamilyWorshipStreak (same-week double-count guard)', () => {
+    // Regression: the streak counter used to climb on every "complete" tap
+    // within the same week, letting a user farm worship_month (4 weeks) and
+    // worship_quarter (12 weeks) achievements in an afternoon. The fix
+    // tracks lastFamilyWorshipWeek and no-ops on repeat weekKeys.
+
+    it('increments the streak on the first completion of a new week', () => {
+      act(() => {
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-13', true);
+      });
+      const state = useGamificationStore.getState();
+      expect(state.familyWorshipStreak).toBe(1);
+      expect(state.longestFamilyWorshipStreak).toBe(1);
+      expect(state.lastFamilyWorshipWeek).toBe('2026-04-13');
+    });
+
+    it('does NOT increment when the same week is completed twice in a row', () => {
+      act(() => {
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-13', true);
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-13', true);
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-13', true);
+      });
+      expect(useGamificationStore.getState().familyWorshipStreak).toBe(1);
+      expect(useGamificationStore.getState().longestFamilyWorshipStreak).toBe(1);
+    });
+
+    it('does NOT increment when the user toggles off then back on within the same week', () => {
+      act(() => {
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-13', true);
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-13', false);
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-13', true);
+      });
+      // The first true increments. The false clears lastFamilyWorshipWeek.
+      // The second true re-credits the SAME week — should still only count
+      // as 1, because it's the same week.
+      expect(useGamificationStore.getState().familyWorshipStreak).toBe(1);
+    });
+
+    it('increments again when a NEW week is completed', () => {
+      act(() => {
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-13', true);
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-20', true);
+        useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-27', true);
+      });
+      const state = useGamificationStore.getState();
+      expect(state.familyWorshipStreak).toBe(3);
+      expect(state.longestFamilyWorshipStreak).toBe(3);
+      expect(state.lastFamilyWorshipWeek).toBe('2026-04-27');
+    });
+
+    it('does not let a user farm 12 completions in the same week to unlock worship_quarter', () => {
+      act(() => {
+        for (let i = 0; i < 12; i++) {
+          useGamificationStore.getState().updateFamilyWorshipStreak('2026-04-13', true);
+        }
+      });
+      const state = useGamificationStore.getState();
+      expect(state.familyWorshipStreak).toBe(1);
+      // worship_quarter requires streak >= 12, so it must NOT be unlocked
+      const unlockedIds = state.unlockedAchievements.map((a) => a.id);
+      expect(unlockedIds).not.toContain('worship_quarter');
     });
   });
 });

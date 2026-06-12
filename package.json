@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Build daily spiritual habits: daily text, Bible reading, meeting prep, and more",
   "overrides": {
-    "ws": ">=8.20.1"
+    "ws": ">=8.20.1",
+    "shell-quote": "^1.8.4"
   },
   "scripts": {
     "dev": "vite",

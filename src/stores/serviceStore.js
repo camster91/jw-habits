@@ -2,6 +2,21 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createSafeStorage } from '../utils/storageErrorHandler';
 
+// crypto.randomUUID is available in secure contexts (https, Capacitor) but
+// can be undefined when the PWA is loaded over plain http:// on a LAN.
+// Fall back to a timestamp+random string so addEntry never throws on
+// non-secure dev URLs.
+const newId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      // fall through
+    }
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const useServiceStore = create(
   persist(
     (set, get) => ({
@@ -18,7 +33,7 @@ const useServiceStore = create(
               ...state.entries,
               {
                 ...entry,
-                id: crypto.randomUUID(),
+                id: newId(),
                 date: entry.date || new Date().toISOString().split('T')[0],
                 hours,
                 // Always store durationMinutes so charts (e.g. last-7-days) work
