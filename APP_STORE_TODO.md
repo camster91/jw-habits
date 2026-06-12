@@ -11,7 +11,7 @@
 ### Android
 - [x] Release keystore generated at `~/keys/jw-habits-release.keystore`
   - Alias: `jwhabits`, algorithm: RSA 2048, validity: 10000 days
-  - **Password: `JWHabits2026!`** — add to password manager
+  - **Password:** stored in 1Password (entry: "JW Habits Android keystore")
 - [x] `build.gradle` release signing updated to absolute keystore path
 - [x] `versionCode` bumped to `411` (versionName already `4.1.0`)
 

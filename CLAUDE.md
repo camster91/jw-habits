@@ -30,22 +30,28 @@ src/
 ├── main.jsx              # Entry point (error logging, back button, SW updates)
 ├── App.jsx               # Router + global wrappers (ErrorBoundary, Toast, Drawer)
 ├── index.css             # Tailwind base + 20+ custom animations
-├── pages/                # 5 route pages (lazy-loaded except Home)
+├── pages/                # 14 route pages (lazy-loaded except Home)
 │   ├── Home.jsx          # Dashboard: daily text + reflection, prayers, family worship, Bible reading
 │   ├── Study.jsx         # Meeting prep (midweek/weekend) + deeper study
-│   ├── Goals.jsx         # Merged goals + projects with tab switcher
+│   ├── StudyReading.jsx  # Today's Bible reading plan
+│   ├── DeeperStudyPage.jsx # JW Library deep-study hub
+│   ├── Goals.jsx         # Merged goals + projects with tab switcher (also handles /projects)
+│   ├── Service.jsx       # Field service hours tracker (the bottom-nav entry)
 │   ├── Stats.jsx         # Gamification stats, achievements, streaks
 │   ├── Links.jsx         # JW.org resource links (8 categories, 50+ links)
+│   ├── Share.jsx         # Share-target landing (PWA share_target manifest)
+│   ├── IdeasPage.jsx     # Browse public goal/project ideas
+│   ├── About.jsx         # About + disclaimer
 │   └── Settings.tsx      # Notifications, theme, data import/export
 ├── stores/               # Zustand state (all persisted)
 │   ├── progressStore.ts  # Daily texts, prayers, family worship, Bible, meetings
-│   ├── gamificationStore.ts # Points, levels, 38 achievements, streaks
+│   ├── gamificationStore.ts # Points, levels, 44 achievements, streaks
 │   ├── settingsStore.ts  # Notifications, theme, reading pace
 │   ├── newsStore.ts      # Daily check-in history and streaks
 │   ├── goalsStore.js     # Goals + projects CRUD
 │   └── memoriesStore.ts  # Reflections by date
 ├── components/           # ~20 reusable components
-│   ├── BottomNav.jsx     # 3-tab nav: Home, Study, Goals
+│   ├── BottomNav.jsx     # 4-tab nav: Home, Study, Goals, Service
 │   ├── SideDrawer.tsx    # Hamburger drawer: Stats, Links, Settings
 │   ├── DailyTasksSection.tsx  # Daily text + optional reflection + daily check
 │   ├── PrayerTrackingCard.jsx
@@ -80,10 +86,18 @@ src/
 |------|------|---------|-----|
 | `/` | Home | Eager | Bottom |
 | `/study` | Study | Lazy | Bottom |
-| `/goals` | Goals | Lazy | Bottom |
-| `/stats` | Stats | Lazy | Side drawer |
+| `/study/reading` | StudyReading | Lazy | Bottom |
+| `/study/deeper-study` | DeeperStudyPage | Lazy | Bottom |
+| `/goals` | Goals (Goals tab) | Lazy | Bottom |
+| `/projects` | Goals (Projects tab) | Lazy | Bottom |
+| `/service` | Service | Lazy | Bottom |
+| `/statistics` | Stats | Lazy | Side drawer |
 | `/links` | Links | Lazy | Side drawer |
 | `/settings` | Settings | Lazy | Side drawer |
+| `/share` | Share (PWA share_target) | Lazy | (PWA OS) |
+| `/ideas` | IdeasPage | Lazy | Side drawer |
+| `/about` | About | Lazy | Side drawer |
+| `/onboarding` | Home (replay tour) | Lazy | (deep link) |
 
 ## State Management
 
@@ -92,7 +106,7 @@ All stores use Zustand with `persist` middleware to localStorage:
 | Store | Storage Key | Purpose |
 |-------|------------|---------|
 | progressStore | `jw-progress-storage` | Daily texts, prayers, family worship, Bible reading, meetings |
-| gamificationStore | `jw-gamification-storage` | Points (100/level), 38 achievements, streaks |
+| gamificationStore | `jw-gamification-storage` | Points (100/level), 44 achievements, streaks |
 | settingsStore | `jw-progress-settings` | Notifications, theme, Bible reading pace |
 | newsStore | `jw-news-store` | Daily check-in streak (simplified) |
 | goalsStore | `jw-goals-storage` | Goals and projects with tasks |
@@ -175,7 +189,7 @@ npm run test:coverage    # Vitest with v8 coverage
 
 - Do not remove the `READING_PACE_OPTIONS` export from `settingsStore.ts`
 - Do not change the import path of `useDrawer` back to `SideDrawer`
-- Do not commit the keystore password (`JWHabits2026!`) to git
+- Do not commit the keystore password to git (see APP_STORE_TODO.md)
 - Do not delete `android/app/jw-habits-release.keystore`
 - Do not change the app ID from `com.ashbi.jwnews` without updating both `capacitor.config.json` and Android build files
 
