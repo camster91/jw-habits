@@ -75,6 +75,11 @@ interface GamificationState {
   lastPrayerDate: string | null;
   familyWorshipStreak: number;
   longestFamilyWorshipStreak: number;
+  // ISO week key (YYYY-MM-DD of the week start) for the most recent worship
+  // completion. Compared against incoming weekKey in updateFamilyWorshipStreak
+  // to prevent the same week from incrementing the counter multiple times
+  // when the user toggles the "complete" checkbox back and forth.
+  lastFamilyWorshipWeek: string | null;
   dailyTextCompletions: number;
   reflectionsWritten: number;
   newsRead: number;
@@ -148,6 +153,7 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
       lastPrayerDate: null,
       familyWorshipStreak: 0,
       longestFamilyWorshipStreak: 0,
+      lastFamilyWorshipWeek: null,
       dailyTextCompletions: 0,
       reflectionsWritten: 0,
       newsRead: 0,
@@ -213,11 +219,31 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
 
       updateFamilyWorshipStreak: (weekKey, completed) => {
         const state = get();
+        if (!completed) {
+          // Un-checking does not roll back the credit for the current week;
+          // it just prevents NEW weeks from being credited until the user
+          // re-checks. The streak counter and the "last credited week" both
+          // stay where they were.
+          get().checkAndUnlockAchievements();
+          return;
+        }
+        // Same-week double-count guard: a user can toggle the worship checkbox
+        // off and on multiple times within the same week. Without this guard
+        // the streak counter climbed on every "complete" tap, which let users
+        // farm the worship_month (4 weeks) and worship_quarter (12 weeks)
+        // achievements in a single afternoon. No-op when the same week is
+        // already credited.
+        if (state.lastFamilyWorshipWeek === weekKey) {
+          return;
+        }
+        const nextStreak = state.familyWorshipStreak + 1;
         set({
-          familyWorshipStreak: completed ? state.familyWorshipStreak + 1 : 0,
-          longestFamilyWorshipStreak: completed
-            ? Math.max(state.longestFamilyWorshipStreak, state.familyWorshipStreak + 1)
-            : state.longestFamilyWorshipStreak
+          familyWorshipStreak: nextStreak,
+          longestFamilyWorshipStreak: Math.max(
+            state.longestFamilyWorshipStreak,
+            nextStreak
+          ),
+          lastFamilyWorshipWeek: weekKey,
         });
         get().checkAndUnlockAchievements();
       },
@@ -445,6 +471,7 @@ const useGamificationStore = create<GamificationState & GamificationActions>()(
         lastPrayerDate: state.lastPrayerDate,
         familyWorshipStreak: state.familyWorshipStreak,
         longestFamilyWorshipStreak: state.longestFamilyWorshipStreak,
+        lastFamilyWorshipWeek: state.lastFamilyWorshipWeek,
         dailyTextCompletions: state.dailyTextCompletions,
         reflectionsWritten: state.reflectionsWritten,
         newsRead: state.newsRead,
