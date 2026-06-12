@@ -18,6 +18,14 @@ function Settings() {
   const { t } = useTranslation();
   const toast = useToast();
   const { clearAll } = useProgressStore();
+  // Data fields are pulled via a single destructure for readability, but
+  // action functions are read via stable selectors. The full-destructure
+  // pattern can drop action functions if zustand's persist middleware
+  // rehydrates a state shape that doesn't include them (e.g. on first
+  // mount before hydration finishes, or after a partial-state merge),
+  // and the destructure binds them as `undefined` for that render. A
+  // selector re-reads the function on every render, so rehydration
+  // can't break it. See Onboarding.jsx for the same pattern.
   const {
     notificationsEnabled,
     notifications,
@@ -28,9 +36,9 @@ function Settings() {
     setNotificationTime,
     setTheme,
     setAiSettings,
-    setUserName,
-    userName,
   } = useSettingsStore();
+  const setUserName = useSettingsStore((s) => s.setUserName);
+  const userName = useSettingsStore((s) => s.userName);
 
   const [showApiKey, setShowApiKey] = useState(false);
   const [aiTestStatus, setAiTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
