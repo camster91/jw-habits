@@ -240,11 +240,11 @@ function Service() {
                 <span className="font-semibold">This Week</span>
               </div>
               <button
-                onClick={() => { haptics.light(); setShowGoalModal(true); setGoalInput(String(monthlyGoalHours)); }}
-                className="btn btn-ghost btn-sm gap-1"
+                onClick={() => { haptics.light(); setShowGoalModal(true); setGoalInput(monthlyGoalHours > 0 ? String(monthlyGoalHours) : ''); }}
+                className={`btn btn-sm gap-1 ${monthlyGoalHours === 0 ? 'btn-outline btn-primary' : 'btn-ghost'}`}
               >
                 <Target className="w-4 h-4" />
-                <span className="text-xs">{monthlyGoalHours}h goal</span>
+                <span className="text-xs">{monthlyGoalHours === 0 ? '+ Set a goal' : `${monthlyGoalHours}h goal`}</span>
               </button>
             </div>
 
@@ -273,6 +273,30 @@ function Service() {
         </section>
 
         {/* ── Monthly Goal Progress ────────────────────────── */}
+        {monthlyGoalHours === 0 ? (
+          // Empty state — invite the user to set a goal
+          <section
+            className="card bg-gradient-to-br from-primary/5 to-secondary/5 border-2 border-dashed border-primary/30 shadow-sm cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => { haptics.light(); setShowGoalModal(true); setGoalInput(''); }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowGoalModal(true); setGoalInput(''); } }}
+            aria-label="Set a monthly service goal"
+          >
+            <div className="card-body p-5 items-center text-center gap-2">
+              <div className="p-3 rounded-full bg-primary/10">
+                <Target className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="font-semibold text-base-content">No goal set yet</h3>
+              <p className="text-sm text-base-content/70 max-w-xs">
+                Set a monthly service hours goal to track your progress and celebrate milestones.
+              </p>
+              <button className="btn btn-primary btn-sm mt-1 gap-1">
+                <Target className="w-4 h-4" /> Set monthly goal
+              </button>
+            </div>
+          </section>
+        ) : (
         <section className="card bg-base-100 shadow-sm">
           <div className="card-body p-4">
             <div className="flex items-center justify-between mb-2">
@@ -295,6 +319,7 @@ function Service() {
             </div>
           </div>
         </section>
+        )}
 
         {/* ── 7-Day Service Hours Chart ──────────────────── */}
         <section className="card bg-base-100 shadow-sm">
