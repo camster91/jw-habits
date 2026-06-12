@@ -114,8 +114,12 @@ function Service() {
   };
 
   const handleCustomAdd = () => {
-    const h = computedHours ?? parseFloat(customHours);
-    if (!h || h <= 0) { toast.error('Please enter valid hours'); return; }
+    const raw = computedHours ?? parseFloat(customHours);
+    // Cap at 24h — no one does 99,999 hours of service in a day.
+    const MAX_DAILY_HOURS = 24;
+    if (!raw || raw <= 0) { toast.error('Please enter valid hours'); return; }
+    if (raw > MAX_DAILY_HOURS) { toast.error(`Daily hours cannot exceed ${MAX_DAILY_HOURS}`); return; }
+    const h = raw;
     haptics.light();
     const rv = parseInt(returnVisits) || 0;
     const p = parseInt(placements) || 0;
@@ -144,8 +148,11 @@ function Service() {
   };
 
   const handleSetGoal = () => {
-    const goal = parseFloat(goalInput);
-    if (!goal || goal <= 0) { toast.error('Please enter a valid goal'); return; }
+    const raw = parseFloat(goalInput);
+    const MAX_MONTHLY_GOAL = 744; // 31 days × 24h
+    if (!raw || raw <= 0) { toast.error('Please enter a valid goal'); return; }
+    if (raw > MAX_MONTHLY_GOAL) { toast.error(`Monthly goal cannot exceed ${MAX_MONTHLY_GOAL}h`); return; }
+    const goal = raw;
     haptics.success();
     setMonthlyGoal(goal);
     setGoalInput('');
@@ -370,7 +377,7 @@ function Service() {
                     type="number" placeholder="e.g. 1.5"
                     className="input input-bordered input-sm w-full"
                     value={customHours} onChange={(e) => setCustomHours(e.target.value)}
-                    min="0" step="0.5"
+                    min="0" max="24" step="0.5"
                   />
                 </div>
 
@@ -497,7 +504,7 @@ function Service() {
               <label className="label"><span className="label-text">Goal (hours)</span></label>
               <input
                 type="number" placeholder="e.g. 20" className="input input-bordered"
-                value={goalInput} onChange={(e) => setGoalInput(e.target.value)} min="1" step="1"
+                value={goalInput} onChange={(e) => setGoalInput(e.target.value)} min="1" max="744" step="1"
               />
             </div>
             <div className="modal-action">
