@@ -237,6 +237,7 @@
     "aboutApp": "About this app",
     "importTitle": "Import Data",
     "importWarning": "This will replace all your current data with the imported backup. This action cannot be undone.",
+    "importTooLarge": "Backup file is too large (max 5MB)",
     "versionMismatch": "This backup was created by a different version of the app. Some data may not import correctly.",
     "oldFormat": "This is a legacy backup file. Only progress and settings data will be imported.",
     "backupCreated": "Backup created: {{date}}",

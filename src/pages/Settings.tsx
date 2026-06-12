@@ -218,6 +218,15 @@ function Settings() {
     if (!pendingImportData.current) return;
     const { storeData, isOldFormat } = pendingImportData.current;
 
+    // Size guard: reject huge imports before parsing/loading
+    const MAX_IMPORT_SIZE = 5_000_000; // 5MB
+    if (JSON.stringify(storeData).length > MAX_IMPORT_SIZE) {
+      toast.error(t("settings.importTooLarge"));
+      setImportModal(null);
+      pendingImportData.current = null;
+      return;
+    }
+
     // Sanitize: cap userName length (matches the slice(0, 30) in the Settings input
     // and Onboarding) so a malicious backup can't break the home greeting layout.
     const sanitize = (key) => {
@@ -229,24 +238,43 @@ function Settings() {
       }
     };
 
+    // Validate shape: each top-level value must be a plain object with a `state` field.
+    // Reject anything else to avoid corrupting the persisted Zustand stores.
+    const isValidStoreObject = (v) =>
+      typeof v === 'object' && v !== null && !Array.isArray(v) && 'state' in v;
+
     if (STORAGE_KEYS.some((key) => key in storeData)) {
       STORAGE_KEYS.forEach((key) => {
         if (storeData[key]) {
+          if (!isValidStoreObject(storeData[key])) {
+            toast.error(`Skipped invalid ${key}`);
+            return;
+          }
           sanitize(key);
           localStorage.setItem(key, JSON.stringify(storeData[key]));
         }
       });
     } else if (isOldFormat) {
       // Legacy format support
-      if (storeData.progress) localStorage.setItem('jw-progress-storage', JSON.stringify(storeData.progress));
-      if (storeData.settings) {
-        if (storeData.settings?.state?.userName) {
-          const u = String(storeData.settings.state.userName);
-          if (u.length > 30) {
-            storeData.settings.state.userName = u.slice(0, 30);
-          }
+      if (storeData.progress) {
+        if (!isValidStoreObject(storeData.progress)) {
+          toast.error('Skipped invalid progress data');
+        } else {
+          localStorage.setItem('jw-progress-storage', JSON.stringify(storeData.progress));
         }
-        localStorage.setItem('jw-progress-settings', JSON.stringify(storeData.settings));
+      }
+      if (storeData.settings) {
+        if (!isValidStoreObject(storeData.settings)) {
+          toast.error('Skipped invalid settings data');
+        } else {
+          if (storeData.settings?.state?.userName) {
+            const u = String(storeData.settings.state.userName);
+            if (u.length > 30) {
+              storeData.settings.state.userName = u.slice(0, 30);
+            }
+          }
+          localStorage.setItem('jw-progress-settings', JSON.stringify(storeData.settings));
+        }
       }
     }
 
