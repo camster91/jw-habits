@@ -1,8 +1,8 @@
-# JW Daily Habits Tracker
+# JW Habits Tracker
 
 **A spiritual habits tracking app for building consistent daily routines.**
 
-JW Daily Habits Tracker is a mobile-first progressive web application designed to help users build and maintain daily spiritual habits. Built with React 19 and Capacitor, it offers a native app experience across iOS, Android, and web platforms.
+JW Habits Tracker is a mobile-first progressive web application designed to help users build and maintain daily spiritual habits. Built with React 19 and Capacitor, it offers a native app experience across iOS, Android, and web platforms.
 
 ## Tech Stack
 
@@ -182,8 +182,8 @@ jw-daily-habits-tracker/
 
 ```json
 {
-  "appId": "com.jwnews.habits",
-  "appName": "JW Daily Habits",
+  "appId": "com.ashbi.jwnews",
+  "appName": "JW Habits",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
