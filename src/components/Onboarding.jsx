@@ -73,6 +73,9 @@ export default function Onboarding() {
   const [currentPage, setCurrentPage] = useState(0);
   const [name, setName] = useState('');
   const [publisherStatus, setPublisherStatus] = useState('none');
+  // The handleDismiss callback uses the per-field selectors. They can return
+  // stale refs before zustand rehydration completes; the typeof guard in
+  // handleDismiss below handles that case.
   const setUserName = useSettingsStore((s) => s.setUserName);
   const setPublisherStatusAction = useSettingsStore((s) => s.setPublisherStatus);
 
@@ -100,7 +103,8 @@ export default function Onboarding() {
     // Guard: after rehydration, function actions can be undefined.
     // The persist middleware doesn't store functions, so on first load the
     // initial state has them, but if anything has set state to the rehydrated
-    // shape, the function may be missing.
+    // shape, the function may be missing. (We hit this in production —
+    // `b is not a function` error on Get Started / Skip buttons.)
     if (name.trim() && typeof setUserName === 'function') {
       setUserName(name.trim());
     }
