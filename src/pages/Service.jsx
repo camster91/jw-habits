@@ -24,6 +24,10 @@ function Service() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [goalInput, setGoalInput] = useState('');
   const [selectedType, setSelectedType] = useState('field-service');
+  // Single-flight guard for entry + goal submissions. Prevents a rapid double-tap
+  // (or 5-tap) from creating duplicate entries. 600ms is enough to swallow a tap-stream
+  // and short enough to feel instant.
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── New form fields ──────────────────────────────────────
   const [placements, setPlacements] = useState('');
@@ -107,18 +111,23 @@ function Service() {
   };
 
   const handleQuickAdd = (h) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     haptics.light();
     addEntry({ type: selectedType, hours: h, date: new Date().toISOString().split('T')[0] });
     addServiceActivity(h, 0, 0);
     toast.success(`Added ${h}h entry`);
+    setTimeout(() => setIsSubmitting(false), 600);
   };
 
   const handleCustomAdd = () => {
+    if (isSubmitting) return;
     const raw = computedHours ?? parseFloat(customHours);
     // Cap at 24h — no one does 99,999 hours of service in a day.
     const MAX_DAILY_HOURS = 24;
     if (!raw || raw <= 0) { toast.error('Please enter valid hours'); return; }
     if (raw > MAX_DAILY_HOURS) { toast.error(`Daily hours cannot exceed ${MAX_DAILY_HOURS}`); return; }
+    setIsSubmitting(true);
     const h = raw;
     haptics.light();
     const rv = parseInt(returnVisits) || 0;
@@ -139,6 +148,7 @@ function Service() {
     addServiceActivity(h, rv + bs, p);
     resetForm();
     toast.success(`Added ${h}h entry`);
+    setTimeout(() => setIsSubmitting(false), 600);
   };
 
   const handleDelete = (id) => {
@@ -148,16 +158,19 @@ function Service() {
   };
 
   const handleSetGoal = () => {
+    if (isSubmitting) return;
     const raw = parseFloat(goalInput);
     const MAX_MONTHLY_GOAL = 744; // 31 days × 24h
     if (!raw || raw <= 0) { toast.error('Please enter a valid goal'); return; }
     if (raw > MAX_MONTHLY_GOAL) { toast.error(`Monthly goal cannot exceed ${MAX_MONTHLY_GOAL}h`); return; }
+    setIsSubmitting(true);
     const goal = raw;
     haptics.success();
     setMonthlyGoal(goal);
     setGoalInput('');
     setShowGoalModal(false);
     toast.success(`Monthly goal set to ${goal}h`);
+    setTimeout(() => setIsSubmitting(false), 600);
   };
 
   const formatDate = (dateStr) => {
