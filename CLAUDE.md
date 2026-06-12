@@ -196,6 +196,52 @@ Tests live alongside source files (`*.test.js` / `*.test.ts`):
 
 Config: `vitest.config.js` with jsdom environment, globals enabled, v8 coverage.
 
+### End-to-end verification (persona harness)
+
+The `_verify-2026-06-12.cjs` script at the repo root is the canonical
+QA harness — 11 Playwright tests against the live SPA, modeled on
+the 11 critical FAIL claims from the 2026-06-11 persona runs.
+
+**Run locally** (preferred — VPS is unstable, this is faster):
+
+```bash
+# 1. Build the dist (one-time per change)
+npm run build
+
+# 2. Start the SPA-aware static server in another terminal
+node scripts/serve-dist.cjs ./dist 8766
+
+# 3. Run the verification
+node _verify-2026-06-12.cjs
+# override URL with: VERIFY_URL=http://127.0.0.1:9999 node _verify-2026-06-12.cjs
+```
+
+`scripts/serve-dist.cjs` is required — `python3 -m http.server` does
+NOT fall back to `index.html` for client-side routes, so `/about`,
+`/settings`, etc. return 404 without it. The script is also where
+the `?bust=` cache-buster pattern lives (or rather, was retired from).
+
+**Run against a remote**: set `VERIFY_URL=https://jwhabits.ashbi.ca/`.
+The script expects 200s on every route and a properly-served PWA shell.
+
+**What it tests** (each row is one test, T1-T11):
+- T1: Morning Prayer click mutates the prayer counter
+- T2: Daily Text click writes to `jw-progress-storage`
+- T3: Bible chapter click writes to `jw-progress-storage`
+- T4: "How this app works" link navigates to /about
+- T5-T6: /stats, /links pages render content
+- T7: Onboarding does NOT reappear for a returning user
+- T8: Dark mode toggle writes to localStorage AND updates `data-theme`
+- T9: Service Quick Add writes to `jw-service-storage` + shows a toast
+- T10: Goals "New" button opens a form
+- T11: /projects page renders content
+
+**Why these are all green as of 2026-06-12**: see commit `18578ab` —
+the previous version (`_verify-2026-06-11.cjs`) had three bugs that
+caused 7 false-negatives (URL placed the route in the query string,
+onboarding flag wiped after being set, force-clicks on off-screen
+elements). The current script and the live app both pass.
+
 ## PWA Configuration
 
 - Service worker: auto-update via Workbox (vite-plugin-pwa)
