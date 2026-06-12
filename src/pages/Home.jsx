@@ -92,7 +92,7 @@ function Home() {
         {/* iOS large title */}
         <h1 className="ios-large-title">
           {greetingText}
-          {userName ? <span className="name">, {userName}</span> : ''}.
+          {userName ? <span className="name">, {userName.length > 30 ? userName.slice(0, 30) + '…' : userName}</span> : ''}.
           <span className="sub">{formattedDate}</span>
         </h1>
 

@@ -218,14 +218,36 @@ function Settings() {
     if (!pendingImportData.current) return;
     const { storeData, isOldFormat } = pendingImportData.current;
 
+    // Sanitize: cap userName length (matches the slice(0, 30) in the Settings input
+    // and Onboarding) so a malicious backup can't break the home greeting layout.
+    const sanitize = (key) => {
+      if (key === 'jw-progress-settings' && storeData[key]?.state?.userName) {
+        const u = String(storeData[key].state.userName);
+        if (u.length > 30) {
+          storeData[key].state.userName = u.slice(0, 30);
+        }
+      }
+    };
+
     if (STORAGE_KEYS.some((key) => key in storeData)) {
       STORAGE_KEYS.forEach((key) => {
-        if (storeData[key]) localStorage.setItem(key, JSON.stringify(storeData[key]));
+        if (storeData[key]) {
+          sanitize(key);
+          localStorage.setItem(key, JSON.stringify(storeData[key]));
+        }
       });
     } else if (isOldFormat) {
       // Legacy format support
       if (storeData.progress) localStorage.setItem('jw-progress-storage', JSON.stringify(storeData.progress));
-      if (storeData.settings) localStorage.setItem('jw-progress-settings', JSON.stringify(storeData.settings));
+      if (storeData.settings) {
+        if (storeData.settings?.state?.userName) {
+          const u = String(storeData.settings.state.userName);
+          if (u.length > 30) {
+            storeData.settings.state.userName = u.slice(0, 30);
+          }
+        }
+        localStorage.setItem('jw-progress-settings', JSON.stringify(storeData.settings));
+      }
     }
 
     setImportModal(null);
