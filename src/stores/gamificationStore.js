@@ -59,6 +59,7 @@ const useGamificationStore = create()(persist((set, get) => ({
     lastPrayerDate: null,
     familyWorshipStreak: 0,
     longestFamilyWorshipStreak: 0,
+    lastFamilyWorshipWeek: null,
     dailyTextCompletions: 0,
     reflectionsWritten: 0,
     newsRead: 0,
@@ -118,11 +119,28 @@ const useGamificationStore = create()(persist((set, get) => ({
     },
     updateFamilyWorshipStreak: (weekKey, completed) => {
         const state = get();
+        if (!completed) {
+            // Un-checking does not roll back the credit for the current
+            // week; it just blocks NEW weeks from being credited until
+            // the user re-checks.
+            return;
+        }
+        // Same-week double-count guard: a user can toggle the worship
+        // checkbox off and on multiple times within the same week.
+        // Without this guard the streak counter climbed on every
+        // "complete" tap, letting users farm the worship_month (4 weeks)
+        // and worship_quarter (12 weeks) achievements in an afternoon.
+        if (state.lastFamilyWorshipWeek === weekKey) {
+            return;
+        }
+        const nextStreak = state.familyWorshipStreak + 1;
         set({
-            familyWorshipStreak: completed ? state.familyWorshipStreak + 1 : 0,
-            longestFamilyWorshipStreak: completed
-                ? Math.max(state.longestFamilyWorshipStreak, state.familyWorshipStreak + 1)
-                : state.longestFamilyWorshipStreak
+            familyWorshipStreak: nextStreak,
+            longestFamilyWorshipStreak: Math.max(
+                state.longestFamilyWorshipStreak,
+                nextStreak
+            ),
+            lastFamilyWorshipWeek: weekKey,
         });
         get().checkAndUnlockAchievements();
     },
@@ -327,6 +345,7 @@ const useGamificationStore = create()(persist((set, get) => ({
         lastPrayerDate: state.lastPrayerDate,
         familyWorshipStreak: state.familyWorshipStreak,
         longestFamilyWorshipStreak: state.longestFamilyWorshipStreak,
+        lastFamilyWorshipWeek: state.lastFamilyWorshipWeek,
         dailyTextCompletions: state.dailyTextCompletions,
         reflectionsWritten: state.reflectionsWritten,
         newsRead: state.newsRead,

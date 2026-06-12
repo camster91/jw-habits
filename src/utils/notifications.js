@@ -79,13 +79,21 @@ export async function scheduleDailyNotification(time, title, body, id) {
 
   if (isCapacitor) {
     try {
+      // Parse "HH:MM" to extract hour and minute. Using the `on: { hour,
+      // minute }` shape (not `at: <date> + repeats: true`) is the correct
+      // way to schedule a notification that fires every day at a
+      // specific time. The previous shape (`at: <Date> + repeats: true`)
+      // makes the Capacitor Android plugin use `(at - now)` as the
+      // repeat interval, which drifts the notification by hours per day
+      // and fires at the wrong time.
+      const [hour, minute] = time.split(':').map(Number);
       await LocalNotifications.schedule({
         notifications: [{
           id: notifId,
           title,
           body,
           schedule: {
-            at: parseTimeToday(time),
+            on: { hour, minute },
             repeats: true,
           },
           sound: null,
@@ -336,17 +344,6 @@ export function cancelScheduledNotification(timeoutId) {
 }
 
 // ── Internal helpers ──────────────────────────────────────────────
-
-function parseTimeToday(time) {
-  const [hours, minutes] = time.split(':').map(Number);
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-  // If time already passed today, schedule for tomorrow
-  if (date <= new Date()) {
-    date.setDate(date.getDate() + 1);
-  }
-  return date;
-}
 
 function parseTimeOnly(time) {
   const [hours, minutes] = time.split(':').map(Number);

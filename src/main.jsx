@@ -99,13 +99,14 @@ root.render(
 // Report Web Vitals metrics in development
 logWebVitals();
 
-// Register service worker update handler
+// Register service worker update handler.
+// We do NOT auto-reload on `controllerchange` — that destroys unsaved
+// state (a user mid-typing in the reflection textarea in
+// DailyTasksSection would lose their work). The proper flow is the
+// `UpdatePrompt` banner driven by `usePWA`, which lets the user click
+// "Update now" and calls `applyUpdate()` (see src/utils/pwa.js:77-86)
+// to swap the active service worker.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    // New service worker activated, reload to get updates
-    window.location.reload();
-  });
-
   // Handle notification clicks — focus app window
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type === 'NOTIFICATION_CLICK') {

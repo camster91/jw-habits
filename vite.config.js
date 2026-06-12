@@ -131,8 +131,14 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],
         cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
+        // We deliberately do NOT set skipWaiting/clientsClaim here —
+        // those are controlled in src/sw.js so the user gets a
+        // "Update available — reload now?" prompt instead of a silent
+        // hard-reload that destroys unsaved form state.
+        // The SPA navigation fallback is also handled in src/sw.js
+        // (via NavigationRoute + precached /index.html) rather than
+        // here, so the workbox-generated manifest picks up the
+        // /index.html entry from the precache glob.
         navigationPreload: false,
       },
 

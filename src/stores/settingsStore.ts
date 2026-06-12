@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { differenceInCalendarDays, getDayOfYear, parseISO } from 'date-fns';
 import { createSafeStorage } from '../utils/storageErrorHandler.js';
 
 interface NotificationSetting {
@@ -132,15 +133,24 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
         const state = get();
         const { startingScheduleDay, readingPace, customStartDate, useCustomSchedule } = state.bibleReadingSchedule;
         if (useCustomSchedule && customStartDate) {
-          const start = new Date(customStartDate);
+          // Use differenceInCalendarDays (DST-safe) rather than a
+          // literal ms subtraction. On a spring-forward DST day
+          // (24h → 23h) or fall-back (24h → 25h) the literal
+          // arithmetic can produce an off-by-one schedule day.
+          const start = parseISO(customStartDate);
           const today = new Date();
-          const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+          const diffDays = differenceInCalendarDays(today, start);
           return Math.max(1, (diffDays * readingPace) + 1);
         }
+        // Default schedule: use date-fns getDayOfYear (1-366, DST-safe)
+        // and offset by the user's starting day. The previous
+        // implementation used `new Date(year, 0, 0)` which is
+        // Dec 31 of the previous year (not Jan 1) and combined with
+        // the `dayOfYear - 1 + startingScheduleDay - 1` math produced
+        // an off-by-one on Jan 1.
         const now = new Date();
-        const startOfYear = new Date(now.getFullYear(), 0, 0);
-        const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
-        return ((dayOfYear - 1 + startingScheduleDay - 1) % 366) + 1;
+        const dayOfYear = getDayOfYear(now);
+        return ((dayOfYear - 1 + (startingScheduleDay - 1)) % 366) + 1;
       },
       setBibleReadingStartDay: (day) =>
         set((state) => ({

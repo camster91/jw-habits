@@ -20,12 +20,19 @@ export default function QuickAddFAB() {
   const [open, setOpen] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [customHours, setCustomHours] = useState({ minutes: 60, type: 'field-service' });
+  // Single-flight guard. Without this, a 5-tap storm on a quick-add
+  // button creates 5 service entries, doubles the gamification XP,
+  // and lets users farm the first_service / service_10h / service_50h
+  // achievements trivially. Same pattern used in Service.jsx:30,114.
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const addEntry = useServiceStore((s) => s.addEntry);
   const recordServiceActivity = useGamificationStore((s) => s.recordServiceActivity);
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const handleQuickAdd = (hours, type) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     haptics.success();
     addEntry({
       date: today,
@@ -37,10 +44,13 @@ export default function QuickAddFAB() {
     });
     recordServiceActivity(hours);
     setOpen(false);
+    setTimeout(() => setIsSubmitting(false), 600);
   };
 
   const handleCustomAdd = () => {
+    if (isSubmitting) return;
     if (customHours.minutes < 1) return;
+    setIsSubmitting(true);
     haptics.success();
     addEntry({
       date: today,
@@ -50,6 +60,7 @@ export default function QuickAddFAB() {
     recordServiceActivity(customHours.minutes / 60);
     setOpen(false);
     setShowCustom(false);
+    setTimeout(() => setIsSubmitting(false), 600);
   };
 
   return (

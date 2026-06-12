@@ -1,5 +1,5 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
-import { registerRoute } from 'workbox-routing';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
@@ -10,9 +10,42 @@ precacheAndRoute(self.__WB_MANIFEST);
 // Clean old caches on activation
 cleanupOutdatedCaches();
 
-// Skip waiting and claim clients immediately
-self.skipWaiting();
-self.clients.claim();
+// NOTE: We deliberately do NOT call `self.skipWaiting()` or
+// `self.clientsClaim()` here. Those would activate a new SW mid-session
+// and cause a hard reload via the `controllerchange` event, which
+// destroys unsaved form state (a user mid-typing in the reflection
+// textarea would lose their work). Instead, the SW waits for the
+// user to click "Update now" in the UpdatePrompt banner before
+// activating. The `applyUpdate()` helper in src/utils/pwa.js handles
+// the activation flow.
+
+// ── Navigation fallback for SPA routes ───────────────────────
+// Without this, deep links like /study, /service, /settings return
+// 404 (or the browser offline error page) when offline, because the
+// precache holds /index.html but no navigation route serves it.
+// This handler matches any navigation request and serves the
+// precached /index.html so React Router can take over.
+registerRoute(
+  new NavigationRoute(
+    async ({ event }) => {
+      // Try the network first so live deploys work, then fall back
+      // to the precached index.html when offline.
+      try {
+        return await fetch(event.request);
+      } catch {
+        // Last resort: serve the precached /index.html so React Router
+        // can take over. The Workbox manifest is injected at build time
+        // at the self.__WB_MANIFEST token above; we use the static URL
+        // here to avoid matching the injectManifest regex twice.
+        return caches.match('/index.html') || fetch('/index.html');
+      }
+    },
+    {
+      // Don't intercept the SW itself, the manifest, or the API proxy
+      denylist: [/^\/api\//, /^\/sw\.js$/, /^\/manifest\.webmanifest$/],
+    }
+  )
+);
 
 // ── Notification click handler ────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
