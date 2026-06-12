@@ -12,7 +12,38 @@ import {
   requestNotificationPermission,
   initializeReminders
 } from '../utils/notifications.js';
-import { NotificationItem, WeeklyNotificationItem } from '../components/settings/NotificationItems.js';
+import { NotificationItem, WeeklyNotificationItem } from '../components/settings/NotificationItems.jsx';
+
+/**
+ * Validate an Ollama base URL before sending the user's API key there.
+ * The baseUrl input is free-form text and gets persisted to localStorage
+ * (via settingsStore.ai.ollamaBaseUrl). Without this guard, a user can
+ * point the chat fetch at file://, http://192.168.x.x/admin, or any
+ * other URL and the Bearer token below would be sent with it.
+ *
+ * Allowed: https://<host> (any host), or http://localhost / 127.0.0.1
+ * (the documented local Ollama use case). Empty string is treated as
+ * "use the default" and passes.
+ */
+function validateOllamaBaseUrl(raw) {
+  const url = (raw || '').trim();
+  if (!url) return { ok: true };
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { ok: false, reason: 'Invalid URL' };
+  }
+  if (parsed.protocol === 'https:') return { ok: true };
+  if (parsed.protocol === 'http:') {
+    const host = parsed.hostname.toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
+      return { ok: true };
+    }
+    return { ok: false, reason: 'http:// only allowed for localhost' };
+  }
+  return { ok: false, reason: `Unsupported scheme: ${parsed.protocol}` };
+}
 
 function Settings() {
   const { t } = useTranslation();
@@ -108,6 +139,17 @@ function Settings() {
     try {
       const { chatWithOllama } = await import('../utils/ollama.js');
       const baseUrl = ai.ollamaBaseUrl || 'https://ollama.com';
+      // Validate the baseUrl before sending the user's API key there. The
+      // input has no scheme/host check, so a user could paste file://,
+      // http://192.168.x.x/admin, or any other URL and the Bearer token
+      // below would go with it. We require https:// except for localhost
+      // / 127.0.0.1 (the documented local Ollama use case).
+      const validation = validateOllamaBaseUrl(baseUrl);
+      if (!validation.ok) {
+        setAiTestStatus('error');
+        toast.error(validation.reason);
+        return;
+      }
       const apiKey = ai.ollamaApiKey;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
@@ -178,6 +220,16 @@ function Settings() {
     input.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
+      // Pre-flight size check on the raw File. By the time we JSON.parse
+      // below, the parsed object is already in memory; the previous
+      // post-parse JSON.stringify length check happened too late to
+      // protect the tab from a 50MB+ import. Cap at 5MB to match the
+      // in-handler cap that still runs after shape validation.
+      const MAX_IMPORT_SIZE = 5_000_000;
+      if (file.size > MAX_IMPORT_SIZE) {
+        toast.error(t("settings.importTooLarge"));
+        return;
+      }
       try {
         const text = await file.text();
         const parsed = JSON.parse(text);
@@ -465,6 +517,18 @@ function Settings() {
                       className="input input-bordered input-sm w-full"
                       value={ai.ollamaBaseUrl}
                       onChange={(e) => setAiSettings({ ollamaBaseUrl: e.target.value })}
+                      onBlur={(e) => {
+                        // Block obviously-bad URLs from being saved into the
+                        // persisted settings. Validation re-runs at fetch time
+                        // (handleTestAi) so a stale value never sends a token
+                        // to a non-allowed host.
+                        const result = validateOllamaBaseUrl(e.target.value);
+                        if (!result.ok) {
+                          toast.error(result.reason);
+                          setAiSettings({ ollamaBaseUrl: 'https://ollama.com' });
+                        }
+                      }}
+                      maxLength={200}
                       placeholder="https://ollama.com or http://localhost:11434"
                     />
                     <p className="text-xs text-base-content/70">Cloud: ollama.com | Local: localhost:11434</p>
