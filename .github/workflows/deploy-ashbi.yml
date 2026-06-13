@@ -1,0 +1,45 @@
+# jw-habits — VPS deploy via camster91/ashbi-deploy reusable
+#
+# Thin caller for the reusable workflow. Replaces the existing
+# .github/workflows/deploy.yml (Coolify trigger) and
+# .github/workflows/deploy-coolify.yml (full Coolify deploy).
+#
+# After dispatch is verified end-to-end, delete both old files.
+# Caddy vhost for jwhabits.ashbi.ca is already declared in
+# /opt/caddy/Caddyfile on the host.
+#
+# The compose is pull-only: image is prebuilt by
+# .github/workflows/build-and-push.yml and pushed to
+# ghcr.io/camster91/jw-habits. The reusable's
+# `docker compose build --no-cache` is a no-op (no `build:` block).
+#
+# File name is `deploy-ashbi.yml` (not `deploy.yml`) so it
+# doesn't collide with the existing Coolify deploy.yml while
+# both workflows exist. Rename to deploy.yml + delete the
+# Coolify files once the new path is verified.
+
+name: Deploy (ashbi)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy-ashbi
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy jw-habits (ashbi)
+    uses: camster91/ashbi-deploy/.github/workflows/deploy.yml@main
+    with:
+      project_name: jw-habits
+      port: "18080"
+      public_url: https://jwhabits.ashbi.ca
+      compose_b64: IyBqdy1oYWJpdHMg4oCUIFZQUyBkZXBsb3kgKGNhbXN0ZXI5MS9hc2hiaS1kZXBsb3kgcmV1c2FibGUpCiMKIyBQdWxsLW9ubHk6IHRoZSBpbWFnZSBpcyBidWlsdCBieSAuZ2l0aHViL3dvcmtmbG93cy9idWlsZC1hbmQtcHVzaC55bWwKIyBpbiB0aGlzIHJlcG8gYW5kIHB1c2hlZCB0byBnaGNyLmlvLiBUaGlzIGZpbGUgZGVjbGFyZXMgdGhlIHJ1bm5pbmcKIyBjb250YWluZXI7IHRoZSByZXVzYWJsZSB3b3JrZmxvdyBoYW5kbGVzIHNzaCArIHB1bGwgKyB1cC4KIwojIGp3LWhhYml0cyBpcyBhIENhcGFjaXRvci9SZWFjdCBTUEEgc2VydmVkIGJ5IG5naW54IGluc2lkZSB0aGUKIyBpbWFnZS4gVGhlIGltYWdlIGV4cG9zZXMgcG9ydCA4MDsgd2UgbWFwIGl0IHRvIDEyNy4wLjAuMToxODA4MAojIG9uIHRoZSBob3N0IChwZXIgdGhlIGV4aXN0aW5nIENhZGR5IHZob3N0IGF0CiMgandoYWJpdHMuYXNoYmkuY2EgLT4gMTI3LjAuMC4xOjE4MDgwKS4gTm8gYXBwLWxldmVsIGVudiB2YXJzLgojCiMgVGhlIHJldXNhYmxlJ3MgYGRvY2tlciBjb21wb3NlIGJ1aWxkIC0tbm8tY2FjaGVgIGlzIGEgbm8tb3AKIyAobm8gYGJ1aWxkOmAgYmxvY2spLgoKc2VydmljZXM6CiAgYXBwOgogICAgaW1hZ2U6IGNhbXN0ZXI5MS9qdy1oYWJpdHM6YnVpbGQtbGF0ZXN0CiAgICBjb250YWluZXJfbmFtZToganctaGFiaXRzCiAgICByZXN0YXJ0OiB1bmxlc3Mtc3RvcHBlZAogICAgcG9ydHM6CiAgICAgIC0gIjEyNy4wLjAuMToxODA4MDo4MCIKICAgIG5ldHdvcmtzOgogICAgICAtIGp3LWhhYml0cy1uZXQKCm5ldHdvcmtzOgogIGp3LWhhYml0cy1uZXQ6CiAgICBuYW1lOiBqdy1oYWJpdHMtbmV0Cg==
+      env_b64: IyBqdy1oYWJpdHMg4oCUIHJ1bnRpbWUgZW52IChrZXB0IGZvciBwYXJpdHkgd2l0aCB0aGUgcmV1c2FibGUgd29ya2Zsb3cpCiMganctaGFiaXRzIGhhcyBubyBhcHAtbGV2ZWwgZW52IHZhcnMgKG5naW54ICsgc3RhdGljIFNQQSkuCiMgVGhpcyBmaWxlIGV4aXN0cyBzbyB0aGUgcmV1c2FibGUncyBlbnZfYjY0IGlucHV0IGhhcwojIHNvbWV0aGluZyB0byB3cml0ZS4gRW1wdHkgaXMgZmluZS4K
+    secrets:
+      vps_ssh_key: ${{ secrets.VPS_SSH_KEY || secrets.COOLIFY_SSH_KEY }}
+      vps_host:    ${{ secrets.VPS_HOST    || secrets.COOLIFY_HOST }}
+      vps_user:    ${{ secrets.VPS_USER    || secrets.COOLIFY_USER }}
