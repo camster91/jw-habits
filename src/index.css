@@ -200,14 +200,17 @@
     height: 20px;
   }
 
-  /* iOS focus card — single accent gradient, no border-radius 2xl, 20px */
+  /* iOS focus card — flat solid color, no gradient. Apple's own apps
+     use solid tinted backgrounds for emphasis cards (Apple Music's
+     "Now Playing", Wallet's pass cards) — gradients are for hero
+     marketing tiles, not for in-app list items. */
   .ios-focus-card {
-    background: linear-gradient(135deg, #2D5F8B 0%, #4A7AB0 100%);
-    border-radius: 20px;
-    padding: 20px;
+    background: var(--ios-focus-card-bg, #2D5F8B);
+    border-radius: 16px;
+    padding: 18px 20px;
     color: white;
-    box-shadow: 0 8px 24px rgba(45, 95, 139, 0.25);
-    margin-bottom: 20px;
+    box-shadow: none;
+    margin-bottom: 12px;
   }
   .ios-focus-card .label {
     font-size: 13px;
@@ -247,14 +250,14 @@
   .ios-focus-card .cta:hover { opacity: 0.7; }
   .ios-focus-card .cta:active { opacity: 0.5; }
 
-  /* Pioneer hero — muted JW blue gradient, shown on Home for pioneers */
+  /* Pioneer hero — flat solid color, lighter weight than focus card */
   .ios-pioneer-hero {
-    background: linear-gradient(135deg, #2D5F8B 0%, #4A7AB0 100%);
-    border-radius: 20px;
-    padding: 20px;
+    background: var(--ios-pioneer-hero-bg, #2D5F8B);
+    border-radius: 16px;
+    padding: 16px 18px;
     color: white;
-    box-shadow: 0 8px 24px rgba(45, 95, 139, 0.25);
-    margin-bottom: 20px;
+    box-shadow: none;
+    margin-bottom: 12px;
   }
   .ios-pioneer-hero .label {
     font-size: 13px;

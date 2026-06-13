@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { TrendingUp, Calendar, Target, Trophy, Star, Flame, Lock, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Calendar, Target, Trophy, Star, Flame, Lock, ChevronDown, ChevronUp , Sprout} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
-import PageHeader from '../components/PageHeader';
 
 function Stats() {
   const [showAllAchievements, setShowAllAchievements] = useState(false);
@@ -76,21 +75,18 @@ function Stats() {
 
     return (
       <div className="min-h-screen bg-base-200 pb-24">
-        {/* Header */}
-        <PageHeader
-          title={t('stats.title')}
-          subtitle={t('stats.subtitle')}
-          icon={TrendingUp}
-          iconBare
-          shadow
-          blurColor="emerald"
-        />
+        {/* iOS-style stats page top */}
+      <h1 className="ios-large-title">
+        <TrendingUp className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
+        {t('stats.title')}
+        <span className="sub">{t('stats.subtitle')}</span>
+      </h1>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 space-y-6 max-w-2xl">
         {/* Level & XP Card */}
-        <div className="card bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-xl animate-fade-in-up">
-          <div className="card-body">
+        <div className="card bg-primary/90 text-white animate-fade-in-up">
+          <div className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
@@ -139,8 +135,8 @@ function Stats() {
         </div>
 
         {/* Achievements Card */}
-        <div className="card bg-base-100 shadow-xl animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-          <div className="card-body">
+        <div className="ios-grouped animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+          <div className="p-4">
             <div className="flex items-center justify-between">
               <h2 className="card-title">
                 <Trophy className="w-5 h-5 text-primary" />
@@ -202,8 +198,8 @@ function Stats() {
         </div>
 
         {/* Current Streaks */}
-        <div className="card bg-base-100 shadow-xl animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-          <div className="card-body">
+        <div className="ios-grouped animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+          <div className="p-4">
             <h2 className="card-title">
               <Flame className="w-5 h-5 text-orange-500 animate-flame" />
               {t('stats.currentStreaks')}
@@ -281,8 +277,8 @@ function Stats() {
         </div>
 
         {/* Completion Rates */}
-        <div className="card bg-base-100 shadow-xl animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-          <div className="card-body">
+        <div className="ios-grouped animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+          <div className="p-4">
             <h2 className="card-title">
               <Target className="w-5 h-5" />
               Completion Rates
@@ -323,8 +319,8 @@ function Stats() {
         </div>
 
         {/* Activity Summary */}
-        <div className="card bg-base-100 shadow-xl animate-fade-in-up" style={{ animationDelay: '500ms' }}>
-          <div className="card-body">
+        <div className="ios-grouped animate-fade-in-up" style={{ animationDelay: '500ms' }}>
+          <div className="p-4">
             <h2 className="card-title">
               <Calendar className="w-5 h-5" />
               Activity Summary
@@ -357,16 +353,16 @@ function Stats() {
         </div>
 
         {/* Motivational Message */}
-        <div className="card bg-gradient-to-br from-primary to-secondary text-white shadow-xl animate-fade-in-up" style={{ animationDelay: '600ms' }}>
+        <div className="card bg-primary/90 text-white animate-fade-in-up" style={{ animationDelay: '600ms' }}>
           <div className="card-body text-center">
             <h2 className="text-xl font-bold mb-2">
               {level >= 10
-                ? "🏆 Outstanding Achievement!"
+                ? <><Trophy className="w-4 h-4 inline mr-1" /> Outstanding Achievement!</>
                 : level >= 5
-                ? "🎯 You're on fire!"
+                ? <><Target className="w-4 h-4 inline mr-1" /> You're on fire!</>
                 : level >= 2
-                ? "💪 Keep up the momentum!"
-                : "🌱 Every journey begins with a single step"}
+                ? <><TrendingUp className="w-4 h-4 inline mr-1" /> Keep up the momentum!</>
+                : <><Sprout className="w-4 h-4 inline mr-1" /> Every journey begins with a single step</>}
             </h2>
             <p className="text-sm opacity-90">
               {level >= 10

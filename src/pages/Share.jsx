@@ -30,34 +30,20 @@ function SharePage() {
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
-      {/* Header */}
-      <header
-        className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg"
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
-      >
-        {/* Decorative blurs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-4 right-4 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-300/10 rounded-full blur-3xl" />
-        </div>
-        <div className="relative p-6">
-          <div className="flex items-center gap-3">
-            <Share2 className="w-8 h-8" />
-            <div>
-              <h1 className="text-2xl font-bold">Shared Content</h1>
-              <p className="text-sm opacity-90">Content received via share</p>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* iOS-style page top */}
+      <h1 className="ios-large-title">
+        <Share2 className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
+        Shared Content
+        <span className="sub">Content received via share</span>
+      </h1>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
         {hasContent ? (
           <>
             {/* Shared Content Card */}
-            <div className="card bg-base-100 shadow-md">
-              <div className="card-body p-5 space-y-4">
+            <div className="ios-grouped">
+              <div className="p-4 space-y-4">
                 {/* Title */}
                 {title && (
                   <div className="flex items-start gap-3">
@@ -118,7 +104,7 @@ function SharePage() {
         ) : (
           /* Empty State */
           <div className="text-center py-16">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
               <Share2 className="w-10 h-10 text-blue-400" />
             </div>
             <h2 className="text-xl font-bold text-base-content/70">No Shared Content</h2>

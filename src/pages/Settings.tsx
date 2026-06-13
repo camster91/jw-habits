@@ -5,7 +5,6 @@ import useProgressStore from '../stores/progressStore.js';
 import useSettingsStore, { type Notifications } from '../stores/settingsStore.js';
 import { useToast } from '../components/Toast.jsx';
 import { haptics } from '../utils/native.js';
-import PageHeader from '../components/PageHeader.jsx';
 import {
   isNotificationSupported,
   getNotificationPermission,
@@ -344,16 +343,14 @@ function Settings() {
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
-      <PageHeader
-        title={t('settings.title')}
-        subtitle={t('settings.subtitle')}
-        shadow
-        noBlurs
-      />
+      {/* iOS-style page top */}
+      <h1 className="ios-large-title">{t('settings.title')}
+        <span className="sub">{t('settings.subtitle')}</span>
+      </h1>
       <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h2 className="card-title text-lg"><Bell className="w-5 h-5" /> {t("settings.notifications")}</h2>
+        <div className="ios-grouped">
+          <div className="p-4">
+            <h2 className="text-sm font-semibold text-base-content"><Bell className="w-5 h-5" /> {t("settings.notifications")}</h2>
             <div className="divider my-2"></div>
             {!notificationSupported ? (
               <div className="alert alert-warning">{t("settings.notSupported")}</div>
@@ -427,9 +424,9 @@ function Settings() {
             )}
           </div>
         </div>
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h2 className="card-title text-lg">{t("settings.appearance")}</h2>
+        <div className="ios-grouped">
+          <div className="p-4">
+            <h2 className="text-sm font-semibold text-base-content">{t("settings.appearance")}</h2>
             <div className="divider my-2"></div>
             <div className="form-control w-full">
               <label className="label">
@@ -455,9 +452,9 @@ function Settings() {
         </div>
 
         {/* Help & Tour — re-open the onboarding intro for users who skipped or want a refresher */}
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h2 className="card-title text-lg">
+        <div className="ios-grouped">
+          <div className="p-4">
+            <h2 className="text-sm font-semibold text-base-content">
               <BookOpen className="w-5 h-5" /> {t("settings.help", "Help & Tour")}
             </h2>
             <div className="divider my-2"></div>
@@ -483,18 +480,18 @@ function Settings() {
             </div>
           </div>
         </div>
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h2 className="card-title text-lg">{t("settings.dataManagement")}</h2>
+        <div className="ios-grouped">
+          <div className="p-4">
+            <h2 className="text-sm font-semibold text-base-content">{t("settings.dataManagement")}</h2>
             <div className="divider my-2"></div>
             <button onClick={handleExportData} className="btn btn-outline w-full justify-start"><Download className="w-5 h-5" /> {t("settings.exportData")}</button>
             <button onClick={handleImportData} className="btn btn-outline w-full justify-start"><Upload className="w-5 h-5" /> {t("settings.importData")}</button>
             <button onClick={handleClearData} className="btn btn-error btn-outline w-full justify-start"><Trash2 className="w-5 h-5" /> {t("settings.clearAllData")}</button>
           </div>
         </div>
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h2 className="card-title text-lg"><Bot className="w-5 h-5" /> {t("settings.aiAssistant")}</h2>
+        <div className="ios-grouped">
+          <div className="p-4">
+            <h2 className="text-sm font-semibold text-base-content"><Bot className="w-5 h-5" /> {t("settings.aiAssistant")}</h2>
             <div className="divider my-2"></div>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-base-200/50 rounded-xl">
@@ -579,9 +576,9 @@ function Settings() {
             </div>
           </div>
         </div>
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <h2 className="card-title text-lg"><RefreshCw className="w-5 h-5" /> {t("settings.appUpdates")}</h2>
+        <div className="ios-grouped">
+          <div className="p-4">
+            <h2 className="text-sm font-semibold text-base-content"><RefreshCw className="w-5 h-5" /> {t("settings.appUpdates")}</h2>
             <div className="divider my-2"></div>
             <button onClick={handleUpdateApp} className="btn btn-primary w-full justify-start"><RefreshCw className="w-5 h-5" /> {t("settings.checkForUpdates")}</button>
           </div>
@@ -592,7 +589,7 @@ function Settings() {
       {importModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="card bg-base-100 shadow-2xl w-full max-w-md">
-            <div className="card-body">
+            <div className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="font-bold text-lg flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-warning" />

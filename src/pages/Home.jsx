@@ -220,29 +220,35 @@ function Home() {
         </h2>
         <FamilyWorshipCard />
 
-        {/* Fresh user: paint the destination — show what 30 days looks like */}
+        {/* Fresh user: small hint about what success looks like — inline
+            iOS list row instead of a large card. */}
         {isFreshUser && (
-          <section className="rounded-2xl border border-base-300/60 bg-base-100 p-4 animate-fade-in-up">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 rounded-full bg-primary/10 text-primary">
-                <TrendingUp className="w-3.5 h-3.5" />
+          <div className="ios-grouped">
+            <div className="ios-row" style={{ cursor: 'default' }}>
+              <div className="ios-icon jw-blue">
+                <TrendingUp className="w-4 h-4" />
               </div>
-              <h2 className="text-sm font-semibold text-base-content">What 30 days looks like</h2>
+              <div className="body">
+                <div className="title">What success looks like</div>
+                <div className="sub">
+                  A few quiet days in a row are normal. The grid doesn't have
+                  to be perfect to count.
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                className="flex gap-0.5 ml-auto"
+                title="Preview of a 30-day streak grid"
+              >
+                {[1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0].map((v, i) => (
+                  <span
+                    key={i}
+                    className={`inline-block w-1.5 h-3 rounded-sm ${v ? 'bg-primary' : 'bg-base-content/15'}`}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-7 gap-1 mb-3">
-              {[0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1].map((v, i) => (
-                <div
-                  key={i}
-                  className={`h-3 rounded-sm ${v ? 'bg-primary' : 'bg-base-content/10'}`}
-                  title={`Day ${i + 1}`}
-                />
-              ))}
-            </div>
-            <p className="text-xs text-base-content/70 leading-relaxed">
-              A filled grid like this is what your home page becomes — every cell is a day you showed up.
-              A few quiet days in a row are normal. The grid doesn't have to be perfect to count.
-            </p>
-          </section>
+          </div>
         )}
 
         {/* Heatmap — yearly habit visualization (hidden for fresh users; replaced by preview above) */}

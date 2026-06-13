@@ -2,7 +2,6 @@ import { ExternalLink, Newspaper, BookOpen, Video, Library, Radio, Book, Music, 
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
-import PageHeader from '../components/PageHeader';
 
 const linkCategories = [
   {
@@ -161,7 +160,7 @@ function Links() {
         </div>
         ) : (
           filteredCategories.map((category) => (
-            <div key={category.title} className="card bg-base-100 shadow-xl">
+            <div key={category.title} className="ios-grouped ">
               <div className="card-body p-4">
                 <h2 className="font-bold text-base-content/80">{category.title}</h2>
                 <div className="divider my-1"></div>

@@ -91,9 +91,6 @@ function App() {
               {/* Command Palette (Cmd+K) */}
               <CommandPalette />
 
-              {/* Quick-Add FAB (log service from any tab) */}
-              <QuickAddFAB />
-
               {/* Onboarding — shown only on first visit */}
               <Onboarding />
             </div>

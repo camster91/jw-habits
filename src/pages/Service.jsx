@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Cross, Plus, Trash2, Calendar, Clock, Target, ChevronDown, BookOpen, Users, MessageSquare, Timer, BarChart3 } from 'lucide-react';
-import PageHeader from '../components/PageHeader';
+import { Cross, Plus, Trash2, Calendar, Clock, Target, ChevronDown, BookOpen, Users, MessageSquare, Timer, BarChart3 , RefreshCw, PartyPopper, Library} from 'lucide-react';
 import useServiceStore from '../stores/serviceStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
@@ -200,9 +199,9 @@ function Service() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-4 text-xs text-base-content/70">
-            {entry.placements > 0 && <span title="Placements">📚{entry.placements}</span>}
-            {entry.returnVisits > 0 && <span title="Return Visits">🔄{entry.returnVisits}</span>}
-            {entry.bibleStudies > 0 && <span title="Bible Studies">📖{entry.bibleStudies}</span>}
+            {entry.placements > 0 && <span title="Placements"><Library className="w-4 h-4" />{entry.placements}</span>}
+            {entry.returnVisits > 0 && <span title="Return Visits"><RefreshCw className="w-4 h-4" />{entry.returnVisits}</span>}
+            {entry.bibleStudies > 0 && <span title="Bible Studies"><BookOpen className="w-4 h-4" />{entry.bibleStudies}</span>}
           </div>
           <div className="flex items-center gap-1 text-primary font-semibold">
             <Clock className="w-4 h-4" />
@@ -308,14 +307,14 @@ function Service() {
               value={monthProgress} max="100"
             />
             <p className="text-xs text-base-content/70 mt-1">
-              {monthProgress >= 100 ? 'Goal reached! 🎉' : `${Math.round(monthProgress)}% of monthly goal`}
+              {monthProgress >= 100 ? 'Goal reached! <PartyPopper className="w-4 h-4" />' : `${Math.round(monthProgress)}% of monthly goal`}
             </p>
 
             {/* Monthly placements/visits/studies */}
             <div className="grid grid-cols-3 gap-2 mt-3 text-xs text-base-content/70">
-              <span>📚 {getMonthlyPlacements()} placements</span>
-              <span>🔄 {getMonthlyReturnVisits()} visits</span>
-              <span>📖 {getMonthlyBibleStudies()} studies</span>
+              <span><Library className="w-4 h-4" /> {getMonthlyPlacements()} placements</span>
+              <span><RefreshCw className="w-4 h-4" /> {getMonthlyReturnVisits()} visits</span>
+              <span><BookOpen className="w-4 h-4" /> {getMonthlyBibleStudies()} studies</span>
             </div>
           </div>
         </section>
@@ -455,7 +454,7 @@ function Service() {
                 {/* ── Placements / Return Visits / Bible Studies ── */}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="form-control">
-                    <label className="label py-1"><span className="label-text text-xs">📚 Placements</span></label>
+                    <label className="label py-1"><span className="label-text text-xs"><Library className="w-4 h-4" /> Placements</span></label>
                     <input
                       type="number" placeholder="0"
                       className="input input-bordered input-sm w-full"
@@ -464,7 +463,7 @@ function Service() {
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label py-1"><span className="label-text text-xs">🔄 R. Visits</span></label>
+                    <label className="label py-1"><span className="label-text text-xs"><RefreshCw className="w-4 h-4" /> R. Visits</span></label>
                     <input
                       type="number" placeholder="0"
                       className="input input-bordered input-sm w-full"
@@ -473,7 +472,7 @@ function Service() {
                     />
                   </div>
                   <div className="form-control">
-                    <label className="label py-1"><span className="label-text text-xs">📖 B. Studies</span></label>
+                    <label className="label py-1"><span className="label-text text-xs"><BookOpen className="w-4 h-4" /> B. Studies</span></label>
                     <input
                       type="number" placeholder="0"
                       className="input input-bordered input-sm w-full"
