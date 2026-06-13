@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Sparkles, X, ArrowRight } from 'lucide-react';
+import {Sparkles, X, ArrowRight, BookOpen, Users, Heart, Target, Flame, Map, Building, Footprints, MessageCircle, Droplet, Mic, Globe, Star, ListChecks, Search, Scroll, Crown, HelpCircle, Smartphone, Tv, Music} from 'lucide-react';
+const ICONS = {
+  BookOpen, Building, Users, Footprints, Target, MessageCircle,
+  Droplet, Mic, Globe, Map, Heart, Flame, Star, ListChecks,
+  Search, Scroll, Crown, HelpCircle, Smartphone, Tv, Music,
+};
+
+function Icon({ name, className = "w-5 h-5" }) {
+  const C = ICONS[name] || ICONS.BookOpen;
+  return <C className={className} />;
+}
+
 import { useTranslation } from 'react-i18next';
 import useProgressStore from '../stores/progressStore.js';
 import useGamificationStore from '../stores/gamificationStore.js';
@@ -49,7 +60,7 @@ export default function SmartSuggestions() {
       if (hour < 22) {
         result.push({
           id: 'daily-text-today',
-          emoji: '📖',
+          emoji: 'BookOpen',
           title: 'Read today\'s daily text',
           body: hour < 12 ? 'A great way to start your day' : 'Take 3 minutes to read today\'s scripture',
           priority: 10,
@@ -74,7 +85,7 @@ export default function SmartSuggestions() {
     if (hour >= 6 && hour < 12 && !todayPrayers.morning) {
       result.push({
         id: 'prayer-morning',
-        emoji: '🙏',
+        emoji: 'Heart',
         title: 'Morning prayer',
         body: 'Start your day with Jehovah. 1 minute.',
         priority: 8,
@@ -82,7 +93,7 @@ export default function SmartSuggestions() {
     } else if (hour >= 12 && hour < 18 && !todayPrayers.afternoon) {
       result.push({
         id: 'prayer-afternoon',
-        emoji: '🙏',
+        emoji: 'Heart',
         title: 'Afternoon prayer',
         body: 'A quick prayer in the middle of the day.',
         priority: 9,
@@ -90,7 +101,7 @@ export default function SmartSuggestions() {
     } else if (hour >= 18 && !todayPrayers.evening) {
       result.push({
         id: 'prayer-evening',
-        emoji: '🙏',
+        emoji: 'Heart',
         title: 'Evening prayer',
         body: 'End your day with thanks and reflection.',
         priority: 8,
@@ -109,7 +120,7 @@ export default function SmartSuggestions() {
     if (streak > 0 && streak < 30 && !bibleReadings[String(Math.ceil((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000))]?.read) {
       result.push({
         id: 'bible-streak',
-        emoji: '🔥',
+        emoji: 'Flame',
         title: `${streak}-day Bible reading streak — keep it alive!`,
         body: 'You\'re on a roll. 5 minutes today extends the streak.',
         priority: 5,
@@ -123,7 +134,7 @@ export default function SmartSuggestions() {
     if (!familyWorship[weekKey]?.completed && getDay(today) >= 0) {
       result.push({
         id: 'family-worship-week',
-        emoji: '👨‍👩‍👧',
+        emoji: 'Users',
         title: 'Family worship this week',
         body: 'Pick a topic and 15 minutes. We\'ll track it.',
         priority: 20,
@@ -170,7 +181,7 @@ export default function SmartSuggestions() {
     if (today.getDate() === 1) {
       result.push({
         id: 'monthly-goal',
-        emoji: '🎯',
+        emoji: 'Target',
         title: 'New month — set a fresh service goal',
         body: 'Pick a realistic number and we\'ll track it for you.',
         priority: 7,
@@ -206,7 +217,7 @@ export default function SmartSuggestions() {
       <div className="space-y-2">
         {visible.map((s) => (
           <div key={s.id} className="flex gap-3 p-2.5 rounded-lg bg-base-200/50 hover:bg-base-200 transition-colors group">
-            <span className="text-lg flex-shrink-0">{s.emoji}</span>
+            <Icon name={s.emoji} className="w-4 h-4 text-primary shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium leading-snug">{s.title}</p>
               <p className="text-xs text-base-content/70 leading-snug mt-0.5">{s.body}</p>

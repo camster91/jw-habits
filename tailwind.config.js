@@ -67,6 +67,22 @@ export default {
           primary: "#5b8fd9",
           secondary: "#84d94a",
           accent: "#fbbf24",
+          // Override DaisyUI's default dim #A6ADBB to actual iOS dark
+          // mode colors. iOS uses 3 surface layers (page < card <
+          // card-elevated) and a white text on the topmost layer.
+          //   page:    #000000 (true black, what iOS uses)
+          //   card:    #1C1C1E (the .ios-grouped card background)
+          //   text:    #FFFFFF (label, primary)
+          //   text-2:  rgba(235,235,245,0.78) → via text-base-content/70
+          //            in CSS, Tailwind reads base-content/70 from the
+          //            CSS color-mix() result. To keep things simple we
+          //            pin base-content to white here; the existing
+          //            text-base-content/70 etc. classes continue to
+          //            render as 70% white-on-dark.
+          "base-content": "#FFFFFF",
+          "base-100": "#1C1C1E",
+          "base-200": "#000000",
+          "base-300": "#2C2C2E",
         },
       },
     ],

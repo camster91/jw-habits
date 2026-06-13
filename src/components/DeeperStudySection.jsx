@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { GraduationCap, Book, ExternalLink, Video, FileText, Globe, Search, ChevronRight, ChevronDown, Star, Headphones } from 'lucide-react';
+import {GraduationCap, Book, ExternalLink, Video, FileText, Globe, Search, ChevronRight, ChevronDown, Star, Headphones, BookOpen, BookMarked, Scroll, Building, Crown, HelpCircle, Heart, ListChecks, Smartphone, BookText, Tv, Film, Music, Mic, HandMetal, Globe2, Library, User, Cat} from 'lucide-react';
+const ICONS = {
+  BookOpen, BookMarked, Scroll, Building, Crown, HelpCircle,
+  Star, Heart, ListChecks, Search, Smartphone, BookText, Tv,
+  Film, Headphones, Music, Mic, HandMetal, Globe2, Library,
+};
+
+function Icon({ name, className = "w-5 h-5" }) {
+  const C = ICONS[name] || ICONS.BookOpen;
+  return <C className={className} />;
+}
+
 import { haptics } from '../utils/native';
 
 // Deeper study categories
@@ -15,25 +26,25 @@ const STUDY_CATEGORIES = [
         title: 'Insight on the Scriptures',
         description: 'Comprehensive Bible encyclopedia with articles on people, places, and teachings',
         url: 'https://www.jw.org/en/library/books/Insight-on-the-Scriptures/',
-        icon: '📚',
+        icon: 'Library',
       },
       {
         title: 'Study Bible',
         description: 'Bible with study notes, cross-references, and multimedia',
         url: 'https://www.jw.org/en/library/bible/study-bible/books/',
-        icon: '📖',
+        icon: 'BookOpen',
       },
       {
         title: '"All Scripture" Book',
         description: 'Background information on each Bible book',
         url: 'https://www.jw.org/en/library/books/all-scripture-inspired-of-god/',
-        icon: '📜',
+        icon: 'Scroll',
       },
       {
         title: 'Bible Character Index',
         description: 'Alphabetical index of Bible personalities',
         url: 'https://www.jw.org/en/library/books/bible-glossary/',
-        icon: '👤',
+        icon: 'User',
       },
     ],
   },
@@ -47,25 +58,25 @@ const STUDY_CATEGORIES = [
         title: 'Pure Worship Restored',
         description: 'Deep verse-by-verse study of Ezekiel',
         url: 'https://www.jw.org/en/library/books/pure-worship/',
-        icon: '🏛️',
+        icon: 'Building',
       },
       {
         title: 'God\'s Kingdom Rules!',
         description: 'History of Jehovah\'s Witnesses and Kingdom fulfillment',
         url: 'https://www.jw.org/en/library/books/gods-kingdom-rules/',
-        icon: '👑',
+        icon: 'Crown',
       },
       {
         title: 'Revelation—Grand Climax',
         description: 'Detailed commentary on Revelation',
         url: 'https://www.jw.org/en/library/books/revelation-grand-climax/',
-        icon: '📕',
+        icon: 'BookMarked',
       },
       {
         title: 'Pay Attention to Daniel\'s Prophecy',
         description: 'Study of Daniel\'s visions and their fulfillment',
         url: 'https://www.jw.org/en/library/books/pay-attention-daniel-prophecy/',
-        icon: '🦁',
+        icon: 'Cat',
       },
     ],
   },
@@ -79,25 +90,25 @@ const STUDY_CATEGORIES = [
         title: 'What Does the Bible Really Teach?',
         description: 'Core Bible teachings explained simply',
         url: 'https://www.jw.org/en/library/books/bible-teach/',
-        icon: '❓',
+        icon: 'HelpCircle',
       },
       {
         title: 'Enjoy Life Forever!',
         description: 'Interactive Bible study course',
         url: 'https://www.jw.org/en/bible-teachings/guided-bible-study-course/',
-        icon: '🌟',
+        icon: 'Star',
       },
       {
         title: 'Keep Yourselves in God\'s Love',
         description: 'Practical application of Bible principles',
         url: 'https://www.jw.org/en/library/books/gods-love/',
-        icon: '❤️',
+        icon: 'Heart',
       },
       {
         title: 'Organized to Do Jehovah\'s Will',
         description: 'Organization and congregation procedures',
         url: 'https://www.jw.org/en/library/books/organized-to-do-jehovahs-will/',
-        icon: '📋',
+        icon: 'ListChecks',
       },
     ],
   },
@@ -111,19 +122,19 @@ const STUDY_CATEGORIES = [
         title: 'Watchtower ONLINE LIBRARY',
         description: 'Search all publications',
         url: 'https://wol.jw.org/',
-        icon: '🔍',
+        icon: 'Search',
       },
       {
         title: 'JW Library App',
         description: 'Offline library with study features',
         url: 'https://www.jw.org/en/online-help/jw-library/',
-        icon: '📱',
+        icon: 'Smartphone',
       },
       {
         title: 'Index to Publications',
         description: 'Subject index for in-depth research',
         url: 'https://www.jw.org/en/library/books/Watch-Tower-Publications-Index/',
-        icon: '📑',
+        icon: 'BookText',
       },
     ],
   },
@@ -137,25 +148,25 @@ const STUDY_CATEGORIES = [
         title: 'JW Broadcasting',
         description: 'Monthly programs and original content',
         url: 'https://www.jw.org/en/library/videos/#en/mediaitems/StudioMonthlyPrograms',
-        icon: '📺',
+        icon: 'Tv',
       },
       {
         title: 'Bible Dramatizations',
         description: 'Video dramatizations of Bible accounts',
         url: 'https://www.jw.org/en/library/videos/#en/categories/VODBibleDramatizations',
-        icon: '🎬',
+        icon: 'Film',
       },
       {
         title: 'Audio Bible',
         description: 'Listen to the Bible being read',
         url: 'https://www.jw.org/en/library/bible/study-bible/books/',
-        icon: '🎧',
+        icon: 'Headphones',
       },
       {
         title: 'Kingdom Songs',
         description: 'Sing along with instrumental and vocal versions',
         url: 'https://www.jw.org/en/library/music/',
-        icon: '🎵',
+        icon: 'Music',
       },
     ],
   },
@@ -169,19 +180,19 @@ const STUDY_CATEGORIES = [
         title: 'JW Language App',
         description: 'Learn phrases for the ministry in 100+ languages',
         url: 'https://www.jw.org/en/online-help/jw-language/',
-        icon: '🗣️',
+        icon: 'Mic',
       },
       {
         title: 'Sign Language Videos',
         description: 'Publications in sign language',
         url: 'https://www.jw.org/en/library/videos/#en/categories/SignLanguage',
-        icon: '🤟',
+        icon: 'HandMetal',
       },
       {
         title: 'Publications in Other Languages',
         description: 'Browse content in 1000+ languages',
         url: 'https://www.jw.org/en/languages/',
-        icon: '🌍',
+        icon: 'Globe2',
       },
     ],
   },
@@ -224,7 +235,7 @@ function DeeperStudySection() {
           haptics.light();
           setShowDeeperStudy(!showDeeperStudy);
         }}
-        className="flex items-center justify-between w-full p-4 bg-base-100 rounded-2xl shadow-sm active:scale-[0.99] transition-all"
+       
       >
         <div className="flex items-center gap-2">
           <div className="p-2 bg-primary rounded-xl">
@@ -260,8 +271,8 @@ function DeeperStudySection() {
 
           {/* Study Ideas Panel */}
           {showIdeas && (
-            <div className="card bg-base-100 border border-primary/20">
-              <div className="card-body p-4">
+            <div className="ios-grouped border border-primary/20">
+              <div className="p-4">
                 <h4 className="font-semibold text-primary flex items-center gap-2 mb-3">
                   <Star className="w-4 h-4" />
                   {t("study.studyIdeas")}
@@ -285,7 +296,7 @@ function DeeperStudySection() {
               const isExpanded = expandedCategory === category.id;
 
               return (
-                <div key={category.id} className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
+                <div key={category.id} className="ios-grouped">
                   <button
                     onClick={() => toggleCategory(category.id)}
                     className="flex items-center gap-3 w-full p-4 active:bg-base-200 transition-colors"
@@ -324,7 +335,7 @@ function DeeperStudySection() {
           </div>
 
           {/* Quick Links */}
-          <div className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
+          <div className="ios-grouped">
             <div className="p-4">
               <h4 className="font-bold mb-3 flex items-center gap-2">
                 <Headphones className="w-5 h-5 text-primary" />
@@ -332,10 +343,10 @@ function DeeperStudySection() {
               </h4>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: 'WOL', url: 'https://wol.jw.org/', icon: '🔍' },
-                  { label: 'Study Bible', url: 'https://www.jw.org/en/library/bible/study-bible/books/', icon: '📖' },
-                  { label: 'JW Broadcasting', url: 'https://www.jw.org/en/library/videos/', icon: '📺' },
-                  { label: 'Kingdom Songs', url: 'https://www.jw.org/en/library/music/', icon: '🎵' },
+                  { label: 'WOL', url: 'https://wol.jw.org/', icon: 'Search' },
+                  { label: 'Study Bible', url: 'https://www.jw.org/en/library/bible/study-bible/books/', icon: 'BookOpen' },
+                  { label: 'JW Broadcasting', url: 'https://www.jw.org/en/library/videos/', icon: 'Tv' },
+                  { label: 'Kingdom Songs', url: 'https://www.jw.org/en/library/music/', icon: 'Music' },
                 ].map((link) => (
                   <a
                     key={link.label}

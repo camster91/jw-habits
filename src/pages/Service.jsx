@@ -229,8 +229,8 @@ function Service() {
 
       <main className="container mx-auto px-4 pt-4 space-y-4 max-w-2xl">
         {/* ── Weekly Summary Card (enhanced) ─────────────── */}
-        <section className="card bg-base-100 shadow-sm">
-          <div className="card-body p-4">
+        <section className="ios-grouped">
+          <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-primary" />
@@ -273,14 +273,14 @@ function Service() {
         {monthlyGoalHours === 0 ? (
           // Empty state — invite the user to set a goal
           <section
-            className="card bg-gradient-to-br from-primary/5 to-secondary/5 border-2 border-dashed border-primary/30 shadow-sm cursor-pointer hover:border-primary/50 transition-colors"
+            className="ios-grouped border-2 border-dashed border-primary/30 cursor-pointer hover:border-primary/50 transition-colors"
             onClick={() => { haptics.light(); setShowGoalModal(true); setGoalInput(''); }}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowGoalModal(true); setGoalInput(''); } }}
             aria-label="Set a monthly service goal"
           >
-            <div className="card-body p-5 items-center text-center gap-2">
+            <div className="p-4">
               <div className="p-3 rounded-full bg-primary/10">
                 <Target className="w-6 h-6 text-primary" />
               </div>
@@ -294,8 +294,8 @@ function Service() {
             </div>
           </section>
         ) : (
-        <section className="card bg-base-100 shadow-sm">
-          <div className="card-body p-4">
+        <section className="ios-grouped">
+          <div className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Monthly Goal</span>
               <span className="text-sm text-base-content/70">{monthlyTotal}h / {monthlyGoalHours}h</span>
@@ -319,8 +319,8 @@ function Service() {
         )}
 
         {/* ── 7-Day Service Hours Chart ──────────────────── */}
-        <section className="card bg-base-100 shadow-sm">
-          <div className="card-body p-4">
+        <section className="ios-grouped">
+          <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-medium">Last 7 days</h2>
               <span className="text-xs text-base-content/70">
@@ -366,8 +366,8 @@ function Service() {
         </section>
 
         {/* ── Entry Type Selector ──────────────────────────── */}
-        <section className="card bg-base-100 shadow-sm">
-          <div className="card-body p-4">
+        <section className="ios-grouped">
+          <div className="p-4">
             <h2 className="text-sm font-medium mb-2">Entry Type</h2>
             <div className="flex flex-wrap gap-2">
               {ENTRY_TYPES.map((type) => (
@@ -384,8 +384,8 @@ function Service() {
         </section>
 
         {/* ── Quick Add Buttons ────────────────────────────── */}
-        <section className="card bg-base-100 shadow-sm">
-          <div className="card-body p-4">
+        <section className="ios-grouped">
+          <div className="p-4">
             <h2 className="text-sm font-medium mb-3">Quick Add</h2>
             <div className="flex gap-2">
               {QUICK_ADD_HOURS.map((h) => (
@@ -500,8 +500,8 @@ function Service() {
 
         {/* ── Today's Entries ──────────────────────────────── */}
         {todaysEntries.length > 0 && (
-          <section className="card bg-base-100 shadow-sm">
-            <div className="card-body p-4">
+          <section className="ios-grouped">
+            <div className="p-4">
               <h2 className="text-sm font-medium mb-2">Today</h2>
               <div className="divide-y divide-base-300">{todaysEntries.map(renderEntry)}</div>
             </div>
@@ -510,8 +510,8 @@ function Service() {
 
         {/* ── This Week's Entries ───────────────────────────── */}
         {weeklyEntries.length > 0 && (
-          <section className="card bg-base-100 shadow-sm">
-            <div className="card-body p-4">
+          <section className="ios-grouped">
+            <div className="p-4">
               <h2 className="text-sm font-medium mb-2">This Week</h2>
               <div className="divide-y divide-base-300">{weeklyEntries.map(renderEntry)}</div>
             </div>
@@ -520,8 +520,8 @@ function Service() {
 
         {/* ── Empty State ───────────────────────────────────── */}
         {weeklyEntries.length === 0 && (
-          <section className="card bg-base-100 shadow-sm">
-            <div className="card-body p-8 text-center">
+          <section className="ios-grouped">
+            <div className="p-4">
               <Cross className="w-12 h-12 mx-auto text-base-content/20 mb-3" />
               <p className="text-base-content/70">No service entries this week</p>
               <p className="text-sm text-base-content/70 mt-1">Tap a quick add button to log your time</p>

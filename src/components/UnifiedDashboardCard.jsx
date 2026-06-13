@@ -53,8 +53,8 @@ export default function UnifiedDashboardCard() {
   ];
 
   return (
-    <div className="card bg-base-100 shadow-xl border border-base-300/50 overflow-hidden">
-      <div className="card-body p-5">
+    <div className="ios-grouped">
+      <div className="p-4">
         {/* ── Top: Streak Ring + Title ── */}
         <div className="flex items-center gap-4 mb-4">
           <StreakRing

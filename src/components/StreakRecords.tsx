@@ -10,7 +10,6 @@ interface StreakRecord {
   current: number;
   best: number;
   unit: 'day' | 'week';
-  emoji: string;
   isCurrentBest: boolean;
 }
 
@@ -80,7 +79,6 @@ export default function StreakRecords() {
         current: dtStreak,
         best: dtAllTimeBest,
         unit: 'day',
-        emoji: '📖',
         isCurrentBest: dtStreak >= dtAllTimeBest,
       },
       {
@@ -88,7 +86,6 @@ export default function StreakRecords() {
         current: prStreak,
         best: prAllTimeBest,
         unit: 'day',
-        emoji: '🙏',
         isCurrentBest: prStreak >= prAllTimeBest,
       },
       {
@@ -96,7 +93,6 @@ export default function StreakRecords() {
         current: brStreak,
         best: Math.max(brStreak, 7),
         unit: 'day',
-        emoji: '📚',
         isCurrentBest: brStreak >= 7,
       },
       {
@@ -104,7 +100,6 @@ export default function StreakRecords() {
         current: getFamilyWorshipStreak(),
         best: fwAllTimeBest,
         unit: 'week',
-        emoji: '👨‍👩‍👧',
         isCurrentBest: getFamilyWorshipStreak() >= fwAllTimeBest,
       },
     ];

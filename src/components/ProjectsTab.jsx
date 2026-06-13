@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FolderKanban, Plus, Trash2, ChevronDown, ChevronRight, Star, Lightbulb, Users, BookOpen, Mic } from 'lucide-react';
+import {FolderKanban, Plus, Trash2, ChevronDown, ChevronRight, Star, Lightbulb, Users, BookOpen, Mic, Building, Globe, Map, Droplet, Footprints, Target, MessageCircle, Heart, Flame, ListChecks, Search, Scroll, Crown, HelpCircle, Smartphone, Tv, Music} from 'lucide-react';
+const ICONS = {
+  BookOpen, Building, Users, Footprints, Target, MessageCircle,
+  Droplet, Mic, Globe, Map, Heart, Flame, Star, ListChecks,
+  Search, Scroll, Crown, HelpCircle, Smartphone, Tv, Music,
+};
+
+function Icon({ name, className = "w-5 h-5" }) {
+  const C = ICONS[name] || ICONS.BookOpen;
+  return <C className={className} />;
+}
+
 import useGoalsStore from '../stores/goalsStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
@@ -18,7 +29,7 @@ const SUGGESTED_PROJECTS = [
     title: 'Complete "Enjoy Life Forever!" Course',
     description: 'Work through the interactive Bible study course systematically',
     category: 'ministry',
-    icon: '📚',
+    icon: 'BookOpen',
     tasks: [
       'Introduction and Part 1: What God Has Done for Us',
       'Part 2: Enjoy a Clean Conscience',
@@ -31,7 +42,7 @@ const SUGGESTED_PROJECTS = [
     title: 'Prepare for Baptism',
     description: 'Study and prepare for dedication to Jehovah',
     category: 'personal',
-    icon: '💧',
+    icon: 'Droplet',
     tasks: [
       'Complete baptism questions with an elder',
       'Study the "Enjoy Life Forever!" book',
@@ -44,7 +55,7 @@ const SUGGESTED_PROJECTS = [
     title: 'Improve Public Speaking Skills',
     description: 'Apply counsel from the Theocratic Ministry School Guidebook',
     category: 'personal',
-    icon: '🎤',
+    icon: 'Mic',
     tasks: [
       'Work on accuracy and fluent delivery',
       'Practice effective use of voice',
@@ -57,7 +68,7 @@ const SUGGESTED_PROJECTS = [
     title: 'Family Worship Program',
     description: 'Establish a consistent weekly family worship routine',
     category: 'personal',
-    icon: '👨‍👩‍👧',
+    icon: 'Users',
     tasks: [
       'Choose a regular day and time',
       'Plan first 4 weeks of topics',
@@ -70,7 +81,7 @@ const SUGGESTED_PROJECTS = [
     title: 'Learn a Language for Ministry',
     description: 'Study a new language to reach more people',
     category: 'ministry',
-    icon: '🌍',
+    icon: 'Globe',
     tasks: [
       'Choose target language and group',
       'Use JW Language app daily',
@@ -83,7 +94,7 @@ const SUGGESTED_PROJECTS = [
     title: 'Convention/Assembly Preparation',
     description: 'Get ready for the upcoming spiritual event',
     category: 'congregation',
-    icon: '🏟️',
+    icon: 'Building',
     tasks: [
       'Review program schedule',
       'Prepare clothing and supplies',
@@ -96,7 +107,7 @@ const SUGGESTED_PROJECTS = [
     title: 'Personal Bible Study Schedule',
     description: 'Create a structured approach to Bible reading',
     category: 'personal',
-    icon: '📖',
+    icon: 'BookOpen',
     tasks: [
       'Choose a Bible reading plan',
       'Set daily reading time',
@@ -109,7 +120,7 @@ const SUGGESTED_PROJECTS = [
     title: 'Territory Coverage Campaign',
     description: 'Help your congregation cover territory effectively',
     category: 'congregation',
-    icon: '🗺️',
+    icon: 'Map',
     tasks: [
       'Volunteer for territory servant assistance',
       'Learn about not-at-homes',
@@ -249,7 +260,7 @@ function ProjectsTab() {
                         : 'bg-base-100 hover:bg-secondary/5 active:scale-[0.98]'
                     }`}
                   >
-                    <span className="text-2xl">{suggested.icon}</span>
+                    <Icon name={suggested.icon} className="w-5 h-5 text-primary" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{suggested.title}</p>
                       <p className="text-xs text-base-content/70 truncate">{suggested.description}</p>

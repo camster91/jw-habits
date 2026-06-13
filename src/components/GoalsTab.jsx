@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Target, Plus, Check, Trash2, ChevronDown, ChevronUp, Star, BookOpen, Users, Heart, Clock } from 'lucide-react';
+import {Target, Plus, Check, Trash2, ChevronDown, ChevronUp, Star, BookOpen, Users, Heart, Clock, Building, Footprints, MessageCircle, Map, Droplet, Mic, Globe, Flame, ListChecks, Search, Scroll, Crown, HelpCircle, Smartphone, Tv, Music} from 'lucide-react';
+const ICONS = {
+  BookOpen, Building, Users, Footprints, Target, MessageCircle,
+  Droplet, Mic, Globe, Map, Heart, Flame, Star, ListChecks,
+  Search, Scroll, Crown, HelpCircle, Smartphone, Tv, Music,
+};
+
+function Icon({ name, className = "w-5 h-5" }) {
+  const C = ICONS[name] || ICONS.BookOpen;
+  return <C className={className} />;
+}
+
 import useGoalsStore from '../stores/goalsStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
@@ -18,49 +29,49 @@ const SUGGESTED_GOALS = [
     title: 'Read the Bible daily for 30 days',
     description: 'Build a habit of daily Bible reading using the schedule on jw.org',
     category: 'spiritual',
-    icon: '📖',
+    icon: 'BookOpen',
   },
   {
     title: 'Complete "Enjoy Life Forever!" book',
     description: 'Work through the interactive Bible course',
     category: 'spiritual',
-    icon: '📚',
+    icon: 'BookOpen',
   },
   {
     title: 'Attend all meetings for a month',
     description: 'Midweek and weekend meetings - in person or online',
     category: 'spiritual',
-    icon: '🏛️',
+    icon: 'Building',
   },
   {
     title: 'Start a Bible study',
     description: 'Help someone learn about the Bible',
     category: 'ministry',
-    icon: '👥',
+    icon: 'Users',
   },
   {
     title: 'Auxiliary pioneer for one month',
     description: 'Set aside extra time for the ministry',
     category: 'ministry',
-    icon: '🚶',
+    icon: 'Footprints',
   },
   {
     title: 'Learn a new theocratic skill',
     description: 'Improve at public speaking, teaching, or another skill',
     category: 'personal',
-    icon: '🎯',
+    icon: 'Target',
   },
   {
     title: 'Memorize 10 key scriptures',
     description: 'Build your scripture arsenal for teaching',
     category: 'spiritual',
-    icon: '💭',
+    icon: 'MessageCircle',
   },
   {
     title: 'Family worship every week',
     description: 'Consistent weekly family Bible study',
     category: 'personal',
-    icon: '👨‍👩‍👧',
+    icon: 'Users',
   },
 ];
 
@@ -183,7 +194,7 @@ function GoalsTab() {
                         : 'bg-base-100 hover:bg-primary/5 active:scale-[0.98]'
                     }`}
                   >
-                    <span className="text-2xl">{suggested.icon}</span>
+                    <Icon name={suggested.icon} className="w-5 h-5 text-primary" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{suggested.title}</p>
                       <p className="text-xs text-base-content/70 truncate">{suggested.description}</p>

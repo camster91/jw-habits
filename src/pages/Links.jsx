@@ -1,4 +1,4 @@
-import { ExternalLink, Newspaper, BookOpen, Video, Library, Radio, Book, Music, Users, HelpCircle, MapPin, Calendar, Heart, Baby, GraduationCap, Search, Globe, Headphones, MessageCircle, Building2, Star, Gift, Smartphone, X } from 'lucide-react';
+import { ExternalLink, Newspaper, BookOpen, Video, Library, Radio, Book, Link, Music, Users, HelpCircle, MapPin, Calendar, Heart, Baby, GraduationCap, Search, Globe, Headphones, MessageCircle, Building2, Star, Gift, Smartphone, X } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
@@ -115,7 +115,7 @@ function Links() {
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       {/* Header */}
-      <h1 className="ios-large-title"><Link2 className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
+      <h1 className="ios-large-title"><Link className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
         {t("links.title")}
         <span className="sub">{t("links.subtitle")}</span>
       </h1>
