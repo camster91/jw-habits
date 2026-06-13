@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import MeetingCard from '../components/MeetingCard';
 import DeeperStudySection from '../components/DeeperStudySection';
 import ReadingSection from '../components/ReadingSection';
-import PageHeader from '../components/PageHeader';
 import { haptics } from '../utils/native';
 
 const TABS = [
@@ -18,11 +17,10 @@ function Study() {
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
-      <PageHeader
-        title={t('study.title')}
-        subtitle={t('study.subtitle')}
-        icon={BookOpen}
-      />
+      <h1 className="ios-large-title"><BookOpen className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
+        {t("study.title")}
+        <span className="sub">{t("study.subtitle")}</span>
+      </h1>
 
       <main className="container mx-auto px-4 pt-4 space-y-4 max-w-2xl">
         {/* ── Tab bar ───────────────────────────────── */}

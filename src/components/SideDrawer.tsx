@@ -71,7 +71,7 @@ function SideDrawer({ children }: SideDrawerProps) {
           />
 
           {/* Sidebar content */}
-          <aside className="bg-base-100 min-h-full w-72 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <aside className="bg-base-100 min-h-full w-72 flex flex-col border-l border-base-300/30" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-base-200">
                 <div>
@@ -92,6 +92,7 @@ function SideDrawer({ children }: SideDrawerProps) {
               {DRAWER_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
+                const colorClass = isActive ? 'blue' : '';
                 return (
                   <button
                     key={item.path}
@@ -102,8 +103,8 @@ function SideDrawer({ children }: SideDrawerProps) {
                         : 'hover:bg-base-200 active:bg-base-200'
                     }`}
                   >
-                    <div className={`p-2 rounded-xl ${isActive ? 'bg-primary/15' : 'bg-base-200'}`}>
-                      <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-base-content/70'}`} />
+                    <div className={`ios-icon ${colorClass} w-9 h-9 shrink-0`}>
+                      <Icon className="w-4 h-4" />
                     </div>
                     <div className="text-left">
                       <p className={`font-medium text-sm ${isActive ? 'text-primary' : ''}`}>{item.label}</p>

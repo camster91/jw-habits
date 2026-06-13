@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import DeeperStudySection from '../components/DeeperStudySection';
-import PageHeader from '../components/PageHeader';
 import { GraduationCap } from 'lucide-react';
 
 function DeeperStudyPage() {
@@ -8,11 +7,10 @@ function DeeperStudyPage() {
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
-      <PageHeader
-        title={t('study.deeperStudy')}
-        subtitle={t('study.researchTools')}
-        icon={GraduationCap}
-      />
+      <h1 className="ios-large-title"><GraduationCap className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
+        {t("study.deeperStudy")}
+        <span className="sub">{t("study.researchTools")}</span>
+      </h1>
 
       <main className="container mx-auto px-4 pt-4 space-y-4 max-w-2xl">
         <DeeperStudySection />

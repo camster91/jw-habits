@@ -196,8 +196,8 @@ function MeetingCard() {
 
   if (loading) {
     return (
-      <div className="card bg-base-100 shadow-sm rounded-2xl">
-        <div className="card-body items-center py-10 gap-3">
+      <div className="ios-grouped">
+        <div className="p-4">
           <div className="relative">
             <div className="loading loading-spinner loading-lg text-accent"></div>
             <div className="absolute inset-0 flex items-center justify-center">
@@ -222,8 +222,8 @@ function MeetingCard() {
 
   if (loadError) {
     return (
-      <div className="card bg-base-100 shadow-sm rounded-2xl">
-        <div className="card-body items-center py-8">
+      <div className="ios-grouped">
+        <div className="p-4">
           <Calendar className="w-8 h-8 text-base-content/70" />
           <p className="text-sm text-base-content/70">{t("study.loadError")}</p>
           <a
@@ -244,11 +244,11 @@ function MeetingCard() {
   const songs = workbookData?.songs;
 
   return (
-    <div className="card bg-base-100 shadow-sm rounded-2xl overflow-hidden">
+    <div className="ios-grouped">
       <div className="p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-primary/10 rounded-2xl">
+          <div className="ios-icon blue shrink-0">
             <Calendar className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1">
@@ -270,7 +270,7 @@ function MeetingCard() {
                 onClick={() => { haptics.light(); setActiveTab(tab); }}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-sm transition-all active:scale-95 ${
                   isActive
-                    ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                    ? 'bg-primary text-white'
                     : 'bg-base-200 text-base-content/70'
                 }`}
               >

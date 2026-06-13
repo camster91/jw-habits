@@ -163,8 +163,8 @@ function GoalsTab() {
 
       {/* Suggestions Panel */}
       {showSuggestions && (
-        <div className="card bg-base-100 border border-primary/20">
-          <div className="card-body p-4">
+        <div className="ios-grouped border border-primary/20">
+          <div className="p-4">
             <h4 className="font-semibold text-primary flex items-center gap-2">
               <Star className="w-4 h-4" />
               {t("goals.goalIdeas")}
@@ -203,7 +203,7 @@ function GoalsTab() {
 
       {/* Add Form */}
       {showAddForm && (
-        <form onSubmit={handleAddGoal} className="card bg-base-100 shadow-md p-4 space-y-3">
+        <form onSubmit={handleAddGoal} className="ios-grouped">
           <div>
             <input
               type="text"
@@ -278,8 +278,8 @@ function GoalsTab() {
             const categoryInfo = CATEGORIES.find((c) => c.id === goal.category);
             const Icon = categoryInfo?.icon || Target;
             return (
-              <div key={goal.id} className="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="card-body p-4">
+              <div key={goal.id} className="ios-grouped">
+                <div className="p-4">
                   <div className="flex items-start gap-3">
                     <button
                       onClick={() => handleToggleComplete(goal.id)}
@@ -366,7 +366,7 @@ function GoalsTab() {
             <div className="space-y-2 mt-2">
               {completedGoals.map((goal) => (
                 <div key={goal.id} className="card bg-base-200/50">
-                  <div className="card-body p-3">
+                  <div className="p-4">
                     <div className="flex items-center gap-3">
                       <button onClick={() => handleToggleComplete(goal.id)}>
                         <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center">

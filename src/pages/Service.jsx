@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { Cross, Plus, Trash2, Calendar, Clock, Target, ChevronDown, BookOpen, Users, MessageSquare, Timer, BarChart3 , RefreshCw, PartyPopper, Library} from 'lucide-react';
-import PageHeader from '../components/PageHeader';
 import useServiceStore from '../stores/serviceStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
@@ -222,13 +221,11 @@ function Service() {
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
-      <PageHeader
-        title="Service"
-        subtitle="Track your field service"
-        icon={Cross}
-        gradient="from-green-500 via-emerald-500 to-teal-600"
-        blurColor="emerald"
-      />
+      <h1 className="ios-large-title">
+        <Cross className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
+        Service
+        <span className="sub">Track your field service</span>
+      </h1>
 
       <main className="container mx-auto px-4 pt-4 space-y-4 max-w-2xl">
         {/* ── Weekly Summary Card (enhanced) ─────────────── */}

@@ -1,5 +1,4 @@
 import { ExternalLink, Newspaper, BookOpen, Video, Library, Radio, Book, Music, Users, HelpCircle, MapPin, Calendar, Heart, Baby, GraduationCap, Search, Globe, Headphones, MessageCircle, Building2, Star, Gift, Smartphone, X } from 'lucide-react';
-import PageHeader from '../components/PageHeader';
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
@@ -116,11 +115,10 @@ function Links() {
   return (
     <div className="min-h-screen bg-base-200 pb-24">
       {/* Header */}
-      <PageHeader
-        title={t('links.title')}
-        subtitle={t('links.subtitle')}
-        shadow
-      />
+      <h1 className="ios-large-title"><Link2 className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
+        {t("links.title")}
+        <span className="sub">{t("links.subtitle")}</span>
+      </h1>
 
       {/* Links */}
       <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">

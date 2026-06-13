@@ -229,8 +229,8 @@ function ProjectsTab() {
 
       {/* Suggestions Panel */}
       {showSuggestions && (
-        <div className="card bg-base-100 border border-secondary/20">
-          <div className="card-body p-4">
+        <div className="ios-grouped border border-secondary/20">
+          <div className="p-4">
             <h4 className="font-semibold text-secondary flex items-center gap-2">
               <Star className="w-4 h-4" />
               {t("goals.projectIdeas")}
@@ -272,7 +272,7 @@ function ProjectsTab() {
 
       {/* Add Form */}
       {showAddForm && (
-        <form onSubmit={handleAddProject} className="card bg-base-100 shadow-md p-4 space-y-3">
+        <form onSubmit={handleAddProject} className="ios-grouped">
           <input
             type="text"
             placeholder={t("goals.projectName")}
@@ -340,8 +340,8 @@ function ProjectsTab() {
             const completedTasks = project.tasks.filter((t) => t.completed).length;
 
             return (
-              <div key={project.id} className="card bg-base-100 shadow-sm">
-                <div className="card-body p-3">
+              <div key={project.id} className="ios-grouped">
+                <div className="p-4">
                   {/* Project Header */}
                   <div
                     className="flex items-center gap-2 cursor-pointer"

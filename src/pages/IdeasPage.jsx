@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import GoalsTab from '../components/GoalsTab';
-import PageHeader from '../components/PageHeader';
 import { Target } from 'lucide-react';
 
 function IdeasPage() {
@@ -8,12 +7,10 @@ function IdeasPage() {
 
   return (
     <div className="min-h-screen bg-base-200 pb-24">
-      <PageHeader
-        title={t('goals.ideas')}
-        subtitle={t('goals.browseIdeas')}
-        icon={Target}
-        blurColor="orange"
-      />
+      <h1 className="ios-large-title"><Target className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
+        {t("goals.ideas")}
+        <span className="sub">{t("goals.browseIdeas")}</span>
+      </h1>
 
       <main className="container mx-auto px-4 pt-4 max-w-2xl">
         <GoalsTab />
