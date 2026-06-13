@@ -2,8 +2,8 @@
 
 ## App Details
 - **Name:** JW Habits
-- **Bundle ID:** com.jwprogress.app
-- **Version:** 3.0.0 (versionCode 4)
+- **Bundle ID:** com.ashbi.jwnews
+- **Version:** 4.1.0 (versionCode 411)
 - **Category:** Lifestyle / Reference
 - **Rating:** 4+ (no objectionable content)
 

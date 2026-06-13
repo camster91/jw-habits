@@ -13,7 +13,7 @@
   - Alias: `jwhabits`, algorithm: RSA 2048, validity: 10000 days
   - **Password:** stored in 1Password (entry: "JW Habits Android keystore")
 - [x] `build.gradle` release signing updated to absolute keystore path
-- [x] `versionCode` bumped to `411` (versionName already `4.1.0`)
+- [x] `versionCode` 411 / `versionName` 4.1.0 synced across Android `build.gradle` + iOS `project.pbxproj` (Debug + Release) + `package.json`
 
 ### Shared
 - [x] App icon: 1024×1024 PNG at `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png` — passes Apple spec
