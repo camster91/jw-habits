@@ -88,6 +88,7 @@ export async function scheduleDailyNotification(time, title, body, id) {
       // and fires at the wrong time.
       const [hour, minute] = time.split(':').map(Number);
       await LocalNotifications.schedule({
+  channelId: CHANNEL_ID,
         notifications: [{
           id: notifId,
           title,
@@ -130,6 +131,7 @@ export async function scheduleWeeklyNotification(dayOfWeek, time, title, body, i
   if (isCapacitor) {
     try {
       await LocalNotifications.schedule({
+  channelId: CHANNEL_ID,
         notifications: [{
           id: notifId,
           title,
@@ -178,6 +180,41 @@ export async function cancelAllNotifications() {
   }
 }
 
+// ── Notification channel (Android 8+ required) ─────────────────────
+
+/**
+ * Android 8+ requires every local notification to be assigned to a
+ * `NotificationChannel` or it will be silently dropped. The Capacitor
+ * plugin's `createChannel` call is idempotent (the OS dedupes by id),
+ * so it's safe to call on every app start and on every schedule.
+ *
+ * The channel `id` is referenced in `schedule({ channelId: '...' })`
+ * on each notification below.
+ */
+const CHANNEL_ID = 'jw-habits-default';
+const CHANNEL_NAME = 'JW Habits Reminders';
+const CHANNEL_DESCRIPTION = 'Daily habit, prayer, Bible reading, and meeting-prep reminders.';
+const CHANNEL_IMPORTANCE = 4; // HIGH — heads-up notification
+
+export async function createNotificationChannel() {
+  if (!isCapacitor || !isAndroid) return;
+  try {
+    await LocalNotifications.createChannel({
+      id: CHANNEL_ID,
+      name: CHANNEL_NAME,
+      description: CHANNEL_DESCRIPTION,
+      importance: CHANNEL_IMPORTANCE,
+      visibility: 1, // PUBLIC
+      sound: 'beep.wav',
+      lights: true,
+      vibration: true,
+    });
+  } catch (e) {
+    // createChannel isn't available on iOS — non-fatal.
+    console.warn('NotificationChannel create error (non-fatal):', e);
+  }
+}
+
 // ── Initialize all reminders from settings ────────────────────────
 
 /**
@@ -191,6 +228,10 @@ export async function initializeReminders(settings) {
 
   const permission = await requestNotificationPermission();
   if (permission !== 'granted') return cancelHandles;
+
+  // Android 8+ requires the channel to exist before any notification
+  // is scheduled. createChannel is a no-op on iOS.
+  await createNotificationChannel();
 
   // Cancel existing first
   await cancelAllNotifications();
@@ -258,6 +299,7 @@ export function showNotification(title, options = {}) {
   if (isCapacitor) {
     // On native, use LocalNotifications for immediate display
     return LocalNotifications.schedule({
+  channelId: CHANNEL_ID,
       notifications: [{
         id: getNextId(),
         title,

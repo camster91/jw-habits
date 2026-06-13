@@ -40,5 +40,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!--
+        Note: SCHEDULE_EXACT_ALARM is NOT declared. The
+        @capacitor/local-notifications plugin uses Android's
+        NotificationManager + WorkManager scheduling internally,
+        which does NOT need this permission (only AlarmManager-based
+        exact alarms do). Declaring it triggers a Play Store review
+        question ("why does your habit tracker need exact alarms?")
+        and on Android 14+ the permission is auto-denied, breaking
+        notifications. If the app ever needs AlarmManager-style exact
+        alarms, declare USE_EXACT_ALARM (Play-Store-approved use case
+        required) and route through AlarmManager.
+    -->
 </manifest>
