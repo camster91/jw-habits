@@ -92,41 +92,41 @@ describe('progressStore', () => {
 
   describe('Bible Reading Progress', () => {
     it('should mark bible reading complete', () => {
-      const dayOfYear = 20;
+      const testDate = '2026-06-12';
 
       act(() => {
-        useProgressStore.getState().markBibleReadingComplete(dayOfYear);
+        useProgressStore.getState().markBibleReadingComplete(testDate);
       });
 
       const state = useProgressStore.getState();
-      expect(state.bibleReadings[dayOfYear].read).toBe(true);
-      expect(state.bibleReadings[dayOfYear].progress).toBe(100);
-      expect(state.bibleReadings[dayOfYear].status).toBe('completed');
+      expect(state.bibleReadings[testDate].read).toBe(true);
+      expect(state.bibleReadings[testDate].progress).toBe(100);
+      expect(state.bibleReadings[testDate].status).toBe('completed');
     });
 
     it('should update bible reading progress partially', () => {
-      const dayOfYear = 20;
+      const testDate = '2026-06-12';
 
       act(() => {
-        useProgressStore.getState().updateBibleReadingProgress(dayOfYear, 50, ['Gen 1', 'Gen 2']);
+        useProgressStore.getState().updateBibleReadingProgress(testDate, 50, ['Gen 1', 'Gen 2']);
       });
 
       const state = useProgressStore.getState();
-      expect(state.bibleReadings[dayOfYear].progress).toBe(50);
-      expect(state.bibleReadings[dayOfYear].chaptersRead).toEqual(['Gen 1', 'Gen 2']);
-      expect(state.bibleReadings[dayOfYear].status).toBe('in_progress');
+      expect(state.bibleReadings[testDate].progress).toBe(50);
+      expect(state.bibleReadings[testDate].chaptersRead).toEqual(['Gen 1', 'Gen 2']);
+      expect(state.bibleReadings[testDate].status).toBe('in_progress');
     });
 
     it('should check if bible reading is complete', () => {
-      const dayOfYear = 20;
+      const testDate = '2026-06-12';
 
-      expect(useProgressStore.getState().isBibleReadingComplete(dayOfYear)).toBe(false);
+      expect(useProgressStore.getState().isBibleReadingComplete(testDate)).toBe(false);
 
       act(() => {
-        useProgressStore.getState().markBibleReadingComplete(dayOfYear);
+        useProgressStore.getState().markBibleReadingComplete(testDate);
       });
 
-      expect(useProgressStore.getState().isBibleReadingComplete(dayOfYear)).toBe(true);
+      expect(useProgressStore.getState().isBibleReadingComplete(testDate)).toBe(true);
     });
 
     it('should get bible reading progress percentage', () => {
@@ -191,7 +191,7 @@ describe('progressStore', () => {
       act(() => {
         const store = useProgressStore.getState();
         store.markDailyTextRead('2026-01-20');
-        store.markBibleReadingComplete(20);
+        store.markBibleReadingComplete('2026-06-12');
         store.markMeetingPrepared('2026-W03', 'midweek');
         store.clearAll();
       });
@@ -200,6 +200,79 @@ describe('progressStore', () => {
       expect(state.dailyTexts).toEqual({});
       expect(state.bibleReadings).toEqual({});
       expect(state.meetings).toEqual({});
+    });
+  });
+
+  describe('bibleReadings migration (1-366 dayOfYear → yyyy-MM-dd date)', () => {
+    it('translates 1-366 keys to yyyy-MM-dd keys in the current year', async () => {
+      const { migrateBibleKeys } = await import('./progressStore.js');
+      const state = {
+        bibleReadings: {
+          '1':   { progress: 100, read: true, status: 'completed', timestamp: '2026-01-01T00:00:00Z' },
+          '20':  { progress: 100, read: true, status: 'completed', timestamp: '2026-01-20T00:00:00Z' },
+          '365': { progress: 50,  read: false, status: 'in_progress', timestamp: '2026-12-31T00:00:00Z' },
+        },
+        bibleChapters: {
+          '20': { 0: true, 1: false },
+        },
+      };
+      const migrated = migrateBibleKeys(state);
+      const year = new Date().getFullYear();
+      // The new keys should be yyyy-MM-dd in the current year. Day 1 →
+      // Jan 1, day 20 → Jan 20, day 365 → Dec 31 (non-leap year) or
+      // Dec 30 (leap year).
+      const expectedNewKeys = ['1', '20', '365'].map(d => {
+        const date = new Date(year, 0, Number(d));
+        return date.toISOString().slice(0, 10);
+      });
+      // The migrated state has 3 new keys, none of the old 1-366
+      // numeric keys remain.
+      expect(Object.keys(migrated.bibleReadings).sort()).toEqual(expectedNewKeys.slice().sort());
+      // The old shape is gone
+      expect(migrated.bibleReadings).not.toHaveProperty('1');
+      expect(migrated.bibleReadings).not.toHaveProperty('20');
+      expect(migrated.bibleReadings).not.toHaveProperty('365');
+      // Values are preserved
+      expect(migrated.bibleReadings[expectedNewKeys[0]].read).toBe(true);
+      expect(migrated.bibleReadings[expectedNewKeys[2]].progress).toBe(50);
+      // bibleChapters also migrates
+      expect(Object.keys(migrated.bibleChapters).sort()).toEqual(expectedNewKeys.slice(1, 2)); // only day 20
+      // The 0/1 chapter values are preserved
+      expect(migrated.bibleChapters[expectedNewKeys[1]][0]).toBe(true);
+      expect(migrated.bibleChapters[expectedNewKeys[1]][1]).toBe(false);
+    });
+
+    it('is a no-op when keys are already date strings', async () => {
+      const { migrateBibleKeys } = await import('./progressStore.js');
+      const state = {
+        bibleReadings: {
+          '2026-06-12': { progress: 100, read: true, status: 'completed' },
+        },
+      };
+      const migrated = migrateBibleKeys(state);
+      // No-op: same data, same keys
+      expect(migrated).toBe(state);
+    });
+
+    it('handles mixed old and new keys (only translates the old ones)', async () => {
+      const { migrateBibleKeys } = await import('./progressStore.js');
+      const year = new Date().getFullYear();
+      const state = {
+        bibleReadings: {
+          '1':  { progress: 50, read: false, status: 'in_progress' },  // legacy
+          '2026-06-12': { progress: 100, read: true, status: 'completed' },  // new
+        },
+      };
+      const migrated = migrateBibleKeys(state);
+      // Both keys present
+      expect(Object.keys(migrated.bibleReadings).sort()).toEqual(
+        ['2026-06-12', new Date(year, 0, 1).toISOString().slice(0, 10)].sort()
+      );
+      // The legacy key's value is now under the date key
+      const dateKey = new Date(year, 0, 1).toISOString().slice(0, 10);
+      expect(migrated.bibleReadings[dateKey].progress).toBe(50);
+      // The new key's value is preserved
+      expect(migrated.bibleReadings['2026-06-12'].progress).toBe(100);
     });
   });
 });

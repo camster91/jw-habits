@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Book, ExternalLink, Clock, CheckCircle2, Check, Settings2, RotateCcw, ChevronRight } from 'lucide-react';
+import { format, getDayOfYear, addDays, startOfYear } from 'date-fns';
 import { haptics } from '../utils/native';
 import useProgressStore from '../stores/progressStore';
 import useGamificationStore from '../stores/gamificationStore';
@@ -12,15 +13,25 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
   const [showReadingSettings, setShowReadingSettings] = useState(false);
   const [selectedBook, setSelectedBook] = useState('');
 
-  // Defensive: if no schedule day was passed, compute today's calendar day of year
-  // so we don't store chapter progress under the literal key "undefined".
-  const fallbackScheduleDay = useMemo(() => {
-    if (effectiveScheduleDay) return effectiveScheduleDay;
-    const start = new Date(new Date().getFullYear(), 0, 0);
-    const diff = new Date().getTime() - start.getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  // The progress store now keys chapter data by yyyy-MM-dd (date
+  // string), not by 1-366 dayOfYear. We need a date key, not a
+  // day number. The schedule day refers to the user's current
+  // Bible plan position — for today's reading, that's today's
+  // date. The migration in progressStore.onRehydrateStorage
+  // preserves data keyed under the old 1-366 shape by mapping
+  // each key to the same dayOfYear in the current year.
+  const safeDateKey = useMemo(() => {
+    const day = effectiveScheduleDay;
+    const today = new Date();
+    // Day of year in [1, 366]. Subtract 1 because getDayOfYear is
+    // 1-indexed but addDays takes 0-indexed offset.
+    if (day >= 1 && day <= 366) {
+      const targetDate = addDays(startOfYear(today), day - 1);
+      return format(targetDate, 'yyyy-MM-dd');
+    }
+    // Defensive fallback: if no schedule day was passed, use today.
+    return format(today, 'yyyy-MM-dd');
   }, [effectiveScheduleDay]);
-  const safeScheduleDay = fallbackScheduleDay;
 
   const {
     getBibleChapterProgress,
@@ -36,12 +47,15 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
     resetBibleReadingSchedule,
   } = useSettingsStore();
 
-  const todayReading = getBibleReading(safeScheduleDay);
+  // `safeScheduleDay` (a 1-366 number) is still used to look up
+  // today's reading in the schedule; only the store keys switched
+  // to date strings.
+  const todayReading = getBibleReading(effectiveScheduleDay || getDayOfYear(new Date()));
   const chapters = getChaptersList(todayReading.chapters);
-  const chapterProgress = getBibleChapterProgress(safeScheduleDay);
+  const chapterProgress = getBibleChapterProgress(safeDateKey);
   const completedChapters = chapters.filter((_, i) => chapterProgress[i]);
   const bibleProgress = Math.round((completedChapters.length / chapters.length) * 100);
-  const isBibleComplete = isBibleReadingComplete(safeScheduleDay);
+  const isBibleComplete = isBibleReadingComplete(safeDateKey);
 
   // Get unique books from schedule for the dropdown
   const uniqueBooks = [...new Set(BIBLE_READING_SCHEDULE.filter(r => !r.isReview).map(r => r.book))];
@@ -67,7 +81,7 @@ function BibleReadingCard({ effectiveScheduleDay, bibleReadingSchedule }) {
 
   const handleChapterToggle = (index) => {
     haptics.light();
-    toggleBibleChapter(safeScheduleDay, index);
+    toggleBibleChapter(safeDateKey, index);
 
     // Check if all chapters are now complete
     const newProgress = { ...chapterProgress, [index]: !chapterProgress[index] };
