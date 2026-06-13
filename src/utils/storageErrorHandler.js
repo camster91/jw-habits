@@ -79,10 +79,26 @@ export function createSafeStorage(storeName) {
       }
     },
     setItem: (name, value) => {
+      // Try the write first. If it fails with a quota error, the
+      // error handler will evict up to 5 oldest jw-* keys, freeing
+      // space. We then retry the write once. If it still throws,
+      // we give up silently (the in-memory state in the store is
+      // still correct — only the localStorage persistence is lost,
+      // which is the right behavior on a device that's out of room).
       try {
         localStorage.setItem(name, JSON.stringify(value));
-      } catch (error) {
-        errorHandler(error);
+      } catch (firstError) {
+        errorHandler(firstError);
+        try {
+          localStorage.setItem(name, JSON.stringify(value));
+        } catch (secondError) {
+          // Still no room. Surface a clear warning so the dev can see
+          // it; the store continues in-memory.
+          console.warn(
+            `[Zustand Persist] localStorage setItem("${name}") failed after eviction:`,
+            secondError
+          );
+        }
       }
     },
     removeItem: (name) => {

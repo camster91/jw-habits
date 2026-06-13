@@ -251,6 +251,51 @@ describe('createSafeStorage', () => {
       const allWarn = warnSpy.mock.calls.map(c => String(c[0])).join('\n');
       expect(allWarn).toMatch(/quota/i);
     });
+
+    it('retries setItem once after the LRU eviction frees space', () => {
+      // This is the fix for the silent-data-loss bug found in the
+      // post-deploy audit: previously, when setItem hit a quota
+      // error, the handler would evict up to 5 jw-* keys and then
+      // the function returned without ever retrying. The user's
+      // save was silently lost. Now setItem retries the write once
+      // after the eviction.
+      //
+      // Mock setup: the FIRST setItem call (before eviction) throws
+      // quota, all SUBSEQUENT calls succeed. We expect the post-fix
+      // behavior to be: quota → eviction → retry → success.
+      localStorage.setItem('jw-existing', 'old');
+      const realSetItem = storage.setItem;
+      let calls = 0;
+      storage.setItem = (key, value) => {
+        calls++;
+        if (calls === 1) {
+          throw new DOMException('quota', 'QuotaExceededError');
+        }
+        return realSetItem(key, value);
+      };
+      const storage2 = createSafeStorage('retry-store');
+      storage2.setItem('jw-progress-storage', { a: 1 });
+      // setItem was called twice: first threw quota, second succeeded
+      expect(calls).toBe(2);
+      // The value actually persisted
+      const stored = JSON.parse(localStorage.getItem('jw-progress-storage'));
+      expect(stored).toEqual({ a: 1 });
+    });
+
+    it('logs a clear warning when setItem fails even after eviction', () => {
+      // Set up so EVERY setItem call throws. The retry should also
+      // throw, and we should log a visible warning rather than
+      // silently dropping the user's data.
+      storage.setItem = () => {
+        throw new DOMException('quota', 'QuotaExceededError');
+      };
+      const storage2 = createSafeStorage('fail-store');
+      // Should NOT throw — the wrapper catches and logs
+      expect(() => storage2.setItem('jw-progress-storage', { x: 1 })).not.toThrow();
+      // The "after eviction" warning was emitted
+      const allWarn = warnSpy.mock.calls.map(c => String(c[0])).join('\n');
+      expect(allWarn).toMatch(/after eviction/i);
+    });
   });
 
   describe('removeItem', () => {

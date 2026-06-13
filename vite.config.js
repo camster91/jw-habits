@@ -49,6 +49,7 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.js',
       manifest: {
+    id: '/',
         name: 'JW Habits',
         short_name: 'JW Habits',
         description: 'Build daily spiritual habits: daily text, Bible reading, meeting prep, and more',
@@ -97,7 +98,7 @@ export default defineConfig({
             name: 'View Stats',
             short_name: 'Stats',
             description: 'View your progress statistics',
-            url: '/stats',
+            url: '/statistics',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           },
           {
