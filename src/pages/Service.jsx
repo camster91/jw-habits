@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Cross, Plus, Trash2, Calendar, Clock, Target, ChevronDown, BookOpen, Users, MessageSquare, Timer, BarChart3 , RefreshCw, PartyPopper, Library} from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 import useServiceStore from '../stores/serviceStore';
 import useGamificationStore from '../stores/gamificationStore';
 import { haptics } from '../utils/native';
