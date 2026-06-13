@@ -15,7 +15,7 @@ function record(name, ok, detail) {
 }
 
 async function fresh(browser) {
-  const ctx = await browser.newContext({ viewport: { width: 414, height: 896 } });
+  const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
   const errors = [];
   const network404 = [];
