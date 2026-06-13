@@ -17,6 +17,43 @@
     @apply bg-base-200;
   }
 
+  /*
+   * iOS HIG design tokens.
+   *
+   * Light theme uses iOS 18's "label" / "label-2" / "label-3" / "label-4"
+   * grays. Dark theme uses iOS 18's dark-mode grays so secondary text
+   * still passes WCAG AA against base-200.
+   *
+   * The 8.8.1 baseline (iOS 18 dark labels):
+   *   - label   : #FFFFFF  (primary text)
+   *   - label-2 : #EBEBF5 99% (secondary text)
+   *   - label-3 : #EBEBF5 60% → ~#8E8E93-ish against dark (tertiary)
+   *   - label-4 : #EBEBF5 30% (quaternary)
+   *   - separator: rgba(84,84,88,0.65)  (dark) vs rgba(60,60,67,0.29) (light)
+   *   - bg-elevated: #1C1C1E (dark) vs #FFFFFF (light)
+   *   - row-press: rgba(255,255,255,0.1) (dark) vs rgba(0,0,0,0.05) (light)
+   */
+  :root {
+    --ios-label:    #000000;
+    --ios-label-2:  #636366;
+    --ios-label-3:  #8E8E93;
+    --ios-label-4:  #C7C7CC;
+    --ios-separator:  rgba(60, 60, 67, 0.29);
+    --ios-bg-elevated: #FFFFFF;
+    --ios-row-bg:     #FFFFFF;
+    --ios-row-press:  rgba(0, 0, 0, 0.05);
+  }
+  [data-theme="dark"] {
+    --ios-label:    #FFFFFF;
+    --ios-label-2:  rgba(235, 235, 245, 0.78);  /* ~#C7C7CC, WCAG AA on #1C1C1E */
+    --ios-label-3:  rgba(235, 235, 245, 0.50);  /* ~#7F7F85, OK for tertiary */
+    --ios-label-4:  rgba(235, 235, 245, 0.30);  /* quaternary / dividers */
+    --ios-separator:  rgba(84, 84, 88, 0.65);
+    --ios-bg-elevated: #1C1C1E;
+    --ios-row-bg:     #1C1C1E;
+    --ios-row-press:  rgba(255, 255, 255, 0.10);
+  }
+
   /* iOS large title (34px, 700 weight, 0.37px letter-spacing) */
   .ios-large-title {
     font-size: 34px;

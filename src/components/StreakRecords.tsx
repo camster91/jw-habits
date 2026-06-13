@@ -118,17 +118,11 @@ export default function StreakRecords() {
     longestStreak === 0 && longestPrayerStreak === 0 && longestFamilyWorshipStreak === 0;
 
   if (isFirstTime) {
-    return (
-      <section className="ios-empty">
-        <div className="art">
-          <Flame />
-        </div>
-        <h2 className="h">Start your first streak today</h2>
-        <p className="sub">
-          Read the daily text, say your prayers, and check in here daily. Your first streak starts on day one.
-        </p>
-      </section>
-    );
+    // The "Start your first streak today" empty state is rendered by
+    // Home.jsx (the page-level empty state) along with the "What 30
+    // days looks like" preview, so we just return null here to avoid
+    // a redundant duplicate empty card.
+    return null;
   }
 
   return (
