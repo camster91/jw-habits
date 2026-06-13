@@ -1,4 +1,5 @@
-import { Menu, Sparkles, Info, Shield, TrendingUp, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { Menu, BookOpen, Users, Heart, UsersRound, Plus, Check, Settings, ChevronRight, Info, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import TodaysFocus from '../components/TodaysFocus';
@@ -13,11 +14,47 @@ import { useDrawer } from '../hooks/useDrawer';
 import useGamificationStore from '../stores/gamificationStore';
 import useSettingsStore from '../stores/settingsStore';
 import useServiceStore from '../stores/serviceStore';
+import { haptics } from '../utils/native';
+import { useToast } from '../components/Toast';
+
+const HABIT_OPTIONS = [
+  {
+    key: 'dailyText',
+    title: 'Daily text',
+    sub: 'Read the day\'s scripture passage (3 min)',
+    Icon: BookOpen,
+    color: 'blue',
+  },
+  {
+    key: 'meeting',
+    title: 'Meeting prep',
+    sub: 'Prepare for midweek and weekend meetings',
+    Icon: Users,
+    color: 'green',
+  },
+  {
+    key: 'prayer',
+    title: 'Prayer',
+    sub: 'Track morning, afternoon, and evening prayers',
+    Icon: Heart,
+    color: 'orange',
+  },
+  {
+    key: 'familyWorship',
+    title: 'Family worship',
+    sub: 'Plan and log a weekly study with your family',
+    Icon: UsersRound,
+    color: 'purple',
+  },
+];
+
+const HABIT_SETUP_KEY = 'jw-habits-onboarded-v2';
 
 function Home() {
   const today = new Date();
   const { openDrawer } = useDrawer();
   const { t } = useTranslation();
+  const toast = useToast();
   const currentStreak = useGamificationStore((s) => s.currentStreak);
   const longestStreak = useGamificationStore((s) => s.longestStreak);
   const userName = useSettingsStore((s) => s.userName);
@@ -37,6 +74,44 @@ function Home() {
   const lastOfMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).getDate();
   const daysLeftInMonth = Math.max(0, lastOfMonth - todayDate.getDate());
 
+  // Fresh user: no streak history AND onboarding not yet dismissed
+  const [setupDismissed, setSetupDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(HABIT_SETUP_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [picked, setPicked] = useState(() => new Set());
+  const isFreshUser = currentStreak === 0 && longestStreak === 0;
+  const showSetup = isFreshUser && !setupDismissed;
+
+  const togglePick = (key) => {
+    haptics.light();
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const handleStartRoutine = () => {
+    haptics.success();
+    if (picked.size === 0) {
+      // They didn't pick anything — that's fine, the home view will just
+      // show the daily text and prayers as the defaults.
+      toast.info('No problem — you can pick habits any time from Settings.');
+    } else {
+      toast.success(`Started your routine with ${picked.size} habit${picked.size === 1 ? '' : 's'}.`);
+    }
+    try {
+      localStorage.setItem(HABIT_SETUP_KEY, '1');
+    } catch {
+      // ignore
+    }
+    setSetupDismissed(true);
+  };
 
   // Time-of-day aware greeting (iOS HIG)
   const greetingText = (() => {
@@ -54,12 +129,9 @@ function Home() {
     day: 'numeric',
   });
 
-  // Fresh user: no streak history
-  const isFreshUser = currentStreak === 0 && longestStreak === 0;
-
   return (
     <div className="min-h-screen bg-base-200 pb-24">
-      {/* iOS-style top bar (replaces PageHeader gradient) */}
+      {/* iOS-style top bar */}
       <div
         className="sticky top-0 z-30 backdrop-blur-lg bg-base-200/80 border-b border-base-300/30"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -96,6 +168,80 @@ function Home() {
           <span className="sub">{formattedDate}</span>
         </h1>
 
+        {/* Fresh user: setup flow. This replaces the previous
+            "Start your first day" hero + the dense 0/0/0/0 streak
+            card. The user picks the habits they want to track and
+            the home view reorganizes around them. */}
+        {showSetup && (
+          <section className="mb-6" aria-label="Habit setup">
+            <h2 className="text-lg font-semibold text-base-content mb-1">
+              Build your daily routine
+            </h2>
+            <p className="text-sm text-base-content/70 mb-4">
+              Pick what you want to track. You can change this any time.
+            </p>
+            <div className="ios-grouped">
+              {HABIT_OPTIONS.map((habit) => {
+                const { key, title, sub, Icon, color } = habit;
+                const isPicked = picked.has(key);
+                return (
+                  <div
+                    key={key}
+                    className="ios-row"
+                    style={{ cursor: 'pointer' }}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isPicked}
+                    onClick={() => togglePick(key)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        togglePick(key);
+                      }
+                    }}
+                  >
+                    <div className={`ios-icon ${color}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="body">
+                      <div className="title">{title}</div>
+                      <div className="sub">{sub}</div>
+                    </div>
+                    <div
+                      aria-hidden="true"
+                      className={`shrink-0 w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${
+                        isPicked
+                          ? 'bg-primary border-primary text-primary-content'
+                          : 'border-base-content/30'
+                      }`}
+                    >
+                      {isPicked && <Check className="w-4 h-4" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <button
+              onClick={handleStartRoutine}
+              className="btn btn-primary w-full mt-4"
+            >
+              {picked.size > 0
+                ? `Start with ${picked.size} habit${picked.size === 1 ? '' : 's'}`
+                : 'Start without picking'}
+            </button>
+            <button
+              onClick={() => {
+                haptics.light();
+                try { localStorage.setItem(HABIT_SETUP_KEY, '1'); } catch (e) { void e; }
+                setSetupDismissed(true);
+              }}
+              className="btn btn-ghost btn-sm w-full mt-2"
+            >
+              Skip for now
+            </button>
+          </section>
+        )}
+
         {/* Returning user: personalized welcome strip */}
         {!isFreshUser && (
           <div className="mb-2">
@@ -103,22 +249,7 @@ function Home() {
           </div>
         )}
 
-        {/* Fresh user: welcoming empty state */}
-        {isFreshUser && (
-          <div className="ios-empty">
-            <div className="art">
-              <Sparkles className="w-7 h-7" />
-            </div>
-            <h2 className="h">{t('home.startYourFirstDay', 'Start your first day')}</h2>
-            <div className="sub">
-              {t('home.startYourFirstDayDesc',
-                'Read today\'s text and check in. That\'s it. Your first streak begins on day one.'
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* iOS streak hero (ring + meta) */}
+        {/* iOS streak hero (ring + meta) — only for returning users */}
         {!isFreshUser && (
           <div className="ios-streak-hero">
             <div className="ios-ring">
@@ -152,7 +283,7 @@ function Home() {
           </div>
         )}
 
-        {/* Pioneer service hours hero — shown only for pioneers */}
+        {/* Pioneer service hours hero */}
         {publisherStatus === 'pioneer' && (
           <div className="ios-pioneer-hero">
             <div className="label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -192,66 +323,51 @@ function Home() {
           </div>
         )}
 
-        {/* Today's Focus — single opinionated suggestion card */}
-        <TodaysFocus />
+        {/* Today's Focus — single opinionated suggestion card.
+            This is the navy "Today" card from the old design, now
+            rendered as a regular iOS section (handled inside
+            TodaysFocus). It only shows for returning users, since
+            the setup flow already gave the new user their action
+            list above. */}
+        {!isFreshUser && <TodaysFocus />}
 
-        {/* Streak Records — current personal bests per category */}
+        {/* Streak Records — current personal bests per category.
+            StreakRecords already returns null for isFreshUser, so
+            this only shows for returning users. */}
         <StreakRecords />
 
-        {/* Unified Dashboard — fast at-a-glance check */}
-        <UnifiedDashboardCard />
+        {/* Unified Dashboard — fast at-a-glance check. Returning
+            users only (matches StreakRecords' isFirstTime guard). */}
+        {!isFreshUser && <UnifiedDashboardCard />}
 
-        {/* Today's habits — PrayerTrackingCard renders its own iOS group */}
-        <h2 className="ios-section-h">{t('today.title', 'Today')}</h2>
-        <div className="space-y-2">
-          <DailyTasksSection />
-          <PrayerTrackingCard />
-        </div>
-
-        {/* Bible reading */}
-        <h2 className="ios-section-h">
-          {t('bibleReading.heading', 'Bible reading')}
-        </h2>
-        <BibleReadingCard effectiveScheduleDay={effectiveScheduleDay} />
-
-        {/* Family worship */}
-        <h2 className="ios-section-h">
-          {t('familyWorship.title', 'Family worship')}
-        </h2>
-        <FamilyWorshipCard />
-
-        {/* Fresh user: small hint about what success looks like — inline
-            iOS list row instead of a large card. */}
-        {isFreshUser && (
-          <div className="ios-grouped">
-            <div className="ios-row" style={{ cursor: 'default' }}>
-              <div className="ios-icon jw-blue">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-              <div className="body">
-                <div className="title">What success looks like</div>
-                <div className="sub">
-                  A few quiet days in a row are normal. The grid doesn't have
-                  to be perfect to count.
-                </div>
-              </div>
-              <div
-                aria-hidden="true"
-                className="flex gap-0.5 ml-auto"
-                title="Preview of a 30-day streak grid"
-              >
-                {[1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0].map((v, i) => (
-                  <span
-                    key={i}
-                    className={`inline-block w-1.5 h-3 rounded-sm ${v ? 'bg-primary' : 'bg-base-content/15'}`}
-                  />
-                ))}
-              </div>
+        {/* Daily habits sections (Bible reading, Family worship,
+            Prayer tracking). Renders for anyone past the setup
+            flow — returning users AND fresh users who finished
+            the "Build your daily routine" picker. Hides only when
+            the setup is still active (so the page doesn't show
+            the daily text + prayers picker AND the empty cards). */}
+        {!showSetup && (
+          <>
+            <h2 className="ios-section-h">{t('today.title', 'Today')}</h2>
+            <div className="space-y-2">
+              <DailyTasksSection />
+              <PrayerTrackingCard />
             </div>
-          </div>
+            <h2 className="ios-section-h">
+              {t('bibleReading.heading', 'Bible reading')}
+            </h2>
+            <BibleReadingCard effectiveScheduleDay={effectiveScheduleDay} />
+            <h2 className="ios-section-h">
+              {t('familyWorship.title', 'Family worship')}
+            </h2>
+            <FamilyWorshipCard />
+          </>
         )}
 
-        {/* Heatmap — yearly habit visualization (hidden for fresh users; replaced by preview above) */}
+        {/* Heatmap — yearly habit visualization. Returning users
+            only (the fresh-user flow already gave them their
+            action list; the heatmap would be a wall of empty
+            cells for someone with no history). */}
         {!isFreshUser && (
           <>
             <h2 className="ios-section-h">Last 6 months</h2>
@@ -271,38 +387,32 @@ function Home() {
           </>
         )}
 
-        {/* Secondary actions (visible on Day 1) */}
-        {isFreshUser && (
-          <>
-            <h2 className="ios-section-h">Get oriented</h2>
-            <div className="ios-grouped">
-              <a href="/about" className="ios-row" style={{ textDecoration: 'none' }}>
-                <div className="ios-icon" style={{ background: 'var(--ios-label-4)' }}>
-                  <Info />
-                </div>
-                <div className="body">
-                  <div className="title">How this app works</div>
-                  <div className="sub">3 minutes to read about what we track and why</div>
-                </div>
-                <svg className="ios-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </a>
-              <a href="/about" className="ios-row" style={{ textDecoration: 'none' }}>
-                <div className="ios-icon" style={{ background: 'rgba(0,122,255,0.14)', color: 'var(--ios-blue)' }}>
-                  <Shield />
-                </div>
-                <div className="body">
-                  <div className="title">Unofficial third-party tool</div>
-                  <div className="sub">Not affiliated with jw.org. See /about for full disclaimer.</div>
-                </div>
-                <svg className="ios-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </a>
+        {/* Footer links. Single column, both states. The previous
+            design had two Get-Oriented rows + a "What success
+            looks like" preview row + a footer — too much for a
+            calm post-setup home. */}
+        <div className="ios-grouped mt-2">
+          <a href="/about" className="ios-row" style={{ textDecoration: 'none' }}>
+            <div className="ios-icon" style={{ background: 'var(--ios-label-4)' }}>
+              <Info />
             </div>
-          </>
-        )}
+            <div className="body">
+              <div className="title">How this app works</div>
+              <div className="sub">3 minutes to read about what we track and why</div>
+            </div>
+            <ChevronRight className="ios-chev" />
+          </a>
+          <a href="/about" className="ios-row" style={{ textDecoration: 'none' }}>
+            <div className="ios-icon" style={{ background: 'rgba(0,122,255,0.14)', color: 'var(--ios-blue)' }}>
+              <Shield />
+            </div>
+            <div className="body">
+              <div className="title">Unofficial third-party tool</div>
+              <div className="sub">Not affiliated with jw.org. See /about for full disclaimer.</div>
+            </div>
+            <ChevronRight className="ios-chev" />
+          </a>
+        </div>
 
         {/* Unofficial disclaimer footer (always shown) */}
         <div className="ios-footer">

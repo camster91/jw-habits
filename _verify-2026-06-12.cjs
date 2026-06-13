@@ -61,6 +61,11 @@ async function fresh(browser) {
       localStorage.setItem('jw-habits-onboarded', 'true');
       // Mark install prompt as dismissed
       localStorage.setItem('installPromptDismissed', 'true');
+      // The Home page now shows a "Build your daily routine" setup
+      // flow for first-time users. For the persona tests, we want to
+      // be past that — dismiss it so the daily-actions (prayer,
+      // daily text, bible chapter) are visible.
+      localStorage.setItem('jw-habits-onboarded-v2', '1');
     });
   }
 
