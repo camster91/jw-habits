@@ -112,6 +112,19 @@ export default function Onboarding() {
       setPublisherStatusAction(publisherStatus);
     }
     markOnboarded();
+    // Also mark the post-onboarding habit-picker flow as
+    // complete so Home doesn't show BOTH the onboarding modal
+    // AND the picker. The picker is a separate flow gated on
+    // its own localStorage key (jw-habits-onboarded-v2). Without
+    // this, a user who finishes the 6-step modal would also see
+    // the picker on the home page.
+    try {
+      localStorage.setItem('jw-habits-onboarded-v2', '1');
+    } catch {
+      // ignore
+    }
+    // Tell the Home page to re-read the key and drop the picker.
+    window.dispatchEvent(new CustomEvent('jw-habits:habit-setup-done'));
     setVisible(false);
   };
 

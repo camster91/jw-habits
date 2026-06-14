@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, Heart, Users, Calendar, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, X, Bot, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, BookMarked, Heart, Users, UsersRound, Newspaper, Target, Calendar, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, X, Bot, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import useProgressStore from '../stores/progressStore.js';
 import useSettingsStore, { type Notifications } from '../stores/settingsStore.js';
@@ -61,11 +61,14 @@ function Settings() {
     notifications,
     theme,
     ai,
+    trackedHabits,
     setNotificationsEnabled,
     toggleNotification,
     setNotificationTime,
     setTheme,
     setAiSettings,
+    toggleTrackedHabit,
+    setTrackedHabits,
   } = useSettingsStore();
   const setUserName = useSettingsStore((s) => s.setUserName);
   const userName = useSettingsStore((s) => s.userName);
@@ -447,6 +450,83 @@ function Settings() {
             <button onClick={toggleTheme} className="btn btn-outline w-full justify-start">
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
               {theme === 'light' ? t("settings.darkMode") : t("settings.lightMode")}
+            </button>
+          </div>
+        </div>
+
+        {/* Daily routine — toggle which habits the home shows.
+            This is the only way to change trackedHabits after the
+            initial setup picker was dismissed. Without it, the
+            user's picked habits are a one-way door (see the gap
+            analysis for the full story). */}
+        <div className="ios-grouped">
+          <div className="p-4">
+            <h2 className="text-sm font-semibold text-base-content mb-1">
+              <Target className="w-5 h-5 inline mr-1" /> Daily routine
+            </h2>
+            <p className="text-sm text-base-content/70 mb-3">
+              Choose which habits show up on your home page. Toggling
+              a habit off hides its card from the home.
+            </p>
+            <div className="space-y-2">
+              {[
+                { key: 'dailyText', Icon: BookOpen, title: 'Daily text', color: 'blue' },
+                { key: 'bibleReading', Icon: BookMarked, title: 'Bible reading plan', color: 'purple' },
+                { key: 'prayer', Icon: Heart, title: 'Prayer', color: 'orange' },
+                { key: 'familyWorship', Icon: UsersRound, title: 'Family worship', color: 'pink' },
+                { key: 'meeting', Icon: Users, title: 'Meeting prep', color: 'green' },
+                { key: 'news', Icon: Newspaper, title: "Today's news check-in", color: 'teal' },
+                { key: 'reflection', Icon: BookMarked, title: 'Daily reflection', color: 'indigo' },
+                { key: 'goals', Icon: Target, title: 'Goals & projects', color: 'orange' },
+              ].map(({ key, Icon, title, color }, idx) => {
+                const isOn = trackedHabits.length === 0
+                  ? true
+                  : trackedHabits.includes(key);
+                return (
+                  <div key={key} className={idx > 0 ? 'pt-2 border-t border-base-300/30' : ''}>
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`ios-icon ${color} w-9 h-9 shrink-0`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <span className="font-medium text-sm truncate">{title}</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        className="toggle toggle-primary"
+                        checked={isOn}
+                        onChange={() => {
+                          haptics.light();
+                          toggleTrackedHabit(key);
+                          if (trackedHabits.length === 0) {
+                            // User is leaving the "all-defaults"
+                            // state for the first time; initialize
+                            // the array with the toggled value so
+                            // other cards stay visible.
+                            setTrackedHabits([key]);
+                          }
+                        }}
+                        aria-label={`Track ${title}`}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => {
+                haptics.light();
+                setTrackedHabits([]);
+                try {
+                  localStorage.removeItem('jw-habits-onboarded-v2');
+                } catch {
+                  // ignore
+                }
+                toast.info('Reset — visit the home page to re-pick your routine.');
+              }}
+              className="btn btn-ghost btn-sm w-full mt-3"
+            >
+              Reset to defaults & re-pick on home
             </button>
           </div>
         </div>

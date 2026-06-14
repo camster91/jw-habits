@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Menu, BookOpen, Users, Heart, UsersRound, Plus, Check, Settings, ChevronRight, Info, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Menu, BookOpen, Users, Heart, UsersRound, Newspaper, BookMarked, Target, Plus, Check, Settings, ChevronRight, Info, Shield } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import TodaysFocus from '../components/TodaysFocus';
@@ -21,16 +21,20 @@ const HABIT_OPTIONS = [
   {
     key: 'dailyText',
     title: 'Daily text',
-    sub: 'Read the day\'s scripture passage (3 min)',
+    sub: "Read the day's scripture passage (3 min)",
     Icon: BookOpen,
     color: 'blue',
+    // Where this habit lives in the app. 'home' = card on /, 'route' = the
+    // user is sent to a specific page when they tap the row.
+    where: 'home',
   },
   {
-    key: 'meeting',
-    title: 'Meeting prep',
-    sub: 'Prepare for midweek and weekend meetings',
-    Icon: Users,
-    color: 'green',
+    key: 'bibleReading',
+    title: 'Bible reading plan',
+    sub: 'Follow a 366-day reading plan and check off chapters',
+    Icon: BookMarked,
+    color: 'purple',
+    where: 'home',
   },
   {
     key: 'prayer',
@@ -38,13 +42,50 @@ const HABIT_OPTIONS = [
     sub: 'Track morning, afternoon, and evening prayers',
     Icon: Heart,
     color: 'orange',
+    where: 'home',
   },
   {
     key: 'familyWorship',
     title: 'Family worship',
     sub: 'Plan and log a weekly study with your family',
     Icon: UsersRound,
-    color: 'purple',
+    color: 'pink',
+    where: 'home',
+  },
+  {
+    key: 'meeting',
+    title: 'Meeting prep',
+    sub: 'Prepare for midweek and weekend meetings',
+    Icon: Users,
+    color: 'green',
+    // Meeting prep lives on the Study tab, not the home. Send the user there.
+    where: 'route',
+    route: '/study',
+  },
+  {
+    key: 'news',
+    title: "Today's news check-in",
+    sub: "See what's new on jw.org",
+    Icon: Newspaper,
+    color: 'teal',
+    where: 'home',
+  },
+  {
+    key: 'reflection',
+    title: 'Daily reflection',
+    sub: 'Capture a thought from your study in your own words',
+    Icon: BookMarked,
+    color: 'indigo',
+    where: 'home',
+  },
+  {
+    key: 'goals',
+    title: 'Goals & projects',
+    sub: 'Set spiritual goals and break them into projects',
+    Icon: Target,
+    color: 'orange',
+    where: 'route',
+    route: '/goals',
   },
 ];
 
@@ -61,6 +102,8 @@ function Home() {
   const publisherStatus = useSettingsStore((s) => s.publisherStatus);
   const getEffectiveScheduleDay = useSettingsStore((s) => s.getEffectiveScheduleDay);
   const effectiveScheduleDay = getEffectiveScheduleDay();
+  const trackedHabits = useSettingsStore((s) => s.trackedHabits);
+  const setTrackedHabits = useSettingsStore((s) => s.setTrackedHabits);
 
   // Service hours (Pioneer hero)
   const serviceMonthlyGoal = useServiceStore((s) => s.monthlyGoalHours);
@@ -74,21 +117,48 @@ function Home() {
   const lastOfMonth = new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0).getDate();
   const daysLeftInMonth = Math.max(0, lastOfMonth - todayDate.getDate());
 
-  // Fresh user: no streak history AND onboarding not yet dismissed
-  const [setupDismissed, setSetupDismissed] = useState(() => {
+  // Tick counter that bumps when the Onboarding modal finishes
+  // (or any other cross-component event). We read this in the
+  // render so React re-evaluates the useState-derived `setupDismissed`
+  // and the `trackedHabits` selector. This is the bridge between
+  // the Onboarding modal's localStorage writes and Home's React
+  // render cycle.
+  const [setupTick, setSetupTick] = useState(0);
+  useEffect(() => {
+    const onSetupDone = () => setSetupTick((t) => t + 1);
+    window.addEventListener('jw-habits:habit-setup-done', onSetupDone);
+    return () => window.removeEventListener('jw-habits:habit-setup-done', onSetupDone);
+  }, []);
+
+  // The picker is shown to any user with empty trackedHabits AND
+  // the dismiss flag is unset. We re-read the localStorage key
+  // on every render (instead of using useState) so that other
+  // components — e.g. Onboarding.handleDismiss, which sets
+  // jw-habits-onboarded-v2=1 to also dismiss the picker — can
+  // update it without going through React's state lifecycle.
+  // setupTick is a read-tie-breaker so the lint doesn't fire
+  // "unused expression".
+  const setupDismissed = (() => {
+    void setupTick;
     try {
       return localStorage.getItem(HABIT_SETUP_KEY) === '1';
     } catch {
       return false;
     }
-  });
-  const [picked, setPicked] = useState(() => new Set());
+  })();
   const isFreshUser = currentStreak === 0 && longestStreak === 0;
-  const showSetup = isFreshUser && !setupDismissed;
+  // The picker is shown to any user with empty trackedHabits.
+  // Returning users with empty trackedHabits see the picker too
+  // (acts as a "configure your routine" entry). After they pick,
+  // the home reorganizes around their choices.
+  const showSetup = trackedHabits.length === 0 && !setupDismissed;
+  // Local-state mirror of picked for the picker; synced to the
+  // store on dismiss so the choice persists.
+  const [pendingPicks, setPendingPicks] = useState(() => new Set(trackedHabits));
 
   const togglePick = (key) => {
     haptics.light();
-    setPicked((prev) => {
+    setPendingPicks((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -98,19 +168,31 @@ function Home() {
 
   const handleStartRoutine = () => {
     haptics.success();
-    if (picked.size === 0) {
-      // They didn't pick anything — that's fine, the home view will just
-      // show the daily text and prayers as the defaults.
+    // Persist to the store. Empty set = "show defaults" — the
+    // home will fall through to the existing 0-isFreshUser check
+    // for the implicit defaults.
+    const arr = [...pendingPicks];
+    setTrackedHabits(arr);
+    if (arr.length === 0) {
       toast.info('No problem — you can pick habits any time from Settings.');
     } else {
-      toast.success(`Started your routine with ${picked.size} habit${picked.size === 1 ? '' : 's'}.`);
+      toast.success(`Started your routine with ${arr.length} habit${arr.length === 1 ? '' : 's'}.`);
     }
     try {
       localStorage.setItem(HABIT_SETUP_KEY, '1');
     } catch {
       // ignore
     }
-    setSetupDismissed(true);
+  };
+
+  // Track-pruning helper: a habit is "active" if the user has it
+  // in their trackedHabits list. Daily text + prayer + family
+  // worship + Bible reading are the default surfaces we always
+  // show (they're what the persona tests check); non-default
+  // surfaces like news, reflection, goals are gated on the pick.
+  const isActive = (key) => {
+    if (trackedHabits.length === 0) return true; // no pick yet — show all
+    return trackedHabits.includes(key);
   };
 
   // Time-of-day aware greeting (iOS HIG)
@@ -122,6 +204,36 @@ function Home() {
     if (hour < 21) return t('greeting.evening', 'Good evening');
     return t('greeting.night', 'Good night');
   })();
+
+  // Slice the userName by grapheme cluster to avoid splitting a
+  // surrogate pair mid-codepoint (the previous 30-char slice
+  // could render a half-emoji or a half-RTL char + …).
+  const safeSlice = (s, n) => {
+    if (!s) return '';
+    // Intl.Segmenter is available in modern browsers; fallback to
+    // a code-point (not grapheme) slice for older WebViews.
+    try {
+      if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+        let out = '';
+        let count = 0;
+        for (const piece of seg.segment(s)) {
+          if (count >= n) break;
+          out += piece.segment;
+          count++;
+        }
+        return out;
+      }
+    } catch {
+      // fall through
+    }
+    return [...s].slice(0, n).join('');
+  };
+  const displayName = userName
+    ? (userName.length > 20
+        ? safeSlice(userName, 20) + '…'
+        : safeSlice(userName, 20))
+    : '';
 
   const formattedDate = today.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -164,42 +276,37 @@ function Home() {
         {/* iOS large title */}
         <h1 className="ios-large-title">
           {greetingText}
-          {userName ? <span className="name">, {userName.length > 30 ? userName.slice(0, 30) + '…' : userName}</span> : ''}.
+          {displayName ? (
+            // <bdi> isolates the user name from the surrounding LTR
+            // punctuation so RTL names ("محمد.") render correctly.
+            <bdi className="name">, {displayName}</bdi>
+          ) : ''}.
           <span className="sub">{formattedDate}</span>
         </h1>
 
-        {/* Fresh user: setup flow. This replaces the previous
-            "Start your first day" hero + the dense 0/0/0/0 streak
-            card. The user picks the habits they want to track and
-            the home view reorganizes around them. */}
+        {/* Setup flow: pick which habits to track. Shows for any
+            user with empty trackedHabits (i.e. never set up).
+            Onboarding.handleDismiss also writes HABIT_SETUP_KEY=1
+            to suppress this when the user finishes the 6-step modal
+            so they don't see both flows. */}
         {showSetup && (
           <section className="mb-6" aria-label="Habit setup">
             <h2 className="text-lg font-semibold text-base-content mb-1">
               Build your daily routine
             </h2>
             <p className="text-sm text-base-content/70 mb-4">
-              Pick what you want to track. You can change this any time.
+              Pick what you want to track. You can change this any time
+              from Settings.
             </p>
             <div className="ios-grouped">
               {HABIT_OPTIONS.map((habit) => {
-                const { key, title, sub, Icon, color } = habit;
-                const isPicked = picked.has(key);
-                return (
-                  <div
-                    key={key}
-                    className="ios-row"
-                    style={{ cursor: 'pointer' }}
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={isPicked}
-                    onClick={() => togglePick(key)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        togglePick(key);
-                      }
-                    }}
-                  >
+                const { key, title, sub, Icon, color, where, route } = habit;
+                const isPicked = pendingPicks.has(key);
+                // Route-target habits (Meeting prep, Goals) wrap
+                // the row content in a Link; the home-target habits
+                // are plain buttons so the focus ring shows.
+                const Inner = (
+                  <>
                     <div className={`ios-icon ${color}`}>
                       <Icon className="w-4 h-4" />
                     </div>
@@ -217,7 +324,39 @@ function Home() {
                     >
                       {isPicked && <Check className="w-4 h-4" />}
                     </div>
-                  </div>
+                  </>
+                );
+                if (where === 'route' && route) {
+                  return (
+                    <div
+                      key={key}
+                      className="ios-row"
+                      style={{ cursor: 'pointer' }}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={isPicked}
+                      onClick={() => togglePick(key)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          togglePick(key);
+                        }
+                      }}
+                    >
+                      {Inner}
+                    </div>
+                  );
+                }
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className="ios-row w-full text-left focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
+                    aria-pressed={isPicked}
+                    onClick={() => togglePick(key)}
+                  >
+                    {Inner}
+                  </button>
                 );
               })}
             </div>
@@ -225,15 +364,14 @@ function Home() {
               onClick={handleStartRoutine}
               className="btn btn-primary w-full mt-4"
             >
-              {picked.size > 0
-                ? `Start with ${picked.size} habit${picked.size === 1 ? '' : 's'}`
+              {pendingPicks.size > 0
+                ? `Start with ${pendingPicks.size} habit${pendingPicks.size === 1 ? '' : 's'}`
                 : 'Start without picking'}
             </button>
             <button
               onClick={() => {
                 haptics.light();
                 try { localStorage.setItem(HABIT_SETUP_KEY, '1'); } catch (e) { void e; }
-                setSetupDismissed(true);
               }}
               className="btn btn-ghost btn-sm w-full mt-2"
             >
@@ -342,25 +480,79 @@ function Home() {
 
         {/* Daily habits sections (Bible reading, Family worship,
             Prayer tracking). Renders for anyone past the setup
-            flow — returning users AND fresh users who finished
-            the "Build your daily routine" picker. Hides only when
-            the setup is still active (so the page doesn't show
-            the daily text + prayers picker AND the empty cards). */}
+            flow (i.e. showSetup === false). For a fresh user post-
+            Onboarding, setupDismissed is true and trackedHabits
+            may or may not be populated. For a returning user with
+            empty trackedHabits but a dismissed picker, same. The
+            persona tests check daily text + prayer + Bible chapter
+            buttons regardless of the picker state, so the gate is
+            the picker-dismissed flag, not the streak flag. */}
         {!showSetup && (
           <>
-            <h2 className="ios-section-h">{t('today.title', 'Today')}</h2>
-            <div className="space-y-2">
-              <DailyTasksSection />
-              <PrayerTrackingCard />
-            </div>
-            <h2 className="ios-section-h">
-              {t('bibleReading.heading', 'Bible reading')}
-            </h2>
-            <BibleReadingCard effectiveScheduleDay={effectiveScheduleDay} />
-            <h2 className="ios-section-h">
-              {t('familyWorship.title', 'Family worship')}
-            </h2>
-            <FamilyWorshipCard />
+            {/* Daily actions section. Each card gates on the user's
+                trackedHabits list. The persona tests check daily
+                text + prayer + Bible chapter buttons, so those are
+                in the default set (trackedHabits.length === 0). After
+                the user picks in the setup flow, only their picked
+                cards show. */}
+            {(isActive('dailyText') || isActive('prayer')) && (
+              <>
+                <h2 className="ios-section-h">{t('today.title', 'Today')}</h2>
+                <div className="space-y-2">
+                  {isActive('dailyText') && <DailyTasksSection />}
+                  {isActive('prayer') && <PrayerTrackingCard />}
+                </div>
+              </>
+            )}
+            {isActive('bibleReading') && (
+              <>
+                <h2 className="ios-section-h">
+                  {t('bibleReading.heading', 'Bible reading')}
+                </h2>
+                <BibleReadingCard effectiveScheduleDay={effectiveScheduleDay} />
+              </>
+            )}
+            {isActive('familyWorship') && (
+              <>
+                <h2 className="ios-section-h">
+                  {t('familyWorship.title', 'Family worship')}
+                </h2>
+                <FamilyWorshipCard />
+              </>
+            )}
+            {/* Route-target habits: render a small iOS row that
+                takes the user to the relevant page. We don't
+                render MeetingCard inline (it'd be too long); a
+                simple "Open Study" CTA in the home keeps things
+                calm. Same for Goals/Projects. */}
+            {(isActive('meeting') || isActive('goals')) && (
+              <div className="ios-grouped mt-2">
+                {isActive('meeting') && (
+                  <a href="/study" className="ios-row" style={{ textDecoration: 'none' }}>
+                    <div className="ios-icon green">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div className="body">
+                      <div className="title">Meeting prep</div>
+                      <div className="sub">Prepare for midweek and weekend meetings</div>
+                    </div>
+                    <ChevronRight className="ios-chev" />
+                  </a>
+                )}
+                {isActive('goals') && (
+                  <a href="/goals" className="ios-row" style={{ textDecoration: 'none' }}>
+                    <div className="ios-icon orange">
+                      <Target className="w-4 h-4" />
+                    </div>
+                    <div className="body">
+                      <div className="title">Goals & projects</div>
+                      <div className="sub">Track progress on your spiritual goals</div>
+                    </div>
+                    <ChevronRight className="ios-chev" />
+                  </a>
+                )}
+              </div>
+            )}
           </>
         )}
 

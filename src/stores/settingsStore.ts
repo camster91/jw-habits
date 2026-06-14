@@ -38,6 +38,11 @@ interface SettingsState {
   theme: 'light' | 'dark';
   userName: string;
   publisherStatus: 'pioneer' | 'regular' | 'none';
+  // Categories the user has opted to track. Drives the
+  // habit-picker persistence and the home card visibility.
+  // Empty array = nothing tracked yet (will show the picker).
+  // The picker writes/reads this list via setTrackedHabits.
+  trackedHabits: string[];
   ai: {
     provider: 'ollama' | 'none';
     ollamaBaseUrl: string;
@@ -59,6 +64,8 @@ interface SettingsActions {
   setBibleReadingStartDay: (day: number) => void;
   setBibleReadingPace: (pace: number) => void;
   resetBibleReadingSchedule: () => void;
+  setTrackedHabits: (habits: string[]) => void;
+  toggleTrackedHabit: (habit: string) => void;
   setAiSettings: (settings: Partial<SettingsState['ai']>) => void;
 }
 
@@ -90,6 +97,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
       theme: 'light',
       userName: '',
       publisherStatus: 'none',
+      trackedHabits: [],
       ai: {
         provider: 'none',
         ollamaBaseUrl: 'https://ollama.com',
@@ -162,6 +170,16 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
         })),
       resetBibleReadingSchedule: () =>
         set({ bibleReadingSchedule: DEFAULT_BIBLE_READING_SETTINGS }),
+      setTrackedHabits: (habits) => set({ trackedHabits: habits }),
+      toggleTrackedHabit: (habit) =>
+        set((state) => {
+          const has = state.trackedHabits.includes(habit);
+          return {
+            trackedHabits: has
+              ? state.trackedHabits.filter((h) => h !== habit)
+              : [...state.trackedHabits, habit],
+          };
+        }),
       setAiSettings: (settings) =>
         set((state) => ({
           ai: { ...state.ai, ...settings },
