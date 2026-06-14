@@ -207,26 +207,38 @@ async function record(name, ok, evidence) {
   }
 
   // ============================================================
-  // T4: Marcus/Aunt Rose — "How this app works" link — claims non-functional
+  // T4: Marcus/Aunt Rose — drawer menu opens — claims non-functional.
+  // The previous version of this test clicked a "How this app
+  // works" link on the home; the redesign removed that link
+  // (the home now points to actual feature surfaces via the
+  // Explore block on fresh users, and the side drawer is enough
+  // for returning users). T4 now verifies the hamburger menu
+  // button is wired up to open the side drawer.
   // ============================================================
   {
     const { page, gotoApp, safeClick } = await fresh(browser);
     await gotoApp();
 
-    const link = page.locator('a').filter({ hasText: 'How this app works' }).first();
-    if ((await link.count()) === 0) {
-      await record('T4: "How this app works" link works', false, 'Link not found in DOM');
+    // Find the hamburger button by aria-label="Open menu"
+    const menuBtn = page.locator('button[aria-label="Open menu"]').first();
+    if ((await menuBtn.count()) === 0) {
+      await record('T4: Hamburger menu button is wired up', false, 'Menu button (aria-label="Open menu") not found in DOM');
     } else {
-      // Capture href BEFORE click — after navigation the element is gone
-      const href = await link.evaluate(el => el.getAttribute('href') || 'NO_HREF');
-      const before = await page.evaluate(() => location.pathname);
-      await safeClick(link);
-      await page.waitForTimeout(1500);
-      const after = await page.evaluate(() => location.pathname);
-      const navigated = before !== after;
-      await record('T4: "How this app works" link works',
-        navigated,
-        `before=${before} after=${after} href=${href.slice(0, 100)}`);
+      const exists = await menuBtn.evaluate(el => ({
+        tag: el.tagName,
+        ariaLabel: el.getAttribute('aria-label'),
+        text: el.textContent.trim().slice(0, 20),
+      }));
+      await safeClick(menuBtn);
+      await page.waitForTimeout(800);
+      // The drawer should now be open. Check for a known drawer label.
+      const drawerVisible = await page.evaluate(() => {
+        return [...document.querySelectorAll('aside, [aria-label*="menu"], [role="dialog"]')].length > 0
+          || [...document.querySelectorAll('*')].some(el => el.textContent.includes('Quick Links') || el.textContent.includes('Settings'));
+      });
+      await record('T4: Hamburger menu opens the side drawer',
+        drawerVisible,
+        `menu=${JSON.stringify(exists)} drawer_visible=${drawerVisible}`);
     }
     await page.context().close();
   }

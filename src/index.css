@@ -170,6 +170,9 @@
   .ios-icon.purple { background: var(--ios-purple, #AF52DE); }
   .ios-icon.indigo { background: var(--ios-indigo, #5856D6); }
   .ios-icon.teal { background: var(--ios-teal, #5AC8FA); }
+  .ios-icon.pink { background: #FF2D55; } /* iOS systemPink, used for Family worship */
+  .ios-icon.red { background: #FF3B30; } /* iOS systemRed */
+  .ios-icon.yellow { background: #FFCC00; }
   .ios-icon.jw-blue { background: linear-gradient(135deg, #2D5F8B, #1E4060); }
   .ios-icon.jw-gold { background: linear-gradient(135deg, #B8893A, #8F6A2C); }
 

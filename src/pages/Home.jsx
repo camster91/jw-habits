@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, BookOpen, Users, Heart, UsersRound, Newspaper, BookMarked, Target, Plus, Check, Settings, ChevronRight, Info, Shield } from 'lucide-react';
+import { Menu, BookOpen, Users, Heart, UsersRound, Newspaper, BookMarked, Target, Plus, Check, Settings, ChevronRight, BarChart3, Link, Lightbulb } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import DailyTasksSection from '../components/DailyTasksSection';
 import TodaysFocus from '../components/TodaysFocus';
@@ -579,34 +579,50 @@ function Home() {
           </>
         )}
 
-        {/* Footer links. Single column, both states. The previous
-            design had two Get-Oriented rows + a "What success
-            looks like" preview row + a footer — too much for a
-            calm post-setup home. */}
-        <div className="ios-grouped mt-2">
-          <a href="/about" className="ios-row" style={{ textDecoration: 'none' }}>
-            <div className="ios-icon" style={{ background: 'var(--ios-label-4)' }}>
-              <Info />
-            </div>
-            <div className="body">
-              <div className="title">How this app works</div>
-              <div className="sub">3 minutes to read about what we track and why</div>
-            </div>
-            <ChevronRight className="ios-chev" />
-          </a>
-          <a href="/about" className="ios-row" style={{ textDecoration: 'none' }}>
-            <div className="ios-icon" style={{ background: 'rgba(0,122,255,0.14)', color: 'var(--ios-blue)' }}>
-              <Shield />
-            </div>
-            <div className="body">
-              <div className="title">Unofficial third-party tool</div>
-              <div className="sub">Not affiliated with jw.org. See /about for full disclaimer.</div>
-            </div>
-            <ChevronRight className="ios-chev" />
-          </a>
-        </div>
+        {/* Footer links. The previous design had "How this app
+            works" + "Unofficial third-party tool" as a Get
+            Oriented block — both went to /about, neither pointed
+            at the actual feature surfaces. The new design shows
+            "Explore" rows for fresh users (Stats, Links, Ideas)
+            so they discover the side-drawer features; returning
+            users don't see this (the drawer is enough). The
+            third-party disclaimer stays on every page. */}
+        {isFreshUser && (
+          <div className="ios-grouped">
+            <a href="/statistics" className="ios-row" style={{ textDecoration: 'none' }}>
+              <div className="ios-icon" style={{ background: 'var(--ios-blue)' }}>
+                <BarChart3 className="w-4 h-4" />
+              </div>
+              <div className="body">
+                <div className="title">Your stats</div>
+                <div className="sub">Achievements, streaks, and 6 months of activity</div>
+              </div>
+              <ChevronRight className="ios-chev" />
+            </a>
+            <a href="/links" className="ios-row" style={{ textDecoration: 'none' }}>
+              <div className="ios-icon" style={{ background: 'var(--ios-blue)' }}>
+                <Link className="w-4 h-4" />
+              </div>
+              <div className="body">
+                <div className="title">JW.org quick links</div>
+                <div className="sub">50+ curated links to Bible, ministry, family resources</div>
+              </div>
+              <ChevronRight className="ios-chev" />
+            </a>
+            <a href="/ideas" className="ios-row" style={{ textDecoration: 'none' }}>
+              <div className="ios-icon" style={{ background: 'var(--ios-blue)' }}>
+                <Lightbulb className="w-4 h-4" />
+              </div>
+              <div className="body">
+                <div className="title">Goal & project ideas</div>
+                <div className="sub">Browse what other publishers track</div>
+              </div>
+              <ChevronRight className="ios-chev" />
+            </a>
+          </div>
+        )}
 
-        {/* Unofficial disclaimer footer (always shown) */}
+        {/* Always-shown third-party disclaimer. */}
         <div className="ios-footer">
           Unofficial third-party tool. Not affiliated with jw.org.<br />
           <a href="/about" className="font-bold text-[13px]" style={{ color: '#0055B3' }}>Read full disclaimer →</a>

@@ -78,7 +78,18 @@ function PrayerTrackingCard() {
         </div>
         <div className="body">
           <div className="title">{t('today.prayers')}</div>
-          <div className="sub">{completedCount}/3 {t('today.prayersToday')}</div>
+          <div className="sub">
+            {/* The 0/3 counter reads as "you're behind" on day 1.
+                When the user has checked none of the prayer slots
+                and has no streak history, the friendlier copy is
+                "Tap to log your prayers". Once they've started
+                checking, the 1/3, 2/3, 3/3 progression is
+                encouraging (Apple's own Health app does this for
+                Move / Exercise / Stand rings). */}
+            {completedCount === 0 && prayerStreak === 0
+              ? t('today.tapToLogPrayers', 'Tap to log your prayers')
+              : `${completedCount}/3 ${t('today.prayersToday')}`}
+          </div>
         </div>
         {prayerStreak > 0 && (
           <span className="ios-pill" style={{ background: 'rgba(255,149,0,0.14)', color: 'var(--ios-orange)' }}>
