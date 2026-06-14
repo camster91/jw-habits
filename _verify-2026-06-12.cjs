@@ -43,7 +43,12 @@ const results = [];
 let pass = 0, fail = 0;
 
 async function fresh(browser) {
-  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 } });
+  // ignoreHTTPSErrors: headless Chromium's bundled CA store doesn't
+  // include the Let's Encrypt "R10" / "R11" intermediates that
+  // jwhabits.ashbi.ca uses. Real browsers (Chrome, Safari, Firefox)
+  // have them. Without this, every goto() fails with
+  // "net::ERR_CERT_AUTHORITY_INVALID".
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push('PAGEERR: ' + e.message.slice(0, 200)));
