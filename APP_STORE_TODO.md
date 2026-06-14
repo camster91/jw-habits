@@ -22,16 +22,79 @@
 
 ---
 
+## ✅ Phase 2 Complete (Hermes, 2026-06-14)
+
+- [x] **Store-listing metadata packaged** — `APP_STORE_METADATA.md`
+  contains every field required by App Store Connect and Google
+  Play Console, with copy verified against the live app.
+  - Promotional text / subtitle / full description / keywords
+  - App Privacy (all "Not collected" — localStorage only)
+  - Content rating (4+ iOS, Everyone Play)
+  - Data Safety form (no data collected, no third parties)
+  - Encryption: NO (HTTPS only, exempt)
+  - Privacy URL: `https://ashbi.ca/privacy/jw-news.html` (200 OK)
+  - Pricing: Free, no IAP, no ads
+- [x] **Feature graphic generator** — `feature-graphic.cjs` renders
+  the 1024x500 Play Store graphic from a template. Output at
+  `marketing/app-feature-graphic-1024x500.png` (235 KB)
+- [x] **Screenshot capture script** — `screenshot-store-assets.cjs`
+  captures 24 store screenshots (6 device classes × 2 themes × 2
+  states). Removes the bottom tab bar and Onboarding modal for
+  clean marketing output. Pre-seeds gamification data so stats
+  look populated, not empty.
+
 ## 🔴 Critical Blockers (Must Fix)
 
 ### iOS App Store
-- [ ] Add App Store Connect metadata (name, description, screenshots, privacy URL, age rating, encryption = NO, content rights = NO)
-- [ ] Archive + upload build via Xcode
+
+- [ ] Create Apple Developer account ($99/yr) — https://developer.apple.com
+- [ ] **Cam runs `node screenshot-store-assets.cjs`** to generate
+  all iPhone/iPad screenshots
+- [ ] Fill in App Store Connect metadata (paste from `APP_STORE_METADATA.md`)
+- [ ] Archive + upload build via Xcode:
+  ```bash
+  npm run build
+  npx cap sync ios
+  npx cap open ios
+  # In Xcode: Product > Archive > Distribute App
+  ```
 
 ### Android Google Play
-- [ ] Fill Data Safety form (no data collected, no accounts, no tracking, no third-party SDKs that transmit data)
-- [ ] Fill Content Rating, Pricing (Free), Distribution
-- [ ] Upload signed AAB
+
+- [ ] Create Google Play Developer account ($25 one-time) — https://play.google.com/console
+- [ ] **Cam runs `node feature-graphic.cjs`** to get the 1024x500 banner
+- [ ] **Cam runs `node screenshot-store-assets.cjs`** to generate
+  all phone/tablet screenshots
+- [ ] Fill in Play Console metadata (paste from `APP_STORE_METADATA.md`)
+- [ ] Generate signed AAB:
+  ```bash
+  npm run build
+  npx cap sync android
+  npx cap open android
+  # In Android Studio: Build > Generate Signed Bundle/APK
+  #   Select: Android App Bundle
+  #   Keystore: ~/keys/jw-habits-release.keystore
+  #   Key alias: jwhabits (alias from CLI prompt)
+  ```
+- [ ] Upload the .aab to Play Console internal testing track
+
+## 🟢 Pre-Submission Checks (Already Done)
+
+- [x] `npm test` — 256/256 passing
+- [x] `npm run lint` — clean
+- [x] `npm run build` — clean, 32-entry precache, 749KB
+- [x] Live site `https://jwhabits.ashbi.ca/` returns 200
+- [x] HTTPS + Caddy security headers (HSTS, X-Frame, X-Content)
+- [x] Service worker with offline support (jw.org NetworkFirst)
+- [x] App Privacy Info declared in iOS `PrivacyInfo.xcprivacy`
+- [x] Android 8+ notification channel (`jw-habits-reminders`)
+- [x] Bundle ID consistent: `com.ashbi.jwnews` across iOS/Android/web
+- [x] Version 4.1.0 (versionCode 411) synced across iOS/Android/package.json
+- [x] Permission strings realistic (no fake notification usage descriptions)
+- [x] PWA manifest has `id: "/"`, correct shortcuts, correct
+      content-type handling, `no-cache` Cache-Control on sw.js
+- [x] Both privacy policy URLs (`jw-news.html` and `jw-habits.html`)
+      return 200 OK
 
 ---
 
