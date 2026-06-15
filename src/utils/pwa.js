@@ -1,226 +1,78 @@
 /**
- * PWA Utilities
- * Handles service worker registration, push notifications, and install prompts
+ * PWA utility — install prompt, connectivity, service worker
+ * updates. Notifications are NOT included; the launchpad
+ * version of jw-habits does not schedule local notifications.
+ *
+ * Previously also re-exported `isNotificationSupported` etc.
+ * for the settings notification panel; that panel was removed
+ * during the home-strip-down so those symbols are gone too.
  */
 
-// Check if running in a browser that supports PWA features
-export const isPWACapable = () => {
-  return 'serviceWorker' in navigator;
-};
+/** PWA capability detection — true if the browser supports
+ * `beforeinstallprompt` + a service worker. */
+export function isPWACapable() {
+  return typeof window !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    'BeforeInstallPromptEvent' in window;
+}
 
-// Check if app is installed (standalone mode)
-export const isInstalled = () => {
-  return (
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true ||
-    document.referrer.includes('android-app://')
-  );
-};
-
-// Import notification functions from notifications.js (single source of truth)
-// Used locally by scheduleDailyReminder and re-exported for consumers
-import {
-  isNotificationSupported,
-  getNotificationPermission,
-  requestNotificationPermission,
-  showNotification,
-} from './notifications.js';
-
-// Re-export for consumers that import from pwa.js
-export {
-  isNotificationSupported,
-  getNotificationPermission,
-  requestNotificationPermission,
-  showNotification,
-};
-
-// Schedule a daily reminder notification
-export const scheduleDailyReminder = async (hour = 7, minute = 0) => {
-  if (!isNotificationSupported() || Notification.permission !== 'granted') {
-    return false;
-  }
-
-  // Store the reminder time in localStorage
-  localStorage.setItem('dailyReminderTime', JSON.stringify({ hour, minute }));
-
-  // The service worker will handle the actual scheduling
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    if (registration.periodicSync) {
-      await registration.periodicSync.register('daily-reminder', {
-        minInterval: 24 * 60 * 60 * 1000, // 24 hours
-      });
-      return true;
-    }
-  } catch {
-    if (import.meta.env.DEV) console.log('Periodic sync not supported, using fallback');
-  }
-
-  return false;
-};
-
-// Check for app updates
-export const checkForUpdates = async () => {
-  if (!isPWACapable()) return false;
-
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    await registration.update();
-    return true;
-  } catch (error) {
-    console.error('Error checking for updates:', error);
-    return false;
-  }
-};
-
-// Force refresh to update the app
-export const forceUpdate = () => {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((registration) => {
-        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-      });
-    });
-  }
-  window.location.reload();
-};
-
-// Get install prompt event (stored from beforeinstallprompt)
 let deferredPrompt = null;
 
-export const setDeferredPrompt = (event) => {
-  deferredPrompt = event;
-};
+export function getDeferredPrompt() {
+  return deferredPrompt;
+}
 
-export const getDeferredPrompt = () => deferredPrompt;
+export function setDeferredPrompt(e) {
+  deferredPrompt = e;
+}
 
-export const clearDeferredPrompt = () => {
-  deferredPrompt = null;
-};
+/** True if the app is currently running as an installed PWA. */
+export function isInstalled() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+}
 
-// Trigger the install prompt
-export const triggerInstallPrompt = async () => {
-  if (!deferredPrompt) {
-    return { outcome: 'unavailable' };
-  }
+/** Trigger the browser's native install prompt. Returns a promise
+ * resolving to `{ outcome: 'accepted' | 'dismissed' }`. */
+export async function triggerInstallPrompt() {
+  if (!deferredPrompt) return { outcome: 'no-prompt' };
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  return choice;
+}
 
-  try {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    clearDeferredPrompt();
-    return { outcome };
-  } catch (error) {
-    console.error('Error triggering install prompt:', error);
-    return { outcome: 'error', error };
-  }
-};
+export function isOnline() {
+  if (typeof navigator === 'undefined') return true;
+  return navigator.onLine;
+}
 
-// Check online status
-export const isOnline = () => navigator.onLine;
-
-// Register online/offline listeners
-export const registerConnectivityListeners = (onOnline, onOffline) => {
+/** Subscribe to online/offline events. Returns an unsubscribe
+ * function. */
+export function registerConnectivityListeners(onOnline, onOffline) {
   window.addEventListener('online', onOnline);
   window.addEventListener('offline', onOffline);
-
   return () => {
     window.removeEventListener('online', onOnline);
     window.removeEventListener('offline', onOffline);
   };
-};
+}
 
-// Cache status utilities
-export const getCacheStatus = async () => {
-  if (!('caches' in window)) {
-    return { supported: false };
-  }
+/** Trigger a service worker update check by re-registering. */
+export async function checkForUpdates() {
+  if (!('serviceWorker' in navigator)) return;
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (reg) await reg.update();
+}
 
-  try {
-    const cacheNames = await caches.keys();
-    let totalSize = 0;
-
-    for (const name of cacheNames) {
-      const cache = await caches.open(name);
-      const keys = await cache.keys();
-      totalSize += keys.length;
+/** Apply a pending service worker update. Skips waiting and
+ * reloads the page so the new SW takes over. */
+export function forceUpdate() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.getRegistration().then((reg) => {
+    if (reg && reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
-
-    return {
-      supported: true,
-      cacheCount: cacheNames.length,
-      totalEntries: totalSize,
-      cacheNames,
-    };
-  } catch (error) {
-    return { supported: true, error };
-  }
-};
-
-// Clear all caches
-export const clearAllCaches = async () => {
-  if (!('caches' in window)) return false;
-
-  try {
-    const cacheNames = await caches.keys();
-    await Promise.all(cacheNames.map((name) => caches.delete(name)));
-    return true;
-  } catch (error) {
-    console.error('Error clearing caches:', error);
-    return false;
-  }
-};
-
-// Storage estimate
-export const getStorageEstimate = async () => {
-  if (!('storage' in navigator) || !('estimate' in navigator.storage)) {
-    return { supported: false };
-  }
-
-  try {
-    const estimate = await navigator.storage.estimate();
-    return {
-      supported: true,
-      usage: estimate.usage,
-      quota: estimate.quota,
-      usagePercent: ((estimate.usage / estimate.quota) * 100).toFixed(2),
-    };
-  } catch (error) {
-    return { supported: true, error };
-  }
-};
-
-// Request persistent storage
-export const requestPersistentStorage = async () => {
-  if (!('storage' in navigator) || !('persist' in navigator.storage)) {
-    return { supported: false };
-  }
-
-  try {
-    const persisted = await navigator.storage.persist();
-    return { supported: true, persisted };
-  } catch (error) {
-    return { supported: true, error };
-  }
-};
-
-export default {
-  isPWACapable,
-  isInstalled,
-  isNotificationSupported,
-  getNotificationPermission,
-  requestNotificationPermission,
-  showNotification,
-  scheduleDailyReminder,
-  checkForUpdates,
-  forceUpdate,
-  setDeferredPrompt,
-  getDeferredPrompt,
-  clearDeferredPrompt,
-  triggerInstallPrompt,
-  isOnline,
-  registerConnectivityListeners,
-  getCacheStatus,
-  clearAllCaches,
-  getStorageEstimate,
-  requestPersistentStorage,
-};
+    if (reg) reg.update();
+  });
+}

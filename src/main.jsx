@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import './i18n';
 import App from './App.jsx';
-import { logWebVitals } from './utils/webVitals.js';
 import { initializeNative, isNative, appLifecycle } from './utils/native.js';
 
 // Global error logging function
@@ -96,16 +95,11 @@ root.render(
   </StrictMode>
 );
 
-// Report Web Vitals metrics in development
-logWebVitals();
-
-// Register service worker update handler.
-// We do NOT auto-reload on `controllerchange` — that destroys unsaved
-// state (a user mid-typing in the reflection textarea in
-// DailyTasksSection would lose their work). The proper flow is the
-// `UpdatePrompt` banner driven by `usePWA`, which lets the user click
-// "Update now" and calls `applyUpdate()` (see src/utils/pwa.js:77-86)
-// to swap the active service worker.
+// Service worker update handler. The UpdatePrompt banner (driven
+// by usePWA) is the user-visible flow for applying updates — we
+// do NOT auto-reload on controllerchange, which would destroy any
+// in-progress state. See src/components/UpdatePrompt.jsx for the
+// banner and src/utils/native.js for the applyUpdate flow.
 if ('serviceWorker' in navigator) {
   // Handle notification clicks — focus app window
   navigator.serviceWorker.addEventListener('message', (event) => {

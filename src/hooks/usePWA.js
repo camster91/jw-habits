@@ -1,6 +1,9 @@
 /**
  * usePWA Hook
- * Manages PWA state including install prompt, updates, and connectivity
+ * Manages PWA state: install prompt, install status, connectivity,
+ * service worker updates. Does NOT handle notifications; the
+ * launchpad version of the app does not schedule local
+ * notifications.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,9 +17,6 @@ import {
   registerConnectivityListeners,
   checkForUpdates,
   forceUpdate,
-  isNotificationSupported,
-  getNotificationPermission,
-  requestNotificationPermission,
 } from '../utils/pwa';
 
 export function usePWA() {
@@ -24,9 +24,6 @@ export function usePWA() {
   const [isAppInstalled, setIsAppInstalled] = useState(isInstalled());
   const [isOnline, setIsOnline] = useState(checkOnline());
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState(
-    getNotificationPermission()
-  );
 
   // Handle beforeinstallprompt event
   useEffect(() => {
@@ -119,13 +116,6 @@ export function usePWA() {
     await checkForUpdates();
   }, []);
 
-  // Request notification permission
-  const requestNotifications = useCallback(async () => {
-    const result = await requestNotificationPermission();
-    setNotificationPermission(getNotificationPermission());
-    return result;
-  }, []);
-
   return {
     // State
     canInstall,
@@ -133,14 +123,11 @@ export function usePWA() {
     isOnline,
     updateAvailable,
     isPWACapable: isPWACapable(),
-    notificationPermission,
-    notificationsSupported: isNotificationSupported(),
 
     // Actions
     promptInstall,
     applyUpdate,
     checkUpdates,
-    requestNotifications,
   };
 }
 

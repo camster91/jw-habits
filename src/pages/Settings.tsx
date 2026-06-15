@@ -1,713 +1,142 @@
 import { useTranslation } from 'react-i18next';
-import { Trash2, Download, Upload, Moon, Sun, Bell, BellOff, Clock, Flame, BookOpen, BookMarked, Heart, Users, UsersRound, Newspaper, Target, Calendar, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, X, Bot, Eye, EyeOff, Loader2, CheckCircle2, XCircle } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
-import useProgressStore from '../stores/progressStore.js';
-import useSettingsStore, { type Notifications } from '../stores/settingsStore.js';
+import { Moon, Sun, Trash2, BookOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import useSettingsStore from '../stores/settingsStore.js';
 import { useToast } from '../components/Toast.jsx';
 import { haptics } from '../utils/native.js';
-import {
-  isNotificationSupported,
-  getNotificationPermission,
-  requestNotificationPermission,
-  initializeReminders
-} from '../utils/notifications.js';
-import { NotificationItem, WeeklyNotificationItem } from '../components/settings/NotificationItems.jsx';
 
 /**
- * Validate an Ollama base URL before sending the user's API key there.
- * The baseUrl input is free-form text and gets persisted to localStorage
- * (via settingsStore.ai.ollamaBaseUrl). Without this guard, a user can
- * point the chat fetch at file://, http://192.168.x.x/admin, or any
- * other URL and the Bearer token below would be sent with it.
+ * Settings — stripped down for the launchpad version of the app.
  *
- * Allowed: https://<host> (any host), or http://localhost / 127.0.0.1
- * (the documented local Ollama use case). Empty string is treated as
- * "use the default" and passes.
+ * Sections that survived:
+ *   1. Appearance  — light/dark mode toggle
+ *   2. Help & Tour  — link to the /about page
+ *   3. Data Reset   — wipes all localStorage and reloads (the only
+ *                      destructive action; the app no longer tracks
+ *                      data so there is nothing to export/import)
+ *
+ * Sections that were removed (along with their data stores):
+ *   - Notifications     (utils/notifications.js, hook, schedule)
+ *   - Daily routine     (trackedHabits / picker — no more picker)
+ *   - AI Assistant      (Ollama — independent feature, removed to
+ *                        reduce surface area; re-enable if requested)
+ *   - App updates       (manual check; the PWA handles its own
+ *                        auto-update via vite-plugin-pwa)
+ *   - Data export/import (no tracked data to export)
  */
-function validateOllamaBaseUrl(raw) {
-  const url = (raw || '').trim();
-  if (!url) return { ok: true };
-  let parsed;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return { ok: false, reason: 'Invalid URL' };
-  }
-  if (parsed.protocol === 'https:') return { ok: true };
-  if (parsed.protocol === 'http:') {
-    const host = parsed.hostname.toLowerCase();
-    if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
-      return { ok: true };
-    }
-    return { ok: false, reason: 'http:// only allowed for localhost' };
-  }
-  return { ok: false, reason: `Unsupported scheme: ${parsed.protocol}` };
-}
-
 function Settings() {
   const { t } = useTranslation();
   const toast = useToast();
-  const { clearAll } = useProgressStore();
-  // Data fields are pulled via a single destructure for readability, but
-  // action functions are read via stable selectors. The full-destructure
-  // pattern can drop action functions if zustand's persist middleware
-  // rehydrates a state shape that doesn't include them (e.g. on first
-  // mount before hydration finishes, or after a partial-state merge),
-  // and the destructure binds them as `undefined` for that render. A
-  // selector re-reads the function on every render, so rehydration
-  // can't break it. See Onboarding.jsx for the same pattern.
-  const {
-    notificationsEnabled,
-    notifications,
-    theme,
-    ai,
-    trackedHabits,
-    setNotificationsEnabled,
-    toggleNotification,
-    setNotificationTime,
-    setTheme,
-    setAiSettings,
-    toggleTrackedHabit,
-    setTrackedHabits,
-  } = useSettingsStore();
-  const setUserName = useSettingsStore((s) => s.setUserName);
-  const userName = useSettingsStore((s) => s.userName);
+  const theme = useSettingsStore((s) => s.theme);
+  const setTheme = useSettingsStore((s) => s.setTheme);
+  const [isResetting, setIsResetting] = useState(false);
 
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [aiTestStatus, setAiTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
-
-  const [notificationPermission, setNotificationPermission] = useState(() => getNotificationPermission());
-  const [notificationSupported] = useState(() => isNotificationSupported());
-
+  // Apply the theme to <html data-theme> in real time. Without
+  // this useEffect, the theme only applies on next page load
+  // (main.jsx reads it once on mount). The current app is the
+  // launchpad — light/dark must flip immediately so the user
+  // sees the change without a refresh.
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-  };
-
-  const handleEnableNotifications = async () => {
-    const permission = await requestNotificationPermission();
-    setNotificationPermission(permission);
-    if (permission === 'granted') {
-      setNotificationsEnabled(true);
-      const settings = useSettingsStore.getState();
-      initializeReminders(settings);
-      toast.success(t("settings.notificationsEnabled"));
-    } else {
-      toast.error(t("settings.permissionDenied"));
-    }
-  };
-
-  const handleDisableNotifications = () => {
-    setNotificationsEnabled(false);
-    toast.info(t("settings.notificationsDisabled"));
-  };
-
-  const handleToggleNotification = (key: string) => {
-    toggleNotification(key as keyof Notifications);
     haptics.light();
-    // Re-schedule after toggle
-    setTimeout(() => initializeReminders(useSettingsStore.getState()), 50);
+    setTheme(theme === 'light' ? 'dark' : 'light');
+    toast.info(theme === 'light' ? t('settings.darkModeOn', 'Dark mode on') : t('settings.lightModeOn', 'Light mode on'));
   };
 
-  const handleSetNotificationTime = (key: string, time: string) => {
-    setNotificationTime(key as keyof Notifications, time);
-    // Re-schedule after time change
-    setTimeout(() => initializeReminders(useSettingsStore.getState()), 50);
-  };
-
-  const handleClearData = () => {
-    if (confirm(t("settings.clearConfirm"))) {
-      clearAll();
-      toast.success(t("settings.dataCleared"));
-      window.location.reload();
-    }
-  };
-
-  const handleUpdateApp = async () => {
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
-    }
-    window.location.reload();
-    toast.success(t("settings.checkingUpdates"));
-  };
-
-  const handleTestAi = async () => {
-    setAiTestStatus('testing');
-    try {
-      const { chatWithOllama } = await import('../utils/ollama.js');
-      const baseUrl = ai.ollamaBaseUrl || 'https://ollama.com';
-      // Validate the baseUrl before sending the user's API key there. The
-      // input has no scheme/host check, so a user could paste file://,
-      // http://192.168.x.x/admin, or any other URL and the Bearer token
-      // below would go with it. We require https:// except for localhost
-      // / 127.0.0.1 (the documented local Ollama use case).
-      const validation = validateOllamaBaseUrl(baseUrl);
-      if (!validation.ok) {
-        setAiTestStatus('error');
-        toast.error(validation.reason);
-        return;
-      }
-      const apiKey = ai.ollamaApiKey;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-
-      const response = await fetch(`${baseUrl}/api/chat`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model: ai.ollamaModel || 'llama3.2',
-          messages: [{ role: 'user', content: 'Say "OK" in one word.' }],
-          stream: false,
-        }),
-      });
-
-      if (response.ok) {
-        setAiTestStatus('success');
-        toast.success(t("settings.aiSuccess"));
-      } else {
-        const err = await response.text();
-        setAiTestStatus('error');
-        toast.error(t("settings.aiError", { status: response.status }));
-        console.error('Ollama test failed:', err);
-      }
-    } catch (error) {
-      setAiTestStatus('error');
-      toast.error(t("settings.aiFailed"));
-      console.error('Ollama test error:', error);
-    }
-  };
-
-  const STORAGE_KEYS = [
-    'jw-progress-storage',
-    'jw-progress-settings',
-    'jw-gamification-storage',
-    'jw-goals-storage',
-    'jw-memories-storage',
-    'jw-news-store',
-  ];
-
-  const handleExportData = () => {
-    const storeData: Record<string, unknown> = {};
-    STORAGE_KEYS.forEach((key) => {
-      const raw = localStorage.getItem(key);
-      if (raw) storeData[key] = JSON.parse(raw);
-    });
-    const exportData = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      data: storeData,
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jw-habits-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(t("settings.dataExported"));
-  };
-
-  const [importModal, setImportModal] = useState<{ data: any; isOldFormat: boolean; versionMismatch: boolean } | null>(null);
-  const pendingImportData = useRef<any>(null);
-
-  const handleImportData = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e: Event) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      // Pre-flight size check on the raw File. By the time we JSON.parse
-      // below, the parsed object is already in memory; the previous
-      // post-parse JSON.stringify length check happened too late to
-      // protect the tab from a 50MB+ import. Cap at 5MB to match the
-      // in-handler cap that still runs after shape validation.
-      const MAX_IMPORT_SIZE = 5_000_000;
-      if (file.size > MAX_IMPORT_SIZE) {
-        toast.error(t("settings.importTooLarge"));
-        return;
-      }
-      try {
-        const text = await file.text();
-        const parsed = JSON.parse(text);
-
-        // Detect versioned format (version + data wrapper)
-        let isOldFormat = false;
-        let versionMismatch = false;
-        let storeData = parsed;
-
-        if (parsed.version !== undefined && parsed.data !== undefined) {
-          // New versioned format
-          if (parsed.version !== 1) {
-            versionMismatch = true;
-          }
-          storeData = parsed.data;
-        } else {
-          // Legacy format: raw store keys at top level
-          isOldFormat = !!(parsed.progress || parsed.settings);
-        }
-
-        const hasKnownKeys = STORAGE_KEYS.some((key) => key in storeData);
-        if (!isOldFormat && !hasKnownKeys) {
-          toast.error(t("settings.invalidFormat"));
-          return;
-        }
-
-        // Store parsed data and show confirmation modal
-        pendingImportData.current = { storeData, isOldFormat, versionMismatch };
-        setImportModal({ data: parsed, isOldFormat, versionMismatch });
-      } catch {
-        toast.error(t("settings.importFailed"));
-      }
-    };
-    input.click();
-  };
-
-  const confirmImport = () => {
-    if (!pendingImportData.current) return;
-    const { storeData, isOldFormat } = pendingImportData.current;
-
-    // Size guard: reject huge imports before parsing/loading
-    const MAX_IMPORT_SIZE = 5_000_000; // 5MB
-    if (JSON.stringify(storeData).length > MAX_IMPORT_SIZE) {
-      toast.error(t("settings.importTooLarge"));
-      setImportModal(null);
-      pendingImportData.current = null;
+  const handleReset = () => {
+    if (!window.confirm(t('settings.clearConfirm', 'Clear all local data? This cannot be undone.'))) {
       return;
     }
-
-    // Sanitize: cap userName length (matches the slice(0, 30) in the Settings input
-    // and Onboarding) so a malicious backup can't break the home greeting layout.
-    const sanitize = (key) => {
-      if (key === 'jw-progress-settings' && storeData[key]?.state?.userName) {
-        const u = String(storeData[key].state.userName);
-        if (u.length > 30) {
-          storeData[key].state.userName = u.slice(0, 30);
-        }
-      }
-    };
-
-    // Validate shape: each top-level value must be a plain object with a `state` field.
-    // Reject anything else to avoid corrupting the persisted Zustand stores.
-    const isValidStoreObject = (v) =>
-      typeof v === 'object' && v !== null && !Array.isArray(v) && 'state' in v;
-
-    if (STORAGE_KEYS.some((key) => key in storeData)) {
-      STORAGE_KEYS.forEach((key) => {
-        if (storeData[key]) {
-          if (!isValidStoreObject(storeData[key])) {
-            toast.error(`Skipped invalid ${key}`);
-            return;
-          }
-          sanitize(key);
-          localStorage.setItem(key, JSON.stringify(storeData[key]));
-        }
+    setIsResetting(true);
+    try {
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith('jw-')) localStorage.removeItem(k);
       });
-    } else if (isOldFormat) {
-      // Legacy format support
-      if (storeData.progress) {
-        if (!isValidStoreObject(storeData.progress)) {
-          toast.error('Skipped invalid progress data');
-        } else {
-          localStorage.setItem('jw-progress-storage', JSON.stringify(storeData.progress));
-        }
-      }
-      if (storeData.settings) {
-        if (!isValidStoreObject(storeData.settings)) {
-          toast.error('Skipped invalid settings data');
-        } else {
-          if (storeData.settings?.state?.userName) {
-            const u = String(storeData.settings.state.userName);
-            if (u.length > 30) {
-              storeData.settings.state.userName = u.slice(0, 30);
-            }
-          }
-          localStorage.setItem('jw-progress-settings', JSON.stringify(storeData.settings));
-        }
-      }
+      toast.success(t('settings.dataCleared', 'All local data cleared.'));
+    } catch (e) {
+      toast.error(t('settings.dataClearFailed', 'Failed to clear data.'));
+    } finally {
+      setIsResetting(false);
     }
-
-    setImportModal(null);
-    pendingImportData.current = null;
-    toast.success(t("settings.importSuccess"));
-    setTimeout(() => window.location.reload(), 1000);
-  };
-
-  const cancelImport = () => {
-    setImportModal(null);
-    pendingImportData.current = null;
-    toast.info(t("settings.importCancelled"));
   };
 
   return (
-    <div className="min-h-screen bg-base-200 pb-24">
-      {/* iOS-style page top */}
-      <h1 className="ios-large-title">{t('settings.title')}
-        <span className="sub">{t('settings.subtitle')}</span>
+    <div className="min-h-screen bg-base-200 pb-16">
+      {/* iOS large title — settings page */}
+      <h1 className="ios-large-title">
+        {t('settings.title', 'Settings')}
+        <span className="sub">{t('settings.subtitle', 'Theme, data reset, and links')}</span>
       </h1>
+
       <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
+        {/* Appearance — light/dark toggle */}
         <div className="ios-grouped">
           <div className="p-4">
-            <h2 className="text-sm font-semibold text-base-content"><Bell className="w-5 h-5" /> {t("settings.notifications")}</h2>
-            <div className="divider my-2"></div>
-            {!notificationSupported ? (
-              <div className="alert alert-warning">{t("settings.notSupported")}</div>
-            ) : notificationPermission === 'denied' ? (
-              <div className="alert alert-error">{t("settings.blocked")}</div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-base-200/50 rounded-xl">
-                  <div><p className="font-medium">{t("settings.enableReminders")}</p></div>
-                  {notificationsEnabled ? (
-                    <button onClick={handleDisableNotifications} className="btn btn-sm btn-outline">{t("settings.disable")}</button>
-                  ) : (
-                    <button onClick={handleEnableNotifications} className="btn btn-sm btn-primary">{t("settings.enable")}</button>
-                  )}
-                </div>
-                {notificationsEnabled && (
-                  <div className="space-y-2">
-                    {/* Daily notifications */}
-                    <NotificationItem icon={BookOpen} label={notifications?.dailyText?.label ?? t("settings.dailyText")} description="Read today's scripture text" enabled={notifications?.dailyText?.enabled ?? true} onToggle={() => handleToggleNotification('dailyText')} onTimeChange={(time) => handleSetNotificationTime('dailyText', time)} time={notifications?.dailyText?.time ?? '07:00'} color="text-primary" />
-                    <NotificationItem icon={Heart} label={notifications?.bibleReading?.label ?? t("settings.bibleReading")} description="Daily Bible reading reminder" enabled={notifications?.bibleReading?.enabled ?? true} onToggle={() => handleToggleNotification('bibleReading')} onTimeChange={(time) => handleSetNotificationTime('bibleReading', time)} time={notifications?.bibleReading?.time ?? '20:00'} color="text-accent" />
-                    <NotificationItem icon={Flame} label={notifications?.streakMotivation?.label ?? "Keep Your Streak"} description="Stay consistent with your habits" enabled={notifications?.streakMotivation?.enabled ?? true} onToggle={() => handleToggleNotification('streakMotivation')} onTimeChange={(time) => handleSetNotificationTime('streakMotivation', time)} time={notifications?.streakMotivation?.time ?? '10:00'} color="text-warning" />
-
-                    {/* Prayer notifications */}
-                    <div className="pt-2">
-                      <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wider px-1 mb-1">Prayer Reminders</p>
-                      <NotificationItem icon={Heart} label={notifications?.morningPrayer?.label ?? t("settings.morningPrayer")} enabled={notifications?.morningPrayer?.enabled ?? true} onToggle={() => handleToggleNotification('morningPrayer')} onTimeChange={(time) => handleSetNotificationTime('morningPrayer', time)} time={notifications?.morningPrayer?.time ?? '06:30'} color="text-info" />
-                      <NotificationItem icon={Heart} label={notifications?.afternoonPrayer?.label ?? t("settings.afternoonPrayer")} enabled={notifications?.afternoonPrayer?.enabled ?? true} onToggle={() => handleToggleNotification('afternoonPrayer')} onTimeChange={(time) => handleSetNotificationTime('afternoonPrayer', time)} time={notifications?.afternoonPrayer?.time ?? '12:00'} color="text-info" />
-                      <NotificationItem icon={Heart} label={notifications?.eveningPrayer?.label ?? t("settings.eveningPrayer")} enabled={notifications?.eveningPrayer?.enabled ?? true} onToggle={() => handleToggleNotification('eveningPrayer')} onTimeChange={(time) => handleSetNotificationTime('eveningPrayer', time)} time={notifications?.eveningPrayer?.time ?? '21:00'} color="text-info" />
-                    </div>
-
-                    {/* Weekly notifications */}
-                    <div className="pt-2">
-                      <p className="text-xs font-semibold text-base-content/70 uppercase tracking-wider px-1 mb-1">Weekly Reminders</p>
-                      <WeeklyNotificationItem
-                        icon={Calendar}
-                        label={notifications?.meetingPrep?.label ?? "Meeting Preparation"}
-                        description="Remind the day before midweek and weekend meetings"
-                        enabled={notifications?.meetingPrep?.enabled ?? true}
-                        onToggle={() => handleToggleNotification('meetingPrep')}
-                        onTimeChange={(time) => handleSetNotificationTime('meetingPrep', time)}
-                        time={notifications?.meetingPrep?.time ?? '19:00'}
-                        meetingDays={notifications?.meetingPrep?.meetingDays ?? [4, 0]}
-                        onMeetingDaysChange={(days) => {
-                          const store = useSettingsStore.getState();
-                          store.updateNotification('meetingPrep', { meetingDays: days });
-                          initializeReminders(useSettingsStore.getState());
-                        }}
-                        color="text-secondary"
-                        isMeetingPrep
-                      />
-                      <WeeklyNotificationItem
-                        icon={Users}
-                        label={notifications?.familyWorship?.label ?? "Family Worship"}
-                        description="Weekly family worship reminder"
-                        enabled={notifications?.familyWorship?.enabled ?? true}
-                        onToggle={() => handleToggleNotification('familyWorship')}
-                        onTimeChange={(time) => handleSetNotificationTime('familyWorship', time)}
-                        time={notifications?.familyWorship?.time ?? '19:00'}
-                        dayOfWeek={notifications?.familyWorship?.dayOfWeek ?? 1}
-                        onDayChange={(day) => {
-                          const store = useSettingsStore.getState();
-                          store.updateNotification('familyWorship', { dayOfWeek: day });
-                          initializeReminders(useSettingsStore.getState());
-                        }}
-                        color="text-error"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="ios-grouped">
-          <div className="p-4">
-            <h2 className="text-sm font-semibold text-base-content">{t("settings.appearance")}</h2>
-            <div className="divider my-2"></div>
-            <div className="form-control w-full">
-              <label className="label">
-                <span className="label-text">Your name</span>
-              </label>
-              <input
-                type="text"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value.slice(0, 30))}
-                placeholder="Your first name"
-                className="input input-bordered w-full"
-                maxLength={30}
-                autoComplete="given-name"
-              />
-              <p className="text-xs text-base-content/70 mt-1">Used in the home greeting. Stored on this device only.</p>
-            </div>
-            <div className="divider my-2"></div>
-            <button onClick={toggleTheme} className="btn btn-outline w-full justify-start">
-              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-              {theme === 'light' ? t("settings.darkMode") : t("settings.lightMode")}
-            </button>
-          </div>
-        </div>
-
-        {/* Daily routine — toggle which habits the home shows.
-            This is the only way to change trackedHabits after the
-            initial setup picker was dismissed. Without it, the
-            user's picked habits are a one-way door (see the gap
-            analysis for the full story). */}
-        <div className="ios-grouped">
-          <div className="p-4">
-            <h2 className="text-sm font-semibold text-base-content mb-1">
-              <Target className="w-5 h-5 inline mr-1" /> Daily routine
+            <h2 className="text-sm font-semibold text-base-content mb-3">
+              {theme === 'light' ? <Sun className="w-5 h-5 inline mr-1" /> : <Moon className="w-5 h-5 inline mr-1" />}
+              {t('settings.appearance', 'Appearance')}
             </h2>
-            <p className="text-sm text-base-content/70 mb-3">
-              Choose which habits show up on your home page. Toggling
-              a habit off hides its card from the home.
-            </p>
-            <div className="space-y-2">
-              {[
-                { key: 'dailyText', Icon: BookOpen, title: 'Daily text', color: 'blue' },
-                { key: 'bibleReading', Icon: BookMarked, title: 'Bible reading plan', color: 'purple' },
-                { key: 'prayer', Icon: Heart, title: 'Prayer', color: 'orange' },
-                { key: 'familyWorship', Icon: UsersRound, title: 'Family worship', color: 'pink' },
-                { key: 'meeting', Icon: Users, title: 'Meeting prep', color: 'green' },
-                { key: 'news', Icon: Newspaper, title: "Today's news check-in", color: 'teal' },
-                { key: 'reflection', Icon: BookMarked, title: 'Daily reflection', color: 'indigo' },
-                { key: 'goals', Icon: Target, title: 'Goals & projects', color: 'orange' },
-              ].map(({ key, Icon, title, color }, idx) => {
-                const isOn = trackedHabits.length === 0
-                  ? true
-                  : trackedHabits.includes(key);
-                return (
-                  <div key={key} className={idx > 0 ? 'pt-2 border-t border-base-300/30' : ''}>
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`ios-icon ${color} w-9 h-9 shrink-0`}>
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <span className="font-medium text-sm truncate">{title}</span>
-                      </div>
-                      <input
-                        type="checkbox"
-                        className="toggle toggle-primary"
-                        checked={isOn}
-                        onChange={() => {
-                          haptics.light();
-                          toggleTrackedHabit(key);
-                          if (trackedHabits.length === 0) {
-                            // User is leaving the "all-defaults"
-                            // state for the first time; initialize
-                            // the array with the toggled value so
-                            // other cards stay visible.
-                            setTrackedHabits([key]);
-                          }
-                        }}
-                        aria-label={`Track ${title}`}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
             <button
-              onClick={() => {
-                haptics.light();
-                setTrackedHabits([]);
-                try {
-                  localStorage.removeItem('jw-habits-onboarded-v2');
-                } catch {
-                  // ignore
-                }
-                toast.info('Reset — visit the home page to re-pick your routine.');
-              }}
-              className="btn btn-ghost btn-sm w-full mt-3"
+              onClick={toggleTheme}
+              className="btn btn-outline w-full justify-start"
+              aria-label={t('settings.toggleTheme', 'Toggle light / dark mode')}
             >
-              Reset to defaults & re-pick on home
+              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              {theme === 'light' ? t('settings.darkMode', 'Dark mode') : t('settings.lightMode', 'Light mode')}
             </button>
           </div>
         </div>
 
-        {/* Help & Tour — re-open the onboarding intro for users who skipped or want a refresher */}
+        {/* Help & Tour — single link to the About page */}
         <div className="ios-grouped">
           <div className="p-4">
-            <h2 className="text-sm font-semibold text-base-content">
-              <BookOpen className="w-5 h-5" /> {t("settings.help", "Help & Tour")}
+            <h2 className="text-sm font-semibold text-base-content mb-3">
+              <BookOpen className="w-5 h-5 inline mr-1" />
+              {t('settings.help', 'Help & Tour')}
             </h2>
-            <div className="divider my-2"></div>
+            <a
+              href="/about"
+              className="btn btn-outline w-full justify-start"
+            >
+              <BookOpen className="w-5 h-5" />
+              {t('settings.aboutApp', 'About this app')}
+            </a>
+          </div>
+        </div>
+
+        {/* Data Reset — destructive action. Wipes all jw-* localStorage
+            keys and reloads. Replaces the old Export/Import/Reset
+            section since the launchpad no longer tracks data. */}
+        <div className="ios-grouped">
+          <div className="p-4">
+            <h2 className="text-sm font-semibold text-base-content mb-3">
+              <Trash2 className="w-5 h-5 inline mr-1" />
+              {t('settings.dataReset', 'Data reset')}
+            </h2>
             <p className="text-sm text-base-content/70 mb-3">
-              {t("settings.helpDesc", "Take the quick tour again or read the about page for the full story.")}
-            </p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  haptics.light();
-                  window.dispatchEvent(new CustomEvent('jw-habits:reopen-onboarding'));
-                }}
-                className="btn btn-outline w-full justify-start"
-              >
-                <RefreshCw className="w-5 h-5" /> {t("settings.replayTour", "Replay intro tour")}
-              </button>
-              <a
-                href="/about"
-                className="btn btn-outline w-full justify-start"
-              >
-                <BookOpen className="w-5 h-5" /> {t("settings.aboutApp", "About this app")}
-              </a>
-            </div>
-          </div>
-        </div>
-        <div className="ios-grouped">
-          <div className="p-4">
-            <h2 className="text-sm font-semibold text-base-content">{t("settings.dataManagement")}</h2>
-            <div className="divider my-2"></div>
-            <button onClick={handleExportData} className="btn btn-outline w-full justify-start"><Download className="w-5 h-5" /> {t("settings.exportData")}</button>
-            <button onClick={handleImportData} className="btn btn-outline w-full justify-start"><Upload className="w-5 h-5" /> {t("settings.importData")}</button>
-            <button onClick={handleClearData} className="btn btn-error btn-outline w-full justify-start"><Trash2 className="w-5 h-5" /> {t("settings.clearAllData")}</button>
-          </div>
-        </div>
-        <div className="ios-grouped">
-          <div className="p-4">
-            <h2 className="text-sm font-semibold text-base-content"><Bot className="w-5 h-5" /> {t("settings.aiAssistant")}</h2>
-            <div className="divider my-2"></div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-base-200/50 rounded-xl">
-                <div><p className="font-medium">{t("settings.aiProvider")}</p></div>
-                <select
-                  className="select select-sm select-bordered"
-                  value={ai.provider}
-                  onChange={(e) => setAiSettings({ provider: e.target.value as 'ollama' | 'none' })}
-                >
-                  <option value="none">{t("settings.disabled")}</option>
-                  <option value="ollama">{t("settings.ollama")}</option>
-                </select>
-              </div>
-              {ai.provider === 'ollama' && (
-                <>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-base-content/70">{t("settings.baseUrl")}</label>
-                    <input
-                      type="text"
-                      className="input input-bordered input-sm w-full"
-                      value={ai.ollamaBaseUrl}
-                      onChange={(e) => setAiSettings({ ollamaBaseUrl: e.target.value })}
-                      onBlur={(e) => {
-                        // Block obviously-bad URLs from being saved into the
-                        // persisted settings. Validation re-runs at fetch time
-                        // (handleTestAi) so a stale value never sends a token
-                        // to a non-allowed host.
-                        const result = validateOllamaBaseUrl(e.target.value);
-                        if (!result.ok) {
-                          toast.error(result.reason);
-                          setAiSettings({ ollamaBaseUrl: 'https://ollama.com' });
-                        }
-                      }}
-                      maxLength={200}
-                      placeholder="https://ollama.com or http://localhost:11434"
-                    />
-                    <p className="text-xs text-base-content/70">Cloud: ollama.com | Local: localhost:11434</p>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-base-content/70">{t("settings.apiKey")}</label>
-                    <div className="flex gap-2">
-                      <input
-                        type={showApiKey ? 'text' : 'password'}
-                        className="input input-bordered input-sm flex-1"
-                        value={ai.ollamaApiKey}
-                        onChange={(e) => setAiSettings({ ollamaApiKey: e.target.value })}
-                        placeholder="Ollama Cloud API key (not needed for local)"
-                      />
-                      <button
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        className="btn btn-sm btn-ghost"
-                        aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
-                      >
-                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-base-content/70">Get key at ollama.com (account settings)</p>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-base-content/70">{t("settings.model")}</label>
-                    <input
-                      type="text"
-                      className="input input-bordered input-sm w-full"
-                      value={ai.ollamaModel}
-                      onChange={(e) => setAiSettings({ ollamaModel: e.target.value })}
-                      placeholder="llama3.2, mistral-small3.1, deepseek-r1, etc."
-                    />
-                    <p className="text-xs text-base-content/70">Cloud models: llama3.2, llama3.3, mistral-small3.1, qwen3, gemma3, phi4, deepseek-r1</p>
-                  </div>
-                  <button
-                    onClick={handleTestAi}
-                    disabled={aiTestStatus === 'testing'}
-                    className="btn btn-outline btn-sm w-full gap-2"
-                  >
-                    {aiTestStatus === 'testing' && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {aiTestStatus === 'success' && <CheckCircle2 className="w-4 h-4 text-success" />}
-                    {aiTestStatus === 'error' && <XCircle className="w-4 h-4 text-error" />}
-                    {t("settings.testConnection")}
-                  </button>
-                </>
+              {t(
+                'settings.dataResetDesc',
+                "This app doesn't track your habits, but if you want to reset all local settings (theme, dismissed banners), tap below."
               )}
-            </div>
-          </div>
-        </div>
-        <div className="ios-grouped">
-          <div className="p-4">
-            <h2 className="text-sm font-semibold text-base-content"><RefreshCw className="w-5 h-5" /> {t("settings.appUpdates")}</h2>
-            <div className="divider my-2"></div>
-            <button onClick={handleUpdateApp} className="btn btn-primary w-full justify-start"><RefreshCw className="w-5 h-5" /> {t("settings.checkForUpdates")}</button>
+            </p>
+            <button
+              onClick={handleReset}
+              disabled={isResetting}
+              className="btn btn-error btn-outline w-full justify-start"
+            >
+              <Trash2 className="w-5 h-5" />
+              {isResetting
+                ? t('settings.clearing', 'Clearing…')
+                : t('settings.clearAllData', 'Reset all local data')}
+            </button>
           </div>
         </div>
       </div>
-
-      {/* Import Confirmation Modal */}
-      {importModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="card bg-base-100 shadow-2xl w-full max-w-md">
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="font-bold text-lg flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-warning" />
-                  {t("settings.importTitle")}
-                </h2>
-                <button onClick={cancelImport} className="btn btn-ghost btn-sm btn-circle" aria-label="Cancel import">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="divider my-1"></div>
-              {importModal.versionMismatch && (
-                <div className="alert alert-warning mb-3">
-                  <AlertTriangle className="w-5 h-5" />
-                  <span className="text-sm">{t("settings.versionMismatch")}</span>
-                </div>
-              )}
-              {importModal.isOldFormat && (
-                <div className="alert alert-info mb-3">
-                  <span className="text-sm">{t("settings.oldFormat")}</span>
-                </div>
-              )}
-              <p className="text-base-content/70 mb-4">
-                {t("settings.importWarning")}
-              </p>
-              {importModal.data.exportedAt && (
-                <p className="text-xs text-base-content/70 mb-4">
-                  {t("settings.backupCreated", { date: new Date(importModal.data.exportedAt).toLocaleString() })}
-                </p>
-              )}
-              <div className="flex gap-2 justify-end">
-                <button onClick={cancelImport} className="btn btn-ghost btn-sm">{t("settings.cancel")}</button>
-                <button onClick={confirmImport} className="btn btn-error btn-outline">{t("settings.replaceData")}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
+
 export default Settings;
