@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **morning-routine launchpad** for jw.org: the home is one card (the morning routine) and tapping it opens a focused 4-step flow (read text, pray, reflect, done). Below it is a link to the broader /habits directory — 6 link-out rows to jw.org surfaces (Daily text, Bible reading, Prayer, Family worship, Meeting prep, News). The app does NOT track completions, XP, or streaks. The morning routine is per-day localStorage and the user does the actual habit in the external surface.
+A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **simple habit tracker**: the home is a single iOS list of 5 link-out rows (Daily text, Daily Bible reading, Meeting prep, Family worship, Prayer), each with a checkbox to mark it done. Tap the row to open the jw.org surface in a new tab; tap the checkbox to mark the habit done. The actual habit happens on jw.org itself — the app is just a fast way to get there. No streaks, no XP, no timer, no toasts, no animations, no celebrations. Per-day state in localStorage, yesterday's checks don't carry over.
 
 - **App ID:** `com.ashbi.jwnews`
 - **Version:** 4.1.0
@@ -30,9 +30,8 @@ src/
 ├── main.jsx              # Entry point (error logging, back button, SW updates)
 ├── App.jsx               # Router + global wrappers (ErrorBoundary, Toast, Drawer)
 ├── index.css             # Tailwind base + 20+ custom animations
-├── pages/                # 7 in-app routes total
-│   ├── Home.jsx          # Greeting + morning routine card (primary CTA) + "All habits" link
-│   ├── RoutinePage.jsx   # 4-step morning flow: read / pray / reflect / done
+├── pages/                # 5 in-app routes (home + 4 meta)
+│   ├── Home.jsx          # 5 link-out rows + checkboxes (the only user-facing page)
 │   ├── Settings.tsx      # Appearance (theme) + Help + Data reset
 │   ├── About.jsx         # Third-party disclaimer (jw.org required content)
 │   ├── IdeasPage.jsx     # Curated jw.org link-out rows for inspiration
@@ -64,9 +63,7 @@ src/
 
 | Path | Page | Loading | Nav |
 |------|------|---------|-----|
-| `/` | Home | Eager | Hamburger + direct |
-| `/routine` | Morning routine (4 steps) | Eager | Home card primary CTA |
-| `/habits` | All habits (6 link-out rows) | Lazy | Home secondary link + side drawer |
+| `/` | Home (5 link-out rows + checkboxes) | Eager | Direct |
 | `/settings` | Settings | Lazy | Side drawer + top-right gear |
 | `/share` | Share (PWA share_target) | Lazy | (PWA OS) |
 | `/ideas` | Ideas | Lazy | Side drawer |
@@ -97,9 +94,9 @@ The previous version of jw-habits had full in-app habit tracking: prayer checkbo
 | Store | Storage Key | Purpose |
 |-------|------------|---------|
 | settingsStore | `jw-progress-settings` | Theme (light/dark) + onboarding flags |
-| (none) | `jw-routine-state` | Per-day morning-routine progress — `{ date: 'YYYY-MM-DD', textRead, prayed, reflected, reflection? }`. Read/written directly by `RoutinePage.jsx`. Yesterday's "done" doesn't carry over. |
+| (none) | `jw-daily-habits-state` | Per-day habit-check state — `{ date: 'YYYY-MM-DD', done: { text, bible, meeting, family, prayer } }`. Read/written directly by `Home.jsx`. Yesterday's "done" doesn't carry over. |
 
-The morning-routine data is **not** in a Zustand store — it's a plain `localStorage` key, read on every render. Per-day scope means a user who only does 2 of 3 steps sees "1 of 3 left" on the next day, regardless of yesterday. The home reads this state via `getTodayRoutineState()` and renders a status-aware card (blue → indigo → green-done).
+The habit state is **not** in a Zustand store — it's a plain `localStorage` key read on every render. The home re-reads on `storage` events and on `visibilitychange` so the checkboxes stay current across tabs and on wake-from-sleep. The 5 rows are: Daily text (jw.org daily text), Daily Bible reading (today's entry from the 366-day schedule, deep-linked to wol.jw.org), Meeting prep (midweek + weekend workbook), Family worship (family resources), Prayer (peace + happiness articles).
 
 ## Build & Development
 
@@ -177,4 +174,4 @@ npm run test:coverage    # Vitest coverage
 - Generate signed Android bundle via Android Studio
 - Submit to Google Play Store
 
-The live app at `https://jwhabits.ashbi.ca/` is a morning-routine launchpad: the home opens with one card (the routine) and a link to the broader /habits directory. No tracking, no analytics, no account. The user does the actual habit in the linked jw.org surface.
+The live app at `https://jwhabits.ashbi.ca/` is a simple habit tracker: the home opens with 5 link-out rows, each one opens a jw.org surface in a new tab, and a small checkbox to the right of each row marks it done. No streaks, no XP, no timer, no celebrations. The user does the actual habit in the linked jw.org surface.
