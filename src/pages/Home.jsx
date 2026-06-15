@@ -66,8 +66,20 @@ function Home() {
   const userName = useSettingsStore((s) => s.userName);
   // Initialize from localStorage. We re-read on `storage` events
   // and on visibilitychange so the checkbox state stays current
-  // across tabs and on wake-from-sleep.
-  const [state, setState] = useState(loadState);
+  // across tabs and on wake-from-sleep. If the saved state's
+  // date is from a previous day, we write a fresh empty state
+  // for today so the localStorage key always reflects the
+  // current day (yesterday's per-day state never carries over).
+  const [state, setState] = useState(() => {
+    const loaded = loadState();
+    if (Object.keys(loaded.done).length === 0) {
+      // First-ever mount OR per-day reset just happened.
+      // Make sure localStorage is in sync with what we
+      // returned.
+      saveState(loaded);
+    }
+    return loaded;
+  });
 
   useEffect(() => {
     const refresh = () => setState(loadState());
@@ -90,16 +102,9 @@ function Home() {
     });
   };
 
-  // Resolve the daily Bible reading target for today. Falls back
-  // to a generic Bible link if the daily-reading util doesn't
-  // have an entry for today's ISO date.
-  const dailyReading = (() => {
-    try {
-      return getDailyReading(new Date());
-    } catch {
-      return null;
-    }
-  })();
+  // Resolve the daily Bible reading target for today. The
+  // util is sync (no fetch) so this returns instantly.
+  const dailyReading = getDailyReading(new Date());
   const bibleHref = dailyReading && dailyReading.url
     ? dailyReading.url
     : JW_ORG_SECTIONS.bibles;

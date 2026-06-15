@@ -69,7 +69,10 @@ async function gotoHome(page) {
       const h1 = document.querySelector('h1');
       return h1 ? h1.textContent : 'no h1';
     });
-    const hasGreeting = /Good (morning|afternoon|evening|night)/.test(greet);
+    // i18n keys produce capitalized "Good Morning" via
+    // the default English translation, but the i18n resource
+    // also has the lowercase version. Match case-insensitive.
+    const hasGreeting = /good\s+(morning|afternoon|evening|night)/i.test(greet);
     const rowTitles = await page.evaluate(() => {
       return [...document.querySelectorAll('div.ios-grouped div.ios-row .title')].map((el) => el.textContent.trim());
     });
@@ -94,10 +97,10 @@ async function gotoHome(page) {
       }));
     });
     const allJwOrg = linkData.every((l) =>
-      l.href && (/^https:\/\/(www\.)?jw\.org\/|^https:\/\/wol\.jw\.org\//.test(l.href)) &&
+      l.href && (/^https:\/\/(www\.)?jw\.org\/|^https:\/\/wol\.jw\.org\/|^jwlibrary:\/\/\//.test(l.href)) &&
       l.target === '_blank' && l.rel && l.rel.includes('noopener')
     );
-    await record('T2: All 5 habit rows open jw.org in new tab (noopener)',
+    await record('T2: All 5 habit rows open jw.org or jwlibrary in new tab (noopener)',
       allJwOrg && linkData.length === 5,
       `count=${linkData.length} urls=${JSON.stringify(linkData.map((l) => l.href?.slice(0, 50)))}`);
     await page.context().close();
