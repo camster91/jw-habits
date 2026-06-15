@@ -8,11 +8,11 @@ import UpdatePrompt from './components/UpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import SideDrawer from './components/SideDrawer';
 
-// Lazy load the secondary pages. After the morning-routine
-// feature shipped, the app has 4 in-app routes: home, /routine
-// (the 4-step morning flow), /habits (the 6-row link-out
-// directory), and the meta pages (settings, about, ideas,
-// share). The bottom nav and 4 internal trackers are gone.
+// Lazy load the secondary pages. The app has 7 in-app routes:
+// home, /routine (the 4-step morning flow), /habits (the
+// 6-row link-out directory), and 4 meta pages (settings,
+// about, ideas, share). The bottom nav, the 4 internal
+// trackers, and the 6-step Onboarding modal are gone.
 const Settings = lazy(() => import('./pages/Settings'));
 const SharePage = lazy(() => import('./pages/Share'));
 const IdeasPage = lazy(() => import('./pages/IdeasPage'));
@@ -62,7 +62,6 @@ function App() {
                   <Route path="/share" element={<SharePage />} />
                   <Route path="/ideas" element={<IdeasPage />} />
                   <Route path="/about" element={<About />} />
-                  <Route path="/onboarding" element={<Home />} />
                 </Routes>
               </Suspense>
 
