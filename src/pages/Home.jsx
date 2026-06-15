@@ -1,96 +1,170 @@
 import { useState, useEffect } from 'react';
-import { Menu, BookOpen, BookMarked, Heart, UsersRound, Users, Newspaper, Settings, ChevronRight, ArrowUpRight, ArrowRight, Sparkles, Check, Sun } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { BookOpen, BookMarked, Heart, Users, UsersRound, ArrowUpRight, Menu, Settings } from 'lucide-react';
 import { useDrawer } from '../hooks/useDrawer';
 import useSettingsStore from '../stores/settingsStore';
 import { getDailyTextLink, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
-import { haptics } from '../utils/native';
+import { getDailyReading } from '../utils/dailyBibleReading';
 
 /**
- * Home — the launchpad, with the morning routine as the front
- * door. Layout (top to bottom):
- *   1. Top bar (hamburger + title + settings)
- *   2. iOS large title (small: just the date)
- *   3. Morning routine status card (primary CTA, links to /routine)
- *   4. "All habits" link-out to the 6-row directory (secondary)
- *   5. Footer disclaimer
+ * Home — the only in-app page. Five habit rows:
+ *   1. Daily text         → opens jw.org
+ *   2. Bible reading     → opens today's reading on jw.org
+ *   3. Prayer            → links to a quiet reflection page
+ *   4. Family worship     → links to family resources
+ *   5. Meeting prep      → links to this week's workbook
  *
- * The 6 link-out rows are no longer the primary surface. They
- * live at /habits and are reachable via the "All habits" link.
- * The drawer (hamburger) also links to /habits for power users.
+ * Each row has two tap targets:
+ *   - the title / icon / link arrow: open the jw.org surface
+ *   - the checkbox on the right: mark "done" (persisted in
+ *     localStorage; no toast, no animation, no "complete" card)
+ *
+ * State: a single localStorage key per day,
+ *   jw-daily-habits-state = { date: 'YYYY-MM-DD', done: { text, bible, prayer, family, meeting } }
+ *
+ * When the user opens the app on a new day, the per-day state
+ * resets automatically. Yesterday's checks don't carry over.
+ *
+ * The page is intentionally minimal. No streak, no XP, no
+ * timer, no "see you tomorrow" celebration, no toasts. Just
+ * five rows, each with a link to do the actual habit on
+ * jw.org and a checkbox to mark it done.
  */
 
-const ROUTINE_KEY = 'jw-routine-state';
+const STATE_KEY = 'jw-daily-habits-state';
 
-function getTodayRoutineState() {
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function loadState() {
   try {
-    const raw = localStorage.getItem(ROUTINE_KEY);
-    if (!raw) return { stepsDone: 0, allDone: false, hasText: false, hasPrayer: false, hasReflection: false };
+    const raw = localStorage.getItem(STATE_KEY);
+    if (!raw) return { date: todayKey(), done: {} };
     const parsed = JSON.parse(raw);
-    const today = new Date().toISOString().slice(0, 10);
-    if (parsed.date !== today) return { stepsDone: 0, allDone: false, hasText: false, hasPrayer: false, hasReflection: false };
-    const text = !!parsed.textRead;
-    const prayer = !!parsed.prayed;
-    const reflection = !!parsed.reflected;
-    return {
-      stepsDone: (text ? 1 : 0) + (prayer ? 1 : 0) + (reflection ? 1 : 0),
-      allDone: text && prayer && reflection,
-      hasText: text,
-      hasPrayer: prayer,
-      hasReflection: reflection,
-    };
+    // Per-day reset: if the saved date isn't today, start fresh.
+    if (parsed.date !== todayKey()) {
+      return { date: todayKey(), done: {} };
+    }
+    return parsed;
   } catch {
-    return { stepsDone: 0, allDone: false, hasText: false, hasPrayer: false, hasReflection: false };
+    return { date: todayKey(), done: {} };
+  }
+}
+
+function saveState(state) {
+  try {
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore quota / private-mode errors
   }
 }
 
 function Home() {
-  const today = new Date();
-  const { openDrawer } = useDrawer();
   const { t } = useTranslation();
+  const { openDrawer } = useDrawer();
   const userName = useSettingsStore((s) => s.userName);
-  // Tick to re-read routine state when /routine dispatches a
-  // 'jw-habits:habit-setup-done' event. Same event the picker
-  // used before — re-purposed for routine completions.
-  const [tick, setTick] = useState(0);
+  // Initialize from localStorage. We re-read on `storage` events
+  // and on visibilitychange so the checkbox state stays current
+  // across tabs and on wake-from-sleep.
+  const [state, setState] = useState(loadState);
+
   useEffect(() => {
-    const onChange = () => setTick((t) => t + 1);
-    window.addEventListener('jw-habits:habit-setup-done', onChange);
-    // Also re-read on storage events in case the user does
-    // routine work in another tab.
-    window.addEventListener('storage', onChange);
+    const refresh = () => setState(loadState());
+    const onStorage = (e) => { if (e.key === STATE_KEY) refresh(); };
+    const onVisible = () => { if (!document.hidden) refresh(); };
+    window.addEventListener('storage', onStorage);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
-      window.removeEventListener('jw-habits:habit-setup-done', onChange);
-      window.removeEventListener('storage', onChange);
+      window.removeEventListener('storage', onStorage);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
-  // Daily refresh — when the user opens the app on a new day,
-  // the routine state should reset. Listen to the page becoming
-  // visible (covers tab-switching and screen-on events).
-  useEffect(() => {
-    const onVis = () => setTick((t) => t + 1);
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, []);
+  const toggle = (key) => {
+    setState((prev) => {
+      const nextDone = { ...prev.done, [key]: !prev.done[key] };
+      const next = { date: prev.date, done: nextDone };
+      saveState(next);
+      return next;
+    });
+  };
 
-  // Read the routine state. `tick` is a read-tie-breaker so
-  // the linter doesn't fire "unused expression".
-  void tick;
-  const routine = getTodayRoutineState();
+  // Resolve the daily Bible reading target for today. Falls back
+  // to a generic Bible link if the daily-reading util doesn't
+  // have an entry for today's ISO date.
+  const dailyReading = (() => {
+    try {
+      return getDailyReading(new Date());
+    } catch {
+      return null;
+    }
+  })();
+  const bibleHref = dailyReading && dailyReading.url
+    ? dailyReading.url
+    : JW_ORG_SECTIONS.bibles;
 
-  // Time-of-day aware title — collapsed to just the time, not
-  // a long greeting. The morning routine IS the greeting.
-  const timeOfDayText = (() => {
-    const hour = today.getHours();
-    if (hour < 5) return t('home.night', 'Late night');
-    if (hour < 12) return t('home.morning', 'Good morning');
-    if (hour < 17) return t('home.afternoon', 'Good afternoon');
-    if (hour < 21) return t('home.evening', 'Good evening');
-    return t('home.night', 'Good night');
+  // The five habit rows, in the order Cam listed them. Each
+  // row has: a key (used for the done map), an icon
+  // component, a color (used for the ios-icon background), a
+  // title, an optional sub-text shown beneath the title, and
+  // a href to the jw.org surface where the actual habit
+  // happens.
+  const ROWS = [
+    {
+      key: 'text',
+      title: t('habit.text', 'Daily text'),
+      sub: t('habit.textSub', "Read today's scripture passage on jw.org"),
+      Icon: BookOpen,
+      color: 'blue',
+      href: getDailyTextLink(),
+    },
+    {
+      key: 'bible',
+      title: t('habit.bible', 'Daily Bible reading'),
+      sub: dailyReading
+        ? t('habit.bibleSubToday', { defaultValue: `Today: ${dailyReading.label || 'open the reading'}`, today: dailyReading.label || '' })
+        : t('habit.bibleSub', 'Open the New World Translation study Bible'),
+      Icon: BookMarked,
+      color: 'purple',
+      href: bibleHref,
+    },
+    {
+      key: 'meeting',
+      title: t('habit.meeting', 'Meeting prep'),
+      sub: t('habit.meetingSub', "This week's midweek + weekend workbook"),
+      Icon: Users,
+      color: 'green',
+      href: JW_ORG_SECTIONS.meetingWorkbooks,
+    },
+    {
+      key: 'family',
+      title: t('habit.family', 'Family worship'),
+      sub: t('habit.familySub', 'Talk prompts, videos, family Bible ideas'),
+      Icon: UsersRound,
+      color: 'pink',
+      href: JW_ORG_SECTIONS.marriageAndFamily,
+    },
+    {
+      key: 'prayer',
+      title: t('habit.prayer', 'Prayer'),
+      sub: t('habit.prayerSub', 'Articles, music, a moment to pause'),
+      Icon: Heart,
+      color: 'orange',
+      href: JW_ORG_SECTIONS.peaceAndHappiness,
+    },
+  ];
+
+  const greetingText = (() => {
+    const hour = new Date().getHours();
+    if (hour < 5) return t('greeting.night', 'Good night');
+    if (hour < 12) return t('greeting.morning', 'Good morning');
+    if (hour < 17) return t('greeting.afternoon', 'Good afternoon');
+    if (hour < 21) return t('greeting.evening', 'Good evening');
+    return t('greeting.night', 'Good night');
   })();
 
-  const formattedDate = today.toLocaleDateString('en-US', {
+  const formattedDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -98,7 +172,7 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-base-200 pb-16">
-      {/* iOS-style top bar */}
+      {/* Sticky iOS top bar */}
       <div
         className="sticky top-0 z-30 backdrop-blur-lg bg-base-200/80 border-b border-base-300/30"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -111,16 +185,13 @@ function Home() {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/70">
-              {t('appName', 'JW Habits')}
-            </span>
-          </div>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/70">
+            {t('appName', 'JW Habits')}
+          </span>
           <a
             href="/settings"
             className="btn btn-ghost btn-sm btn-square -mr-2 text-base-content/70"
-            aria-label="Settings (theme, dark mode)"
-            title="Settings"
+            aria-label="Settings"
           >
             <Settings className="w-5 h-5" />
           </a>
@@ -128,232 +199,106 @@ function Home() {
       </div>
 
       <div className="container mx-auto px-4 max-w-2xl">
-        {/* iOS large title — compact: time + date. */}
         <h1 className="ios-large-title">
-          {timeOfDayText}
+          {greetingText}
           {userName ? (
             <bdi className="name">, {userName.length > 20 ? userName.slice(0, 20) + '…' : userName}</bdi>
           ) : ''}.
           <span className="sub">{formattedDate}</span>
         </h1>
 
-        {/* === Primary surface: Morning routine status card === */}
-        <RoutineCard routine={routine} />
-
-        {/* === Secondary surface: All habits (the 6-row directory) === */}
-        <h2 className="ios-section-h">
-          {t('home.allHabits', 'All habits')}
-        </h2>
-        <a
-          href="/habits"
-          className="ios-row focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
-        >
-          <div className="ios-icon purple">
-            <BookOpen className="w-4 h-4" />
-          </div>
-          <div className="body">
-            <div className="title">{t('home.openDirectory', 'Open the habits directory')}</div>
-            <div className="sub">{t('home.openDirectorySub', 'Daily text, Bible reading, prayer, meeting prep, news')}</div>
-          </div>
-          <ArrowRight className="ios-chev" />
-        </a>
-
-        {/* === Footer: minimal. No more "what's NOT in this app" — that's
-            now in the About page. === */}
-        <div className="ios-footer">
-          Unofficial third-party tool. Not affiliated with jw.org.<br />
-          <a href="/about" className="font-bold text-[13px]" style={{ color: '#0055B3' }}>About this app →</a>
-        </div>
-
-        <div className="h-4" />
-      </div>
-    </div>
-  );
-}
-
-/**
- * RoutineCard — the home's primary CTA. Shows the current state
- * of today's morning routine and links to /routine for the
- * full flow. Compact, single-card, no rows.
- */
-function RoutineCard({ routine }) {
-  const { t } = useTranslation();
-  const dailyTextLink = getDailyTextLink();
-
-  if (routine.allDone) {
-    // All 3 done — show a calm, completed card.
-    return (
-      <a
-        href="/routine"
-        className="block ios-grouped focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
-        style={{ textDecoration: 'none' }}
-      >
-        <div className="p-5 flex items-center gap-4">
-          <div
-            className="ios-icon"
-            style={{ background: 'var(--ios-green, #34C759)', width: 40, height: 40, borderRadius: 10 }}
-          >
-            <Check className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-lg font-semibold text-base-content">
-              {t('home.routineDone', "Today's routine is done")}
-            </div>
-            <div className="text-sm text-base-content/60 mt-0.5">
-              {t('home.routineDoneSub', 'See you tomorrow morning.')}
-            </div>
-          </div>
-          <ChevronRight className="ios-chev" />
-        </div>
-      </a>
-    );
-  }
-
-  // Not done yet — primary CTA. Color shifts based on progress:
-  //   0/3 → blue (untouched)
-  //   1-2/3 → indigo (in progress)
-  const color = routine.stepsDone === 0 ? 'blue' : 'indigo';
-
-  return (
-    <a
-      href="/routine"
-      className="block ios-grouped focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
-      style={{ textDecoration: 'none' }}
-    >
-      <div className="p-5 flex items-center gap-4">
-        <div
-          className={`ios-icon ${color}`}
-          style={{ width: 40, height: 40, borderRadius: 10 }}
-        >
-          <Sun className="w-5 h-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-lg font-semibold text-base-content">
-            {routine.stepsDone === 0
-              ? t('home.startMorning', 'Start your morning routine')
-              : t('home.continueMorning', 'Continue your morning routine')}
-          </div>
-          <div className="text-sm text-base-content/60 mt-0.5">
-            {routine.stepsDone === 0
-              ? t('home.startMorningSub', 'Read the text, pray, reflect — 5 minutes.')
-              : t('home.continueMorningSub', { defaultValue: `${3 - routine.stepsDone} of 3 left today.`, done: 3 - routine.stepsDone })}
-          </div>
-        </div>
-        <ChevronRight className="ios-chev" />
-      </div>
-      {/* Subtle link-out hint for the daily text — the routine's
-          first step. Tappable, but visually secondary. */}
-      <a
-        href={dailyTextLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 px-5 py-2.5 text-sm text-primary border-t border-base-300/30 hover:bg-base-200/50"
-        onClick={(e) => {
-          e.stopPropagation();
-          haptics.light();
-        }}
-      >
-        <BookOpen className="w-4 h-4" />
-        <span className="flex-1">{t('home.openTodaysText', "Open today's text on jw.org")}</span>
-        <ArrowUpRight className="w-4 h-4 text-base-content/50" />
-      </a>
-    </a>
-  );
-}
-
-/**
- * AllHabitsPage — the old 6-row directory, now living at /habits.
- * This is the surface power users navigate to from the home's
- * "All habits" link or the side drawer.
- */
-const HABIT_ROWS = [
-  {
-    key: 'dailyText',
-    title: 'Daily text',
-    sub: "Read today's scripture passage (3 min)",
-    Icon: BookOpen,
-    color: 'blue',
-    href: getDailyTextLink(),
-  },
-  {
-    key: 'bible',
-    title: 'Bible reading',
-    sub: 'Open the New World Translation study Bible',
-    Icon: BookMarked,
-    color: 'purple',
-    href: JW_ORG_SECTIONS.bibles,
-  },
-  {
-    key: 'prayer',
-    title: 'Prayer',
-    sub: 'Articles, music, and a moment to pause',
-    Icon: Heart,
-    color: 'orange',
-    href: JW_ORG_SECTIONS.peaceAndHappiness,
-  },
-  {
-    key: 'familyWorship',
-    title: 'Family worship',
-    sub: 'Talk prompts, videos, and family Bible ideas',
-    Icon: UsersRound,
-    color: 'pink',
-    href: JW_ORG_SECTIONS.marriageAndFamily,
-  },
-  {
-    key: 'meeting',
-    title: 'Meeting prep',
-    sub: "This week's midweek + weekend workbook",
-    Icon: Users,
-    color: 'green',
-    href: JW_ORG_SECTIONS.meetingWorkbooks,
-  },
-  {
-    key: 'news',
-    title: "What's new on jw.org",
-    sub: 'Latest articles, videos, and releases',
-    Icon: Newspaper,
-    color: 'teal',
-    href: JW_ORG_SECTIONS.news,
-  },
-];
-
-export function AllHabitsPage() {
-  const { t } = useTranslation();
-  return (
-    <div className="min-h-screen bg-base-200 pb-16">
-      <h1 className="ios-large-title">
-        {t('habits.title', 'All habits')}
-        <span className="sub">{t('habits.subtitle', 'One-tap links to jw.org surfaces')}</span>
-      </h1>
-      <div className="container mx-auto px-4 max-w-2xl">
-        <div className="ios-grouped" aria-label="All habits">
-          {HABIT_ROWS.map((habit) => {
-            const { key, title, sub, href, color } = habit;
-            const IconComponent = habit.Icon;
+        {/* The five habit rows. Each row is its own card; the
+            left side opens jw.org, the right side is a
+            checkbox. No toast, no animation, no "complete" card. */}
+        <div className="ios-grouped">
+          {ROWS.map((row) => {
+            const { key, title, sub, color, href } = row;
+            const RowIcon = row.Icon;
+            const isDone = !!state.done[key];
             return (
-              <a
+              <div
                 key={key}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ios-row focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
+                className="ios-row"
+                style={isDone ? { opacity: 0.55 } : undefined}
               >
-                <div className={`ios-icon ${color}`}>
-                  <IconComponent className="w-4 h-4" />
-                </div>
-                <div className="body">
-                  <div className="title">{title}</div>
-                  <div className="sub">{sub}</div>
-                </div>
-                <ArrowUpRight className="ios-chev text-base-content/50" />
-              </a>
+                {/* Left: link to jw.org */}
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                  aria-label={`${title} — opens jw.org in a new tab`}
+                >
+                  <div className={`ios-icon ${color}`}>
+                    <RowIcon className="w-4 h-4" />
+                  </div>
+                  <div className="body min-w-0">
+                    <div className="title truncate">{title}</div>
+                    {sub && <div className="sub truncate">{sub}</div>}
+                  </div>
+                  <ArrowUpRight className="ios-chev text-base-content/50 shrink-0" />
+                </a>
+                {/* Right: checkbox. Tapping it marks the habit done
+                    (or un-done). No animation, no toast, no
+                    celebration — just a quiet tick. */}
+                <button
+                  type="button"
+                  onClick={() => toggle(key)}
+                  className="ml-3 shrink-0"
+                  aria-label={isDone ? `Mark ${title} as not done` : `Mark ${title} as done`}
+                  aria-pressed={isDone}
+                >
+                  <span
+                    className={`flex items-center justify-center w-7 h-7 rounded-md border-2 transition-colors ${
+                      isDone
+                        ? 'bg-primary border-primary text-primary-content'
+                        : 'border-base-content/30'
+                    }`}
+                  >
+                    {isDone && (
+                      <svg
+                        className="w-4 h-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </div>
             );
           })}
         </div>
+
+        {/* Reset — a tiny utility, not a celebration. Tapping
+            it just wipes the done map for today. */}
+        {Object.values(state.done).some(Boolean) && (
+          <div className="mt-2 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                saveState({ date: todayKey(), done: {} });
+                setState({ date: todayKey(), done: {} });
+              }}
+              className="btn btn-ghost btn-sm text-base-content/60"
+            >
+              {t('habit.reset', 'Reset today')}
+            </button>
+          </div>
+        )}
+
         <div className="ios-footer">
-          Each link opens in your browser. Your reading list isn't
-          stored here — it stays on jw.org.
+          Unofficial third-party tool. Not affiliated with jw.org.<br />
+          <a href="/about" className="font-bold text-[13px]" style={{ color: '#0055B3' }}>About →</a>
         </div>
+
+        <div className="h-4" />
       </div>
     </div>
   );

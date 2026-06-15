@@ -1,24 +1,29 @@
 // _verify-2026-06-12.cjs
 //
-// Live persona verification for the launchpad version of jw-habits.
-// The home screen is a single list of link-out rows to jw.org
-// surfaces — no in-app tracking, no checkboxes, no counters, no
-// gamification. The persona tests assert the new flow:
-//   T1: Home page has a greeting
-//   T2: Home page has all 6 expected link-out rows
-//   T3: Each link-out row opens a real jw.org URL in a new tab
-//   T4: Hamburger menu opens the side drawer
-//   T5: Drawer has Settings + Ideas + About
-//   T6: /settings page renders (no Notifications section)
-//   T7: /about page renders
-//   T8: /share page renders (PWA share target)
-//   T9: Dark mode toggle writes to localStorage AND updates data-theme
-//   T10: Reset all data button clears localStorage
-//   T11: Service quick add removed — replaced with a "share" intent
-//   T12: T13: unchanged from before (regression: onboarding ↔ picker)
+// Live persona verification for jw-habits. The home is a
+// single page with 5 habit rows. Each row has a link to a
+// jw.org surface (Daily text, Daily Bible reading, Meeting
+// prep, Family worship, Prayer) and a checkbox to mark
+// "done". State is per-day localStorage, no animations, no
+// streak, no XP.
+//
+// Tests verify:
+//   T1:  Home has greeting + 5 habit rows
+//   T2:  Each row links to a real jw.org URL
+//   T3:  Tapping a checkbox marks the habit done
+//   T4:  Unchecking returns the row to its original state
+//   T5:  Per-day reset (state from yesterday doesn't carry over)
+//   T6:  Hamburger menu opens the side drawer
+//   T7:  Drawer has Settings + Ideas + About
+//   T8:  /settings renders (Appearance + Data reset)
+//   T9:  Dark mode toggle writes to localStorage AND updates data-theme
+//   T10: Reset button clears all jw-* localStorage keys
+//   T11: /ideas page renders
+//   T12: /about page renders
+//   T13: No console errors, no 404s on the home page
+//   T14: Done state persists across page reload
 
 const { chromium } = require('playwright');
-const path = require('path');
 
 const URL_BASE = (process.env.VERIFY_URL || 'https://jwhabits.ashbi.ca').replace(/\/$/, '');
 const URL = (route = '') => `${URL_BASE}${route}`;
@@ -34,258 +39,227 @@ function record(name, ok, detail) {
 }
 
 async function fresh(browser) {
-  // ignoreHTTPSErrors: headless Chromium's bundled CA store doesn't
-  // include the Let's Encrypt "R10" / "R11" intermediates that
-  // jwhabits.ashbi.ca uses. Real browsers (Chrome, Safari, Firefox)
-  // have them.
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
   const errors = [];
-  page.on('pageerror', e => errors.push('PAGEERR: ' + e.message.slice(0, 200)));
-  page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text().slice(0, 200)) });
+  page.on('pageerror', (e) => errors.push('PAGEERR: ' + e.message.slice(0, 200)));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text().slice(0, 200)); });
+  return { ctx, page, errors };
+}
 
-  async function dismissOnboarding() {
-    await page.evaluate(() => {
-      // Clear all data so tests start from zero
-      Object.keys(localStorage).forEach(k => {
-        if (k.startsWith('jw-')) localStorage.removeItem(k);
-      });
-      // Mark onboarded AFTER the wipe (the previous version set this BEFORE,
-      // so the wipe removed it again, and Onboarding re-appeared on every
-      // test that called gotoApp() — see _verify-2026-06-11.cjs history)
-      localStorage.setItem('jw-habits-onboarded', 'true');
-      // Mark install prompt as dismissed
-      localStorage.setItem('installPromptDismissed', 'true');
-    });
-  }
-
-  async function gotoApp() {
-    await page.goto(URL());
-    await page.waitForTimeout(5000);
-    await dismissOnboarding();
-    await page.goto(URL());
-    await page.waitForTimeout(5000);
-  }
-
-  return { ctx, page, errors, dismissOnboarding, gotoApp };
+async function gotoHome(page) {
+  // Wipe jw-* localStorage, then visit home
+  await page.goto(URL('/'));
+  await page.waitForTimeout(2000);
+  await page.evaluate(() => {
+    Object.keys(localStorage).forEach((k) => { if (k.startsWith('jw-')) localStorage.removeItem(k); });
+  });
+  await page.goto(URL('/'));
+  await page.waitForTimeout(3000);
 }
 
 (async () => {
   const browser = await chromium.launch();
 
-  // ============================================================
-  // T1: Home page has the morning routine card as the
-  // primary surface. This is the new front door.
-  // ============================================================
+  // T1: Home has greeting + 5 habit rows (text, bible, meeting, family, prayer)
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
-    const greetingVisible = await page.evaluate(() => {
-      return [...document.querySelectorAll('h1')].some(h =>
-        h.textContent.includes('Morning') || h.textContent.includes('Afternoon') || h.textContent.includes('Evening') || h.textContent.includes('night')
-      );
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    const greet = await page.evaluate(() => {
+      const h1 = document.querySelector('h1');
+      return h1 ? h1.textContent : 'no h1';
     });
-    const routineCardVisible = await page.evaluate(() => {
-      // The morning routine card has a Sun icon and a "Start" or
-      // "Continue" title. It's the first interactive card on the
-      // page after the greeting.
-      return [...document.querySelectorAll('a[href="/routine"]')].some(a =>
-        a.textContent.includes('morning') || a.textContent.includes('Continue') || a.textContent.includes('Start')
-      );
+    const hasGreeting = /Good (morning|afternoon|evening|night)/.test(greet);
+    const rowTitles = await page.evaluate(() => {
+      return [...document.querySelectorAll('div.ios-grouped div.ios-row .title')].map((el) => el.textContent.trim());
     });
-    await record('T1: Home has greeting + morning routine card',
-      greetingVisible && routineCardVisible,
-      `greeting=${greetingVisible} routine_card=${routineCardVisible}`);
+    const expected = ['Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'Prayer'];
+    const allPresent = expected.every((t) => rowTitles.includes(t));
+    const exactOrder = JSON.stringify(rowTitles) === JSON.stringify(expected);
+    await record('T1: Home has greeting + 5 habit rows in Cam\'s order',
+      hasGreeting && allPresent && exactOrder,
+      `greeting="${greet.slice(0, 60)}" rows=${JSON.stringify(rowTitles)}`);
     await page.context().close();
   }
 
-  // ============================================================
-  // T2: /routine route renders the 4-step morning flow
-  // ============================================================
+  // T2: Each row links to a real jw.org URL (target=_blank)
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
-    await page.goto(URL('/routine'));
-    await page.waitForTimeout(2500);
-    const steps = await page.evaluate(() => {
-      return [...document.querySelectorAll('.ios-row, button.ios-row')].map(b =>
-        b.textContent.trim().slice(0, 60)
-      );
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    const linkData = await page.evaluate(() => {
+      return [...document.querySelectorAll('div.ios-grouped div.ios-row a[href]')].map((a) => ({
+        href: a.getAttribute('href'),
+        target: a.getAttribute('target'),
+        rel: a.getAttribute('rel'),
+      }));
     });
-    const hasRead = steps.some(s => s.includes("today") || s.includes('Read today'));
-    const hasPray = steps.some(s => s.includes('Pray') || s.toLowerCase().includes('prayer'));
-    const hasReflect = steps.some(s => s.includes('Reflect'));
-    await record('T2: /routine has Read, Pray, Reflect steps',
-      hasRead && hasPray && hasReflect,
-      `steps=${JSON.stringify(steps)}`);
+    const allJwOrg = linkData.every((l) =>
+      l.href && (/^https:\/\/(www\.)?jw\.org\/|^https:\/\/wol\.jw\.org\//.test(l.href)) &&
+      l.target === '_blank' && l.rel && l.rel.includes('noopener')
+    );
+    await record('T2: All 5 habit rows open jw.org in new tab (noopener)',
+      allJwOrg && linkData.length === 5,
+      `count=${linkData.length} urls=${JSON.stringify(linkData.map((l) => l.href?.slice(0, 50)))}`);
     await page.context().close();
   }
 
-  // ============================================================
-  // T3: Marking "Pray" as done persists across page navigation.
-  // The routine is per-day localStorage; a refresh should still
-  // show the step as done.
-  // ============================================================
+  // T3: Tapping a checkbox marks the habit done
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
-    await page.goto(URL('/routine'));
-    await page.waitForTimeout(2500);
-    // Click the "Pray" step (the second ios-row button)
-    const prayBtn = page.locator('button.ios-row').filter({ hasText: /Pray|prayer/ }).first();
-    if ((await prayBtn.count()) === 0) {
-      await record('T3: Pray step toggles and persists across reload', false, 'Pray button not found');
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    // Find the first checkbox button
+    const firstCheckbox = page.locator('button[aria-pressed]').first();
+    if ((await firstCheckbox.count()) === 0) {
+      await record('T3: Checkbox toggles per-habit done state', false, 'No checkbox button found');
     } else {
-      await prayBtn.scrollIntoViewIfNeeded();
-      await prayBtn.click();
-      await page.waitForTimeout(800);
-      // Reload and check the step is still marked done
-      await page.reload();
-      await page.waitForTimeout(2500);
-      const stillDone = await page.evaluate(() => {
-        // After tapping pray, the step shows "done" tag (a green check
-        // instead of chevron) — and "Pray" with a "done" subtitle
-        const raw = localStorage.getItem('jw-routine-state');
-        if (!raw) return false;
-        try {
-          const state = JSON.parse(raw);
-          return state.prayed === true && state.date === new Date().toISOString().slice(0, 10);
-        } catch { return false; }
+      const before = await firstCheckbox.evaluate((el) => el.getAttribute('aria-pressed'));
+      const beforeHasCheck = await firstCheckbox.evaluate((el) => !!el.querySelector('svg polyline'));
+      await firstCheckbox.click();
+      await page.waitForTimeout(500);
+      const after = await firstCheckbox.evaluate((el) => el.getAttribute('aria-pressed'));
+      const afterHasCheck = await firstCheckbox.evaluate((el) => !!el.querySelector('svg polyline'));
+      const stored = await page.evaluate(() => {
+        try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
       });
-      await record('T3: Pray step toggles and persists across reload', stillDone, `localStorage_prayed=${stillDone}`);
+      const wasToggled = before === 'false' && after === 'true';
+      const wasDrawn = !beforeHasCheck && afterHasCheck;
+      const wasStored = stored && Object.values(stored.done).some(Boolean);
+      await record('T3: Checkbox toggles aria-pressed + draws check + persists to localStorage',
+        wasToggled && wasDrawn && wasStored,
+        `aria_before=${before} aria_after=${after} svg_before=${beforeHasCheck} svg_after=${afterHasCheck} stored_keys=${Object.keys(stored?.done || {}).length}`);
     }
     await page.context().close();
   }
 
-  // ============================================================
-  // T4: Home shows the routine card as "Continue your morning
-  // routine" after 1 step is done (replaces "Start your morning
-  // routine").
-  // ============================================================
+  // T4: Tapping again un-marks the habit (toggle behavior)
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
-    // Pre-seed 1 step done
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    // Pre-seed one done
     await page.evaluate(() => {
-      localStorage.setItem('jw-routine-state', JSON.stringify({
+      localStorage.setItem('jw-daily-habits-state', JSON.stringify({
         date: new Date().toISOString().slice(0, 10),
-        textRead: true,
-        prayed: false,
-        reflected: false,
+        done: { text: true },
       }));
     });
     await page.goto(URL('/'));
-    await page.waitForTimeout(2500);
-    const cardText = await page.evaluate(() => {
-      const a = document.querySelector('a[href="/routine"]');
-      return a ? a.textContent.trim() : 'no card';
-    });
-    const saysContinue = cardText.includes('Continue');
-    const saysLeft = cardText.includes('left') || cardText.includes('2');
-    await record('T4: Home shows "Continue your morning routine" after 1 step',
-      saysContinue && saysLeft,
-      `card_text="${cardText.slice(0, 80)}"`);
+    await page.waitForTimeout(3000);
+    const firstCheckbox = page.locator('button[aria-pressed]').first();
+    if ((await firstCheckbox.count()) === 0) {
+      await record('T4: Checkbox un-toggles a previously-marked habit', false, 'No checkbox button found');
+    } else {
+      const before = await firstCheckbox.evaluate((el) => el.getAttribute('aria-pressed'));
+      await firstCheckbox.click();
+      await page.waitForTimeout(500);
+      const after = await firstCheckbox.evaluate((el) => el.getAttribute('aria-pressed'));
+      const stored = await page.evaluate(() => {
+        try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
+      });
+      const wasUntoggled = before === 'true' && after === 'false';
+      const wasUnStored = stored && (stored.done?.text === false || stored.done?.text === undefined);
+      await record('T4: Checkbox un-toggles a previously-marked habit',
+        wasUntoggled && wasUnStored,
+        `aria_before=${before} aria_after=${after} stored_text=${stored?.done?.text}`);
+    }
     await page.context().close();
   }
 
-  // ============================================================
-  // T5: /habits route renders the 6-row directory
-  // ============================================================
+  // T5: Per-day reset (state from yesterday doesn't carry over)
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
-    await page.goto(URL('/habits'));
-    await page.waitForTimeout(2500);
-    const linkRows = await page.evaluate(() => {
-      return [...document.querySelectorAll('div.ios-grouped a.ios-row')].map(a => ({
-        href: a.getAttribute('href'),
-        target: a.getAttribute('target'),
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    // Pre-seed with a YESTERDAY date
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = yesterday.toISOString().slice(0, 10);
+    await page.evaluate((y) => {
+      localStorage.setItem('jw-daily-habits-state', JSON.stringify({
+        date: y,
+        done: { text: true, bible: true, prayer: true, family: true, meeting: true },
       }));
+    }, yesterdayKey);
+    await page.goto(URL('/'));
+    await page.waitForTimeout(3000);
+    // All 5 checkboxes should be unchecked on screen (yesterday's done don't carry over)
+    const checkedStates = await page.evaluate(() => {
+      return [...document.querySelectorAll('button[aria-pressed]')].map((el) => el.getAttribute('aria-pressed'));
     });
-    const allJwOrg = linkRows.every(l => l.href && /jw\.org|wol\.jw\.org/.test(l.href));
-    const allBlank = linkRows.every(l => l.target === '_blank');
-    const expectedTitles = ['Daily text', 'Bible reading', 'Prayer', 'Family worship', 'Meeting prep'];
-    const titles = await page.evaluate(() => {
-      return [...document.querySelectorAll('a.ios-row .title')].map(t => t.textContent.trim());
+    const allUnchecked = checkedStates.every((s) => s === 'false') && checkedStates.length === 5;
+    // But the localStorage date should have been replaced with today
+    const stored = await page.evaluate(() => {
+      try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
     });
-    const allPresent = expectedTitles.every(t => titles.includes(t));
-    await record('T5: /habits has 6+ jw.org link-out rows',
-      allJwOrg && allBlank && allPresent,
-      `count=${linkRows.length} titles=${JSON.stringify(titles)}`);
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const isToday = stored && stored.date === todayKey && Object.values(stored.done).every((v) => !v);
+    await record('T5: Per-day reset (yesterday\'s done does not carry over)',
+      allUnchecked && isToday,
+      `aria_pressed=${JSON.stringify(checkedStates)} stored_date=${stored?.date} stored_done=${JSON.stringify(stored?.done)}`);
     await page.context().close();
   }
 
-  // ============================================================
-  // T6: Hamburger menu opens the side drawer (kept from before)
-  // ============================================================
+  // T6: Hamburger menu opens the side drawer
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
+    const { page } = await fresh(browser);
+    await gotoHome(page);
     const menuBtn = page.locator('button[aria-label="Open menu"]').first();
     if ((await menuBtn.count()) === 0) {
-      await record('T6: Hamburger menu opens the side drawer', false, 'Menu button (aria-label="Open menu") not found in DOM');
+      await record('T6: Hamburger menu opens the side drawer', false, 'Menu button (aria-label="Open menu") not found');
     } else {
       await menuBtn.click();
       await page.waitForTimeout(800);
       const drawerVisible = await page.evaluate(() => {
         return [...document.querySelectorAll('aside, [aria-label*="menu"], [role="dialog"]')].length > 0
-          || [...document.querySelectorAll('*')].some(el => el.textContent.includes('Settings') && el.textContent.includes('Ideas'));
+          || [...document.querySelectorAll('*')].some((el) => el.textContent.includes('Settings') && el.textContent.includes('Ideas'));
       });
       await record('T6: Hamburger menu opens the side drawer', drawerVisible, `drawer_visible=${drawerVisible}`);
     }
     await page.context().close();
   }
 
-  // ============================================================
-  // T7: Side drawer has Routine, All habits, Settings, Ideas, About
-  // ============================================================
+  // T7: Drawer has Settings + Ideas + About (no Routine, no All habits — those are gone)
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
+    const { page } = await fresh(browser);
+    await gotoHome(page);
     const menuBtn = page.locator('button[aria-label="Open menu"]').first();
     await menuBtn.click();
     await page.waitForTimeout(800);
     const drawerItems = await page.evaluate(() => {
-      return [...document.querySelectorAll('aside button')].map(b => b.textContent.trim().slice(0, 60));
+      return [...document.querySelectorAll('aside button')].map((b) => b.textContent.trim().slice(0, 60));
     });
-    const hasRoutine = drawerItems.some(t => t.toLowerCase().includes('routine'));
-    const hasHabits = drawerItems.some(t => t.toLowerCase().includes('habits'));
-    const hasSettings = drawerItems.some(t => t.includes('Settings'));
-    const hasIdeas = drawerItems.some(t => t.includes('Ideas'));
-    const hasAbout = drawerItems.some(t => t.includes('About'));
-    await record('T7: Drawer has Routine, All habits, Settings, Ideas, About',
-      hasRoutine && hasHabits && hasSettings && hasIdeas && hasAbout,
+    const hasSettings = drawerItems.some((t) => t.includes('Settings'));
+    const hasIdeas = drawerItems.some((t) => t.includes('Ideas'));
+    const hasAbout = drawerItems.some((t) => t.includes('About'));
+    const hasRoutine = drawerItems.some((t) => t.toLowerCase().includes('routine'));
+    const hasAllHabits = drawerItems.some((t) => t.toLowerCase().includes('habits'));
+    await record('T7: Drawer has Settings + Ideas + About (no Routine, no All habits)',
+      hasSettings && hasIdeas && hasAbout && !hasRoutine && !hasAllHabits,
       `items=${JSON.stringify(drawerItems)}`);
     await page.context().close();
   }
 
-  // ============================================================
-  // T8: /settings page renders (kept from before)
-  // ============================================================
+  // T8: /settings page renders with Appearance + Data reset (no Notifications)
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
+    const { page } = await fresh(browser);
+    await gotoHome(page);
     await page.goto(URL('/settings'));
     await page.waitForTimeout(2500);
     const sections = await page.evaluate(() => {
-      return [...document.querySelectorAll('h2')].map(h => h.textContent.trim().slice(0, 50));
+      return [...document.querySelectorAll('h2')].map((h) => h.textContent.trim().slice(0, 50));
     });
-    const hasAppearance = sections.some(s => s.includes('Appearance'));
-    const hasDataReset = sections.some(s => s.includes('Data reset') || s.includes('Data management'));
-    const noNotifications = !sections.some(s => s.toLowerCase().includes('notification'));
-    const noDailyRoutine = !sections.some(s => s.toLowerCase().includes('daily routine'));
+    const hasAppearance = sections.some((s) => s.includes('Appearance'));
+    const hasDataReset = sections.some((s) => s.includes('Data reset') || s.includes('Data management'));
+    const noNotifications = !sections.some((s) => s.toLowerCase().includes('notification'));
+    const noDailyRoutine = !sections.some((s) => s.toLowerCase().includes('daily routine'));
     await record('T8: /settings has Appearance + Data reset, no Notifications',
       hasAppearance && hasDataReset && noNotifications && noDailyRoutine,
       `sections=${JSON.stringify(sections)}`);
     await page.context().close();
   }
 
-  // ============================================================
   // T9: Dark mode toggle writes to localStorage AND updates data-theme
-  // ============================================================
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
+    const { page } = await fresh(browser);
+    await gotoHome(page);
     await page.goto(URL('/settings'));
     await page.waitForTimeout(2000);
     const darkBtn = page.locator('button[aria-label*="oggle light"]').first();
@@ -314,121 +288,124 @@ async function fresh(browser) {
     await page.context().close();
   }
 
-  // ============================================================
-  // T10: Reset all data button clears all jw-* localStorage keys
-  // (including the routine state).
-  // ============================================================
+  // T10: Reset all data button clears all jw-* localStorage keys (incl. habit state)
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
-    // Pre-seed routine + fake data
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    // Pre-seed habit state + fake data
     await page.evaluate(() => {
-      localStorage.setItem('jw-routine-state', JSON.stringify({ date: '2026-06-14', prayed: true, textRead: true }));
+      localStorage.setItem('jw-daily-habits-state', JSON.stringify({
+        date: '2026-06-14',
+        done: { text: true, prayer: true, bible: true, family: true, meeting: true },
+      }));
       localStorage.setItem('jw-fake-key', 'foo');
       localStorage.setItem('jw-progress-settings', JSON.stringify({ state: { theme: 'dark' }, version: 0 }));
     });
     await page.goto(URL('/settings'));
     await page.waitForTimeout(2000);
     await page.evaluate(() => { window.confirm = () => true; });
-    const resetBtn = page.locator('button').filter({ hasText: /Reset all|clearAll|Clear all/i }).first();
+    const resetBtn = page.locator('button').filter({ hasText: /Reset all|Clear all/i }).first();
     if ((await resetBtn.count()) === 0) {
       await record('T10: Reset button exists in /settings', false, 'No reset button found');
     } else {
       await resetBtn.click();
       await page.waitForTimeout(1500);
-      const remainingKeys = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('jw-')));
-      await record('T10: Reset all data button clears all jw-* localStorage keys (including routine)',
+      const remainingKeys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('jw-')));
+      await record('T10: Reset clears all jw-* localStorage keys (including habit state)',
         remainingKeys.length === 0,
         `remaining_jw_keys=${JSON.stringify(remainingKeys)}`);
     }
     await page.context().close();
   }
 
-  // ============================================================
-  // T11: /ideas page renders with link-out rows (kept from before)
-  // ============================================================
+  // T11: /ideas page renders
   {
-    const { page, gotoApp } = await fresh(browser);
-    await gotoApp();
+    const { page } = await fresh(browser);
+    await gotoHome(page);
     await page.goto(URL('/ideas'));
     await page.waitForTimeout(2500);
     const linkRows = await page.evaluate(() => {
       return [...document.querySelectorAll('div.ios-grouped a.ios-row')].length;
     });
-    const hasMultiple = linkRows >= 2;
-    await record('T11: /ideas has multiple jw.org link-out rows', hasMultiple, `count=${linkRows}`);
+    await record('T11: /ideas has link-out rows', linkRows >= 2, `count=${linkRows}`);
     await page.context().close();
   }
 
-  // ============================================================
-  // T12: Fresh user lands directly on the launchpad (no modal,
-  // no picker). The launchpad IS the home, with the morning
-  // routine as the primary CTA and the directory of 6 habits
-  // as a secondary "All habits" link.
-  // ============================================================
+  // T12: /about page renders with disclaimer
+  {
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    await page.goto(URL('/about'));
+    await page.waitForTimeout(2500);
+    const hasDisclaimer = await page.evaluate(() => {
+      return document.body.innerText.toLowerCase().includes('unofficial')
+        || document.body.innerText.toLowerCase().includes('third-party');
+    });
+    await record('T12: /about page renders with disclaimer', hasDisclaimer, `body_excerpt="${(await page.evaluate(() => document.body.innerText.slice(0, 200)))})"`);
+    await page.context().close();
+  }
+
+  // T13: No console errors, no 404s on the home page
   {
     const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, ignoreHTTPSErrors: true });
     const page = await ctx.newPage();
     const errors = [];
-    page.on('pageerror', e => errors.push('PAGEERR: ' + e.message.slice(0, 200)));
-    page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text().slice(0, 200)); });
+    const network404s = [];
+    page.on('pageerror', (e) => errors.push('PAGEERR: ' + e.message.slice(0, 200)));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text().slice(0, 200)); });
+    page.on('response', (resp) => { if (resp.status() === 404) network404s.push(resp.url()); });
 
-    await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
+    await page.goto(URL('/?bust=' + Date.now()));
     await page.waitForTimeout(3000);
     await page.evaluate(() => {
-      Object.keys(localStorage).forEach(k => { if (k.startsWith('jw-')) localStorage.removeItem(k); });
+      Object.keys(localStorage).forEach((k) => { if (k.startsWith('jw-')) localStorage.removeItem(k); });
     });
     await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
     await page.waitForTimeout(3000);
-    const hasMorningCard = await page.evaluate(() => {
-      return !!document.querySelector('a[href="/routine"]');
+
+    // 5 habit rows visible + all links present + no /routine or /habits routes
+    const hasFiveRows = await page.evaluate(() => {
+      return document.querySelectorAll('div.ios-grouped div.ios-row').length === 5;
     });
-    const hasHabitsLink = await page.evaluate(() => {
-      return !!document.querySelector('a[href="/habits"]');
+    const noOrphanRoutes = await page.evaluate(() => {
+      // The home should be a single page; verify no leftover
+      // /routine or /habits links anywhere
+      return ![...document.querySelectorAll('a[href*="/routine"], a[href*="/habits"]')].some((a) => {
+        return a.getAttribute('href') === '/routine' || a.getAttribute('href') === '/habits'
+          || a.getAttribute('href')?.startsWith('/routine/') || a.getAttribute('href')?.startsWith('/habits/');
+      });
     });
-    const noModal = await page.evaluate(() => {
-      return ![...document.querySelectorAll('[class*="fixed"][class*="inset-0"]')].some(el =>
-        el.textContent.includes('Welcome')
-      );
-    });
-    const noConsoleErrors = errors.length === 0;
-    await record(
-      'T12: Fresh user lands on home with morning routine as primary CTA',
-      hasMorningCard && hasHabitsLink && noModal && noConsoleErrors,
-      `morning_card=${hasMorningCard} habits_link=${hasHabitsLink} no_modal=${noModal} errors=${errors.length}`
-    );
+    const noErrors = errors.length === 0;
+    const no404s = network404s.length === 0;
+    await record('T13: Home renders 5 rows, no /routine or /habits, no console errors, no 404s',
+      hasFiveRows && noOrphanRoutes && noErrors && no404s,
+      `rows=${hasFiveRows} no_orphan_routes=${noOrphanRoutes} errors=${errors.length} 404s=${network404s.length}`);
+    if (errors.length) console.log('  errors:', errors);
+    if (network404s.length) console.log('  404s:', network404s);
     await ctx.close();
   }
 
-  // ============================================================
-  // T13: Tapping the morning routine card opens /routine
-  // ============================================================
+  // T14: Done state persists across page reload
   {
-    const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, ignoreHTTPSErrors: true });
-    const page = await ctx.newPage();
-    await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    // Mark first row done
+    const firstCheckbox = page.locator('button[aria-pressed]').first();
+    await firstCheckbox.click();
+    await page.waitForTimeout(500);
+    const beforeReload = await firstCheckbox.evaluate((el) => el.getAttribute('aria-pressed'));
+    // Reload
+    await page.reload();
     await page.waitForTimeout(3000);
-    await page.evaluate(() => {
-      Object.keys(localStorage).forEach(k => { if (k.startsWith('jw-')) localStorage.removeItem(k); });
+    const firstCheckboxAfter = page.locator('button[aria-pressed]').first();
+    const afterReload = await firstCheckboxAfter.evaluate((el) => el.getAttribute('aria-pressed'));
+    const stored = await page.evaluate(() => {
+      try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
     });
-    await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
-    await page.waitForTimeout(3000);
-    await page.locator('a[href="/routine"]').first().click();
-    await page.waitForTimeout(2500);
-    const routineVisible = await page.evaluate(() => {
-      const h1 = document.querySelector('h1');
-      return h1 && (h1.textContent.includes('Morning') || h1.textContent.includes('routine'));
-    });
-    const stepsPresent = await page.evaluate(() => {
-      const text = document.body.innerText.toLowerCase();
-      return text.includes('read') && text.includes('pray') && text.includes('reflect');
-    });
-    await record(
-      'T13: Tapping morning routine card opens /routine with 3 steps',
-      routineVisible && stepsPresent,
-      `routine_visible=${routineVisible} steps_present=${stepsPresent}`
-    );
-    await ctx.close();
+    await record('T14: Done state persists across page reload',
+      beforeReload === 'true' && afterReload === 'true' && stored,
+      `before_reload=${beforeReload} after_reload=${afterReload} stored_date=${stored?.date}`);
+    await page.context().close();
   }
 
   await browser.close();
@@ -436,12 +413,12 @@ async function fresh(browser) {
   console.log('\n========================================');
   console.log(`VERIFICATION COMPLETE: ${pass} PASS, ${fail} FAIL out of ${results.length} tests`);
   console.log('========================================\n');
-  results.forEach(r => {
+  results.forEach((r) => {
     console.log(`${r.ok ? '✓' : '✗'} ${r.name}`);
     if (!r.ok) console.log(`   ${r.detail}`);
   });
   process.exit(fail > 0 ? 1 : 0);
-})().catch(err => {
+})().catch((err) => {
   console.error('Test crashed:', err);
   process.exit(2);
 });

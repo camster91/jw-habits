@@ -8,19 +8,14 @@ import UpdatePrompt from './components/UpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import SideDrawer from './components/SideDrawer';
 
-// Lazy load the secondary pages. The app has 7 in-app routes:
-// home, /routine (the 4-step morning flow), /habits (the
-// 6-row link-out directory), and 4 meta pages (settings,
-// about, ideas, share). The bottom nav, the 4 internal
-// trackers, and the 6-step Onboarding modal are gone.
+// Lazy load the meta pages. The home is the only user-facing
+// page (one iOS list of 5 link-out rows + a checkbox per row
+// to mark it done). Settings, About, Ideas, Share live in
+// the side drawer / footer / PWA share target.
 const Settings = lazy(() => import('./pages/Settings'));
 const SharePage = lazy(() => import('./pages/Share'));
 const IdeasPage = lazy(() => import('./pages/IdeasPage'));
 const About = lazy(() => import('./pages/About'));
-const RoutinePage = lazy(() => import('./pages/RoutinePage'));
-const AllHabitsPage = lazy(() =>
-  import('./pages/Home.jsx').then((m) => ({ default: m.AllHabitsPage }))
-);
 
 // Loading fallback component
 function PageLoader() {
@@ -56,8 +51,6 @@ function App() {
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/routine" element={<RoutinePage />} />
-                  <Route path="/habits" element={<AllHabitsPage />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/share" element={<SharePage />} />
                   <Route path="/ideas" element={<IdeasPage />} />

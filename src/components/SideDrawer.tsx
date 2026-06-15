@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Lightbulb, Info, ListChecks, Sun, Settings, X } from 'lucide-react';
+import { Lightbulb, Info, Settings, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { haptics } from '../utils/native.js';
 import { DrawerContext } from '../hooks/useDrawer.js';
@@ -23,16 +23,11 @@ function SideDrawer({ children }: SideDrawerProps) {
   const location = useLocation();
   const { t } = useTranslation();
 
-  // After the morning routine + habits directory shipped, the
-  // drawer has 4 items: Routine (the primary feature), All
-  // habits (the 6-row directory), Ideas, Settings, About.
-  // Routine + All habits are now power-user entry points; most
-  // users reach them via the home page's primary surface.
+  // The home is the only user-facing page (5 link-out rows).
+  // The drawer is a 3-item menu: Settings, Ideas, About.
   const DRAWER_ITEMS: DrawerItem[] = [
-    { path: '/routine', icon: Sun, label: t('nav.routine', 'Morning routine'), description: t('nav.routineDesc', 'Read, pray, reflect — 5 minutes') },
-    { path: '/habits', icon: ListChecks, label: t('nav.habits', 'All habits'), description: t('nav.habitsDesc', 'Daily text, Bible, prayer, meeting prep, news') },
-    { path: '/ideas', icon: Lightbulb, label: t('nav.ideas', 'Ideas'), description: t('nav.ideasDesc', 'Browse public goal & project ideas') },
     { path: '/settings', icon: Settings, label: t('nav.settings'), description: t('nav.settingsDesc') },
+    { path: '/ideas', icon: Lightbulb, label: t('nav.ideas', 'Ideas'), description: t('nav.ideasDesc', 'Browse public goal & project ideas') },
     { path: '/about', icon: Info, label: t('nav.about', 'About'), description: t('nav.aboutDesc', 'Third-party disclaimer') },
   ];
 
