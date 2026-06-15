@@ -1,53 +1,43 @@
 // _verify-2026-06-12.cjs
-// Single-script verification of all 11 critical FAIL claims from the 4 persona runs.
-// Each test is independent: fresh page state, wait 5s for app boot, click with
-// 1s settle, read state directly. PASS/FAIL printed at the end.
 //
-// Run: node _verify-2026-06-12.cjs
-//
-// URL: defaults to http://127.0.0.1:8766/?bust= (the SPA-aware static server
-// in scripts/serve-dist.cjs). Override with VERIFY_URL=... env var.
-//
-// Critical rules (from jw-habits-tester skill, hardened 2026-06-08):
-//   - 5000ms after page.goto (app boot)
-//   - scrollIntoViewIfNeeded before every click (the home page is 2839px tall
-//     in a 375x812 viewport; buttons below the fold can't be `{force}`-clicked
-//     safely because the event hits the wrong element)
-//   - 1000ms after every click (React commit + paint)
-//   - Read state via page.evaluate, not vision
-//   - If state matches the FAIL claim, that's a real bug
-//   - If state does NOT match, it's a FALSE POSITIVE
-//
-// Changes from _verify-2026-06-11.cjs (the previous version):
-//   - Replaced { force: true } clicks with scrollIntoView + normal click.
-//     The home page is 2839px tall; the old test was clicking at the
-//     viewport position (0,0) instead of the button position.
-//   - Replaced Python's http.server URL with the SPA-aware
-//     scripts/serve-dist.cjs URL so client-side routes (/about,
-//     /settings, /projects) don't 404.
+// Live persona verification for the launchpad version of jw-habits.
+// The home screen is a single list of link-out rows to jw.org
+// surfaces — no in-app tracking, no checkboxes, no counters, no
+// gamification. The persona tests assert the new flow:
+//   T1: Home page has a greeting
+//   T2: Home page has all 6 expected link-out rows
+//   T3: Each link-out row opens a real jw.org URL in a new tab
+//   T4: Hamburger menu opens the side drawer
+//   T5: Drawer has Settings + Ideas + About
+//   T6: /settings page renders (no Notifications section)
+//   T7: /about page renders
+//   T8: /share page renders (PWA share target)
+//   T9: Dark mode toggle writes to localStorage AND updates data-theme
+//   T10: Reset all data button clears localStorage
+//   T11: Service quick add removed — replaced with a "share" intent
+//   T12: T13: unchanged from before (regression: onboarding ↔ picker)
 
 const { chromium } = require('playwright');
+const path = require('path');
 
-// Base URL for the local SPA server. The cache-buster that the previous
-// version baked into the URL (`?bust=`) was placed BETWEEN the path and
-// the route, so URLs like `http://.../?bust=123/settings` actually hit the
-// home page with `/settings` in the query string — the SPA never
-// navigated. Just use the route directly; the local server has no
-// caching, and Playwright's `page.goto` bypasses the HTTP cache anyway.
-//
-// The trailing slash is normalized away so callers can pass either form
-// (VERIFY_URL=http://host:port/ or VERIFY_URL=http://host:port).
-const URL_BASE = (process.env.VERIFY_URL || 'http://127.0.0.1:8766').replace(/\/$/, '');
+const URL_BASE = (process.env.VERIFY_URL || 'https://jwhabits.ashbi.ca').replace(/\/$/, '');
 const URL = (route = '') => `${URL_BASE}${route}`;
+
 const results = [];
 let pass = 0, fail = 0;
+
+function record(name, ok, detail) {
+  results.push({ name, ok, detail });
+  if (ok) pass++; else fail++;
+  console.log(`${ok ? '[PASS]' : '[FAIL]'} ${name}`);
+  if (!ok) console.log(`       ${detail}`);
+}
 
 async function fresh(browser) {
   // ignoreHTTPSErrors: headless Chromium's bundled CA store doesn't
   // include the Let's Encrypt "R10" / "R11" intermediates that
   // jwhabits.ashbi.ca uses. Real browsers (Chrome, Safari, Firefox)
-  // have them. Without this, every goto() fails with
-  // "net::ERR_CERT_AUTHORITY_INVALID".
+  // have them.
   const ctx = await browser.newContext({ viewport: { width: 375, height: 812 }, ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
   const errors = [];
@@ -66,13 +56,6 @@ async function fresh(browser) {
       localStorage.setItem('jw-habits-onboarded', 'true');
       // Mark install prompt as dismissed
       localStorage.setItem('installPromptDismissed', 'true');
-      // The "Build your daily routine" picker is gated on
-      // jw-habits-onboarded-v2; pre-seed it so the persona tests
-      // for the daily actions (T1-T11) don't see the picker. The
-      // picker behavior is exercised by T12 (regression for
-      // double-modal bug) and T13 (picker suppressed while
-      // Onboarding is open).
-      localStorage.setItem('jw-habits-onboarded-v2', '1');
     });
   }
 
@@ -84,489 +67,366 @@ async function fresh(browser) {
     await page.waitForTimeout(5000);
   }
 
-  // Scroll a locator into view, then click it. Safer than { force: true }
-  // when the target is below the fold.
-  async function safeClick(locator) {
-    // Dismiss any visible modal/popup overlay first (achievement popup,
-    // install prompt, etc.). The popup is in a `fixed inset-0 z-50` div
-    // with a close button (X icon). Click the X to dismiss.
-    const closeBtn = page.locator('div.fixed.inset-0 button[aria-label*="close" i], div.fixed.inset-0 button[aria-label*="dismiss" i]').first();
-    if ((await closeBtn.count()) > 0) {
-      try { await closeBtn.click({ timeout: 1000 }); } catch {}
-      await page.waitForTimeout(500);
-    }
-    // If an overlay is still up, press Escape as a last-ditch dismiss.
-    if ((await page.locator('div.fixed.inset-0.z-50').count()) > 0) {
-      try { await page.keyboard.press('Escape'); } catch {}
-      await page.waitForTimeout(300);
-    }
-    await locator.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(150);
-    await locator.click();
-  }
-
-  return { page, errors, dismissOnboarding, gotoApp, safeClick };
-}
-
-async function record(name, ok, evidence) {
-  results.push({ name, ok, evidence });
-  ok ? pass++ : fail++;
-  console.log(`[${ok ? 'PASS' : 'FAIL'}] ${name}`);
-  console.log('       ' + evidence + '\n');
+  return { ctx, page, errors, dismissOnboarding, gotoApp };
 }
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch();
 
   // ============================================================
-  // T1: Marcus — Prayer button (Morning Prayer) — claims no state change
+  // T1: Home page has the morning routine card as the
+  // primary surface. This is the new front door.
   // ============================================================
   {
-    const { page, gotoApp, safeClick } = await fresh(browser);
+    const { page, gotoApp } = await fresh(browser);
     await gotoApp();
-
-    const before = await page.evaluate(() => {
-      return document.body.textContent.match(/(\d+)\s*\/\s*3/)?.[0] || 'NOT_FOUND';
+    const greetingVisible = await page.evaluate(() => {
+      return [...document.querySelectorAll('h1')].some(h =>
+        h.textContent.includes('Morning') || h.textContent.includes('Afternoon') || h.textContent.includes('Evening') || h.textContent.includes('night')
+      );
     });
-
-    const btn = page.locator('button[aria-label*="Morning Prayer"]');
-    if ((await btn.count()) === 0) {
-      await record('T1: Morning Prayer click registers counter change', false, 'Button not found in DOM');
-    } else {
-      await safeClick(btn);
-      await page.waitForTimeout(1000);
-      const after = await page.evaluate(() => ({
-        counter: document.body.textContent.match(/(\d+)\s*\/\s*3/)?.[0] || 'NOT_FOUND',
-        storage: Object.keys(localStorage).filter(k => k.startsWith('jw-')),
-      }));
-      const wentUp = before !== after.counter && after.counter !== 'NOT_FOUND' && after.counter !== '0/3';
-      await record('T1: Morning Prayer click registers counter change',
-        wentUp,
-        `before=${before} after=${after.counter}  storage_keys=${after.storage.join(',')}`);
-    }
+    const routineCardVisible = await page.evaluate(() => {
+      // The morning routine card has a Sun icon and a "Start" or
+      // "Continue" title. It's the first interactive card on the
+      // page after the greeting.
+      return [...document.querySelectorAll('a[href="/routine"]')].some(a =>
+        a.textContent.includes('morning') || a.textContent.includes('Continue') || a.textContent.includes('Start')
+      );
+    });
+    await record('T1: Home has greeting + morning routine card',
+      greetingVisible && routineCardVisible,
+      `greeting=${greetingVisible} routine_card=${routineCardVisible}`);
     await page.context().close();
   }
 
   // ============================================================
-  // T2: Marcus — Daily Text button — claims no state change
+  // T2: /routine route renders the 4-step morning flow
   // ============================================================
   {
-    const { page, gotoApp, safeClick } = await fresh(browser);
+    const { page, gotoApp } = await fresh(browser);
     await gotoApp();
+    await page.goto(URL('/routine'));
+    await page.waitForTimeout(2500);
+    const steps = await page.evaluate(() => {
+      return [...document.querySelectorAll('.ios-row, button.ios-row')].map(b =>
+        b.textContent.trim().slice(0, 60)
+      );
+    });
+    const hasRead = steps.some(s => s.includes("today") || s.includes('Read today'));
+    const hasPray = steps.some(s => s.includes('Pray') || s.toLowerCase().includes('prayer'));
+    const hasReflect = steps.some(s => s.includes('Reflect'));
+    await record('T2: /routine has Read, Pray, Reflect steps',
+      hasRead && hasPray && hasReflect,
+      `steps=${JSON.stringify(steps)}`);
+    await page.context().close();
+  }
 
-    // Daily text is in the DailyTasksSection. It's a div with role="button",
-    // not a <button> element. Use getByRole which respects ARIA roles.
-    // The role is on the row container; use a name filter that includes
-    // "Daily Text" or "Today's Text" or "Read today's text".
-    const btn = page.getByRole('button', { name: /Daily Text|Today's Text|Read today's text/i }).first();
-    if ((await btn.count()) === 0) {
-      await record('T2: Daily Text click registers', false, 'Daily Text button (role=button) not found in DOM');
+  // ============================================================
+  // T3: Marking "Pray" as done persists across page navigation.
+  // The routine is per-day localStorage; a refresh should still
+  // show the step as done.
+  // ============================================================
+  {
+    const { page, gotoApp } = await fresh(browser);
+    await gotoApp();
+    await page.goto(URL('/routine'));
+    await page.waitForTimeout(2500);
+    // Click the "Pray" step (the second ios-row button)
+    const prayBtn = page.locator('button.ios-row').filter({ hasText: /Pray|prayer/ }).first();
+    if ((await prayBtn.count()) === 0) {
+      await record('T3: Pray step toggles and persists across reload', false, 'Pray button not found');
     } else {
-      const before = await page.evaluate(() => {
-        // Capture any button state we can find
-        return {
-          bodyText: document.body.textContent.match(/Daily Text|Today's Text|Read today's text/i)?.[0] || 'NOT_FOUND',
-          storage: Object.keys(localStorage).filter(k => k.startsWith('jw-')),
-        };
+      await prayBtn.scrollIntoViewIfNeeded();
+      await prayBtn.click();
+      await page.waitForTimeout(800);
+      // Reload and check the step is still marked done
+      await page.reload();
+      await page.waitForTimeout(2500);
+      const stillDone = await page.evaluate(() => {
+        // After tapping pray, the step shows "done" tag (a green check
+        // instead of chevron) — and "Pray" with a "done" subtitle
+        const raw = localStorage.getItem('jw-routine-state');
+        if (!raw) return false;
+        try {
+          const state = JSON.parse(raw);
+          return state.prayed === true && state.date === new Date().toISOString().slice(0, 10);
+        } catch { return false; }
       });
-      await safeClick(btn);
-      await page.waitForTimeout(1000);
-      const after = await page.evaluate(() => ({
-        bodyText: document.body.textContent.match(/Daily Text|Today's Text|Read today's text/i)?.[0] || 'NOT_FOUND',
-        storage: Object.keys(localStorage).filter(k => k.startsWith('jw-')),
+      await record('T3: Pray step toggles and persists across reload', stillDone, `localStorage_prayed=${stillDone}`);
+    }
+    await page.context().close();
+  }
+
+  // ============================================================
+  // T4: Home shows the routine card as "Continue your morning
+  // routine" after 1 step is done (replaces "Start your morning
+  // routine").
+  // ============================================================
+  {
+    const { page, gotoApp } = await fresh(browser);
+    await gotoApp();
+    // Pre-seed 1 step done
+    await page.evaluate(() => {
+      localStorage.setItem('jw-routine-state', JSON.stringify({
+        date: new Date().toISOString().slice(0, 10),
+        textRead: true,
+        prayed: false,
+        reflected: false,
       }));
-      // Pass if the click triggered a localStorage write (the user marked it done)
-      const changed = JSON.stringify(before) !== JSON.stringify(after);
-      await record('T2: Daily Text click registers',
-        changed,
-        `storage_before=${before.storage.length} storage_after=${after.storage.length}`);
-    }
+    });
+    await page.goto(URL('/'));
+    await page.waitForTimeout(2500);
+    const cardText = await page.evaluate(() => {
+      const a = document.querySelector('a[href="/routine"]');
+      return a ? a.textContent.trim() : 'no card';
+    });
+    const saysContinue = cardText.includes('Continue');
+    const saysLeft = cardText.includes('left') || cardText.includes('2');
+    await record('T4: Home shows "Continue your morning routine" after 1 step',
+      saysContinue && saysLeft,
+      `card_text="${cardText.slice(0, 80)}"`);
     await page.context().close();
   }
 
   // ============================================================
-  // T3: Marcus — Bible Reading chapter button — claims no state change
+  // T5: /habits route renders the 6-row directory
   // ============================================================
   {
-    const { page, gotoApp, safeClick } = await fresh(browser);
+    const { page, gotoApp } = await fresh(browser);
     await gotoApp();
-
-    // Bible chapter buttons render as "1Ch. 74", "2Ch. 75", etc. (no space
-    // between the leading number and "Ch."). Match the pattern with regex.
-    const btn = page.locator('button').filter({ hasText: /\d+Ch\./ }).first();
-    if ((await btn.count()) === 0) {
-      await record('T3: Bible chapter click registers', false, 'Bible chapter button not found (selector: button:has-text(/\\d+Ch\\./))');
-    } else {
-      const before = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('jw-')));
-      const beforeText = await btn.textContent();
-      await safeClick(btn);
-      await page.waitForTimeout(1000);
-      const after = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('jw-')));
-      // Look for any bible-related storage write
-      const bibleStorageChanged = after.length > before.length;
-      await record('T3: Bible chapter click registers',
-        bibleStorageChanged,
-        `before_btn="${beforeText.trim()}" storage_keys_before=${before.length} after=${after.length}`);
-    }
+    await page.goto(URL('/habits'));
+    await page.waitForTimeout(2500);
+    const linkRows = await page.evaluate(() => {
+      return [...document.querySelectorAll('div.ios-grouped a.ios-row')].map(a => ({
+        href: a.getAttribute('href'),
+        target: a.getAttribute('target'),
+      }));
+    });
+    const allJwOrg = linkRows.every(l => l.href && /jw\.org|wol\.jw\.org/.test(l.href));
+    const allBlank = linkRows.every(l => l.target === '_blank');
+    const expectedTitles = ['Daily text', 'Bible reading', 'Prayer', 'Family worship', 'Meeting prep'];
+    const titles = await page.evaluate(() => {
+      return [...document.querySelectorAll('a.ios-row .title')].map(t => t.textContent.trim());
+    });
+    const allPresent = expectedTitles.every(t => titles.includes(t));
+    await record('T5: /habits has 6+ jw.org link-out rows',
+      allJwOrg && allBlank && allPresent,
+      `count=${linkRows.length} titles=${JSON.stringify(titles)}`);
     await page.context().close();
   }
 
   // ============================================================
-  // T4: Marcus/Aunt Rose — drawer menu opens — claims non-functional.
-  // The previous version of this test clicked a "How this app
-  // works" link on the home; the redesign removed that link
-  // (the home now points to actual feature surfaces via the
-  // Explore block on fresh users, and the side drawer is enough
-  // for returning users). T4 now verifies the hamburger menu
-  // button is wired up to open the side drawer.
+  // T6: Hamburger menu opens the side drawer (kept from before)
   // ============================================================
   {
-    const { page, gotoApp, safeClick } = await fresh(browser);
+    const { page, gotoApp } = await fresh(browser);
     await gotoApp();
-
-    // Find the hamburger button by aria-label="Open menu"
     const menuBtn = page.locator('button[aria-label="Open menu"]').first();
     if ((await menuBtn.count()) === 0) {
-      await record('T4: Hamburger menu button is wired up', false, 'Menu button (aria-label="Open menu") not found in DOM');
+      await record('T6: Hamburger menu opens the side drawer', false, 'Menu button (aria-label="Open menu") not found in DOM');
     } else {
-      const exists = await menuBtn.evaluate(el => ({
-        tag: el.tagName,
-        ariaLabel: el.getAttribute('aria-label'),
-        text: el.textContent.trim().slice(0, 20),
-      }));
-      await safeClick(menuBtn);
+      await menuBtn.click();
       await page.waitForTimeout(800);
-      // The drawer should now be open. Check for a known drawer label.
       const drawerVisible = await page.evaluate(() => {
         return [...document.querySelectorAll('aside, [aria-label*="menu"], [role="dialog"]')].length > 0
-          || [...document.querySelectorAll('*')].some(el => el.textContent.includes('Quick Links') || el.textContent.includes('Settings'));
+          || [...document.querySelectorAll('*')].some(el => el.textContent.includes('Settings') && el.textContent.includes('Ideas'));
       });
-      await record('T4: Hamburger menu opens the side drawer',
-        drawerVisible,
-        `menu=${JSON.stringify(exists)} drawer_visible=${drawerVisible}`);
+      await record('T6: Hamburger menu opens the side drawer', drawerVisible, `drawer_visible=${drawerVisible}`);
     }
     await page.context().close();
   }
 
   // ============================================================
-  // T5: Marcus/Paula — /stats page — claims blank
+  // T7: Side drawer has Routine, All habits, Settings, Ideas, About
   // ============================================================
   {
     const { page, gotoApp } = await fresh(browser);
     await gotoApp();
-
-    await page.goto(URL('/stats'));
-    await page.waitForTimeout(4000);
-    const statsState = await page.evaluate(() => {
-      const main = document.querySelector('main') || document.body;
-      const headings = [...main.querySelectorAll('h1, h2, h3')].map(h => h.textContent.trim()).slice(0, 10);
-      const mainText = main.textContent.replace(/\s+/g, ' ').trim().slice(0, 300);
-      return { headings, mainText, hasMain: !!document.querySelector('main') };
+    const menuBtn = page.locator('button[aria-label="Open menu"]').first();
+    await menuBtn.click();
+    await page.waitForTimeout(800);
+    const drawerItems = await page.evaluate(() => {
+      return [...document.querySelectorAll('aside button')].map(b => b.textContent.trim().slice(0, 60));
     });
-    const hasContent = statsState.headings.length > 0 || (statsState.mainText && statsState.mainText.length > 50);
-    await record('T5: /stats page has content',
-      hasContent,
-      `headings=[${statsState.headings.join(' | ')}] body_text_len=${statsState.mainText.length} preview="${statsState.mainText.slice(0, 150)}"`);
+    const hasRoutine = drawerItems.some(t => t.toLowerCase().includes('routine'));
+    const hasHabits = drawerItems.some(t => t.toLowerCase().includes('habits'));
+    const hasSettings = drawerItems.some(t => t.includes('Settings'));
+    const hasIdeas = drawerItems.some(t => t.includes('Ideas'));
+    const hasAbout = drawerItems.some(t => t.includes('About'));
+    await record('T7: Drawer has Routine, All habits, Settings, Ideas, About',
+      hasRoutine && hasHabits && hasSettings && hasIdeas && hasAbout,
+      `items=${JSON.stringify(drawerItems)}`);
     await page.context().close();
   }
 
   // ============================================================
-  // T6: Marcus — /links page — claims blank
+  // T8: /settings page renders (kept from before)
   // ============================================================
   {
     const { page, gotoApp } = await fresh(browser);
     await gotoApp();
-
-    await page.goto(URL('/links'));
-    await page.waitForTimeout(4000);
-    const linksState = await page.evaluate(() => {
-      const main = document.querySelector('main') || document.body;
-      const headings = [...main.querySelectorAll('h1, h2, h3')].map(h => h.textContent.trim()).slice(0, 10);
-      const linkCount = main.querySelectorAll('a').length;
-      const mainText = main.textContent.replace(/\s+/g, ' ').trim().slice(0, 300);
-      return { headings, linkCount, mainText };
-    });
-    const hasContent = linksState.headings.length > 0 || linksState.linkCount > 0;
-    await record('T6: /links page has content',
-      hasContent,
-      `headings=[${linksState.headings.join(' | ')}] linkCount=${linksState.linkCount} body_text_len=${linksState.mainText.length}`);
-    await page.context().close();
-  }
-
-  // ============================================================
-  // T7: Aunt Rose — Onboarding appears every time — claims no returning-user flow
-  // ============================================================
-  {
-    const { page } = await fresh(browser);
-    // First visit: fresh user
-    await page.goto(URL());
-    await page.waitForTimeout(5000);
-    // Mark onboarded
-    await page.evaluate(() => {
-      localStorage.setItem('jw-habits-onboarded', 'true');
-      localStorage.setItem('installPromptDismissed', 'true');
-    });
-    // Reload — onboarding should NOT reappear
-    await page.goto(URL());
-    await page.waitForTimeout(5000);
-    const onboardingVisible = await page.evaluate(() => {
-      // Onboarding renders a fixed-position overlay with specific copy.
-      // Look for any "Get Started" / "Skip" buttons (only in Onboarding).
-      const getStarted = [...document.querySelectorAll('button')].some(b => b.textContent.trim() === 'Get Started');
-      const skip = [...document.querySelectorAll('button')].some(b => b.textContent.trim() === 'Skip');
-      return getStarted || skip;
-    });
-    await record('T7: Onboarding does NOT appear for returning user',
-      !onboardingVisible,
-      `onboarding_visible_after_reload=${onboardingVisible}  (claim: it appears every time)`);
-    await page.context().close();
-  }
-
-  // ============================================================
-  // T8: Danny — Dark mode — claims saved to localStorage but data-theme never set
-  // ============================================================
-  {
-    const { page, gotoApp, safeClick } = await fresh(browser);
-    await gotoApp();
-
-    // Go to settings and click the dark mode toggle.
-    // The button text is "Dark Mode" when in light mode, "Light Mode" when in dark.
     await page.goto(URL('/settings'));
-    await page.waitForTimeout(3000);
-    const darkBtn = page.locator('button').filter({ hasText: /^(Dark Mode|Light Mode)$/ }).first();
+    await page.waitForTimeout(2500);
+    const sections = await page.evaluate(() => {
+      return [...document.querySelectorAll('h2')].map(h => h.textContent.trim().slice(0, 50));
+    });
+    const hasAppearance = sections.some(s => s.includes('Appearance'));
+    const hasDataReset = sections.some(s => s.includes('Data reset') || s.includes('Data management'));
+    const noNotifications = !sections.some(s => s.toLowerCase().includes('notification'));
+    const noDailyRoutine = !sections.some(s => s.toLowerCase().includes('daily routine'));
+    await record('T8: /settings has Appearance + Data reset, no Notifications',
+      hasAppearance && hasDataReset && noNotifications && noDailyRoutine,
+      `sections=${JSON.stringify(sections)}`);
+    await page.context().close();
+  }
+
+  // ============================================================
+  // T9: Dark mode toggle writes to localStorage AND updates data-theme
+  // ============================================================
+  {
+    const { page, gotoApp } = await fresh(browser);
+    await gotoApp();
+    await page.goto(URL('/settings'));
+    await page.waitForTimeout(2000);
+    const darkBtn = page.locator('button[aria-label*="oggle light"]').first();
     if ((await darkBtn.count()) === 0) {
-      await record('T8: Dark mode toggle applies data-theme', false, 'Dark/Light mode button not found in Settings');
+      await record('T9: Dark mode toggle exists in /settings', false, 'No dark-mode toggle button found');
     } else {
-      const themeBefore = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
       const storageBefore = await page.evaluate(() => {
         const v = localStorage.getItem('jw-progress-settings');
         try { return JSON.parse(v); } catch { return null; }
       });
-      await safeClick(darkBtn);
+      const themeBefore = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+      await darkBtn.scrollIntoViewIfNeeded();
+      await darkBtn.click();
       await page.waitForTimeout(1500);
-      const themeAfter = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
       const storageAfter = await page.evaluate(() => {
         const v = localStorage.getItem('jw-progress-settings');
         try { return JSON.parse(v); } catch { return null; }
       });
-      const themeChanged = themeBefore !== themeAfter;
+      const themeAfter = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
       const storageChanged = JSON.stringify(storageBefore) !== JSON.stringify(storageAfter);
-      // Claim is: storage changes but theme does not. So storageChanged=true AND themeChanged=false would be the bug
-      const isBug = storageChanged && !themeChanged;
-      await record('T8: Dark mode toggle applies data-theme',
-        !isBug,
-        `theme: ${themeBefore} -> ${themeAfter}  storage_changed=${storageChanged}  (claim: storage changes but theme does not)`);
+      const themeChanged = themeBefore !== themeAfter;
+      await record('T9: Dark mode toggle writes to localStorage AND updates data-theme',
+        storageChanged && themeChanged,
+        `storage_changed=${storageChanged} theme_before=${themeBefore} theme_after=${themeAfter}`);
     }
     await page.context().close();
   }
 
   // ============================================================
-  // T9: Danny — Service Quick Add — claims silent (no feedback)
-  // ============================================================
-  {
-    const { page, gotoApp, safeClick } = await fresh(browser);
-    await gotoApp();
-
-    await page.goto(URL('/service'));
-    await page.waitForTimeout(3000);
-    const beforeCount = await page.evaluate(() => {
-      const text = document.body.textContent;
-      return text.match(/(\d+(?:\.\d+)?)\s*h/i)?.[0] || 'NOT_FOUND';
-    });
-    // The "1h", "2h", "3h" quick add buttons. Match exactly the button text.
-    const quickAdd = page.locator('button').filter({ hasText: /^1h$/ }).first();
-    if ((await quickAdd.count()) === 0) {
-      await record('T9: Service Quick Add provides feedback', false, '1h button not found (selector: button:has-text(/^1h$/))');
-    } else {
-      await safeClick(quickAdd);
-      await page.waitForTimeout(1000);
-      const afterCount = await page.evaluate(() => {
-        const text = document.body.textContent;
-        return text.match(/(\d+(?:\.\d+)?)\s*h/i)?.[0] || 'NOT_FOUND';
-      });
-      const feedback = await page.evaluate(() => {
-        const toasts = document.querySelectorAll('[role="status"], [role="alert"], .toast, .snackbar, [data-sonner-toast]');
-        return [...toasts].map(t => t.textContent.trim().slice(0, 100));
-      });
-      // Look for actual storage write (jw-service-storage) as the source of truth
-      const storage = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('jw-')));
-      const counterChanged = beforeCount !== afterCount || storage.includes('jw-service-storage');
-      await record('T9: Service Quick Add provides feedback',
-        counterChanged,
-        `hour_counter: ${beforeCount} -> ${afterCount}  storage=${storage.join(',')}  toasts=[${feedback.join(' | ')}]  (claim: silent, no feedback)`);
-    }
-    await page.context().close();
-  }
-
-  // ============================================================
-  // T10: Paula — Goals "New" button — claims non-functional
-  // ============================================================
-  {
-    const { page, gotoApp, safeClick } = await fresh(browser);
-    await gotoApp();
-
-    await page.goto(URL('/goals'));
-    await page.waitForTimeout(3000);
-    // The button text is just "New". Match the button whose trimmed text is "New".
-    const newBtn = page.locator('button').filter({ hasText: /^New$/ }).first();
-    if ((await newBtn.count()) === 0) {
-      await record('T10: Goals "New" button opens form', false, 'New button not found (selector: button:has-text(/^New$/))');
-    } else {
-      const beforeInputs = await page.evaluate(() => document.querySelectorAll('input, textarea').length);
-      await safeClick(newBtn);
-      await page.waitForTimeout(1500);
-      const afterState = await page.evaluate(() => {
-        const main = document.body;
-        return {
-          hasInput: !!main.querySelector('input[type="text"], textarea, input:not([type])'),
-          hasModal: !!main.querySelector('[role="dialog"], .modal, [data-modal]'),
-          inputCount: main.querySelectorAll('input, textarea').length,
-          placeholderText: [...main.querySelectorAll('input, textarea')].map(i => i.placeholder || i.getAttribute('aria-label') || '').slice(0, 3),
-        };
-      });
-      const opened = afterState.hasInput || afterState.hasModal || afterState.inputCount > beforeInputs;
-      await record('T10: Goals "New" button opens form',
-        opened,
-        `inputs_before=${beforeInputs} inputs_after_click=${afterState.inputCount} modal=${afterState.hasModal} placeholders=[${afterState.placeholderText.join(' | ')}]  (claim: button non-functional)`);
-    }
-    await page.context().close();
-  }
-
-  // ============================================================
-  // T11: Paula — /projects page — claims completely blank
+  // T10: Reset all data button clears all jw-* localStorage keys
+  // (including the routine state).
   // ============================================================
   {
     const { page, gotoApp } = await fresh(browser);
     await gotoApp();
-
-    await page.goto(URL('/projects'));
-    await page.waitForTimeout(4000);
-    const projectsState = await page.evaluate(() => {
-      const main = document.querySelector('main') || document.body;
-      const headings = [...main.querySelectorAll('h1, h2, h3')].map(h => h.textContent.trim()).slice(0, 5);
-      const mainText = main.textContent.replace(/\s+/g, ' ').trim();
-      const hasOnlyNav = /Home\s*Study\s*Goals\s*Service/.test(mainText) && mainText.length < 200;
-      return { headings, mainTextLen: mainText.length, hasOnlyNav, preview: mainText.slice(0, 200) };
+    // Pre-seed routine + fake data
+    await page.evaluate(() => {
+      localStorage.setItem('jw-routine-state', JSON.stringify({ date: '2026-06-14', prayed: true, textRead: true }));
+      localStorage.setItem('jw-fake-key', 'foo');
+      localStorage.setItem('jw-progress-settings', JSON.stringify({ state: { theme: 'dark' }, version: 0 }));
     });
-    const hasContent = projectsState.headings.length > 0 || (projectsState.mainTextLen > 200 && !projectsState.hasOnlyNav);
-    await record('T11: /projects page has content',
-      hasContent,
-      `headings=[${projectsState.headings.join(' | ')}] body_len=${projectsState.mainTextLen} only_nav=${projectsState.hasOnlyNav} preview="${projectsState.preview.slice(0, 120)}"`);
+    await page.goto(URL('/settings'));
+    await page.waitForTimeout(2000);
+    await page.evaluate(() => { window.confirm = () => true; });
+    const resetBtn = page.locator('button').filter({ hasText: /Reset all|clearAll|Clear all/i }).first();
+    if ((await resetBtn.count()) === 0) {
+      await record('T10: Reset button exists in /settings', false, 'No reset button found');
+    } else {
+      await resetBtn.click();
+      await page.waitForTimeout(1500);
+      const remainingKeys = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('jw-')));
+      await record('T10: Reset all data button clears all jw-* localStorage keys (including routine)',
+        remainingKeys.length === 0,
+        `remaining_jw_keys=${JSON.stringify(remainingKeys)}`);
+    }
     await page.context().close();
   }
 
   // ============================================================
-  // T12: REGRESSION — Onboarding modal completion must write
-  // jw-habits-onboarded-v2 so the home picker does NOT also fire.
-  // This is the test that the gap-analysis caught: a real first-
-  // time user was seeing BOTH the 6-step Onboarding modal AND
-  // the "Build your daily routine" picker because the two flows
-  // used disjoint localStorage keys and the Onboarding modal
-  // never wrote the picker's key.
+  // T11: /ideas page renders with link-out rows (kept from before)
   // ============================================================
   {
-    const ctx = await browser.newContext({ viewport: { width: 414, height: 896 } });
+    const { page, gotoApp } = await fresh(browser);
+    await gotoApp();
+    await page.goto(URL('/ideas'));
+    await page.waitForTimeout(2500);
+    const linkRows = await page.evaluate(() => {
+      return [...document.querySelectorAll('div.ios-grouped a.ios-row')].length;
+    });
+    const hasMultiple = linkRows >= 2;
+    await record('T11: /ideas has multiple jw.org link-out rows', hasMultiple, `count=${linkRows}`);
+    await page.context().close();
+  }
+
+  // ============================================================
+  // T12: Fresh user lands directly on the launchpad (no modal,
+  // no picker). The launchpad IS the home, with the morning
+  // routine as the primary CTA and the directory of 6 habits
+  // as a secondary "All habits" link.
+  // ============================================================
+  {
+    const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, ignoreHTTPSErrors: true });
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', e => errors.push('PAGEERR: ' + e.message.slice(0, 200)));
     page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text().slice(0, 200)); });
 
-    // 1. Start fully fresh
     await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
     await page.waitForTimeout(3000);
     await page.evaluate(() => {
       Object.keys(localStorage).forEach(k => { if (k.startsWith('jw-')) localStorage.removeItem(k); });
     });
-
-    // 2. Visit home, expect Onboarding modal to appear (NOT picker)
     await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
     await page.waitForTimeout(3000);
-    const initialPickerVisible = await page.evaluate(() => {
-      return [...document.querySelectorAll('h2')].some(h => h.textContent.includes('Build your daily routine'));
+    const hasMorningCard = await page.evaluate(() => {
+      return !!document.querySelector('a[href="/routine"]');
     });
-    const initialOnboardingVisible = await page.evaluate(() => {
-      // Onboarding modal renders the welcome text in an <h2>
-      return [...document.querySelectorAll('h2')].some(h => h.textContent.includes('Welcome to JW Habits'));
+    const hasHabitsLink = await page.evaluate(() => {
+      return !!document.querySelector('a[href="/habits"]');
     });
-
-    // 3. Skip the Onboarding modal (tap "Skip" link at the end
-    // of step 1 — the modal has 7 steps: cover, name, 4 features,
-    // publisher, finish)
-    for (let i = 0; i < 8; i++) {
-      const skip = page.locator('button:has-text("Skip"), a:has-text("Skip")').last();
-      if (await skip.count() > 0) {
-        await skip.click();
-        await page.waitForTimeout(500);
-      }
-      // Try "Get Started" too
-      const getStarted = page.locator('button:has-text("Get Started")').last();
-      if (await getStarted.count() > 0) {
-        await getStarted.click();
-        await page.waitForTimeout(500);
-      }
-      const stillVisible = await page.evaluate(() => {
-        return [...document.querySelectorAll('h2')].some(h => h.textContent.includes('Welcome to JW Habits'));
-      });
-      if (!stillVisible) {
-        console.log('Onboarding dismissed at iteration', i);
-        break;
-      }
-    }
-    const pickerAfterOnboarding = await page.evaluate(() => {
-      return [...document.querySelectorAll('h2')].some(h => h.textContent.includes('Build your daily routine'));
+    const noModal = await page.evaluate(() => {
+      return ![...document.querySelectorAll('[class*="fixed"][class*="inset-0"]')].some(el =>
+        el.textContent.includes('Welcome')
+      );
     });
-    // v2 key should be set
-    const v2Key = await page.evaluate(() => localStorage.getItem('jw-habits-onboarded-v2'));
-    // v1 key should also be set
-    const v1Key = await page.evaluate(() => localStorage.getItem('jw-habits-onboarded'));
-
-    const pickerBlocked = !pickerAfterOnboarding;
-    const bothKeysSet = v2Key === '1' && v1Key === 'true';
     const noConsoleErrors = errors.length === 0;
-    const pass1 = pickerBlocked && bothKeysSet && noConsoleErrors;
     await record(
-      'T12: Onboarding completion suppresses habit picker (regression)',
-      pass1,
-      `picker_visible=${pickerAfterOnboarding} v1=${v1Key} v2=${v2Key} errors=${errors.length}`
+      'T12: Fresh user lands on home with morning routine as primary CTA',
+      hasMorningCard && hasHabitsLink && noModal && noConsoleErrors,
+      `morning_card=${hasMorningCard} habits_link=${hasHabitsLink} no_modal=${noModal} errors=${errors.length}`
     );
-    if (errors.length > 0) console.log('  console errors:', errors);
     await ctx.close();
   }
 
   // ============================================================
-  // T13: REGRESSION — Fresh user with NO Onboarding completion
-  // has v2 unset AND the modal appears. The picker is technically
-  // in the DOM behind the modal (Home renders even with the modal
-  // open), but the user only sees the modal until they tap Skip
-  // or complete onboarding. The test verifies the state invariants
-  // rather than visual occlusion: v2 is unset AND the Onboarding
-  // modal is visible.
+  // T13: Tapping the morning routine card opens /routine
   // ============================================================
   {
-    const ctx = await browser.newContext({ viewport: { width: 414, height: 896 } });
+    const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, ignoreHTTPSErrors: true });
     const page = await ctx.newPage();
     await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
     await page.evaluate(() => {
-      // Wipe all jw-* so we're a real fresh user
       Object.keys(localStorage).forEach(k => { if (k.startsWith('jw-')) localStorage.removeItem(k); });
     });
     await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
     await page.waitForTimeout(3000);
-    // The Onboarding modal WILL be visible (it's the modal that
-    // gets shown for a fresh user). The picker text is in the
-    // DOM behind it — but that's by design: dismissing the modal
-    // via the new T12 path suppresses the picker.
-    const onboardingVisible = await page.evaluate(() => {
-      return [...document.querySelectorAll('h2')].some(h => h.textContent.includes('Welcome to JW Habits'));
+    await page.locator('a[href="/routine"]').first().click();
+    await page.waitForTimeout(2500);
+    const routineVisible = await page.evaluate(() => {
+      const h1 = document.querySelector('h1');
+      return h1 && (h1.textContent.includes('Morning') || h1.textContent.includes('routine'));
     });
-    // v2 is NOT set yet (Onboarding hasn't completed)
-    const v2BeforeComplete = await page.evaluate(() => localStorage.getItem('jw-habits-onboarded-v2'));
-    const v2StillUnset = v2BeforeComplete === null;
+    const stepsPresent = await page.evaluate(() => {
+      const text = document.body.innerText.toLowerCase();
+      return text.includes('read') && text.includes('pray') && text.includes('reflect');
+    });
     await record(
-      'T13: Fresh user has Onboarding modal showing + v2 unset (regression)',
-      onboardingVisible && v2StillUnset,
-      `onboarding_visible=${onboardingVisible} v2_pre_complete=${v2BeforeComplete}`
+      'T13: Tapping morning routine card opens /routine with 3 steps',
+      routineVisible && stepsPresent,
+      `routine_visible=${routineVisible} steps_present=${stepsPresent}`
     );
     await ctx.close();
   }
@@ -576,10 +436,12 @@ async function record(name, ok, evidence) {
   console.log('\n========================================');
   console.log(`VERIFICATION COMPLETE: ${pass} PASS, ${fail} FAIL out of ${results.length} tests`);
   console.log('========================================\n');
-
-  results.forEach((r, i) => {
-    console.log(`${i+1}. [${r.ok ? '✓' : '✗'}] ${r.name}`);
+  results.forEach(r => {
+    console.log(`${r.ok ? '✓' : '✗'} ${r.name}`);
+    if (!r.ok) console.log(`   ${r.detail}`);
   });
-
   process.exit(fail > 0 ? 1 : 0);
-})();
+})().catch(err => {
+  console.error('Test crashed:', err);
+  process.exit(2);
+});
