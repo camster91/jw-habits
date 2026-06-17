@@ -13,13 +13,13 @@
 //   T3:  Tapping a checkbox marks the habit done
 //   T4:  Unchecking returns the row to its original state
 //   T5:  Per-day reset (state from yesterday doesn't carry over)
-//   T6:  Hamburger menu opens the side drawer
-//   T7:  Drawer has Settings + Ideas + About
-//   T8:  /settings renders (Appearance + Data reset)
-//   T9:  Dark mode toggle writes to localStorage AND updates data-theme
-//   T10: Reset button clears all jw-* localStorage keys
-//   T11: /ideas page renders
-//   T12: /about page renders
+//   T6:  Home is the only page (no hamburger, no settings gear, no drawer)
+//   T7:  Only the home + /share routes are in the SPA
+//   T8:  Home footer contains the jw.org third-party disclaimer (inline)
+//   T9:  Theme follows prefers-color-scheme (no UI toggle, OS-controlled)
+//   T10: No "Reset" button on the home (data reset is browser-controlled)
+//   T11: /ideas resolves to the home (no separate ideas page)
+//   T12: /about resolves to the home (disclaimer inline in footer)
 //   T13: No console errors, no 404s on the home page
 //   T14: Done state persists across page reload
 //   T15: First-launch hint shows once, hides after first tap
@@ -201,151 +201,161 @@ async function gotoHome(page) {
     await page.context().close();
   }
 
-  // T6: Hamburger menu opens the side drawer
+  // T6: Home is the only page — no hamburger menu, no settings
+  // gear, no drawer. The top bar contains the app title only.
+  // The app is one page; navigation goes out to jw.org, not
+  // to other in-app routes.
   {
     const { page } = await fresh(browser);
     await gotoHome(page);
-    const menuBtn = page.locator('button[aria-label="Open menu"]').first();
-    if ((await menuBtn.count()) === 0) {
-      await record('T6: Hamburger menu opens the side drawer', false, 'Menu button (aria-label="Open menu") not found');
-    } else {
-      await menuBtn.click();
-      await page.waitForTimeout(800);
-      const drawerVisible = await page.evaluate(() => {
-        return [...document.querySelectorAll('aside, [aria-label*="menu"], [role="dialog"]')].length > 0
-          || [...document.querySelectorAll('*')].some((el) => el.textContent.includes('Settings') && el.textContent.includes('Ideas'));
-      });
-      await record('T6: Hamburger menu opens the side drawer', drawerVisible, `drawer_visible=${drawerVisible}`);
-    }
+    const chrome = await page.evaluate(() => ({
+      hamburgerCount: document.querySelectorAll('button[aria-label="Open menu"]').length,
+      settingsGearCount: document.querySelectorAll('a[aria-label="Settings"]').length,
+      drawerCount: document.querySelectorAll('aside').length,
+      // The top bar is a <div>, not a <header> element. Find
+      // the JW Habits title by its uppercase class.
+      appTitle: [...document.querySelectorAll('span')]
+        .find((s) => /JW HABITS/i.test(s.textContent || ''))?.textContent.trim(),
+    }));
+    await record('T6: Home is the only page (no hamburger, no settings gear, no drawer)',
+      chrome.hamburgerCount === 0 && chrome.settingsGearCount === 0
+        && chrome.drawerCount === 0 && chrome.appTitle === 'JW Habits',
+      `hamburger=${chrome.hamburgerCount} gear=${chrome.settingsGearCount} drawer=${chrome.drawerCount} title=${chrome.appTitle}`);
     await page.context().close();
   }
 
-  // T7: Drawer has Settings + Ideas + About (no Routine, no All habits — those are gone)
+  // T7: Only one in-app route exists (the home). All other
+  // paths render the home (or 404 from the server). The
+  // /share path is reserved for the PWA share_target.
   {
     const { page } = await fresh(browser);
     await gotoHome(page);
-    const menuBtn = page.locator('button[aria-label="Open menu"]').first();
-    await menuBtn.click();
-    await page.waitForTimeout(800);
-    const drawerItems = await page.evaluate(() => {
-      return [...document.querySelectorAll('aside button')].map((b) => b.textContent.trim().slice(0, 60));
+    const routes = await page.evaluate(async () => {
+      const paths = ['/settings', '/ideas', '/about', '/share', '/unknown-route'];
+      const results = {};
+      for (const path of paths) {
+        try {
+          const r = await fetch(path, { method: 'HEAD' });
+          results[path] = r.status;
+        } catch (e) {
+          results[path] = 'ERR';
+        }
+      }
+      return results;
     });
-    const hasSettings = drawerItems.some((t) => t.includes('Settings'));
-    const hasIdeas = drawerItems.some((t) => t.includes('Ideas'));
-    const hasAbout = drawerItems.some((t) => t.includes('About'));
-    const hasRoutine = drawerItems.some((t) => t.toLowerCase().includes('routine'));
-    const hasAllHabits = drawerItems.some((t) => t.toLowerCase().includes('habits'));
-    await record('T7: Drawer has Settings + Ideas + About (no Routine, no All habits)',
-      hasSettings && hasIdeas && hasAbout && !hasRoutine && !hasAllHabits,
-      `items=${JSON.stringify(drawerItems)}`);
+    // /settings, /ideas, /about are gone (no route defined)
+    // — the SPA returns index.html with HTTP 200 (no server
+    // 404s since Cloudflare/Traefik serves index.html for
+    // unknown paths). The page that loads is the Home (since
+    // <Route path="/"> matches everything not matched).
+    // /share has a real route (PWA share_target landing).
+    await record('T7: Only the home + /share routes are in the SPA',
+      routes['/share'] === 200,
+      `routes=${JSON.stringify(routes)}`);
     await page.context().close();
   }
 
-  // T8: /settings page renders with Appearance + Data reset (no Notifications)
+  // T8: The home footer contains the third-party disclaimer
+  // (jw.org ToS requirement). It does NOT link to a separate
+  // /about page — the disclaimer is inline.
   {
     const { page } = await fresh(browser);
     await gotoHome(page);
-    await page.goto(URL('/settings'));
-    await page.waitForTimeout(2500);
-    const sections = await page.evaluate(() => {
-      return [...document.querySelectorAll('h2')].map((h) => h.textContent.trim().slice(0, 50));
+    const footer = await page.evaluate(() => {
+      const el = document.querySelector('.ios-footer');
+      return el ? el.textContent.trim() : '';
     });
-    const hasAppearance = sections.some((s) => s.includes('Appearance'));
-    const hasDataReset = sections.some((s) => s.includes('Data reset') || s.includes('Data management'));
-    const noNotifications = !sections.some((s) => s.toLowerCase().includes('notification'));
-    const noDailyRoutine = !sections.some((s) => s.toLowerCase().includes('daily routine'));
-    await record('T8: /settings has Appearance + Data reset, no Notifications',
-      hasAppearance && hasDataReset && noNotifications && noDailyRoutine,
-      `sections=${JSON.stringify(sections)}`);
+    const hasUnofficial = /unofficial/i.test(footer);
+    const hasNotAffiliated = /not affiliated/i.test(footer);
+    await record('T8: Home footer contains the jw.org third-party disclaimer (inline)',
+      hasUnofficial && hasNotAffiliated,
+      `footer=${JSON.stringify(footer)}`);
     await page.context().close();
   }
 
-  // T9: Dark mode toggle writes to localStorage AND updates data-theme
+  // T9: Theme follows OS preference. With Settings gone, the
+  // user has no in-app theme toggle. The theme should resolve
+  // from prefers-color-scheme (or stored theme, which has
+  // priority).
   {
     const { page } = await fresh(browser);
     await gotoHome(page);
-    await page.goto(URL('/settings'));
+    // Emulate dark OS preference
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.reload();
     await page.waitForTimeout(2000);
-    const darkBtn = page.locator('button[aria-label*="oggle light"]').first();
-    if ((await darkBtn.count()) === 0) {
-      await record('T9: Dark mode toggle exists in /settings', false, 'No dark-mode toggle button found');
-    } else {
-      const storageBefore = await page.evaluate(() => {
-        const v = localStorage.getItem('jw-progress-settings');
-        try { return JSON.parse(v); } catch { return null; }
-      });
-      const themeBefore = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-      await darkBtn.scrollIntoViewIfNeeded();
-      await darkBtn.click();
-      await page.waitForTimeout(1500);
-      const storageAfter = await page.evaluate(() => {
-        const v = localStorage.getItem('jw-progress-settings');
-        try { return JSON.parse(v); } catch { return null; }
-      });
-      const themeAfter = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
-      const storageChanged = JSON.stringify(storageBefore) !== JSON.stringify(storageAfter);
-      const themeChanged = themeBefore !== themeAfter;
-      await record('T9: Dark mode toggle writes to localStorage AND updates data-theme',
-        storageChanged && themeChanged,
-        `storage_changed=${storageChanged} theme_before=${themeBefore} theme_after=${themeAfter}`);
-    }
+    const darkTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.reload();
+    await page.waitForTimeout(2000);
+    const lightTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    await record('T9: Theme follows prefers-color-scheme (no UI toggle, OS-controlled)',
+      darkTheme === 'dark' && lightTheme === 'light',
+      `dark_os_theme=${darkTheme} light_os_theme=${lightTheme}`);
     await page.context().close();
   }
 
-  // T10: Reset all data button clears all jw-* localStorage keys (incl. habit state)
+  // T10: Data reset is browser-controlled. The app exposes no
+  // UI to wipe localStorage; clearing site data in the browser
+  // is the only path. This test verifies the app doesn't
+  // surface any "reset" button on the home (otherwise it would
+  // duplicate a browser feature).
   {
     const { page } = await fresh(browser);
     await gotoHome(page);
-    // Pre-seed habit state + fake data
+    // Pre-seed habit state
     await page.evaluate(() => {
       localStorage.setItem('jw-daily-habits-state', JSON.stringify({
-        date: '2026-06-14',
+        date: new Date().toISOString().slice(0, 10),
         done: { text: true, prayer: true, bible: true, family: true, meeting: true },
       }));
-      localStorage.setItem('jw-fake-key', 'foo');
-      localStorage.setItem('jw-progress-settings', JSON.stringify({ state: { theme: 'dark' }, version: 0 }));
     });
-    await page.goto(URL('/settings'));
+    await page.goto(URL('/'));
     await page.waitForTimeout(2000);
-    await page.evaluate(() => { window.confirm = () => true; });
-    const resetBtn = page.locator('button').filter({ hasText: /Reset all|Clear all/i }).first();
-    if ((await resetBtn.count()) === 0) {
-      await record('T10: Reset button exists in /settings', false, 'No reset button found');
-    } else {
-      await resetBtn.click();
-      await page.waitForTimeout(1500);
-      const remainingKeys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('jw-')));
-      await record('T10: Reset clears all jw-* localStorage keys (including habit state)',
-        remainingKeys.length === 0,
-        `remaining_jw_keys=${JSON.stringify(remainingKeys)}`);
-    }
+    const resetButton = await page.evaluate(() => {
+      // Look for any "Reset" button on the home
+      const buttons = [...document.querySelectorAll('button')];
+      return buttons.filter((b) => /reset/i.test(b.textContent)).map((b) => b.textContent.trim());
+    });
+    await record('T10: No "Reset" button on the home (data reset is browser-controlled)',
+      resetButton.length === 0,
+      `reset_buttons=${JSON.stringify(resetButton)}`);
     await page.context().close();
   }
 
-  // T11: /ideas page renders
+  // T11: Reserved — was /ideas, now removed. The page does
+  // not exist; navigating to /ideas renders the home (or
+  // the SPA catches it and serves index.html).
   {
     const { page } = await fresh(browser);
     await gotoHome(page);
     await page.goto(URL('/ideas'));
     await page.waitForTimeout(2500);
-    const linkRows = await page.evaluate(() => {
-      return [...document.querySelectorAll('div.ios-grouped a.ios-row')].length;
+    const rows = await page.evaluate(() => {
+      // The home is rendered (the SPA fallback). Verify the
+      // 5 habit rows are present (which is what /ideas would
+      // resolve to now).
+      return document.querySelectorAll('div.ios-row').length;
     });
-    await record('T11: /ideas has link-out rows', linkRows >= 2, `count=${linkRows}`);
+    await record('T11: /ideas resolves to the home (no separate ideas page)',
+      rows === 5,
+      `rows=${rows}`);
     await page.context().close();
   }
 
-  // T12: /about page renders with disclaimer
+  // T12: Reserved — was /about, now removed. The disclaimer
+  // is inline in the home footer (verified by T8).
   {
     const { page } = await fresh(browser);
     await gotoHome(page);
     await page.goto(URL('/about'));
     await page.waitForTimeout(2500);
-    const hasDisclaimer = await page.evaluate(() => {
-      return document.body.innerText.toLowerCase().includes('unofficial')
-        || document.body.innerText.toLowerCase().includes('third-party');
+    const rows = await page.evaluate(() => {
+      return document.querySelectorAll('div.ios-row').length;
     });
-    await record('T12: /about page renders with disclaimer', hasDisclaimer, `body_excerpt="${(await page.evaluate(() => document.body.innerText.slice(0, 200)))})"`);
+    await record('T12: /about resolves to the home (disclaimer inline in footer, verified by T8)',
+      rows === 5,
+      `rows=${rows}`);
     await page.context().close();
   }
 

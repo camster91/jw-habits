@@ -1,30 +1,20 @@
-import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import ErrorBoundary from './components/ErrorBoundary';
-import { ToastProvider } from './components/Toast';
 import InstallPrompt from './components/InstallPrompt';
 import UpdatePrompt from './components/UpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
-import SideDrawer from './components/SideDrawer';
+import Share from './pages/Share';
 
-// Lazy load the meta pages. The home is the only user-facing
-// page (one iOS list of 5 link-out rows + a checkbox per row
-// to mark it done). Settings, About, Ideas, Share live in
-// the side drawer / footer / PWA share target.
-const Settings = lazy(() => import('./pages/Settings'));
-const SharePage = lazy(() => import('./pages/Share'));
-const IdeasPage = lazy(() => import('./pages/IdeasPage'));
-const About = lazy(() => import('./pages/About'));
-
-// Loading fallback component
-function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <span className="loading loading-spinner loading-lg text-primary"></span>
-    </div>
-  );
-}
+// The app is one page. Settings, Ideas, About, the side
+// drawer, the toast provider, and the per-user settings store
+// have all been removed. The only persisted state is the
+// per-day habit state in jw-daily-habits-state. The home page
+// does everything: 5 rows, each with a link to a jw.org surface
+// and a checkbox to mark "done." The /share route exists
+// because the PWA manifest declares a share_target pointing
+// at /share — the OS sends shared URLs here when the user
+// shares from another app.
 
 function App() {
   // Use Vite's base URL as React Router basename — works for both
@@ -40,31 +30,37 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <ToastProvider>
-        <Router basename={routerBasename}>
-          <SideDrawer>
-            <div className="app">
-              {/* PWA Components */}
-              <OfflineIndicator />
-              <UpdatePrompt />
-
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/share" element={<SharePage />} />
-                  <Route path="/ideas" element={<IdeasPage />} />
-                  <Route path="/about" element={<About />} />
-                </Routes>
-              </Suspense>
-
-              {/* Install Prompt (shown at bottom) */}
-              <InstallPrompt />
-            </div>
-          </SideDrawer>
-        </Router>
-      </ToastProvider>
+      <Router basename={routerBasename}>
+        <Routes>
+          <Route path="/" element={<HomeWithChrome />} />
+          <Route path="/share" element={<Share />} />
+          {/* Catch-all: any path that doesn't match a known
+              route renders the home. This makes /ideas, /about,
+              /settings all fall through to the home rather than
+              producing a blank page. Cloudflare/Traefik serves
+              index.html for any unknown path on this domain, and
+              the SPA's only "page" is the home, so any deep link
+              to a non-existent route should land on the home. */}
+          <Route path="*" element={<HomeWithChrome />} />
+        </Routes>
+      </Router>
     </ErrorBoundary>
+  );
+}
+
+// Home is the main page. Wrap it in the PWA chrome
+// (offline indicator + update prompt + install banner). The
+// install prompt is a small bottom banner that auto-dismisses
+// — it's not a settings menu, just a one-time browser
+// affordance.
+function HomeWithChrome() {
+  return (
+    <>
+      <OfflineIndicator />
+      <UpdatePrompt />
+      <Home />
+      <InstallPrompt />
+    </>
   );
 }
 

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, BookMarked, Heart, Users, UsersRound, ArrowUpRight, Menu, Settings } from 'lucide-react';
-import { useDrawer } from '../hooks/useDrawer';
-import useSettingsStore from '../stores/settingsStore';
+import { BookOpen, BookMarked, Heart, Users, UsersRound, ArrowUpRight } from 'lucide-react';
 import { getDailyTextLink, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 
@@ -26,9 +24,11 @@ import { getDailyReading } from '../utils/dailyBibleReading';
  * resets automatically. Yesterday's checks don't carry over.
  *
  * The page is intentionally minimal. No streak, no XP, no
- * timer, no "see you tomorrow" celebration, no toasts. Just
- * five rows, each with a link to do the actual habit on
- * jw.org and a checkbox to mark it done.
+ * timer, no "see you tomorrow" celebration, no toasts, no
+ * settings menu, no hamburger. Just five rows, each with a
+ * link to do the actual habit on jw.org and a checkbox to
+ * mark it done. The actual content lives on jw.org, not in
+ * this app — we only track progress.
  */
 
 const STATE_KEY = 'jw-daily-habits-state';
@@ -74,8 +74,6 @@ function saveState(state) {
 
 function Home() {
   const { t } = useTranslation();
-  const { openDrawer } = useDrawer();
-  const userName = useSettingsStore((s) => s.userName);
   // Initialize from localStorage. We re-read on `storage` events
   // and on visibilitychange so the checkbox state stays current
   // across tabs and on wake-from-sleep. If the saved state's
@@ -125,7 +123,7 @@ function Home() {
     ? dailyReading.url
     : JW_ORG_SECTIONS.bibles;
 
-  // The five habit rows, in the order Cam listed them. Each
+  // The 5 habit rows, in the order Cam listed them. Each
   // row has: a key (used for the done map), an icon
   // component, a color (used for the ios-icon background), a
   // title, an optional sub-text shown beneath the title, and
@@ -193,38 +191,23 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-base-200 pb-16">
-      {/* Sticky iOS top bar */}
+      {/* Sticky iOS top bar — title only. No hamburger, no
+          settings gear, no other chrome. The app is one
+          page. */}
       <div
         className="sticky top-0 z-30 backdrop-blur-lg bg-base-200/80 border-b border-base-300/30"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="container mx-auto px-4 max-w-2xl flex items-center justify-between h-12">
-          <button
-            onClick={openDrawer}
-            className="btn btn-ghost btn-sm btn-square -ml-2 text-base-content/70"
-            aria-label="Open menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
+        <div className="container mx-auto px-4 max-w-2xl flex items-center justify-center h-12">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/70">
             {t('appName', 'JW Habits')}
           </span>
-          <a
-            href="/settings"
-            className="btn btn-ghost btn-sm btn-square -mr-2 text-base-content/70"
-            aria-label="Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </a>
         </div>
       </div>
 
       <div className="container mx-auto px-4 max-w-2xl">
         <h1 className="ios-large-title">
-          {greetingText}
-          {userName ? (
-            <bdi className="name">, {userName.length > 20 ? userName.slice(0, 20) + '…' : userName}</bdi>
-          ) : ''}.
+          {greetingText}.
           <span className="sub">{formattedDate}</span>
         </h1>
 
@@ -312,26 +295,8 @@ function Home() {
           })}
         </div>
 
-        {/* Reset — a tiny utility, not a celebration. Tapping
-            it just wipes the done map for today. */}
-        {Object.values(state.done).some(Boolean) && (
-          <div className="mt-2 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                saveState({ date: todayKey(), done: {} });
-                setState({ date: todayKey(), done: {} });
-              }}
-              className="btn btn-ghost btn-sm text-base-content/60"
-            >
-              {t('habit.reset', 'Reset today')}
-            </button>
-          </div>
-        )}
-
         <div className="ios-footer">
-          Unofficial third-party tool. Not affiliated with jw.org.<br />
-          <a href="/about" className="font-bold text-[13px]" style={{ color: '#0055B3' }}>About →</a>
+          Unofficial third-party tool. Not affiliated with jw.org.
         </div>
 
         <div className="h-4" />

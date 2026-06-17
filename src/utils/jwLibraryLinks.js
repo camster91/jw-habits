@@ -94,12 +94,21 @@ export const JW_ORG_SECTIONS = {
  * @param {string} locale - Language code (default: 'E' for English)
  * @returns {string} JW Library finder URL
  */
-export function getDailyTextLink(date = new Date()) {
+export function getDailyTextLink(date = new Date(), locale = 'E') {
+  // Format the date as YYYYMMDD. We use the LOCAL date (not UTC)
+  // so that a user in EDT clicking "today's daily text" gets the
+  // EDT calendar day's text, not whatever UTC's day is. This
+  // matches how jw.org's date selector works.
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${year}${month}${day}`;
 
-  return `https://wol.jw.org/en/wol/h/r1/lp-e/text-today/${year}/${month}/${day}`;
+  // jw.org public-facing daily-text URL. Works in any browser,
+  // no JW Library app required. The `srcid=jwlshare&alias=daily-text`
+  // query tells jw.org this came from a shared JW Library link,
+  // and `date=YYYYMMDD&wtlocale=E` selects the day and locale.
+  return `https://www.jw.org/finder?srcid=jwlshare&alias=daily-text&date=${dateStr}&wtlocale=${locale}`;
 }
 
 /**

@@ -72,15 +72,30 @@ if (isNative) {
   });
 }
 
-// Apply persisted theme at app startup (before React mounts).
-// Without this, the theme only applied when the user visited Settings —
-// a fresh page-load with theme:'dark' in localStorage would render in light mode.
+// Apply theme at app startup (before React mounts). The
+// Settings page has been removed — there is no UI toggle. We
+// resolve the theme from one of two sources, in priority order:
+//  1. localStorage `jw-progress-settings.state.theme` — set
+//     programmatically (or by a previous version of the app
+//     before the Settings page was deleted). Preserved for
+//     users who explicitly chose dark mode before the strip-down.
+//  2. `prefers-color-scheme: dark` — the OS-level setting.
+//  3. light — the default.
+// Without this, a user on a dark OS would see a flash of
+// light mode before React mounted and the daisyUI theme took
+// over.
 try {
   const persistedSettings = JSON.parse(localStorage.getItem('jw-progress-settings') || '{}');
-  const theme = persistedSettings?.state?.theme;
-  if (theme === 'dark' || theme === 'light') {
-    document.documentElement.setAttribute('data-theme', theme);
+  const storedTheme = persistedSettings?.state?.theme;
+  let theme;
+  if (storedTheme === 'dark' || storedTheme === 'light') {
+    theme = storedTheme;
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    theme = 'dark';
+  } else {
+    theme = 'light';
   }
+  document.documentElement.setAttribute('data-theme', theme);
 } catch {
   // Ignore malformed localStorage; default theme is light.
 }

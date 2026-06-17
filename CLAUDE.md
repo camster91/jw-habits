@@ -2,7 +2,9 @@
 
 ## What This Is
 
-A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **simple habit tracker**: the home is a single iOS list of 5 link-out rows (Daily text, Daily Bible reading, Meeting prep, Family worship, Prayer), each with a checkbox to mark it done. Tap the row to open the jw.org surface in a new tab; tap the checkbox to mark the habit done. The actual habit happens on jw.org itself — the app is just a fast way to get there. No streaks, no XP, no timer, no toasts, no animations, no celebrations. Per-day state in localStorage, yesterday's checks don't carry over.
+A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **simple habit tracker** — one page, no settings menu, no hamburger, no drawer. The home is a single iOS list of 5 link-out rows (Daily text, Daily Bible reading, Meeting prep, Family worship, Prayer), each with a checkbox to mark it done. Tap the row to open the jw.org surface in a new tab; tap the checkbox to mark the habit done. The actual habit happens on jw.org itself — the app is just a fast way to get there. No streaks, no XP, no timer, no toasts, no animations, no celebrations. Per-day state in localStorage, yesterday's checks don't carry over.
+
+**The app is link-out only.** It contains no Bible text, no prayer content, no progress summaries. Its only job is: open jw.org surfaces and remember which ones you've already done today.
 
 - **App ID:** `com.ashbi.jwnews`
 - **Version:** 4.1.0
@@ -13,9 +15,9 @@ A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **simple ha
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 19 + Vite 7 |
-| Routing | React Router DOM 7 |
-| State | Zustand 5 (settings only — no data tracking) |
-| Styling | Tailwind CSS 3 + DaisyUI 4 |
+| Routing | React Router DOM 7 (1 page + /share PWA share_target + `*` catch-all → home) |
+| State | none in app code; just localStorage for the per-day habit state |
+| Styling | Tailwind CSS 3 + DaisyUI 4 (light/dark themes, OS-controlled via `prefers-color-scheme`) |
 | Icons | lucide-react |
 | Dates | date-fns |
 | Mobile | Capacitor 8 (iOS + Android) |
@@ -27,125 +29,64 @@ A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **simple ha
 
 ```
 src/
-├── main.jsx              # Entry point (error logging, back button, SW updates)
-├── App.jsx               # Router + global wrappers (ErrorBoundary, Toast, Drawer)
-├── index.css             # Tailwind base + 20+ custom animations
-├── pages/                # 5 in-app routes (home + 4 meta)
-│   ├── Home.jsx          # 5 link-out rows + checkboxes (the only user-facing page)
-│   ├── Settings.tsx      # Appearance (theme) + Help + Data reset
-│   ├── About.jsx         # Third-party disclaimer (jw.org required content)
-│   ├── IdeasPage.jsx     # Curated jw.org link-out rows for inspiration
-│   └── Share.jsx         # PWA share_target landing
-├── stores/
-│   ├── settingsStore.ts  # Theme + reset state
-│   └── (no other stores — tracking was stripped)
+├── main.jsx              # Entry point (error logging, back button, SW updates, theme at startup)
+├── App.jsx               # Router (Home + /share + catch-all → Home) + PWA chrome
+├── index.css             # Tailwind base + iOS tokens
+├── pages/
+│   ├── Home.jsx          # The only user-facing page (5 rows + checkboxes + footer disclaimer)
+│   └── Share.jsx         # PWA share_target landing (OS-level entry point, not user-facing)
 ├── components/
-│   ├── BottomNav.jsx     # ← deleted (no more tabs)
-│   ├── SideDrawer.tsx    # Hamburger menu: Settings, Ideas, About
 │   ├── ErrorBoundary.jsx
-│   ├── InstallPrompt.jsx
-│   ├── LoadingSpinner.jsx / Skeleton.jsx
-│   ├── OfflineIndicator.jsx / UpdatePrompt.jsx
-│   └── Toast.jsx         # Context-based toast system
+│   ├── InstallPrompt.jsx # Bottom install banner (PWA)
+│   ├── OfflineIndicator.jsx # Top "you're offline" indicator
+│   └── UpdatePrompt.jsx  # "New version available" banner (PWA)
 ├── hooks/
-│   ├── useDrawer.js      # Drawer context
 │   └── usePWA.js         # Install prompt, online status, SW updates
 └── utils/
-    ├── native.js         # Capacitor: haptics, statusBar, keyboard, splash
-    ├── jwLibraryLinks.js # JW.org / JW Library URL helpers
-    ├── bibleBooks.ts     # Bible book name → number map
-    ├── pwa.js            # PWA install / SW update utilities
-    ├── storageErrorHandler.js  # LRU eviction for localStorage quota
-    └── jwLibraryLinks.test.js, bibleBooks.test.ts, native.test.js, relativeDate.test.js, storageErrorHandler.test.js
+    ├── native.js              # Capacitor: haptics, statusBar, keyboard, splash
+    ├── jwLibraryLinks.js      # JW.org / JW Library URL helpers (getDailyTextLink, parseReadingToLink, etc.)
+    ├── bibleBooks.ts          # Bible book name → number map (66 books)
+    ├── pwa.js                 # PWA install / SW update utilities
+    ├── storageErrorHandler.js # LRU eviction for localStorage quota
+    └── dailyBibleReading.js   # 366-entry reading schedule → jwlibrary:// deep link
 ```
 
 ## Routes
 
-| Path | Page | Loading | Nav |
-|------|------|---------|-----|
-| `/` | Home (5 link-out rows + checkboxes) | Eager | Direct |
-| `/settings` | Settings | Lazy | Side drawer + top-right gear |
-| `/share` | Share (PWA share_target) | Lazy | (PWA OS) |
-| `/ideas` | Ideas | Lazy | Side drawer |
-| `/about` | About | Lazy | Side drawer + home footer link |
+| Path | Page | Loading | Notes |
+|------|------|---------|-------|
+| `/` | Home (5 link-out rows + checkboxes) | Eager | The only user-facing page |
+| `/share` | Share (PWA share_target) | Eager | OS-level entry point; receives URLs shared from other apps |
+| `*` (catch-all) | Home | Eager | Any path that doesn't match (e.g. /ideas, /about, /settings) renders the home |
+
+There is no Settings page, no About page, no Ideas page, no hamburger menu, no drawer. All navigation happens by tapping a row, which opens jw.org in a new tab. The top bar contains the "JW HABITS" title only — no icons on either side.
 
 ## What was stripped (and why)
 
-The previous version of jw-habits had full in-app habit tracking: prayer checkboxes, daily text completion, Bible chapter check-offs, family worship toggle, XP/levels/achievements, 366-day reading plans, meeting workbooks, service hours logging, goals CRUD with projects, daily reflection textarea, streak rings, heatmaps. Cam said: "too much going on." So:
+Per Cam's "I don't need a ton of complexity" + "Strip all" directives, the app has been aggressively reduced:
 
-- **Deleted components (49 files, ~70KB of code)**: DailyTasksSection, PrayerTrackingCard, FamilyWorshipCard, BibleReadingCard, UnifiedDashboardCard, HabitHeatmap, WelcomeBack, TodaysFocus, StreakRecords, StreakRing, GoalsTab, ProjectsTab, SmartSuggestions, Onboarding, AchievementPopup, CommandPalette, QuickAddFAB, BottomNav, MeetingCard, ReadingSection, WeeklyBibleReading, MidweekMeetingSection, WeekendMeetingSection, DeeperStudySection, PageHeader, MeetingSection, StudyTab, NotificationItems, SmartSuggestions.css, QuickAddFAB.css, App.css (empty).
-- **Deleted data stores (5 files, ~80KB)**: progressStore, gamificationStore, serviceStore, newsStore, memoriesStore, goalsStore. **Only `settingsStore` remains** for theme + onboarding state.
-- **Deleted utils**: webVitals, notifications, bibleReadingSchedule, ollama. **Only `pwa.js` (PWA install/SW utilities), `native.js` (Capacitor), `jwLibraryLinks.js` (URL helpers), and `storageErrorHandler.js` (LRU) remain.**
-- **Deleted hooks**: useNotificationReminders.
-- **Deleted pages (7 files)**: Study, StudyReading, DeeperStudyPage, Goals, Service, Stats, Links. **Only Home, Settings, About, IdeasPage, Share remain.**
-- **Deleted bottom tab nav**: 4 tabs collapsed. Hamburger menu is the only nav.
+- **Settings page** (deleted 2026-06-17): theme toggle, help link, data reset. Removed because the Settings UI duplicated a browser feature (theme follows OS preference; data reset is browser site-data settings). Keeping the Settings UI would re-introduce the menu/settings/drawer chrome that Cam said to strip.
+- **About page** (deleted): the third-party disclaimer is now inline in the home footer.
+- **Ideas page** (deleted): it was a redundant list of jw.org links — the home already has them.
+- **Side drawer + hamburger** (deleted): the drawer had 3 items, all now removed.
+- **Toast provider + useToast hook** (deleted): no toasts triggered by anyone. Was used only by the deleted Settings page.
+- **useDrawer hook** (deleted): only the deleted SideDrawer used it.
+- **settingsStore (Zustand)** (deleted): the only field was `theme`, which is now resolved at startup from localStorage or `prefers-color-scheme` directly in `main.jsx`. No UI toggle exists to update it.
+- **Reset today button** (deleted): it was a per-day convenience. Per-day state resets at midnight anyway. The browser's site-data settings is the only path to wipe state mid-day.
+- **LoadingSpinner, Skeleton, SideDrawer, Toast, BottomNav** (all deleted): all dead code from earlier turns.
 
-## What was kept
-
-- **Settings (theme + reset only)** — Appearance toggle (with real-time data-theme update via useEffect), Help & Tour link, Data reset button.
-- **About** — Required by jw.org Terms of Use: identify as unofficial third-party, identify developer, disclaim affiliation, link to the official Terms of Use, provide Watchtower Developer Support contact for takedown.
-- **Ideas** — Curated list of link-out rows to jw.org surfaces for inspiration.
-- **Share** — PWA share_target handler.
-- **PWA** — Install prompt, offline support, auto-update via Workbox, jw.org network-first caching.
-- **Capacitor (iOS + Android)** — Haptics, status bar, back button handling, splash screen.
-
-## State Management
-
-| Store | Storage Key | Purpose |
-|-------|------------|---------|
-| settingsStore | `jw-progress-settings` | Theme (light/dark) + onboarding flags |
-| (none) | `jw-daily-habits-state` | Per-day habit-check state — `{ date: 'YYYY-MM-DD', done: { text, bible, meeting, family, prayer } }`. Read/written directly by `Home.jsx`. Yesterday's "done" doesn't carry over. |
-
-The habit state is **not** in a Zustand store — it's a plain `localStorage` key read on every render. The home re-reads on `storage` events and on `visibilitychange` so the checkboxes stay current across tabs and on wake-from-sleep. The 5 rows are: Daily text (jw.org daily text), Daily Bible reading (today's entry from the 366-day schedule, deep-linked to wol.jw.org), Meeting prep (midweek + weekend workbook), Family worship (family resources), Prayer (peace + happiness articles).
+What survives is:
+- One page (Home)
+- Top bar with only the "JW HABITS" title
+- 5 habit rows (Daily text, Daily Bible reading, Meeting prep, Family worship, Prayer)
+- A checkbox to the right of each row to mark "done"
+- A footer with the third-party disclaimer (3rd-party ToS requirement)
+- A first-launch hint that shows once then disappears forever
+- PWA chrome (install banner, offline indicator, update prompt)
+- A `/share` route that receives URLs shared from other apps (PWA OS integration)
+- A catch-all `*` route that renders the home for any other path
 
 ## Build & Development
-
-```bash
-# Development
-npm run dev              # Vite dev server only
-
-# Build
-npm run build            # Production build → dist/
-npm run preview          # Preview production build
-
-# Mobile
-npm run mobile:build     # Build + cap sync
-npm run mobile:android   # Build + sync + open Android Studio
-npm run mobile:ios       # Build + sync + open Xcode
-npm run android:build:debug    # Full debug APK
-npm run android:build:release  # Full release AAB
-
-# Quality
-npm run lint             # ESLint
-npm test                 # Vitest run once
-npm run test:watch       # Vitest watch mode
-npm run test:coverage    # Vitest coverage
-```
-
-## Styling
-
-- **Theme colors:** jw-blue `#4A6FA4`, jw-green `#71BC37`
-- **DaisyUI themes:** `light` and `dark` (toggled in Settings; the Settings page applies it in real time via a useEffect on the theme selector)
-- **Custom CSS animations** in `src/index.css`: fade-in-up, slide-up, achievement-pop, confetti, flame, level-up, shimmer, and more
-- **Safe area utilities:** `.pt-safe`, `.pb-safe` etc. for notched devices
-- **Touch targets:** `.btn-touch` ensures 44px minimum
-
-## Key Conventions
-
-### Imports
-- `useDrawer`: Always import from `src/hooks/useDrawer.js`, NOT from `SideDrawer.tsx`
-- `JW_ORG_SECTIONS` + `getDailyTextLink` + `getBibleReadingLink`: link-out URL helpers, all from `src/utils/jwLibraryLinks.js`
-- Icons: Use `lucide-react` (not heroicons, not font-awesome)
-- Types: Use `import type { ... }` for type-only imports from lucide-react
-
-### Component Patterns
-- Top sticky bar: `bg-base-200/80 backdrop-blur-lg` so content scrolls under
-- iOS large title: 34px / 700 weight, no gradient
-- All link-out rows: `<a target="_blank" rel="noopener noreferrer">` with chevron-right
-- Haptic feedback via `haptics.light()` / `haptics.success()` on user interactions
-- Toast notifications via `useToast()` hook from `components/Toast.jsx`
-
-## PWA Configuration
 
 - Service worker: auto-update via Workbox (vite-plugin-pwa)
 - Offline caching: JW.org (NetworkFirst), images (CacheFirst), fonts (CacheFirst), API (StaleWhileRevalidate)

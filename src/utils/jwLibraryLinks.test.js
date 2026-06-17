@@ -49,25 +49,58 @@ describe('jwLibraryLinks', () => {
   });
 
   describe('getDailyTextLink', () => {
-    it('should generate correct WOL daily text link', () => {
-      const date = new Date(2026, 0, 20); // January 20, 2026
+    it('should generate correct jw.org daily text link for June 17, 2026', () => {
+      // Use the date Cam specified when requesting this URL format.
+      const date = new Date(2026, 5, 17); // June 17, 2026 (monthIndex 5)
       const link = getDailyTextLink(date);
 
-      expect(link).toBe('https://wol.jw.org/en/wol/h/r1/lp-e/text-today/2026/01/20');
+      expect(link).toBe(
+        'https://www.jw.org/finder?srcid=jwlshare&alias=daily-text&date=20260617&wtlocale=E'
+      );
     });
 
-    it('should pad single digit months and days', () => {
-      const date = new Date(2026, 0, 5); // January 5, 2026
+    it('should pad single-digit months and days', () => {
+      // January 5, 2026 → date=20260105
+      const date = new Date(2026, 0, 5);
       const link = getDailyTextLink(date);
 
-      expect(link).toBe('https://wol.jw.org/en/wol/h/r1/lp-e/text-today/2026/01/05');
+      expect(link).toBe(
+        'https://www.jw.org/finder?srcid=jwlshare&alias=daily-text&date=20260105&wtlocale=E'
+      );
     });
 
-    it('should always return English WOL link', () => {
-      const date = new Date(2026, 0, 20);
+    it('should always default to English (E) locale', () => {
+      const date = new Date(2026, 5, 17);
       const link = getDailyTextLink(date);
 
-      expect(link).toContain('/lp-e/');
+      expect(link).toContain('wtlocale=E');
+      expect(link).not.toContain('wtlocale=S');
+    });
+
+    it('should accept a custom locale parameter', () => {
+      const date = new Date(2026, 5, 17);
+      const linkS = getDailyTextLink(date, 'S');
+      const linkF = getDailyTextLink(date, 'F');
+
+      expect(linkS).toContain('wtlocale=S');
+      expect(linkF).toContain('wtlocale=F');
+    });
+
+    it('should default to today when no date is passed', () => {
+      const link = getDailyTextLink();
+      // Just verify the format and that the date is today
+      expect(link).toMatch(
+        /^https:\/\/www\.jw\.org\/finder\?srcid=jwlshare&alias=daily-text&date=\d{8}&wtlocale=E$/
+      );
+    });
+
+    it('should use the local date (not UTC) so the EDT user gets their day', () => {
+      // An EDT user clicking "today's daily text" at 11pm local
+      // on June 17 sees June 17's text, not June 18's UTC date.
+      // This is what `getDate()`/`getMonth()` give us.
+      const date = new Date(2026, 5, 17, 23, 0); // 11pm local June 17
+      const link = getDailyTextLink(date);
+      expect(link).toContain('date=20260617');
     });
   });
 
