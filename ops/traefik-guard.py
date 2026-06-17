@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
-"""jw-habits Traefik + manifest guard.
+"""jw-habits Traefik dynamic-file guard.
 
-The /opt/vps/bin/render.py script (Caddy-era) was archived on
-2026-06-16 22:28. The current edge is Traefik with a dynamic
-file provider watching /etc/traefik/dynamic/. The new way to
-add a site is to manually edit the two dynamic files:
+Defends /opt/traefik/dynamic/{routers,tls}.yml against
+sibling-deploy wipes. The /opt/vps/bin/render.py script
+(Caddy-era) was archived on 2026-06-16 22:28. The current
+edge is Traefik with a dynamic file provider that watches
+/opt/traefik/dynamic/ (per /opt/vps/bin/README.md).
 
-  /etc/traefik/dynamic/routers.yml   - router + service blocks
-  /etc/traefik/dynamic/tls.yml        - cert file references
+The caddy-guard.sh and the original traefik-guard.py wrote
+to /opt/caddy/Caddyfile and /etc/traefik/dynamic/ — both
+of which are NOT the live source of truth. The Caddyfile
+was replaced by /opt/traefik/dynamic/, and /etc/traefik/dynamic/
+is a separate directory that the traefik container does not
+mount. This guard writes to the correct path.
 
-The /opt/vps/manifest/sites.yaml file still exists but is no
-longer the live source of truth (per /opt/vps/bin/README.md).
-It IS however the source of truth for what should be in
-the dynamic files - the manifest is the spec.
-
-This guard:
-  1. Verifies the jw-habits block is in routers.yml
-  2. Verifies the jw-habits cert is in tls.yml
-  3. If either is missing, appends the canonical block to the
-     file. Idempotent: re-running is a no-op once both files
-     are correct.
+Idempotent: skips work that's already done. Detects the
+jw-habits block by its unique router id.
 
 Cron entry (every minute):
   * * * * * root /root/jw-habits/ops/traefik-guard.py >> /var/log/jwhabits-traefik-guard.log 2>&1
@@ -28,11 +24,13 @@ import os
 import subprocess
 import sys
 
-ROUTERS = "/etc/traefik/dynamic/routers.yml"
-TLS = "/etc/traefik/dynamic/tls.yml"
+ROUTERS = "/opt/traefik/dynamic/routers.yml"
+TLS = "/opt/traefik/dynamic/tls.yml"
 CERTS_DIR = "/etc/traefik/certs"
 JW_HOST = "jwhabits.ashbi.ca"
 
+# Use `date` for the timestamp — no datetime import, no
+# deprecation warning, no timezone gotchas.
 LOG_PREFIX = subprocess.run(
     ["date", "-u", "+%Y-%m-%dT%H:%M:%SZ"], capture_output=True, text=True
 ).stdout.strip()
@@ -49,19 +47,21 @@ def has_block(path, marker):
         return False
 
 
+# Router + service blocks, in the exact format render.py
+# emits. We append these if missing.
 ROUTER_BLOCK = (
-    "    jw-habits:\n"
+    f"    jwhabits:\n"
     f"      rule: \"Host(`{JW_HOST}`)\"\n"
-    "      entryPoints:\n"
-    "        - tls_https\n"
-    "      service: jw-habits\n"
-    "      tls: {}\n"
+    f"      entryPoints: [websecure]\n"
+    f"      service: jwhabits\n"
+    f"      tls:\n"
+    f"        certResolver: letsencrypt\n"
 )
 SERVICE_BLOCK = (
-    "    jw-habits:\n"
-    "      loadBalancer:\n"
-    "        servers:\n"
-    "          - url: \"http://127.0.0.1:18080\"\n"
+    f"    jwhabits:\n"
+    f"      loadBalancer:\n"
+    f"        servers:\n"
+    f"          - url: \"http://127.0.0.1:18080\"\n"
 )
 CERT_BLOCK = (
     f"    - certFile: {CERTS_DIR}/{JW_HOST}.crt\n"
@@ -69,61 +69,76 @@ CERT_BLOCK = (
 )
 
 
+def append_routers():
+    """Add the jw-habits router + service to routers.yml if missing.
+
+    The file looks like:
+      http:
+        routers:
+          <existing router blocks>
+        services:
+          <existing service blocks>
+
+    We insert the router just before "  services:" and the
+    service at the end of the services block.
+    """
+    text = open(ROUTERS).read()
+    if "  jwhabits:" in text:
+        return False
+    if "\n  services:\n" not in text:
+        log(f"WARNING: '{ROUTERS}' has no 'services:' marker; cannot insert router")
+        return False
+    text = text.replace("\n  services:\n", "\n" + ROUTER_BLOCK + "  services:\n", 1)
+    if not text.endswith("\n"):
+        text += "\n"
+    text += SERVICE_BLOCK
+    with open(ROUTERS, "w") as f:
+        f.write(text)
+    return True
+
+
+def append_tls():
+    text = open(TLS).read()
+    if JW_HOST + ".crt" in text:
+        return False
+    if not text.endswith("\n"):
+        text += "\n"
+    text += CERT_BLOCK
+    with open(TLS, "w") as f:
+        f.write(text)
+    return True
+
+
 def main():
     rc = 0
+    if not os.path.exists(ROUTERS):
+        log(f"ABORT: {ROUTERS} does not exist; cannot guard")
+        return 1
+    if not os.path.exists(TLS):
+        log(f"ABORT: {TLS} does not exist; cannot guard")
+        return 1
 
-    # 1. Routers file
-    if not has_block(ROUTERS, "jw-habits:"):
-        log(f"jwhabits block missing in {ROUTERS}; appending")
-        try:
-            text = open(ROUTERS).read()
-        except OSError as e:
-            log(f"cannot read {ROUTERS}: {e}")
-            return 1
-        # Insert the router block before "  services:" and the
-        # service block at end of services section. The current
-        # format ends with a trailing newline.
-        if "  services:" in text:
-            text = text.replace("  services:", ROUTER_BLOCK + "  services:", 1)
-        else:
-            text = text.rstrip() + "\n  services:\n" + ROUTER_BLOCK
-        # Append the service block. If the file ends with a
-        # service block for another host (no trailing newline),
-        # add a newline first.
-        if not text.endswith("\n"):
-            text += "\n"
-        text += SERVICE_BLOCK
-        with open(ROUTERS, "w") as f:
-            f.write(text)
-        rc = 0
+    changed = False
+    if append_routers():
+        log(f"appended jwhabits router to {ROUTERS}")
+        changed = True
+    if append_tls():
+        log(f"appended jwhabits cert to {TLS}")
+        changed = True
 
-    # 2. TLS file
-    if not has_block(TLS, JW_HOST + ".crt"):
-        log(f"jwhabits cert entry missing in {TLS}; appending")
-        try:
-            text = open(TLS).read()
-        except OSError as e:
-            log(f"cannot read {TLS}: {e}")
-            return 1
-        if not text.endswith("\n"):
-            text += "\n"
-        text += CERT_BLOCK
-        with open(TLS, "w") as f:
-            f.write(text)
-        rc = 0
-
-    # 3. Sanity: if the cert files are missing, log a warning.
-    # The guard can't obtain LE certs itself (no DNS, no HTTP
-    # challenge from the cert resolver). The user has to put
-    # the certs in place manually if they ever disappear.
-    if not (os.path.exists(f"{CERTS_DIR}/{JW_HOST}.crt") and os.path.exists(f"{CERTS_DIR}/{JW_HOST}.key")):
-        log(f"WARNING: cert files missing at {CERTS_DIR}/{JW_HOST}.{{crt,key}}")
-        log("the certs are LE-issued and live in Caddy's cache at")
-        log("/root/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/jwhabits.ashbi.ca/")
-        log("copy them with: cp /root/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/jwhabits.ashbi.ca/jwhabits.ashbi.ca.{crt,key} /etc/traefik/certs/")
-
-    if rc == 0:
+    if changed:
+        log("traefik dynamic files updated; jw-habits is live again")
+    else:
         log("traefik dynamic files are correct; no action")
+
+    # Sanity: cert files should exist
+    cert = f"{CERTS_DIR}/{JW_HOST}.crt"
+    key = f"{CERTS_DIR}/{JW_HOST}.key"
+    if not (os.path.exists(cert) and os.path.exists(key)):
+        log(f"WARNING: cert files missing at {cert} and {key}")
+        log("the certs are LE-issued and live in Caddy's cache at")
+        log(f"  /root/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/{JW_HOST}/")
+        log(f"copy with: cp <cache_dir>/{JW_HOST}.{ '{' }crt,key{ '}' } {CERTS_DIR}/")
     return rc
 
 
