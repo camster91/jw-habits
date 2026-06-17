@@ -391,9 +391,14 @@ const SCHEDULE = [
 let cache = { date: null, reading: null };
 
 function dayOfYear(d) {
-  const start = new Date(d.getFullYear(), 0, 0);
-  const diff = d - start;
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
+  // Use UTC throughout to avoid timezone off-by-one errors.
+  // new Date(year, 0, 0) is local-time Dec 31 of the previous
+  // year, which on machines with a non-UTC timezone gives a
+  // wrong result for the difference. Computing in UTC keeps
+  // the math correct regardless of the host timezone.
+  const year = d.getUTCFullYear();
+  const start = Date.UTC(year, 0, 0);
+  return Math.floor((d.getTime() - start) / 86400000);
 }
 
 // Compute the wol.jw.org deep link for a reading label like
@@ -420,8 +425,11 @@ function readingToLink(reading) {
     '3 john': 64, jude: 65, revelation: 66,
   };
 
-  // "Genesis 1-3" or "Genesis 1" or "1 Samuel 3-5"
-  const match = reading.match(/^(\d?\s?[a-z]+(?: [a-z]+)?)\s+(\d+)(?:\s*-\s*(\d+))?$/i);
+  // "Song of Solomon 1-4" or "1 Samuel 3-5" or "Psalm 119"
+  // Book name: optional leading number, then words. "Song of
+  // Solomon" is 3 words, so we allow multiple (?: [a-z]+)*
+  // chunks after the first.
+  const match = reading.match(/^(\d?\s?[a-z]+(?:\s+[a-z]+)*)\s+(\d+)(?:\s*-\s*(\d+))?$/i);
   if (!match) return null;
   const bookName = match[1].toLowerCase().trim();
   const startChapter = parseInt(match[2], 10);
