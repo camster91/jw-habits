@@ -199,7 +199,7 @@ function Home() {
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="container mx-auto px-4 max-w-2xl flex items-center justify-center h-12">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/70">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/80">
             {t('appName', 'JW Habits')}
           </span>
         </div>
@@ -216,10 +216,13 @@ function Home() {
             (the jw-habits-first-done localStorage key is set in
             toggle() and survives per-day resets). The hint is
             intentionally below the date and above the rows so
-            it reads naturally as a "what is this screen" note. */}
+            it reads naturally as a "what is this screen" note.
+            text-base-content/80 (instead of /70) so it stays
+            readable in dark mode where /70 sits too close to
+            the card surface. */}
         {!hasInteracted() && (
           <p
-            className="text-sm text-base-content/70 mt-1 mb-4 px-1"
+            className="text-sm text-base-content/80 mt-1 mb-4 px-1"
             role="note"
           >
             {t('home.firstRunHint', 'Tap a row to open jw.org. Tap the checkbox when done.')}
@@ -255,7 +258,7 @@ function Home() {
                     <div className="title truncate">{title}</div>
                     {sub && <div className="sub truncate">{sub}</div>}
                   </div>
-                  <ArrowUpRight className="ios-chev text-base-content/50 shrink-0" />
+                  <ArrowUpRight className="ios-chev text-base-content/60 shrink-0" />
                 </a>
                 {/* Right: checkbox. Tapping it marks the habit done
                     (or un-done). No animation, no toast, no

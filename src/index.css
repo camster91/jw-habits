@@ -176,6 +176,35 @@
   .ios-icon.jw-blue { background: linear-gradient(135deg, #2D5F8B, #1E4060); }
   .ios-icon.jw-gold { background: linear-gradient(135deg, #B8893A, #8F6A2C); }
 
+  /* In dark mode the saturated iOS system colors read as candy
+     stickers on a near-black card. Override each with a
+     muted tint (the hue at ~32% lightness) so the icons sit
+     with the surface rather than punching through it. The
+     glyph color also drops to 80% white so it doesn't compete
+     with the row title. */
+  [data-theme="dark"] .ios-icon {
+    border-radius: 8px;
+  }
+  [data-theme="dark"] .ios-icon svg { color: rgba(255, 255, 255, 0.85); }
+  [data-theme="dark"] .ios-icon.blue   { background: rgba(10, 132, 255, 0.28); }
+  [data-theme="dark"] .ios-icon.purple { background: rgba(175, 82, 222, 0.28); }
+  [data-theme="dark"] .ios-icon.green  { background: rgba(52, 199, 89, 0.28); }
+  [data-theme="dark"] .ios-icon.pink   { background: rgba(255, 45, 85, 0.28); }
+  [data-theme="dark"] .ios-icon.orange { background: rgba(255, 149, 0, 0.28); }
+  [data-theme="dark"] .ios-icon.red    { background: rgba(255, 59, 48, 0.28); }
+  [data-theme="dark"] .ios-icon.indigo { background: rgba(88, 86, 214, 0.28); }
+  [data-theme="dark"] .ios-icon.teal   { background: rgba(90, 200, 250, 0.28); }
+  [data-theme="dark"] .ios-icon.yellow { background: rgba(255, 204, 0, 0.28); }
+  [data-theme="dark"] .ios-icon.jw-blue { background: linear-gradient(135deg, rgba(45, 95, 139, 0.45), rgba(30, 64, 96, 0.45)); }
+  [data-theme="dark"] .ios-icon.jw-gold { background: linear-gradient(135deg, rgba(184, 137, 58, 0.45), rgba(143, 106, 44, 0.45)); }
+
+  /* In dark mode the footer disclaimer at 0.50 alpha is too
+     dim — bump to 0.60 so the third-party ToS line reads but
+     doesn't compete with the row titles. */
+  [data-theme="dark"] {
+    --ios-label-3: rgba(235, 235, 245, 0.62);
+  }
+
   /* iOS check button (26px circle, fill when done) */
   .ios-check {
     width: 26px;
