@@ -22,6 +22,7 @@
 //   T12: /about page renders
 //   T13: No console errors, no 404s on the home page
 //   T14: Done state persists across page reload
+//   T15: First-launch hint shows once, hides after first tap
 
 const { chromium } = require('playwright');
 
@@ -408,6 +409,50 @@ async function gotoHome(page) {
     await record('T14: Done state persists across page reload',
       beforeReload === 'true' && afterReload === 'true' && stored,
       `before_reload=${beforeReload} after_reload=${afterReload} stored_date=${stored?.date}`);
+    await page.context().close();
+  }
+
+  // T15: First-launch hint shows once, hides after first tap
+  {
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    // First visit: no jw-habits-first-done key, hint should show
+    const beforeTap = await page.evaluate(() => {
+      const text = document.body.innerText;
+      return {
+        hasFirstDone: localStorage.getItem('jw-habits-first-done'),
+        hasHint: /Tap a row to open jw\.org\. Tap the checkbox when done\./.test(text),
+      };
+    });
+    // Tap one checkbox
+    const firstCheckbox = page.locator('button[aria-pressed]').first();
+    await firstCheckbox.click();
+    await page.waitForTimeout(500);
+    // After tap: hint should be gone, key should be '1'
+    const afterTap = await page.evaluate(() => {
+      const text = document.body.innerText;
+      return {
+        hasFirstDone: localStorage.getItem('jw-habits-first-done'),
+        hasHint: /Tap a row to open jw\.org\. Tap the checkbox when done\./.test(text),
+      };
+    });
+    // Reload and verify hint stays gone
+    await page.reload();
+    await page.waitForTimeout(3000);
+    const afterReload = await page.evaluate(() => {
+      const text = document.body.innerText;
+      return {
+        hasFirstDone: localStorage.getItem('jw-habits-first-done'),
+        hasHint: /Tap a row to open jw\.org\. Tap the checkbox when done\./.test(text),
+      };
+    });
+    await record('T15: First-launch hint shows once, hides after first tap',
+      beforeTap.hasHint === true && beforeTap.hasFirstDone === null &&
+      afterTap.hasHint === false && afterTap.hasFirstDone === '1' &&
+      afterReload.hasHint === false && afterReload.hasFirstDone === '1',
+      `before: hint=${beforeTap.hasHint} firstDone=${beforeTap.hasFirstDone} | ` +
+      `afterTap: hint=${afterTap.hasHint} firstDone=${afterTap.hasFirstDone} | ` +
+      `afterReload: hint=${afterReload.hasHint} firstDone=${afterReload.hasFirstDone}`);
     await page.context().close();
   }
 

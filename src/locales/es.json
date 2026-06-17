@@ -1,1 +1,6 @@
-{}
+{
+  "home": {
+    "firstRunHint": "Toca una fila para abrir jw.org. Marca la casilla cuando termines.",
+    "firstRunHintShort": "Toca una fila para leer. Marca la casilla cuando termines."
+  }
+}

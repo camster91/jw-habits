@@ -19,6 +19,10 @@
     "more": "More",
     "moreSubtitle": "Additional features"
   },
+  "home": {
+    "firstRunHint": "Tap a row to open jw.org. Tap the checkbox when done.",
+    "firstRunHintShort": "Tap a row to read. Tap the checkbox when done."
+  },
   "today": {
     "title": "TODAY",
     "dailyText": "Daily Text",

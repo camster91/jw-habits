@@ -32,9 +32,21 @@ import { getDailyReading } from '../utils/dailyBibleReading';
  */
 
 const STATE_KEY = 'jw-daily-habits-state';
+const FIRST_DONE_KEY = 'jw-habits-first-done';
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
+}
+
+// True after the user has tapped any checkbox at least once
+// in their lifetime on this device. Persisted across per-day
+// resets so the first-launch hint shows exactly once, ever.
+function hasInteracted() {
+  try {
+    return localStorage.getItem(FIRST_DONE_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 function loadState() {
@@ -98,6 +110,10 @@ function Home() {
       const nextDone = { ...prev.done, [key]: !prev.done[key] };
       const next = { date: prev.date, done: nextDone };
       saveState(next);
+      // First-ever interaction: hide the hint forever.
+      // Swallow any storage error (private mode, quota) — the
+      // hint just stays visible until next interaction.
+      try { localStorage.setItem(FIRST_DONE_KEY, '1'); } catch { /* swallow */ }
       return next;
     });
   };
@@ -211,6 +227,21 @@ function Home() {
           ) : ''}.
           <span className="sub">{formattedDate}</span>
         </h1>
+
+        {/* First-launch hint. Shows exactly once, ever, until the
+            user taps any checkbox. Then it disappears forever
+            (the jw-habits-first-done localStorage key is set in
+            toggle() and survives per-day resets). The hint is
+            intentionally below the date and above the rows so
+            it reads naturally as a "what is this screen" note. */}
+        {!hasInteracted() && (
+          <p
+            className="text-sm text-base-content/70 mt-1 mb-4 px-1"
+            role="note"
+          >
+            {t('home.firstRunHint', 'Tap a row to open jw.org. Tap the checkbox when done.')}
+          </p>
+        )}
 
         {/* The five habit rows. Each row is its own card; the
             left side opens jw.org, the right side is a
