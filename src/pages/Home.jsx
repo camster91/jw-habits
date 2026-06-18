@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, BookMarked, CalendarRange, Church, Users, UsersRound, ArrowUpRight } from 'lucide-react';
-import { getDailyTextLink, getMemorialRow, getThisWeekMeetingUrl, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
+import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRound, ArrowUpRight } from 'lucide-react';
+import { getDailyTextLink, getMemorialRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 
 /**
@@ -18,7 +18,7 @@ import { getDailyReading } from '../utils/dailyBibleReading';
  *     localStorage; no toast, no animation, no "complete" card)
  *
  * State: a single localStorage key per day,
- *   jw-daily-habits-state = { date: 'YYYY-MM-DD', done: { text, bible, thisWeek, family, meeting, memorial? } }  // memorial is conditional
+ *   jw-daily-habits-state = { date: 'YYYY-MM-DD', done: { today, text, bible, thisWeek, family, meeting, memorial? } }  // memorial is conditional
  *
  * When the user opens the app on a new day, the per-day state
  * resets automatically. Yesterday's checks don't carry over.
@@ -138,6 +138,15 @@ function Home() {
   // when the row should not appear).
   const memorial = getMemorialRow(new Date());
 
+  // "Today" — a day-of-week-aware row that tells the user
+  // what's the most relevant JW thing right now. Title flips
+  // to "Tonight" on Tuesday (meeting day) and sub-text
+  // changes per day (Midweek Meeting Prep, Field Service,
+  // Public Meeting). Always rendered as the first habit
+  // row, above the weekly rows. null-safe (returns null
+  // if today is invalid, which won't happen in practice).
+  const todayRow = getTodayRow(new Date());
+
   // The 5 habit rows, in the order Cam listed them. Each
   // row has: a key (used for the done map), an icon
   // component, a color (used for the ios-icon background), a
@@ -145,6 +154,20 @@ function Home() {
   // a href to the jw.org surface where the actual habit
   // happens.
   const ROWS = [
+    // "Today" — a day-of-week-aware row at the top of the
+    // habit list. Tells the user what's the relevant JW
+    // thing right now. Title flips to "Tonight" on Tuesday
+    // (meeting day). Sub-text changes per day. The href is
+    // always a public jw.org URL. The row is always shown
+    // (getTodayRow never returns null for a valid date).
+    ...(todayRow ? [{
+      key: 'today',
+      title: todayRow.title,
+      sub: todayRow.sub,
+      Icon: Sparkles,
+      color: 'indigo',
+      href: todayRow.href,
+    }] : []),
     {
       key: 'text',
       title: t('habit.text', 'Daily text'),

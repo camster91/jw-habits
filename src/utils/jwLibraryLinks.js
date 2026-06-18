@@ -537,3 +537,80 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear()) {
     visible,
   };
 }
+
+
+/**
+ * Get the "Today" row for the home — a contextual row that
+ * adapts to the day of the week. The row tells the user what's
+ * the most relevant JW thing right now:
+ *
+ *   Sun (0): "Today — Public Meeting"      (weekend meeting)
+ *   Mon (1): "Today — Midweek Meeting Prep"  (3 days to meeting)
+ *   Tue (2): "Tonight — Midweek Meeting"    (meeting day!)
+ *   Wed (3): "Today — Midweek Meeting Prep"
+ *   Thu (4): "Today — Midweek Meeting Prep"
+ *   Fri (5): "Today — Midweek Meeting Prep"
+ *   Sat (6): "Today — Field Service"        (Saturday ministry)
+ *
+ * The href for the meeting-related days points at this
+ * week's MWB schedule (already computed by
+ * getThisWeekMeetingUrl). Saturday's href points at the
+ * meetings landing page on jw.org, which has the meeting
+ * finder (the user can locate their local congregation
+ * and field service group).
+ *
+ * All hrefs are public jw.org pages that return 200 (verified
+ * 2026-06-17). No content from jw.org is displayed — only
+ * the title and sub-text describe what kind of day it is.
+ *
+ * @param {Date} today - The current date (defaults to now)
+ * @returns {{ title: string, sub: string, href: string, key: string } | null}
+ *   - `null` if `today` is invalid
+ *   - The caller renders this as the first habit row, above
+ *     the 5 weekly rows. The checkbox tracks per-day
+ *     completion (key 'today').
+ */
+export function getTodayRow(today = new Date()) {
+  if (isNaN(today.getTime())) return null;
+  const dow = today.getDay(); // 0=Sun..6=Sat
+  const thisWeek = getThisWeekMeetingUrl(today);
+  const meetingHref = thisWeek.url;
+
+  switch (dow) {
+    case 0: // Sunday
+      return {
+        key: 'today',
+        title: 'Today',
+        sub: 'Public Meeting + Watchtower Study',
+        href: meetingHref,
+      };
+    case 1: // Monday
+    case 3: // Wednesday
+    case 4: // Thursday
+    case 5: // Friday
+      return {
+        key: 'today',
+        title: 'Today',
+        sub: 'Midweek Meeting Prep',
+        href: meetingHref,
+      };
+    case 2: // Tuesday — meeting day
+      return {
+        key: 'today',
+        title: 'Tonight',
+        sub: 'Midweek Meeting',
+        href: meetingHref,
+      };
+    case 6: // Saturday — field service
+      return {
+        key: 'today',
+        title: 'Today',
+        sub: 'Field Service',
+        // jw.org landing page that lists meeting/field
+        // service finders. Verified 200 (2026-06-17).
+        href: 'https://www.jw.org/en/jehovahs-witnesses/meetings/',
+      };
+    default:
+      return null;
+  }
+}

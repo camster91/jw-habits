@@ -3,12 +3,12 @@
 // Live persona verification for jw-habits. The home is a
 // single page with 5 habit rows. Each row has a link to a
 // jw.org surface (Daily text, Daily Bible reading, Meeting
-// prep, Family worship, This week) and a checkbox to mark
+// prep, Family worship, This week, Today) and a checkbox to mark
 // "done". State is per-day localStorage, no animations, no
 // streak, no XP.
 //
 // Tests verify:
-//   T1:  Home has greeting + 5 habit rows (text, bible, meeting, family, thisWeek)
+//   T1:  Home has greeting + 6 habit rows (today, text, bible, meeting, family, thisWeek)
 //   T2:  Each row links to a real jw.org URL
 //   T3:  Tapping a checkbox marks the habit done
 //   T4:  Unchecking returns the row to its original state
@@ -77,10 +77,10 @@ async function gotoHome(page) {
     const rowTitles = await page.evaluate(() => {
       return [...document.querySelectorAll('div.ios-grouped div.ios-row .title')].map((el) => el.textContent.trim());
     });
-    const expected = ['Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'This week'];
+    const expected = ['Today', 'Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'This week'];
     const allPresent = expected.every((t) => rowTitles.includes(t));
     const exactOrder = JSON.stringify(rowTitles) === JSON.stringify(expected);
-    await record('T1: Home has greeting + 5 habit rows in Cam\'s order',
+    await record('T1: Home has greeting + 6 habit rows in Cam\'s order',
       hasGreeting && allPresent && exactOrder,
       `greeting="${greet.slice(0, 60)}" rows=${JSON.stringify(rowTitles)}`);
     await page.context().close();
@@ -101,8 +101,8 @@ async function gotoHome(page) {
       l.href && (/^https:\/\/(www\.)?jw\.org\/|^https:\/\/wol\.jw\.org\/|^jwlibrary:\/\/\//.test(l.href)) &&
       l.target === '_blank' && l.rel && l.rel.includes('noopener')
     );
-    await record('T2: All 5 habit rows open jw.org or jwlibrary in new tab (noopener)',
-      allJwOrg && linkData.length === 5,
+    await record('T2: All 6 habit rows open jw.org or jwlibrary in new tab (noopener)',
+      allJwOrg && linkData.length === 6,
       `count=${linkData.length} urls=${JSON.stringify(linkData.map((l) => l.href?.slice(0, 50)))}`);
     await page.context().close();
   }
@@ -148,6 +148,30 @@ async function gotoHome(page) {
     });
     await page.goto(URL('/'));
     await page.waitForTimeout(3000);
+    // Pre-seed: mark the first row (Today) as done in localStorage.
+    // We can't just visit / because the per-day reset would
+    // overwrite the state on mount. Instead, set localStorage
+    // AFTER gotoHome returns. We do this via page.evaluate()
+    // — but the Home component reads on mount, so we need to
+    // set it before the first render. Easiest: navigate to /,
+    // wait for render, then set localStorage AND click the
+    // checkbox once (to mark done), then click again (to
+    // untoggle). That avoids needing to control mount order.
+    //
+    // Actually a cleaner approach: navigate to /, set
+    // localStorage with the today key already set to all-done,
+    // then reload to pick it up. The Home reads on mount and
+    // shows the checked boxes.
+    await page.evaluate(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      localStorage.setItem('jw-daily-habits-state', JSON.stringify({
+        date: today,
+        done: { today: true },
+      }));
+    });
+    await page.reload();
+    await page.waitForFunction(() => document.querySelectorAll('button[aria-pressed]').length >= 5, { timeout: 10000 });
+    await page.waitForTimeout(1500);
     const firstCheckbox = page.locator('button[aria-pressed]').first();
     if ((await firstCheckbox.count()) === 0) {
       await record('T4: Checkbox un-toggles a previously-marked habit', false, 'No checkbox button found');
@@ -159,11 +183,13 @@ async function gotoHome(page) {
       const stored = await page.evaluate(() => {
         try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
       });
+      // The first row is now "Today" (was "text" before). It
+      // stores under the 'today' key.
       const wasUntoggled = before === 'true' && after === 'false';
-      const wasUnStored = stored && (stored.done?.text === false || stored.done?.text === undefined);
+      const wasUnStored = stored && stored.done?.today === false;
       await record('T4: Checkbox un-toggles a previously-marked habit',
         wasUntoggled && wasUnStored,
-        `aria_before=${before} aria_after=${after} stored_text=${stored?.done?.text}`);
+        `aria_before=${before} aria_after=${after} stored_today=${stored?.done?.today}`);
     }
     await page.context().close();
   }
@@ -179,7 +205,7 @@ async function gotoHome(page) {
     await page.evaluate((y) => {
       localStorage.setItem('jw-daily-habits-state', JSON.stringify({
         date: y,
-        done: { text: true, bible: true, thisWeek: true, family: true, meeting: true },
+        done: { today: true, text: true, bible: true, thisWeek: true, family: true, meeting: true },
       }));
     }, yesterdayKey);
     await page.goto(URL('/'));
@@ -188,7 +214,7 @@ async function gotoHome(page) {
     const checkedStates = await page.evaluate(() => {
       return [...document.querySelectorAll('button[aria-pressed]')].map((el) => el.getAttribute('aria-pressed'));
     });
-    const allUnchecked = checkedStates.every((s) => s === 'false') && checkedStates.length === 5;
+    const allUnchecked = checkedStates.every((s) => s === 'false') && checkedStates.length === 6;
     // But the localStorage date should have been replaced with today
     const stored = await page.evaluate(() => {
       try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
@@ -307,7 +333,7 @@ async function gotoHome(page) {
     await page.evaluate(() => {
       localStorage.setItem('jw-daily-habits-state', JSON.stringify({
         date: new Date().toISOString().slice(0, 10),
-        done: { text: true, thisWeek: true, bible: true, family: true, meeting: true },
+        done: { today: true, text: true, thisWeek: true, bible: true, family: true, meeting: true },
       }));
     });
     await page.goto(URL('/'));
@@ -338,7 +364,7 @@ async function gotoHome(page) {
       return document.querySelectorAll('div.ios-row').length;
     });
     await record('T11: /ideas resolves to the home (no separate ideas page)',
-      rows === 5,
+      rows === 6,
       `rows=${rows}`);
     await page.context().close();
   }
@@ -354,7 +380,7 @@ async function gotoHome(page) {
       return document.querySelectorAll('div.ios-row').length;
     });
     await record('T12: /about resolves to the home (disclaimer inline in footer, verified by T8)',
-      rows === 5,
+      rows === 6,
       `rows=${rows}`);
     await page.context().close();
   }
@@ -377,9 +403,13 @@ async function gotoHome(page) {
     await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
     await page.waitForTimeout(3000);
 
-    // 5 habit rows visible + all links present + no /routine or /habits routes
+    // 6 habit rows visible (Today + 5 weekly) + Memorial row
+    // appears in March/April (so 6 rows today, 7 in March/April).
+    // The test is permissive: assert >= 6 (so it stays valid if
+    // we add more conditional rows in the future).
     const hasFiveRows = await page.evaluate(() => {
-      return document.querySelectorAll('div.ios-grouped div.ios-row').length === 5;
+      const count = document.querySelectorAll('div.ios-grouped div.ios-row').length;
+      return count === 6 || count === 7;
     });
     const noOrphanRoutes = await page.evaluate(() => {
       // The home should be a single page; verify no leftover
@@ -391,7 +421,7 @@ async function gotoHome(page) {
     });
     const noErrors = errors.length === 0;
     const no404s = network404s.length === 0;
-    await record('T13: Home renders 5 rows, no /routine or /habits, no console errors, no 404s',
+    await record('T13: Home renders 6 rows, no /routine or /habits, no console errors, no 404s',
       hasFiveRows && noOrphanRoutes && noErrors && no404s,
       `rows=${hasFiveRows} no_orphan_routes=${noOrphanRoutes} errors=${errors.length} 404s=${network404s.length}`);
     if (errors.length) console.log('  errors:', errors);

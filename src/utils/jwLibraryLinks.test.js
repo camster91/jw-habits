@@ -8,6 +8,7 @@ import {
   getMemorialDate,
   getMemorialRow,
   getThisWeekMeetingUrl,
+  getTodayRow,
   parseReadingToLink,
   getISOWeekString,
 } from './jwLibraryLinks.js';
@@ -396,6 +397,63 @@ describe('jwLibraryLinks', () => {
     it('sub-text shows the actual Memorial date for known years', () => {
       const r = getMemorialRow(new Date(2026, 3, 1), 2026);
       expect(r.sub).toBe('Thursday, April 2, 2026');
+    });
+  });
+
+
+  describe('getTodayRow', () => {
+    it('returns "Tonight — Midweek Meeting" on Tuesday', () => {
+      const r = getTodayRow(new Date(2026, 5, 16)); // June 16 = Tue
+      expect(r).not.toBeNull();
+      expect(r.title).toBe('Tonight');
+      expect(r.sub).toBe('Midweek Meeting');
+      expect(r.key).toBe('today');
+    });
+
+    it('returns "Today — Midweek Meeting Prep" on Monday, Wednesday, Thursday, Friday', () => {
+      const monday = getTodayRow(new Date(2026, 5, 15));
+      const wednesday = getTodayRow(new Date(2026, 5, 17));
+      const thursday = getTodayRow(new Date(2026, 5, 18));
+      const friday = getTodayRow(new Date(2026, 5, 19));
+      for (const r of [monday, wednesday, thursday, friday]) {
+        expect(r.title).toBe('Today');
+        expect(r.sub).toBe('Midweek Meeting Prep');
+      }
+    });
+
+    it('returns "Today — Public Meeting" on Sunday', () => {
+      const r = getTodayRow(new Date(2026, 5, 21));
+      expect(r.title).toBe('Today');
+      expect(r.sub).toBe('Public Meeting + Watchtower Study');
+    });
+
+    it('returns "Today — Field Service" on Saturday', () => {
+      const r = getTodayRow(new Date(2026, 5, 20));
+      expect(r.title).toBe('Today');
+      expect(r.sub).toBe('Field Service');
+      expect(r.href).toContain('/en/jehovahs-witnesses/meetings/');
+    });
+
+    it('always points to a public jw.org URL (no jwlibrary://)', () => {
+      for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+        const date = new Date(2026, 5, 15 + dayOffset); // Mon 15 through Sun 21
+        const r = getTodayRow(date);
+        expect(r.href).toMatch(/^https:\/\/www\.jw\.org\//);
+      }
+    });
+
+    it('returns null for an invalid date', () => {
+      const r = getTodayRow(new Date('not-a-date'));
+      expect(r).toBeNull();
+    });
+
+    it('points to this week\'s MWB schedule on meeting-related days', () => {
+      const monday = getTodayRow(new Date(2026, 5, 15));
+      const tuesday = getTodayRow(new Date(2026, 5, 16));
+      const wednesday = getTodayRow(new Date(2026, 5, 17));
+      expect(monday.href).toBe(tuesday.href);
+      expect(tuesday.href).toBe(wednesday.href);
+      expect(monday.href).toContain('Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026');
     });
   });
 });
