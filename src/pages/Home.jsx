@@ -223,6 +223,42 @@ function Home() {
     day: 'numeric',
   });
 
+  // The week strip — a compact Mon..Sun row at the top of
+  // the home that gives the user a "where am I in the week"
+  // visual signal. Today is bold + tinted; other days are
+  // muted. Pure date math, no content from jw.org. The
+  // strip is local-time Mon..Sun (jw.org uses Mon..Sun
+  // week boundaries too — they coincide).
+  //
+  // Layout: 7 equally-spaced columns. Each column shows the
+  // 3-letter weekday + the day-of-month number. The "today"
+  // column has a small accent background + bold weight so
+  // it pops without being noisy.
+  const weekStrip = (() => {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    // weekday 0=Sun..6=Sat; we want Mon..Sun so the offset
+    // from Mon is (weekday + 6) % 7.
+    const dow = start.getDay();
+    const offsetToMonday = (dow + 6) % 7;
+    start.setDate(start.getDate() - offsetToMonday);
+    const dayLetters = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      days.push({
+        label: dayLetters[i],
+        date: d.getDate(),
+        isToday:
+          d.getFullYear() === today.getFullYear() &&
+          d.getMonth() === today.getMonth() &&
+          d.getDate() === today.getDate(),
+      });
+    }
+    return days;
+  })();
+
   return (
     <div className="min-h-screen bg-base-200 pb-16">
       {/* Sticky iOS top bar — title only. No hamburger, no
@@ -244,6 +280,36 @@ function Home() {
           {greetingText}.
           <span className="sub">{formattedDate}</span>
         </h1>
+
+        {/* Week strip — Mon..Sun with today highlighted. A
+            visual signal of "where am I in the week" placed
+            between the date and the first-launch hint / habit
+            list. The 7 columns share the width of the 5-row
+            habit card below, so the strip feels like part of
+            the same surface. */}
+        <div
+          className="grid grid-cols-7 gap-1 mb-4 text-center text-xs select-none"
+          aria-label="This week"
+        >
+          {weekStrip.map((d, i) => (
+            <div
+              key={i}
+              className={
+                'py-1.5 rounded-md ' +
+                (d.isToday
+                  ? 'bg-primary text-primary-content font-bold'
+                  : 'text-base-content/60')
+              }
+            >
+              <div className="text-[10px] uppercase tracking-wider opacity-80">
+                {d.label}
+              </div>
+              <div className="text-base font-semibold leading-tight">
+                {d.date}
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* First-launch hint. Shows exactly once, ever, until the
             user taps any checkbox. Then it disappears forever
