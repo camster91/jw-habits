@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, BookMarked, CalendarRange, Users, UsersRound, ArrowUpRight } from 'lucide-react';
-import { getDailyTextLink, getThisWeekMeetingUrl, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
+import { BookOpen, BookMarked, CalendarRange, Church, Users, UsersRound, ArrowUpRight } from 'lucide-react';
+import { getDailyTextLink, getMemorialRow, getThisWeekMeetingUrl, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 
 /**
@@ -18,7 +18,7 @@ import { getDailyReading } from '../utils/dailyBibleReading';
  *     localStorage; no toast, no animation, no "complete" card)
  *
  * State: a single localStorage key per day,
- *   jw-daily-habits-state = { date: 'YYYY-MM-DD', done: { text, bible, thisWeek, family, meeting } }
+ *   jw-daily-habits-state = { date: 'YYYY-MM-DD', done: { text, bible, thisWeek, family, meeting, memorial? } }  // memorial is conditional
  *
  * When the user opens the app on a new day, the per-day state
  * resets automatically. Yesterday's checks don't carry over.
@@ -128,6 +128,16 @@ function Home() {
   // sub-text. No content from jw.org is displayed.
   const thisWeek = getThisWeekMeetingUrl(new Date());
 
+  // "Memorial" — a date-aware row that ONLY shows in the
+  // ~30-day window before the annual Memorial of Christ's
+  // Death. For known years (2024-2029) the sub-text shows
+  // the exact date; for unknown years (2030+) it shows
+  // "See jw.org for the date" and links to the year-agnostic
+  // Memorial page. The row is hidden entirely outside
+  // March/April. The function is null-safe (returns null
+  // when the row should not appear).
+  const memorial = getMemorialRow(new Date());
+
   // The 5 habit rows, in the order Cam listed them. Each
   // row has: a key (used for the done map), an icon
   // component, a color (used for the ios-icon background), a
@@ -183,6 +193,19 @@ function Home() {
       color: 'teal',
       href: thisWeek.url,
     },
+    // Memorial — a 6th row that ONLY appears within the
+    // 30-day window before the annual Memorial. Hidden
+    // entirely outside March/April. The icon (Church) and
+    // color (indigo) are chosen to read as a special,
+    // solemn event — distinct from the weekly habits.
+    ...(memorial ? [{
+      key: 'memorial',
+      title: t('habit.memorial', 'Memorial'),
+      sub: memorial.sub,
+      Icon: Church,
+      color: 'indigo',
+      href: memorial.href,
+    }] : []),
   ];
 
   const greetingText = (() => {

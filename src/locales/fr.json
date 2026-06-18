@@ -4,6 +4,7 @@
     "firstRunHintShort": "Touchez une ligne pour lire. Cochez la case une fois terminé."
   },
   "habit": {
-    "thisWeek": "Cette semaine"
+    "thisWeek": "Cette semaine",
+    "memorial": "Commémoration"
   }
 }

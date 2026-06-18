@@ -295,5 +295,8 @@
   "errors": {
     "statsLoad": "Unable to load statistics",
     "tryAgain": "Please try again later"
+  },
+  "habit": {
+    "memorial": "Memorial"
   }
 }

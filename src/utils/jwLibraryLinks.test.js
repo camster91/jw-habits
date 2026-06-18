@@ -5,6 +5,8 @@ import {
   getDailyTextLink,
   getBibleReadingLink,
   getMeetingWorkbookLink,
+  getMemorialDate,
+  getMemorialRow,
   getThisWeekMeetingUrl,
   parseReadingToLink,
   getISOWeekString,
@@ -300,6 +302,100 @@ describe('jwLibraryLinks', () => {
       const weekString = getISOWeekString(date);
 
       expect(weekString).toMatch(/-W0\d$/);
+    });
+  });
+
+
+  describe('getMemorialDate', () => {
+    it('returns the published 2024 date (Sunday, March 24)', () => {
+      const r = getMemorialDate(2024);
+      expect(r).not.toBeNull();
+      expect(r.date.getFullYear()).toBe(2024);
+      expect(r.date.getMonth()).toBe(2); // March (0-indexed)
+      expect(r.date.getDate()).toBe(24);
+      expect(r.weekOf).toContain('Sunday');
+      expect(r.weekOf).toContain('March 24');
+    });
+
+    it('returns the published 2026 date (Thursday, April 2)', () => {
+      const r = getMemorialDate(2026);
+      expect(r).not.toBeNull();
+      expect(r.date.getMonth()).toBe(3); // April
+      expect(r.date.getDate()).toBe(2);
+      expect(r.weekOf).toContain('Thursday');
+    });
+
+    it('returns the published 2029 date (Thursday, March 29)', () => {
+      const r = getMemorialDate(2029);
+      expect(r).not.toBeNull();
+      expect(r.date.getMonth()).toBe(2); // March
+      expect(r.date.getDate()).toBe(29);
+    });
+
+    it('returns null for years outside the published table', () => {
+      expect(getMemorialDate(2030)).toBeNull();
+      expect(getMemorialDate(2023)).toBeNull();
+      expect(getMemorialDate(1995)).toBeNull();
+    });
+  });
+
+  describe('getMemorialRow', () => {
+    it('is visible 30 days before the Memorial', () => {
+      // 2026 Memorial is April 2. 30 days before = March 3.
+      const r = getMemorialRow(new Date(2026, 2, 3), 2026);
+      expect(r).not.toBeNull();
+      expect(r.visible).toBe(true);
+      expect(r.title).toBe('Memorial');
+      expect(r.href).toBe('https://www.jw.org/en/jehovahs-witnesses/memorial/');
+    });
+
+    it('is visible on the day of the Memorial', () => {
+      const r = getMemorialRow(new Date(2026, 3, 2), 2026);
+      expect(r).not.toBeNull();
+      expect(r.visible).toBe(true);
+    });
+
+    it('is hidden more than 30 days before the Memorial', () => {
+      // 2026 Memorial is April 2. 31 days before = March 2.
+      const r = getMemorialRow(new Date(2026, 2, 2), 2026);
+      expect(r).toBeNull();
+    });
+
+    it('is hidden on January 1 (Memorial is in March/April)', () => {
+      const r = getMemorialRow(new Date(2026, 0, 1), 2026);
+      expect(r).toBeNull();
+    });
+
+    it('is hidden after the Memorial (in May)', () => {
+      const r = getMemorialRow(new Date(2026, 4, 1), 2026);
+      expect(r).toBeNull();
+    });
+
+    it('is visible for unknown years during March/April (e.g. 2030)', () => {
+      // 2030 is not in the table. Without the date, we show
+      // the row only in March/April as a heuristic.
+      const mar = getMemorialRow(new Date(2030, 2, 15), 2030);
+      const apr = getMemorialRow(new Date(2030, 3, 1), 2030);
+      expect(mar).not.toBeNull();
+      expect(apr).not.toBeNull();
+      expect(mar.sub).toBe('See jw.org for the date');
+    });
+
+    it('is hidden for unknown years outside March/April', () => {
+      const jan = getMemorialRow(new Date(2030, 0, 15), 2030);
+      const may = getMemorialRow(new Date(2030, 4, 15), 2030);
+      expect(jan).toBeNull();
+      expect(may).toBeNull();
+    });
+
+    it('always points to the year-agnostic Memorial page', () => {
+      const r = getMemorialRow(new Date(2026, 3, 2), 2026);
+      expect(r.href).toBe('https://www.jw.org/en/jehovahs-witnesses/memorial/');
+    });
+
+    it('sub-text shows the actual Memorial date for known years', () => {
+      const r = getMemorialRow(new Date(2026, 3, 1), 2026);
+      expect(r.sub).toBe('Thursday, April 2, 2026');
     });
   });
 });

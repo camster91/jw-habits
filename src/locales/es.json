@@ -4,6 +4,7 @@
     "firstRunHintShort": "Toca una fila para leer. Marca la casilla cuando termines."
   },
   "habit": {
-    "thisWeek": "Esta semana"
+    "thisWeek": "Esta semana",
+    "memorial": "Conmemoración"
   }
 }

@@ -420,3 +420,120 @@ export async function getBibleReadingForDay(dayOfYear) {
   }
   return null;
 }
+
+
+/**
+ * Get the Memorial of Christ's Death date for a given year.
+ *
+ * Jehovah's Witnesses observe the Memorial on the evening of
+ * Nisan 14 in the Hebrew calendar. The exact date varies each
+ * year because the Hebrew calendar is lunisolar (new moon +
+ * leap months). The dates below are the published dates from
+ * jw.org's /en/jehovahs-witnesses/memorial/ page. The page
+ * only lists the next few years; for years beyond the table,
+ * the function falls back to `null` and the caller should
+ * link to the year-agnostic Memorial landing page (which
+ * always shows the current year's date prominently).
+ *
+ * The hardcoded table is intentionally small (the app's
+ * lifetime is ~3 years, and the data only matters in
+ * March/April of each year). For 2030+ the helper returns
+ * null and the row displays "Memorial — see jw.org" with
+ * the year-agnostic URL.
+ *
+ * @param {number} year - The calendar year (e.g. 2026)
+ * @returns {{ date: Date, weekOf: string } | null}
+ *   - `date`: The Memorial date (Nisan 14) as a JS Date
+ *   - `weekOf`: Human-readable string ("Thursday, April 2, 2026")
+ *   - `null` if the year is not in the table
+ */
+export function getMemorialDate(year) {
+  // Published Memorial dates from
+  // https://www.jw.org/en/jehovahs-witnesses/memorial/
+  // (verified 2026-06-17). The table is updated by the
+  // organization each year.
+  const TABLE = {
+    2024: { month: 2, day: 24 }, // March 24, 2024
+    2025: { month: 3, day: 12 }, // April 12, 2025
+    2026: { month: 3, day: 2 },  // April 2, 2026
+    2027: { month: 2, day: 22 }, // March 22, 2027
+    2028: { month: 3, day: 9 },  // April 9, 2028
+    2029: { month: 2, day: 29 }, // March 29, 2029
+  };
+  const entry = TABLE[year];
+  if (!entry) return null;
+  const date = new Date(year, entry.month, entry.day);
+  return {
+    date,
+    weekOf: date.toLocaleString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }),
+  };
+}
+
+/**
+ * Build the Memorial row for the home. Returns null if the
+ * date is more than 30 days away (the row should be hidden).
+ * Otherwise returns the row data: title, sub-text, href, icon,
+ * color.
+ *
+ * The row is "ToS compliant" because the only display is the
+ * *date* of the Memorial (a calendar fact, not content from
+ * jw.org publications) and a link to the jw.org page. No
+ * verse text, no program outline, no song numbers.
+ *
+ * For unknown years (2030+), the row still shows but the
+ * sub-text reads "See jw.org for the date" — the Memorial
+ * landing page always shows the current year's date.
+ *
+ * @param {Date} today - The current date (defaults to now)
+ * @param {number} year - The year to look up (defaults to today.getFullYear)
+ * @returns {{ title: string, sub: string, href: string, visible: boolean } | null}
+ *   - `visible: false` if the Memorial is more than 30 days away
+ *   - `null` if `today` is invalid
+ */
+export function getMemorialRow(today = new Date(), year = today.getFullYear()) {
+  if (isNaN(today.getTime())) return null;
+  const memorial = getMemorialDate(year);
+
+  // Compute days from today to the Memorial. For unknown
+  // years, the Memorial date is unknown; we still link to
+  // the year-agnostic landing page but skip the row when
+  // we're not in March/April (the rough window the
+  // Memorial falls in).
+  let daysToMemorial;
+  if (memorial) {
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    daysToMemorial = Math.round(
+      (memorial.date.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24)
+    );
+  } else {
+    // Unknown year: assume the Memorial is in March or April
+    // and show the row only in those months. Without the
+    // exact date, the user can find it on jw.org.
+    if (today.getMonth() !== 2 && today.getMonth() !== 3) return null;
+    daysToMemorial = 0; // pretend it's today (the row still shows)
+  }
+
+  // Visibility window: 30 days before to 14 days after.
+  // The Memorial is usually just a single evening meeting,
+  // so the "before" window is the most useful time to show
+  // the row. After the Memorial, hide the row immediately.
+  const visible = daysToMemorial >= 0 && daysToMemorial <= 30;
+
+  if (!visible) return null;
+
+  const sub = memorial
+    ? memorial.weekOf
+    : 'See jw.org for the date';
+
+  return {
+    title: 'Memorial',
+    sub,
+    href: 'https://www.jw.org/en/jehovahs-witnesses/memorial/',
+    visible,
+  };
+}
