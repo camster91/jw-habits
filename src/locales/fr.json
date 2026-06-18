@@ -2,5 +2,8 @@
   "home": {
     "firstRunHint": "Touchez une ligne pour ouvrir jw.org. Cochez la case une fois terminé.",
     "firstRunHintShort": "Touchez une ligne pour lire. Cochez la case une fois terminé."
+  },
+  "habit": {
+    "thisWeek": "Cette semaine"
   }
 }

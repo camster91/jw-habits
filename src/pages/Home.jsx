@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, BookMarked, Heart, Users, UsersRound, ArrowUpRight } from 'lucide-react';
-import { getDailyTextLink, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
+import { BookOpen, BookMarked, CalendarRange, Users, UsersRound, ArrowUpRight } from 'lucide-react';
+import { getDailyTextLink, getThisWeekMeetingUrl, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 
 /**
@@ -18,7 +18,7 @@ import { getDailyReading } from '../utils/dailyBibleReading';
  *     localStorage; no toast, no animation, no "complete" card)
  *
  * State: a single localStorage key per day,
- *   jw-daily-habits-state = { date: 'YYYY-MM-DD', done: { text, bible, prayer, family, meeting } }
+ *   jw-daily-habits-state = { date: 'YYYY-MM-DD', done: { text, bible, thisWeek, family, meeting } }
  *
  * When the user opens the app on a new day, the per-day state
  * resets automatically. Yesterday's checks don't carry over.
@@ -123,6 +123,11 @@ function Home() {
     ? dailyReading.url
     : JW_ORG_SECTIONS.bibles;
 
+  // "This week" — the current meeting-week URL, computed
+  // once per render. Used for the This-week row's href and
+  // sub-text. No content from jw.org is displayed.
+  const thisWeek = getThisWeekMeetingUrl(new Date());
+
   // The 5 habit rows, in the order Cam listed them. Each
   // row has: a key (used for the done map), an icon
   // component, a color (used for the ios-icon background), a
@@ -165,12 +170,18 @@ function Home() {
       href: JW_ORG_SECTIONS.marriageAndFamily,
     },
     {
-      key: 'prayer',
-      title: t('habit.prayer', 'Prayer'),
-      sub: t('habit.prayerSub', 'Articles, music, a moment to pause'),
-      Icon: Heart,
-      color: 'orange',
-      href: JW_ORG_SECTIONS.peaceAndHappiness,
+      // "This week" — replaces the old Prayer row. The href
+      // is computed from today's date (Mon-Sun ISO week, in
+      // local time) and points at the public jw.org MWB
+      // schedule page for that week. The sub-text shows the
+      // date range, not the meeting content. No content from
+      // jw.org is displayed in the app.
+      key: 'thisWeek',
+      title: t('habit.thisWeek', 'This week'),
+      sub: thisWeek.weekOf,
+      Icon: CalendarRange,
+      color: 'teal',
+      href: thisWeek.url,
     },
   ];
 

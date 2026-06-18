@@ -5,6 +5,7 @@ import {
   getDailyTextLink,
   getBibleReadingLink,
   getMeetingWorkbookLink,
+  getThisWeekMeetingUrl,
   parseReadingToLink,
   getISOWeekString,
 } from './jwLibraryLinks.js';
@@ -49,13 +50,19 @@ describe('jwLibraryLinks', () => {
   });
 
   describe('getDailyTextLink', () => {
-    it('should generate correct jw.org daily text link for June 17, 2026', () => {
+    it('should generate a jwlibrary:// deep link for the given date', () => {
       // Use the date Cam specified when requesting this URL format.
       const date = new Date(2026, 5, 17); // June 17, 2026 (monthIndex 5)
       const link = getDailyTextLink(date);
 
+      // The daily text surface on jw.org's public web returns
+      // 404 for any date-anchored URL. The supported deep link
+      // is the jwlibrary:// scheme, registered by the official
+      // JW Library app on Android and iOS. On the web (no app),
+      // the link is a no-op — same trade-off as the Bible
+      // reading row.
       expect(link).toBe(
-        'https://www.jw.org/finder?srcid=jwlshare&alias=daily-text&date=20260617&wtlocale=E'
+        'jwlibrary:///showDailyText?wtlocale=E&date=20260617'
       );
     });
 
@@ -65,7 +72,7 @@ describe('jwLibraryLinks', () => {
       const link = getDailyTextLink(date);
 
       expect(link).toBe(
-        'https://www.jw.org/finder?srcid=jwlshare&alias=daily-text&date=20260105&wtlocale=E'
+        'jwlibrary:///showDailyText?wtlocale=E&date=20260105'
       );
     });
 
@@ -88,9 +95,9 @@ describe('jwLibraryLinks', () => {
 
     it('should default to today when no date is passed', () => {
       const link = getDailyTextLink();
-      // Just verify the format and that the date is today
+      // Just verify the format — the date is today.
       expect(link).toMatch(
-        /^https:\/\/www\.jw\.org\/finder\?srcid=jwlshare&alias=daily-text&date=\d{8}&wtlocale=E$/
+        /^jwlibrary:\/\/\/showDailyText\?wtlocale=E&date=\d{8}$/
       );
     });
 
@@ -141,6 +148,89 @@ describe('jwLibraryLinks', () => {
       const link = getMeetingWorkbookLink('123456789', 'S');
 
       expect(link).toContain('wtlocale=S');
+    });
+  });
+
+  describe('getThisWeekMeetingUrl', () => {
+    it('returns a jw.org meeting-workbook URL for the ISO week containing the date', () => {
+      // Today (2026-06-17, Wednesday) is in ISO week 25.
+      // Week 25 of 2026: Mon Jun 15 – Sun Jun 21.
+      const result = getThisWeekMeetingUrl(new Date(2026, 5, 17));
+      expect(result).not.toBeNull();
+      expect(result.url).toBe(
+        'https://www.jw.org/en/library/jw-meeting-workbook/may-june-2026-mwb/' +
+        'Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026/'
+      );
+      expect(result.weekOf).toBe('June 15–21, 2026');
+    });
+
+    it('uses the Monday of the week even when the date is mid-week', () => {
+      // June 17 (Wed) → Mon Jun 15
+      const r1 = getThisWeekMeetingUrl(new Date(2026, 5, 17));
+      // June 21 (Sun) → same week, Mon Jun 15
+      const r2 = getThisWeekMeetingUrl(new Date(2026, 5, 21));
+      // June 22 (Mon) → next week, Mon Jun 22
+      const r3 = getThisWeekMeetingUrl(new Date(2026, 5, 22));
+      expect(r1.url).toBe(r2.url);
+      expect(r3.url).not.toBe(r1.url);
+      // The week containing June 22: Mon Jun 22 - Sun Jun 28
+      expect(r3.weekOf).toBe('June 22–28, 2026');
+    });
+
+    it('uses the Sunday of the week when the date is a Sunday', () => {
+      // June 21, 2026 is a Sunday. Week 25 still covers Mon
+      // Jun 15 - Sun Jun 21. URL segment: June-15-21-2026.
+      const r = getThisWeekMeetingUrl(new Date(2026, 5, 21));
+      expect(r.weekOf).toBe('June 15–21, 2026');
+      expect(r.url).toContain('June-15-21-2026');
+    });
+
+    it('uses the local date for week boundaries (not UTC)', () => {
+      // A user in EDT clicking the row at 11pm local on Sunday
+      // June 21 should see the same-week URL, not the next
+      // week's URL based on UTC. This is what local Date
+      // arithmetic gives us.
+      const lateSunday = new Date(2026, 5, 21, 23, 0);
+      const r = getThisWeekMeetingUrl(lateSunday);
+      expect(r.weekOf).toBe('June 15–21, 2026');
+    });
+
+    it('handles January 1 which is in week 1 of the new year', () => {
+      // Jan 1, 2026 is a Thursday. ISO week 1 of 2026.
+      const r = getThisWeekMeetingUrl(new Date(2026, 0, 1));
+      expect(r.weekOf).toBe('December 29, 2025 – January 4, 2026');
+    });
+
+    it('handles cross-year December 31 in week 1 of the next year', () => {
+      // Dec 31, 2025 is a Wednesday. ISO week 1 of 2026
+      // (because Jan 1, 2026 is Thu).
+      const r = getThisWeekMeetingUrl(new Date(2025, 11, 31));
+      expect(r.weekOf).toBe('December 29, 2025 – January 4, 2026');
+    });
+
+    it('returns the correct MWB volume for each month of 2026', () => {
+      // The volumes alternate 2 months each:
+      // Jan-Feb (january-february), Mar-Apr (march-april),
+      // May-Jun (may-june), Jul-Aug (july-august),
+      // Sep-Oct (september-october), Nov-Dec (november-december).
+      const cases = [
+        [new Date(2026, 0, 15), 'january-february-2026-mwb'],
+        [new Date(2026, 1, 15), 'january-february-2026-mwb'],
+        [new Date(2026, 2, 15), 'march-april-2026-mwb'],
+        [new Date(2026, 3, 15), 'march-april-2026-mwb'],
+        [new Date(2026, 4, 15), 'may-june-2026-mwb'],
+        [new Date(2026, 5, 15), 'may-june-2026-mwb'],
+        [new Date(2026, 6, 15), 'july-august-2026-mwb'],
+        [new Date(2026, 7, 15), 'july-august-2026-mwb'],
+        [new Date(2026, 8, 15), 'september-october-2026-mwb'],
+        [new Date(2026, 9, 15), 'september-october-2026-mwb'],
+        [new Date(2026, 10, 15), 'november-december-2026-mwb'],
+        [new Date(2026, 11, 15), 'november-december-2026-mwb'],
+      ];
+      for (const [date, expectedSlug] of cases) {
+        const r = getThisWeekMeetingUrl(date);
+        expect(r.url).toContain(`/jw-meeting-workbook/${expectedSlug}/`);
+      }
     });
   });
 

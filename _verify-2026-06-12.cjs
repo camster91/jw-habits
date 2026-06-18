@@ -3,12 +3,12 @@
 // Live persona verification for jw-habits. The home is a
 // single page with 5 habit rows. Each row has a link to a
 // jw.org surface (Daily text, Daily Bible reading, Meeting
-// prep, Family worship, Prayer) and a checkbox to mark
+// prep, Family worship, This week) and a checkbox to mark
 // "done". State is per-day localStorage, no animations, no
 // streak, no XP.
 //
 // Tests verify:
-//   T1:  Home has greeting + 5 habit rows
+//   T1:  Home has greeting + 5 habit rows (text, bible, meeting, family, thisWeek)
 //   T2:  Each row links to a real jw.org URL
 //   T3:  Tapping a checkbox marks the habit done
 //   T4:  Unchecking returns the row to its original state
@@ -77,7 +77,7 @@ async function gotoHome(page) {
     const rowTitles = await page.evaluate(() => {
       return [...document.querySelectorAll('div.ios-grouped div.ios-row .title')].map((el) => el.textContent.trim());
     });
-    const expected = ['Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'Prayer'];
+    const expected = ['Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'This week'];
     const allPresent = expected.every((t) => rowTitles.includes(t));
     const exactOrder = JSON.stringify(rowTitles) === JSON.stringify(expected);
     await record('T1: Home has greeting + 5 habit rows in Cam\'s order',
@@ -179,7 +179,7 @@ async function gotoHome(page) {
     await page.evaluate((y) => {
       localStorage.setItem('jw-daily-habits-state', JSON.stringify({
         date: y,
-        done: { text: true, bible: true, prayer: true, family: true, meeting: true },
+        done: { text: true, bible: true, thisWeek: true, family: true, meeting: true },
       }));
     }, yesterdayKey);
     await page.goto(URL('/'));
@@ -307,7 +307,7 @@ async function gotoHome(page) {
     await page.evaluate(() => {
       localStorage.setItem('jw-daily-habits-state', JSON.stringify({
         date: new Date().toISOString().slice(0, 10),
-        done: { text: true, prayer: true, bible: true, family: true, meeting: true },
+        done: { text: true, thisWeek: true, bible: true, family: true, meeting: true },
       }));
     });
     await page.goto(URL('/'));

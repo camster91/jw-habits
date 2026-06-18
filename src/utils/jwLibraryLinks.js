@@ -104,11 +104,16 @@ export function getDailyTextLink(date = new Date(), locale = 'E') {
   const day = String(date.getDate()).padStart(2, '0');
   const dateStr = `${year}${month}${day}`;
 
-  // jw.org public-facing daily-text URL. Works in any browser,
-  // no JW Library app required. The `srcid=jwlshare&alias=daily-text`
-  // query tells jw.org this came from a shared JW Library link,
-  // and `date=YYYYMMDD&wtlocale=E` selects the day and locale.
-  return `https://www.jw.org/finder?srcid=jwlshare&alias=daily-text&date=${dateStr}&wtlocale=${locale}`;
+  // The "daily text" surface on jw.org's web is intentionally
+  // limited — the daily text is meant to be read in the JW
+  // Library app, not on a desktop browser. The previous URL
+  // format (?srcid=jwlshare&alias=daily-text&date=YYYYMMDD)
+  // returns 404 from the public site. The supported deep
+  // link for "today's text" is the jwlibrary:// scheme, which
+  // the official JW Library app registers on Android and iOS.
+  // On the web (no app), the link is a no-op — same trade-off
+  // as the Bible reading row.
+  return `jwlibrary:///showDailyText?wtlocale=${locale}&date=${dateStr}`;
 }
 
 /**
@@ -136,6 +141,112 @@ export function getBibleReadingLink(bookNum, startChapter, endChapter = startCha
  */
 export function getMeetingWorkbookLink(docid, locale = 'E') {
   return `${FINDER_BASE}?wtlocale=${locale}&docid=${docid}`;
+}
+
+/**
+ * Get the public jw.org URL for the "this week" meeting schedule
+ * page. The URL pattern is:
+ *   /en/library/jw-meeting-workbook/{bimonthly}-mwb/
+ *     Life-and-Ministry-Meeting-Schedule-for-{Month-DD-DD-YYYY}/
+ * where:
+ *   - {bimonthly} is the 2-month MWB volume (e.g. may-june-2026)
+ *   - the second segment uses the Monday-Sunday date range of
+ *     the ISO week containing the given date
+ *
+ * The link is metadata-only: it identifies the week and links
+ * out. No content from jw.org is displayed in the app — the
+ * user lands on jw.org to see the actual schedule.
+ *
+ * Returns null if the date falls outside the known MWB volumes
+ * (the volumes alternate 2 months and roll over 6x per year).
+ * In that case the caller can fall back to the MWB landing
+ * page (JW_ORG_SECTIONS.meetingWorkbooks).
+ *
+ * @param {Date} date - The date within the desired week
+ * @returns {{ url: string, weekOf: string, weekStart: Date, weekEnd: Date } | null}
+ */
+export function getThisWeekMeetingUrl(date = new Date()) {
+  // Compute the Monday-Sunday ISO week containing `date` in
+  // LOCAL time (consistent with how a JW in their home timezone
+  // thinks about the meeting week). JavaScript: weekday 0=Sun
+  // ... 6=Sat, so Monday = (weekday + 6) % 7 days before.
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dow = d.getDay(); // 0..6
+  const offsetToMonday = (dow + 6) % 7; // 0 for Mon, 6 for Sun
+  d.setDate(d.getDate() - offsetToMonday);
+  const weekStart = new Date(d.getTime());
+  const weekEnd = new Date(d.getTime());
+  weekEnd.setDate(weekEnd.getDate() + 6);
+
+  // Build the jw.org "Life and Ministry Meeting Schedule for
+  // {Month-DD-DD-YYYY}" segment. The format uses the full
+  // month name and a Mon..Sun range. e.g. for 2026-06-15
+  // (Monday) through 2026-06-21 (Sunday), the URL segment is
+  // "Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026".
+  const fmtMonth = (d) => d.toLocaleString('en-US', { month: 'long' });
+  const seg =
+    `Life-and-Ministry-Meeting-Schedule-for-${
+      fmtMonth(weekStart)
+    }-${
+      String(weekStart.getDate()).padStart(2, '0')
+    }-${
+      String(weekEnd.getDate()).padStart(2, '0')
+    }-${weekStart.getFullYear()}`;
+
+  // Map the ISO week start month to the current MWB volume
+  // slug. The volumes alternate every 2 months, starting
+  // with Jan-Feb. Outside the known 2026 volumes we fall back
+  // to the meeting-workbook landing page (no date anchor).
+  const month = weekStart.getMonth(); // 0..11
+  const year = weekStart.getFullYear();
+  const VOLUMES = [
+    { slug: 'january-february-2026-mwb', months: [0, 1] },
+    { slug: 'march-april-2026-mwb',      months: [2, 3] },
+    { slug: 'may-june-2026-mwb',         months: [4, 5] },
+    { slug: 'july-august-2026-mwb',      months: [6, 7] },
+    { slug: 'september-october-2026-mwb', months: [8, 9] },
+    { slug: 'november-december-2026-mwb', months: [10, 11] },
+  ];
+  // Build a generic pattern for any year by pairing months
+  // (0-1, 2-3, 4-5, ...). For years other than 2026 we fall
+  // back to a generic volume slug built from the month names.
+  let slug = null;
+  for (const v of VOLUMES) {
+    if (v.months.includes(month) && year === 2026) {
+      slug = v.slug;
+      break;
+    }
+  }
+  if (!slug) {
+    // For other years, build a "mon-year-mwb" slug using the
+    // start month. jw.org follows the same even-month pairing
+    // pattern; the slug naming uses month names. This is
+    // best-effort and falls back to the landing page if the
+    // pattern changes.
+    const startMonth = fmtMonth(weekStart).toLowerCase();
+    slug = `${startMonth}-${year}-mwb`;
+  }
+
+  const url =
+    `https://www.jw.org/en/library/jw-meeting-workbook/${slug}/` +
+    `${seg}/`;
+
+  return {
+    url,
+    // weekOf: a human-readable range. Print the year on each
+    // end if the week crosses a year boundary (e.g. Dec 29, 2025
+    // – Jan 4, 2026). Otherwise the year is only on the end.
+    weekOf: (() => {
+      const startYear = weekStart.getFullYear();
+      const endYear = weekEnd.getFullYear();
+      if (startYear === endYear) {
+        return `${fmtMonth(weekStart)} ${weekStart.getDate()}–${weekEnd.getDate()}, ${startYear}`;
+      }
+      return `${fmtMonth(weekStart)} ${weekStart.getDate()}, ${startYear} – ${fmtMonth(weekEnd)} ${weekEnd.getDate()}, ${endYear}`;
+    })(),
+    weekStart,
+    weekEnd,
+  };
 }
 
 /**
