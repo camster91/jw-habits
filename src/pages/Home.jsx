@@ -52,16 +52,45 @@ function hasInteracted() {
 function loadState() {
   try {
     const raw = localStorage.getItem(STATE_KEY);
-    if (!raw) return { date: todayKey(), done: {} };
+    if (!raw) return { date: todayKey(), done: {}, history: [] };
     const parsed = JSON.parse(raw);
     // Per-day reset: if the saved date isn't today, start fresh.
     if (parsed.date !== todayKey()) {
-      return { date: todayKey(), done: {} };
+      // History is preserved across day-rollover — only the
+      // done map resets. We prune history to the last 7 days
+      // (including today) below.
+      const history = pruneHistory(parsed.history || [], todayKey());
+      return { date: todayKey(), done: {}, history };
     }
-    return parsed;
+    // Always prune on load in case the user installed the app
+    // a long time ago and has stale entries.
+    const history = pruneHistory(parsed.history || [], todayKey());
+    return { ...parsed, history };
   } catch {
-    return { date: todayKey(), done: {} };
+    return { date: todayKey(), done: {}, history: [] };
   }
+}
+
+// Prune a history array of ISO date strings to the most
+// recent 7 days (inclusive of today). The returned array is
+// sorted oldest→newest so the render can iterate it as a
+// timeline. Duplicates are removed.
+function pruneHistory(history, today) {
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() - 6); // 7 days back inclusive
+  const seen = new Set();
+  const out = [];
+  for (const d of history) {
+    if (!d || typeof d !== 'string') continue;
+    if (seen.has(d)) continue;
+    if (d >= cutoff.toISOString().slice(0, 10) && d <= today) {
+      seen.add(d);
+      out.push(d);
+    }
+  }
+  // Sort oldest→newest
+  out.sort();
+  return out;
 }
 
 function saveState(state) {
@@ -106,11 +135,24 @@ function Home() {
   const toggle = (key) => {
     setState((prev) => {
       const nextDone = { ...prev.done, [key]: !prev.done[key] };
-      const next = { date: prev.date, done: nextDone };
+      // History: maintain a rolling 7-day list of dates where
+      // ANY habit was checked. When the user toggles a checkbox
+      // on, we add today's date (if not already in the list).
+      // When they toggle off the last checkbox of the day,
+      // we REMOVE today's date. This keeps history accurate
+      // without forcing an off-day to be recorded.
+      let history = prev.history || [];
+      const anyChecked = Object.values(nextDone).some(Boolean);
+      const todayStr = prev.date;
+      const todayInHistory = history.includes(todayStr);
+      if (anyChecked && !todayInHistory) {
+        history = pruneHistory([...history, todayStr], todayStr);
+      } else if (!anyChecked && todayInHistory) {
+        history = history.filter((d) => d !== todayStr);
+      }
+      const next = { date: prev.date, done: nextDone, history };
       saveState(next);
       // First-ever interaction: hide the hint forever.
-      // Swallow any storage error (private mode, quota) — the
-      // hint just stays visible until next interaction.
       try { localStorage.setItem(FIRST_DONE_KEY, '1'); } catch { /* swallow */ }
       return next;
     });
@@ -270,9 +312,13 @@ function Home() {
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
+      // fullDate is the ISO YYYY-MM-DD string for the dot
+      // strip to match against the per-day history array.
+      const fullDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       days.push({
         label: dayLetters[i],
         date: d.getDate(),
+        fullDate,
         isToday:
           d.getFullYear() === today.getFullYear() &&
           d.getMonth() === today.getMonth() &&
@@ -332,6 +378,39 @@ function Home() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Last 7 days strip — a row of 7 small dots showing
+            which days the user has checked off at least one
+            habit. Filled = checked that day, hollow = missed.
+            Pure local state (jw-daily-habits-state.history).
+            No content from jw.org. The dots are aligned under
+            the week-strip columns so the user can see "I
+            checked Tuesday (row 1) and Thursday (row 4)" at a
+            glance. */}
+        <div
+          className="grid grid-cols-7 gap-1 mb-4 select-none"
+          aria-label="Last 7 days"
+        >
+          {weekStrip.map((d, i) => {
+            const wasChecked = state.history && state.history.includes(d.fullDate);
+            return (
+              <div
+                key={i}
+                className="flex items-center justify-center py-1"
+                title={wasChecked ? `${d.fullDate} — checked` : `${d.fullDate} — no check`}
+              >
+                <span
+                  className={
+                    'inline-block w-2 h-2 rounded-full ' +
+                    (wasChecked
+                      ? 'bg-primary'
+                      : 'border border-base-content/30 bg-transparent')
+                  }
+                />
+              </div>
+            );
+          })}
         </div>
 
         {/* First-launch hint. Shows exactly once, ever, until the
