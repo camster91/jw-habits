@@ -179,19 +179,35 @@ export function getThisWeekMeetingUrl(date = new Date()) {
   weekEnd.setDate(weekEnd.getDate() + 6);
 
   // Build the jw.org "Life and Ministry Meeting Schedule for
-  // {Month-DD-DD-YYYY}" segment. The format uses the full
-  // month name and a Mon..Sun range. e.g. for 2026-06-15
-  // (Monday) through 2026-06-21 (Sunday), the URL segment is
-  // "Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026".
+  // {Month-DD-{Year-}Month-DD-{Year-}YYYY" segment. The format
+  // uses the full month name(s) and a Mon..Sun range. e.g.
+  //   2026-06-15 (Mon) through 2026-06-21 (Sun) →
+  //     "Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026"
+  //   2026-06-29 (Mon) through 2026-07-05 (Sun) →
+  //     "Life-and-Ministry-Meeting-Schedule-for-June-29-July-5-2026"
+  //   2025-12-29 (Mon) through 2026-01-04 (Sun) →
+  //     "Life-and-Ministry-Meeting-Schedule-for-December-29-2025-January-4-2026"
+  // Three cases:
+  //   same month/year → single year at end
+  //   cross month, same year → end-month name only (year at end)
+  //   cross year (always also cross month) → year on each end
+  // Days are NOT zero-padded — jw.org returns 404 for "June-5-21-2026".
   const fmtMonth = (d) => d.toLocaleString('en-US', { month: 'long' });
-  const seg =
-    `Life-and-Ministry-Meeting-Schedule-for-${
-      fmtMonth(weekStart)
-    }-${
-      String(weekStart.getDate()).padStart(2, '0')
-    }-${
-      String(weekEnd.getDate()).padStart(2, '0')
-    }-${weekStart.getFullYear()}`;
+  const startYear = weekStart.getFullYear();
+  const endYear = weekEnd.getFullYear();
+  const crossMonth = weekStart.getMonth() !== weekEnd.getMonth();
+  let dateSeg;
+  if (startYear !== endYear) {
+    // Cross-year (always also cross-month): month-day-year-month-day-year
+    dateSeg = `${fmtMonth(weekStart)}-${weekStart.getDate()}-${startYear}-${fmtMonth(weekEnd)}-${weekEnd.getDate()}-${endYear}`;
+  } else if (crossMonth) {
+    // Cross-month, same year: month-day-month-day-year
+    dateSeg = `${fmtMonth(weekStart)}-${weekStart.getDate()}-${fmtMonth(weekEnd)}-${weekEnd.getDate()}-${startYear}`;
+  } else {
+    // Same month: month-day-day-year
+    dateSeg = `${fmtMonth(weekStart)}-${weekStart.getDate()}-${weekEnd.getDate()}-${startYear}`;
+  }
+  const seg = `Life-and-Ministry-Meeting-Schedule-for-${dateSeg}`;
 
   // Map the ISO week start month to the current MWB volume
   // slug. The volumes alternate every 2 months, starting
@@ -209,7 +225,9 @@ export function getThisWeekMeetingUrl(date = new Date()) {
   ];
   // Build a generic pattern for any year by pairing months
   // (0-1, 2-3, 4-5, ...). For years other than 2026 we fall
-  // back to a generic volume slug built from the month names.
+  // back to a generic volume slug built from the start-month's
+  // pair (jw.org volumes are always month-pairs: nov-dec,
+  // jan-feb, etc).
   let slug = null;
   for (const v of VOLUMES) {
     if (v.months.includes(month) && year === 2026) {
@@ -218,13 +236,14 @@ export function getThisWeekMeetingUrl(date = new Date()) {
     }
   }
   if (!slug) {
-    // For other years, build a "mon-year-mwb" slug using the
-    // start month. jw.org follows the same even-month pairing
-    // pattern; the slug naming uses month names. This is
-    // best-effort and falls back to the landing page if the
-    // pattern changes.
-    const startMonth = fmtMonth(weekStart).toLowerCase();
-    slug = `${startMonth}-${year}-mwb`;
+    // Generic fallback for any year. Months are paired (0-1,
+    // 2-3, ...); the start-month of the pair is always even-
+    // numbered (Jan=0, Mar=2, May=4, ...). For Dec (11), the
+    // pair start is Nov (10).
+    const pairStartMonth = month % 2 === 0 ? month : month - 1;
+    const startMonth = fmtMonth(new Date(year, pairStartMonth, 1)).toLowerCase();
+    const endMonth = fmtMonth(new Date(year, pairStartMonth + 1, 1)).toLowerCase();
+    slug = `${startMonth}-${endMonth}-${year}-mwb`;
   }
 
   const url =
@@ -233,16 +252,18 @@ export function getThisWeekMeetingUrl(date = new Date()) {
 
   return {
     url,
-    // weekOf: a human-readable range. Print the year on each
-    // end if the week crosses a year boundary (e.g. Dec 29, 2025
-    // – Jan 4, 2026). Otherwise the year is only on the end.
+    // weekOf: human-readable range matching the URL format.
+    //   same month    → "June 15–21, 2026"
+    //   cross month   → "June 29 – July 5, 2026"
+    //   cross year    → "Dec 29, 2025 – Jan 4, 2026"
     weekOf: (() => {
-      const startYear = weekStart.getFullYear();
-      const endYear = weekEnd.getFullYear();
-      if (startYear === endYear) {
-        return `${fmtMonth(weekStart)} ${weekStart.getDate()}–${weekEnd.getDate()}, ${startYear}`;
+      if (startYear !== endYear) {
+        return `${fmtMonth(weekStart)} ${weekStart.getDate()}, ${startYear} – ${fmtMonth(weekEnd)} ${weekEnd.getDate()}, ${endYear}`;
       }
-      return `${fmtMonth(weekStart)} ${weekStart.getDate()}, ${startYear} – ${fmtMonth(weekEnd)} ${weekEnd.getDate()}, ${endYear}`;
+      if (crossMonth) {
+        return `${fmtMonth(weekStart)} ${weekStart.getDate()} – ${fmtMonth(weekEnd)} ${weekEnd.getDate()}, ${startYear}`;
+      }
+      return `${fmtMonth(weekStart)} ${weekStart.getDate()}–${weekEnd.getDate()}, ${startYear}`;
     })(),
     weekStart,
     weekEnd,

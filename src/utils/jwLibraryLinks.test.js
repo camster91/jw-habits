@@ -209,6 +209,48 @@ describe('jwLibraryLinks', () => {
       // (because Jan 1, 2026 is Thu).
       const r = getThisWeekMeetingUrl(new Date(2025, 11, 31));
       expect(r.weekOf).toBe('December 29, 2025 – January 4, 2026');
+      // jw.org puts this week in the November-December 2025 volume
+      // with year-on-each-end in the URL segment.
+      expect(r.url).toBe(
+        'https://www.jw.org/en/library/jw-meeting-workbook/november-december-2025-mwb/' +
+        'Life-and-Ministry-Meeting-Schedule-for-December-29-2025-January-4-2026/'
+      );
+    });
+
+    it('emits the end-month name when the ISO week spans two months (URL)', () => {
+      // 2026-06-30 (Tue) is in the week Mon Jun 29 – Sun Jul 5.
+      // jw.org requires the end-month name in the URL segment
+      // for cross-month weeks — omitting it returns 404.
+      // Verified: curl returns 200 for
+      //   may-june-2026-mwb/Life-and-Ministry-Meeting-Schedule-for-June-29-July-5-2026/
+      // and 404 for
+      //   may-june-2026-mwb/Life-and-Ministry-Meeting-Schedule-for-June-29-05-2026/
+      const r = getThisWeekMeetingUrl(new Date(2026, 5, 30));
+      expect(r.url).toBe(
+        'https://www.jw.org/en/library/jw-meeting-workbook/may-june-2026-mwb/' +
+        'Life-and-Ministry-Meeting-Schedule-for-June-29-July-5-2026/'
+      );
+      expect(r.weekOf).toBe('June 29 – July 5, 2026');
+    });
+
+    it('emits the end-month name when the ISO week spans two months (boundary days)', () => {
+      // The week Mon Jun 29 – Sun Jul 5 contains:
+      //   Mon Jun 29 (start), Wed Jul 1 (mid-month), Sun Jul 5 (end).
+      // All three must produce the same URL.
+      const start = getThisWeekMeetingUrl(new Date(2026, 5, 29));
+      const mid = getThisWeekMeetingUrl(new Date(2026, 6, 1));
+      const end = getThisWeekMeetingUrl(new Date(2026, 6, 5));
+      expect(start.url).toBe(mid.url);
+      expect(mid.url).toBe(end.url);
+      expect(start.url).toContain('June-29-July-5-2026');
+    });
+
+    it('omits the end-month name when both week endpoints fall in the same month', () => {
+      // Regression guard: cross-month change must not alter
+      // same-month URLs. Mon Jun 15 – Sun Jun 21.
+      const r = getThisWeekMeetingUrl(new Date(2026, 5, 17));
+      expect(r.url).toContain('June-15-21-2026');
+      expect(r.url).not.toContain('July');
     });
 
     it('returns the correct MWB volume for each month of 2026', () => {
