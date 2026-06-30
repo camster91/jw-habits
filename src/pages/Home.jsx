@@ -380,17 +380,17 @@ function Home() {
           ))}
         </div>
 
-        {/* Last 7 days strip — a row of 7 small dots showing
-            which days the user has checked off at least one
-            habit. Filled = checked that day, hollow = missed.
-            Pure local state (jw-daily-habits-state.history).
-            No content from jw.org. The dots are aligned under
-            the week-strip columns so the user can see "I
-            checked Tuesday (row 1) and Thursday (row 4)" at a
-            glance. */}
+        {/* Weekly dots — a row of 7 small dots showing
+            which days this week the user has checked off at
+            least one habit. Filled = checked that day, hollow
+            = missed. Pure local state
+            (jw-daily-habits-state.history). No content from
+            jw.org. The dots are aligned under the week-strip
+            columns so the user can see "I checked Tuesday
+            (col 1) and Thursday (col 3)" at a glance. */}
         <div
           className="grid grid-cols-7 gap-1 mb-4 select-none"
-          aria-label="Last 7 days"
+          aria-label="This week checked"
         >
           {weekStrip.map((d, i) => {
             const wasChecked = state.history && state.history.includes(d.fullDate);

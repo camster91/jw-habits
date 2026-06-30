@@ -23,6 +23,7 @@
 //   T13: No console errors, no 404s on the home page
 //   T14: Done state persists across page reload
 //   T15: First-launch hint shows once, hides after first tap
+//   T16: Last 7 days dots strip reflects per-day history (filled vs hollow)
 
 const { chromium } = require('playwright');
 
@@ -493,6 +494,50 @@ async function gotoHome(page) {
       `before: hint=${beforeTap.hasHint} firstDone=${beforeTap.hasFirstDone} | ` +
       `afterTap: hint=${afterTap.hasHint} firstDone=${afterTap.hasFirstDone} | ` +
       `afterReload: hint=${afterReload.hasHint} firstDone=${afterReload.hasFirstDone}`);
+    await page.context().close();
+  }
+
+  //   T16: Weekly dots strip shows a filled dot for each day this week
+  //   with any habit checked, hollow for missed days.
+  {
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    // Pre-seed: today (Tue) and the Monday before (this week's
+    // Mon + Tue are checked; the rest of the week is missed).
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+    const mondayStr = monday.toISOString().slice(0, 10);
+    const todayStr = today.toISOString().slice(0, 10);
+    await page.evaluate((args) => {
+      localStorage.setItem('jw-daily-habits-state', JSON.stringify({
+        date: args.todayStr,
+        done: { today: true },
+        history: [args.mondayStr, args.todayStr],
+      }));
+    }, { todayStr, mondayStr });
+    await page.goto(URL('/'));
+    await page.waitForFunction(() => document.querySelectorAll('button[aria-pressed]').length >= 5, { timeout: 10000 });
+    await page.waitForTimeout(1500);
+    // The dots strip has aria-label="This week checked" and contains
+    // 7 child divs (one per day). Each child has a <span>
+    // with either bg-primary (checked) or bg-transparent
+    // (missed).
+    const dotStates = await page.evaluate(() => {
+      const strip = document.querySelector('[aria-label="This week checked"]');
+      if (!strip) return null;
+      const spans = [...strip.querySelectorAll('span')];
+      return spans.map((s) => ({
+        filled: s.classList.contains('bg-primary'),
+        hollow: s.classList.contains('bg-transparent'),
+      }));
+    });
+    // 7 dots expected
+    const correctCount = dotStates && dotStates.length === 7;
+    const allValid = dotStates && dotStates.every((d) => d.filled !== d.hollow);
+    await record('T16: Weekly dots strip reflects per-day history (filled vs hollow)',
+      correctCount && allValid,
+      `count=${dotStates ? dotStates.length : 'null'} states=${JSON.stringify(dotStates && dotStates.map((d) => d.filled ? 'F' : 'H'))}`);
     await page.context().close();
   }
 
