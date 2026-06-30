@@ -482,15 +482,10 @@ function Home() {
                   aria-pressed={isDone}
                 >
                   <span
-                    className={`flex items-center justify-center w-7 h-7 rounded-md border-2 transition-colors ${
-                      isDone
-                        ? 'bg-primary border-primary text-primary-content'
-                        : 'border-base-content/30'
-                    }`}
+                    className={`ios-checkbox ${isDone ? 'done' : 'empty'}`}
                   >
                     {isDone && (
                       <svg
-                        className="w-4 h-4"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"

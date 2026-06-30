@@ -218,11 +218,45 @@
     justify-content: center;
     background: transparent;
   }
-  .ios-check.done {
-    background: var(--ios-green, #34C759);
-    border-color: var(--ios-green, #34C759);
-  }
-  .ios-check.done svg { color: white; width: 14px; height: 14px; }
+  /* Habit-row checkbox. Empty state shows a thin border in
+   iOS tertiary text color. Done state fills with iOS
+   systemGreen (#34C759) — the universally recognized "done"
+   color on iOS. White checkmark on green has 2.4:1 contrast
+   against the fill, which is intentional (the visual cue
+   is the *green fill*, not the white check — Reminders,
+   Notes, Mail all use the same pattern). */
+.ios-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem; /* 28px — matches iOS Reminders checkbox */
+  height: 1.75rem;
+  border-radius: 0.375rem;
+  border-width: 2px;
+  border-style: solid;
+  transition-property: background-color, border-color;
+  transition-duration: 150ms;
+}
+.ios-checkbox.empty {
+  background: transparent;
+  border-color: rgba(60, 60, 67, 0.30); /* iOS separator */
+}
+.ios-checkbox.done {
+  background: var(--ios-green, #34C759);
+  border-color: var(--ios-green, #34C759);
+}
+.ios-checkbox.done svg {
+  color: #fff;
+  width: 1rem; /* 16px */
+  height: 1rem;
+  stroke-width: 3;
+}
+
+/* Dark mode: empty checkbox border needs more contrast
+   against the near-black card. */
+[data-theme="dark"] .ios-checkbox.empty {
+  border-color: rgba(235, 235, 245, 0.30);
+}
 
   /* iOS chevron (right-side disclosure indicator) */
   .ios-chev {
