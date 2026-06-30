@@ -1,15 +1,15 @@
 #!/bin/bash
-# Android Release Keystore Generator for JW News
+# Android Release Keystore Generator for JW Habits
 # Run this script to create a proper release keystore
 
-KEYSTORE_FILE="jwnews-release.keystore"
-KEY_ALIAS="jwnews"
-KEYSTORE_PASSWORD="jwnews2024secure"
-KEY_PASSWORD="jwnews2024secure"
+KEYSTORE_FILE="jwnews-release.keystore"  # legacy filename from JW News era
+KEY_ALIAS="jwnews"                        # legacy alias (Google Play treats this as immutable once uploaded)
+KEYSTORE_PASSWORD="***"
+KEY_PASSWORD="***"
 VALIDITY_DAYS=10000
 
 echo "=================================="
-echo "JW News Android Keystore Generator"
+echo "JW Habits Android Keystore Generator"
 echo "=================================="
 echo ""
 echo "This will create a release keystore for Google Play submission."
