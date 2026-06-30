@@ -229,15 +229,6 @@ npm run android:bundle
 # Upload .aab to Play Console
 ```
 
-## Background Services
-
-The app includes a simple API server for optional backend features:
-
-```bash
-npm run dev:server    # Start API server only
-npm run dev:full      # Start both Vite and API server
-```
-
 ## Roadmap
 
 - [ ] Add cloud sync for cross-device data
