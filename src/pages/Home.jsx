@@ -333,7 +333,7 @@ function Home() {
       {/* Sticky iOS top bar — title only. No hamburger, no
           settings gear, no other chrome. The app is one
           page. */}
-      <div
+      <header
         className="sticky top-0 z-30 backdrop-blur-lg bg-base-200/80 border-b border-base-300/30"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
@@ -342,9 +342,9 @@ function Home() {
             {t('appName', 'JW Habits')}
           </span>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-4 max-w-2xl">
+      <main className="container mx-auto px-4 max-w-2xl">
         <h1 className="ios-large-title">
           {greetingText}.
           <span className="sub">{formattedDate}</span>
@@ -367,7 +367,11 @@ function Home() {
                 'py-1.5 rounded-md ' +
                 (d.isToday
                   ? 'bg-primary text-primary-content font-bold'
-                  : 'text-base-content/60')
+                  // /80 keeps the inactive days visually subdued
+                  // while clearing the WCAG AA 4.5:1 contrast
+                  // threshold against bg-base-200. /60 was 2.81:1
+                  // and 3.93:1 — axe-core flagged both as serious.
+                  : 'text-base-content/80')
               }
             >
               <div className="text-[10px] uppercase tracking-wider opacity-80">
@@ -500,12 +504,12 @@ function Home() {
           })}
         </div>
 
-        <div className="ios-footer">
+        <footer className="ios-footer">
           Unofficial third-party tool. Not affiliated with jw.org.
-        </div>
+        </footer>
 
         <div className="h-4" />
-      </div>
+      </main>
     </div>
   );
 }
