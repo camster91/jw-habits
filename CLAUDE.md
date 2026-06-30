@@ -157,11 +157,6 @@ What survives is:
 - Haptics: full integration via `src/utils/native.js`
 - Back button: double-tap to exit (Android, handled in main.jsx)
 
-## Data Files
-
-- `public/data/meeting-workbooks.json` — fetched by `jwLibraryLinks.js` for MWB data by ISO week
-- `public/data/bible-reading.json` — legacy fallback (current source of truth is the inlined `dailyBibleReading.js`)
-
 ## Deployment
 
 - VPS: Hostinger (root@187.77.26.99)

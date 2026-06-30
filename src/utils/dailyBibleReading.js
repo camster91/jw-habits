@@ -1,12 +1,10 @@
 /**
  * Daily Bible reading helper. Returns today's entry from a
  * 366-day Bible reading schedule, with a deep link to the
- * passage on wol.jw.org.
+ * passage on JW Library.
  *
  * The schedule is bundled as a JS const so the lookup is
- * synchronous and works offline / in any Caddy state. The
- * original /data/bible-reading.json file is kept in /public/
- * for the deploy bundle to find.
+ * synchronous and works offline / in any Traefik state.
  *
  * The schedule uses day-of-year (1-366). We wrap to 1..length
  * so the schedule loops year-over-year, so a user who started
@@ -17,8 +15,7 @@
 
 // 366-day reading schedule. Kept as a const so the lookup
 // is sync. If the schedule ever needs to change, edit this
-// list (and the corresponding /public/data/bible-reading.json
-// for offline-first PWA caching).
+// list.
 const SCHEDULE = [
   { day: 1, reading: 'Genesis 1-3' },
   { day: 2, reading: 'Genesis 4-7' },
