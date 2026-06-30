@@ -374,7 +374,7 @@ function Home() {
                   : 'text-base-content/80')
               }
             >
-              <div className="text-[10px] uppercase tracking-wider opacity-80">
+              <div className="text-[10px] uppercase tracking-wider">
                 {d.label}
               </div>
               <div className="text-base font-semibold leading-tight">
