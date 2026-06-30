@@ -1,7 +1,13 @@
 name: CI Build
 
-# Build-only workflow: verifies the project builds cleanly. No deploy, no secrets required.
-# Triggered on push to default branch and on PRs targeting it. Manual dispatch available.
+# Build-only workflow: verifies the project builds cleanly, lints clean,
+# and all unit tests pass. No deploy, no secrets required.
+# Triggered on push to default branch and on PRs targeting it.
+# Manual dispatch available.
+#
+# Why this exists: in June 2026, five dependabot PRs (#97–#102) merged
+# without a build check. One of them (PR #100, tailwindcss 3→4) silently
+# broke `npm run build`. This workflow makes that impossible going forward.
 
 on:
   push:
@@ -13,12 +19,17 @@ on:
 permissions:
   contents: read
 
+# Dependabot PRs don't have access to repo secrets by default. Explicitly
+# allow them to trigger this workflow (which uses no secrets).
+# https://docs.github.com/en/code-security/dependabot/working-with-dependabot/automating-dependabot-with-github-actions#about-dependabot-and-github-actions
+
 concurrency:
   group: ci-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    name: Build
+    name: Build + Lint + Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -35,29 +46,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type check (if configured)
-        run: |
-          if grep -q '"typecheck"\|"type-check"\|"tsc"' package.json; then
-            echo "Running typecheck..."
-            npm run typecheck || npm run type-check || npx tsc --noEmit
-          else
-            echo "No typecheck script found, skipping."
-          fi
-        continue-on-error: true
+      # Hard fail on lint errors. The June 2026 versions of this file
+      # had `continue-on-error: true` here, which is exactly the
+      # configuration that let broken dependabot PRs merge silently.
+      - name: Lint
+        run: npm run lint
+        env:
+          CI: true
 
-      - name: Lint (if configured)
-        run: |
-          if grep -q '"lint"' package.json; then
-            echo "Running lint..."
-            npm run lint
-          else
-            echo "No lint script found, skipping."
-          fi
-        continue-on-error: true
+      # Hard fail on test failures.
+      - name: Unit tests
+        run: npm test
+        env:
+          CI: true
 
+      # Hard fail on build failures. This is the original reason for
+      # the workflow's existence.
       - name: Build
         run: npm run build
         env:
-          # CI-safe defaults so the build doesn't depend on real env vars
           NODE_ENV: production
           CI: true
