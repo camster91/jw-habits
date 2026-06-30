@@ -1,10 +1,25 @@
 {
-  "home": {
-    "firstRunHint": "Toca una fila para abrir jw.org. Marca la casilla cuando termines.",
-    "firstRunHintShort": "Toca una fila para leer. Marca la casilla cuando termines."
+  "appName": "JW Habits",
+  "greeting": {
+    "morning": "Buenos días",
+    "afternoon": "Buenas tardes",
+    "evening": "Buenas noches",
+    "night": "Buenas noches"
   },
   "habit": {
+    "text": "Texto diario",
+    "textSub": "Lee el pasaje bíblico de hoy en jw.org",
+    "bible": "Lectura bíblica diaria",
+    "bibleSub": "Abre la Traducción del Nuevo Mundo",
+    "bibleSubToday": "Hoy: {{today}}",
+    "meeting": "Preparación para la reunión",
+    "meetingSub": "Cuaderno de la reunión de entre semana + fin de semana",
+    "family": "Culto familiar",
+    "familySub": "Ideas para conversaciones, videos, estudio Bíblico en familia",
     "thisWeek": "Esta semana",
     "memorial": "Conmemoración"
+  },
+  "home": {
+    "firstRunHint": "Toca una fila para abrir jw.org. Marca la casilla cuando termines."
   }
 }

@@ -1,9 +1,34 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import './i18n';
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+import en from './locales/en.json';
+import es from './locales/es.json';
+import fr from './locales/fr.json';
 import App from './App.jsx';
 import { initializeNative, isNative, appLifecycle } from './utils/native.js';
+
+// i18next — Spanish/French fall back to English when a key
+// is missing. Language detected from navigator, cached in
+// localStorage under the default i18next key.
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources: {
+      en: { translation: en },
+      es: { translation: es },
+      fr: { translation: fr },
+    },
+    fallbackLng: 'en',
+    interpolation: { escapeValue: false },
+    detection: {
+      order: ['navigator', 'localStorage', 'htmlTag'],
+      caches: ['localStorage'],
+    },
+  });
 
 // Global error logging function
 function logGlobalError(type, message, source, error) {
