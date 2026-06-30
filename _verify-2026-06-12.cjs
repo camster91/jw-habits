@@ -123,19 +123,45 @@ async function gotoHome(page) {
     } else {
       const before = await firstCheckbox.evaluate((el) => el.getAttribute('aria-pressed'));
       const beforeHasCheck = await firstCheckbox.evaluate((el) => !!el.querySelector('svg polyline'));
+      // Inspect the parent row's title element for visual cues
+      // (line-through + row opacity 0.55) before the tap.
+      const beforeTitleStyles = await firstCheckbox.evaluate((el) => {
+        const row = el.closest('.ios-row');
+        const title = row?.querySelector('.title');
+        const titleCs = title ? getComputedStyle(title) : null;
+        const rowCs = row ? getComputedStyle(row) : null;
+        return {
+          titleTextDecoration: titleCs?.textDecorationLine,
+          rowOpacity: rowCs?.opacity,
+        };
+      });
       await firstCheckbox.click();
       await page.waitForTimeout(500);
       const after = await firstCheckbox.evaluate((el) => el.getAttribute('aria-pressed'));
       const afterHasCheck = await firstCheckbox.evaluate((el) => !!el.querySelector('svg polyline'));
+      const afterTitleStyles = await firstCheckbox.evaluate((el) => {
+        const row = el.closest('.ios-row');
+        const title = row?.querySelector('.title');
+        const titleCs = title ? getComputedStyle(title) : null;
+        const rowCs = row ? getComputedStyle(row) : null;
+        return {
+          titleTextDecoration: titleCs?.textDecorationLine,
+          rowOpacity: rowCs?.opacity,
+        };
+      });
       const stored = await page.evaluate(() => {
         try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
       });
       const wasToggled = before === 'false' && after === 'true';
       const wasDrawn = !beforeHasCheck && afterHasCheck;
       const wasStored = stored && Object.values(stored.done).some(Boolean);
-      await record('T3: Checkbox toggles aria-pressed + draws check + persists to localStorage',
-        wasToggled && wasDrawn && wasStored,
-        `aria_before=${before} aria_after=${after} svg_before=${beforeHasCheck} svg_after=${afterHasCheck} stored_keys=${Object.keys(stored?.done || {}).length}`);
+      // Visual cues: title gets line-through, row gets opacity ~0.55.
+      const gotStrikeThrough = !beforeTitleStyles.titleTextDecoration.includes('line-through')
+        && afterTitleStyles.titleTextDecoration.includes('line-through');
+      const gotDim = parseFloat(afterTitleStyles.rowOpacity) < 1;
+      await record('T3: Checkbox toggles aria-pressed + draws check + persists + adds line-through',
+        wasToggled && wasDrawn && wasStored && gotStrikeThrough && gotDim,
+        `aria=${before}→${after} svg=${beforeHasCheck}→${afterHasCheck} stored_keys=${Object.keys(stored?.done || {}).length} td=${beforeTitleStyles.titleTextDecoration}→${afterTitleStyles.titleTextDecoration} rowOpacity=${afterTitleStyles.rowOpacity}`);
     }
     await page.context().close();
   }

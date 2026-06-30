@@ -447,6 +447,11 @@ function Home() {
               <div
                 key={key}
                 className="ios-row"
+                // Dim the entire row + strike-through the title
+                // when the habit is marked done. Same iOS Reminders
+                // pattern — no animation, no toast, just a quiet
+                // visual signal. The row is still tappable to
+                // open jw.org.
                 style={isDone ? { opacity: 0.55 } : undefined}
               >
                 {/* Left: link to jw.org */}
@@ -461,7 +466,7 @@ function Home() {
                     <RowIcon className="w-4 h-4" />
                   </div>
                   <div className="body min-w-0">
-                    <div className="title truncate">{title}</div>
+                    <div className={`title truncate ${isDone ? 'line-through' : ''}`}>{title}</div>
                     {sub && <div className="sub truncate">{sub}</div>}
                   </div>
                   <ArrowUpRight className="ios-chev text-base-content/60 shrink-0" />
