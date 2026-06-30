@@ -78,9 +78,13 @@ async function gotoHome(page) {
     const rowTitles = await page.evaluate(() => {
       return [...document.querySelectorAll('div.ios-grouped div.ios-row .title')].map((el) => el.textContent.trim());
     });
-    const expected = ['Today', 'Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'This week'];
+    const expected = ['Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'This week'];
     const allPresent = expected.every((t) => rowTitles.includes(t));
-    const exactOrder = JSON.stringify(rowTitles) === JSON.stringify(expected);
+    // Row 0 is the date-aware "Today" row: title is "Today" except
+    // on Tuesdays (meeting day) when it flips to "Tonight".
+    const firstIsTodayOrTonight = rowTitles[0] === 'Today' || rowTitles[0] === 'Tonight';
+    const exactOrder = firstIsTodayOrTonight &&
+      JSON.stringify(rowTitles.slice(1)) === JSON.stringify(expected);
     await record('T1: Home has greeting + 6 habit rows in Cam\'s order',
       hasGreeting && allPresent && exactOrder,
       `greeting="${greet.slice(0, 60)}" rows=${JSON.stringify(rowTitles)}`);
