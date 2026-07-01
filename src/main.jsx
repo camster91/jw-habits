@@ -22,6 +22,11 @@ i18n
       es: { translation: es },
       fr: { translation: fr },
     },
+    // Resolve "es-ES" → "es" so the regional locale detected
+    // from navigator.language matches our resource key (which
+    // is keyed by language, not locale). Without this, the
+    // browser's "es-ES" falls through to the fallback "en".
+    load: 'languageOnly',
     fallbackLng: 'en',
     interpolation: { escapeValue: false },
     detection: {

@@ -18,12 +18,19 @@
     "familySub": "Talk prompts, videos, family Bible ideas",
     "thisWeek": "This week",
     "memorial": "Memorial",
+    "memorialSeeDate": "See jw.org for the date",
     "treasures": "Treasures from God's Word",
     "ministry": "Apply Yourself to the Field Ministry",
     "living": "Living as Christians",
     "family15": "15 minutes",
     "family30": "30 minutes",
-    "family60": "60 minutes"
+    "family60": "60 minutes",
+    "today": "Today",
+    "tonight": "Tonight",
+    "subFieldService": "Field Service",
+    "subPublicMeeting": "Public Meeting + Watchtower Study",
+    "subMidweekMeeting": "Midweek Meeting",
+    "subMidweekMeetingPrep": "Midweek Meeting Prep"
   },
   "home": {
     "firstRunHint": "Tap a row to open jw.org. Tap the checkbox when done."

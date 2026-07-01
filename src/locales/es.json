@@ -18,12 +18,19 @@
     "familySub": "Ideas para conversaciones, videos, estudio Bíblico en familia",
     "thisWeek": "Esta semana",
     "memorial": "Conmemoración",
+    "memorialSeeDate": "Consulta jw.org para ver la fecha",
     "treasures": "Tesoros de la Palabra de Dios",
     "ministry": "Seamos mejores maestros",
     "living": "Nuestra vida como cristianos",
     "family15": "15 minutos",
     "family30": "30 minutos",
-    "family60": "60 minutos"
+    "family60": "60 minutos",
+    "today": "Hoy",
+    "tonight": "Esta noche",
+    "subFieldService": "Servicio en el campo",
+    "subPublicMeeting": "Reunión pública + Estudio de La Atalaya",
+    "subMidweekMeeting": "Reunión de entre semana",
+    "subMidweekMeetingPrep": "Preparación para la reunión de entre semana"
   },
   "home": {
     "firstRunHint": "Toca una fila para abrir jw.org. Marca la casilla cuando termines."

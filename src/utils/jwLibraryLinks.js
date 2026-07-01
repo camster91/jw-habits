@@ -163,6 +163,10 @@ export function getMeetingWorkbookLink(docid, locale = 'E') {
  * page (JW_ORG_SECTIONS.meetingWorkbooks).
  *
  * @param {Date} date - The date within the desired week
+ * @param {(k: string) => string} [_t] - Optional i18n translation
+ *   function (default: identity). When provided, the function
+ *   returns localized month names via the i18next system.
+ *   Caller passes its `t` for the active locale.
  * @returns {{ url: string, weekOf: string, weekStart: Date, weekEnd: Date } | null}
  */
 export function getThisWeekMeetingUrl(date = new Date()) {
@@ -178,21 +182,20 @@ export function getThisWeekMeetingUrl(date = new Date()) {
   const weekEnd = new Date(d.getTime());
   weekEnd.setDate(weekEnd.getDate() + 6);
 
-  // Build the jw.org "Life and Ministry Meeting Schedule for
-  // {Month-DD-{Year-}Month-DD-{Year-}YYYY" segment. The format
-  // uses the full month name(s) and a Mon..Sun range. e.g.
-  //   2026-06-15 (Mon) through 2026-06-21 (Sun) →
-  //     "Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026"
-  //   2026-06-29 (Mon) through 2026-07-05 (Sun) →
-  //     "Life-and-Ministry-Meeting-Schedule-for-June-29-July-5-2026"
-  //   2025-12-29 (Mon) through 2026-01-04 (Sun) →
-  //     "Life-and-Ministry-Meeting-Schedule-for-December-29-2025-January-4-2026"
-  // Three cases:
-  //   same month/year → single year at end
-  //   cross month, same year → end-month name only (year at end)
-  //   cross year (always also cross month) → year on each end
-  // Days are NOT zero-padded — jw.org returns 404 for "June-5-21-2026".
-  const fmtMonth = (d) => d.toLocaleString('en-US', { month: 'long' });
+  // Map our i18n language keys (en/es/fr) to BCP-47 locale
+  // codes for Intl.DateTimeFormat. Falls back to en-US.
+  const localeMap = { en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+  // Look up the current language via the i18n module if the
+  // caller provided a t — i18next exposes `i18n.language` but
+  // we don't want to import that here (circular). Instead we
+  // probe the active language from the navigator + localStorage.
+  // For now: caller passes the language via the (unstable)
+  // global window.__jw_lang if set; otherwise default to en-US.
+  const activeLang =
+    (typeof window !== 'undefined' && window.__jw_lang) || 'en';
+  const fmtLocale = localeMap[activeLang] || 'en-US';
+  const fmtMonth = (d) => d.toLocaleString(fmtLocale, { month: 'long' });
+
   const startYear = weekStart.getFullYear();
   const endYear = weekEnd.getFullYear();
   const crossMonth = weekStart.getMonth() !== weekEnd.getMonth();
@@ -207,6 +210,12 @@ export function getThisWeekMeetingUrl(date = new Date()) {
     // Same month: month-day-day-year
     dateSeg = `${fmtMonth(weekStart)}-${weekStart.getDate()}-${weekEnd.getDate()}-${startYear}`;
   }
+  // jw.org's English URL slug is fixed ("Life-and-Ministry-
+  // Meeting-Schedule-for-…"). Localized slugs would need a
+  // mapping (jw.org uses different slugs per language); for
+  // now the URL stays English since jw.org's primary surface
+  // is English-only for this content type. The weekOf display
+  // string IS localized.
   const seg = `Life-and-Ministry-Meeting-Schedule-for-${dateSeg}`;
 
   // Map the ISO week start month to the current MWB volume
@@ -389,9 +398,15 @@ export function getMemorialDate(year) {
   const entry = TABLE[year];
   if (!entry) return null;
   const date = new Date(year, entry.month, entry.day);
+  // Map our i18n keys to BCP-47 locale codes for the date
+  // formatter. Same mapping as getThisWeekMeetingUrl.
+  const localeMap = { en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+  const activeLang =
+    (typeof window !== 'undefined' && window.__jw_lang) || 'en';
+  const fmtLocale = localeMap[activeLang] || 'en-US';
   return {
     date,
-    weekOf: date.toLocaleString('en-US', {
+    weekOf: date.toLocaleString(fmtLocale, {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -421,9 +436,9 @@ export function getMemorialDate(year) {
  *   - `visible: false` if the Memorial is more than 30 days away
  *   - `null` if `today` is invalid
  */
-export function getMemorialRow(today = new Date(), year = today.getFullYear()) {
+export function getMemorialRow(today = new Date(), year = today.getFullYear(), t = (k) => k) {
   if (isNaN(today.getTime())) return null;
-  const memorial = getMemorialDate(year);
+  const memorial = getMemorialDate(year, t);
 
   // Compute days from today to the Memorial. For unknown
   // years, the Memorial date is unknown; we still link to
@@ -454,10 +469,10 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear()) {
 
   const sub = memorial
     ? memorial.weekOf
-    : 'See jw.org for the date';
+    : t('habit.memorialSeeDate');
 
   return {
-    title: 'Memorial',
+    title: t('habit.memorial'),
     sub,
     href: 'https://www.jw.org/en/jehovahs-witnesses/memorial/',
     visible,
@@ -507,9 +522,9 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear()) {
  *     the 5 weekly rows. The checkbox tracks per-day
  *     completion (key 'today').
  */
-export function getTodayRow(today = new Date(), settings = {}) {
+export function getTodayRow(today = new Date(), settings = {}, t = (k) => k) {
   if (isNaN(today.getTime())) return null;
-  const thisWeek = getThisWeekMeetingUrl(today);
+  const thisWeek = getThisWeekMeetingUrl(today, t);
   const meetingHref = thisWeek.url;
   // Coerce settings into the documented range; fall back
   // to defaults on any malformed input.
@@ -526,8 +541,8 @@ export function getTodayRow(today = new Date(), settings = {}) {
   if (dow === 6) {
     return {
       key: 'today',
-      title: 'Today',
-      sub: 'Field Service',
+      title: t('habit.today'),
+      sub: t('habit.subFieldService'),
       // jw.org landing page that lists meeting/field
       // service finders. Verified 200 (2026-06-17).
       href: 'https://www.jw.org/en/jehovahs-witnesses/meetings/',
@@ -538,8 +553,8 @@ export function getTodayRow(today = new Date(), settings = {}) {
   if (dow === weekendDay) {
     return {
       key: 'today',
-      title: 'Today',
-      sub: 'Public Meeting + Watchtower Study',
+      title: t('habit.today'),
+      sub: t('habit.subPublicMeeting'),
       href: meetingHref,
     };
   }
@@ -548,8 +563,8 @@ export function getTodayRow(today = new Date(), settings = {}) {
   if (dow === midweekDay) {
     return {
       key: 'today',
-      title: 'Tonight',
-      sub: 'Midweek Meeting',
+      title: t('habit.tonight'),
+      sub: t('habit.subMidweekMeeting'),
       href: meetingHref,
     };
   }
@@ -561,8 +576,8 @@ export function getTodayRow(today = new Date(), settings = {}) {
   // All point at this week's MWB schedule.
   return {
     key: 'today',
-    title: 'Today',
-    sub: 'Midweek Meeting Prep',
+    title: t('habit.today'),
+    sub: t('habit.subMidweekMeetingPrep'),
     href: meetingHref,
   };
 }

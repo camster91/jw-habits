@@ -105,7 +105,17 @@ function saveState(state) {
 }
 
 function Home() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // Expose the active i18n language as a global so pure utility
+  // functions in jwLibraryLinks (which can't import i18next
+  // without a circular dep) can pick up the locale for date
+  // formatting. Updated on every render so language changes
+  // are reflected immediately.
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.__jw_lang = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
+    }
+  }, [i18n.resolvedLanguage, i18n.language]);
   // Initialize from localStorage. We re-read on `storage` events
   // and on visibilitychange so the checkbox state stays current
   // across tabs and on wake-from-sleep. If the saved state's
@@ -194,7 +204,7 @@ function Home() {
   // Memorial page. The row is hidden entirely outside
   // March/April. The function is null-safe (returns null
   // when the row should not appear).
-  const memorial = getMemorialRow(new Date());
+  const memorial = getMemorialRow(new Date(), undefined, t);
 
   // Progress metadata for rows that show a thin progress bar.
   // Both are calendar-based — no fetch, no jw.org content.
@@ -208,7 +218,7 @@ function Home() {
   // Public Meeting). Always rendered as the first habit
   // row, above the weekly rows. null-safe (returns null
   // if today is invalid, which won't happen in practice).
-  const todayRow = getTodayRow(new Date(), settings);
+  const todayRow = getTodayRow(new Date(), settings, t);
 
   // The 5 habit rows, in the order Cam listed them. Each
   // row has: a key (used for the done map), an icon
