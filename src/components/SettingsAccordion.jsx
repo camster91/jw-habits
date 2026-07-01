@@ -149,10 +149,27 @@ export default function SettingsAccordion() {
 
   // Update + persist. Same shape as Wave 2 settings — no
   // refactor, just adds fields.
+  //
+  // We dispatch a synthetic 'storage' event after saving so
+  // sibling components (Home) re-read settings. Real cross-tab
+  // events fire automatically when another tab writes; same-tab
+  // writes do NOT fire the event, so we dispatch manually.
   const update = (patch) => {
     const next = { ...settings, ...patch };
     setSettings(next);
     saveSettings(next);
+    // Manual event so listeners in this same tab (Home page)
+    // re-read settings and update their derived state. Other
+    // tabs get the same event via the browser automatically.
+    try {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'jw-user-settings',
+        newValue: JSON.stringify(next),
+      }));
+    } catch {
+      // StorageEvent constructor may not exist in very old browsers;
+      // fall through — the user still has a working local state.
+    }
   };
 
   // Toggle handler. Off → request permission, then turn on.
