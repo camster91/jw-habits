@@ -43,6 +43,16 @@
     "dayFri": "Vie",
     "daySat": "Sáb",
     "expand": "Ajustes",
-    "collapse": "Listo"
+    "collapse": "Listo",
+    "reminders": "Recordatorio diario",
+    "dailyReminder": "Recordatorio diario",
+    "reminderHelp": "Recibe un aviso diario para revisar tus hábitos de hoy",
+    "reminderTimeLabel": "Hora",
+    "testNotification": "Probar",
+    "testFired": "Notificación de prueba enviada",
+    "quietHoursLabel": "Horas de silencio",
+    "quietStartLabel": "Inicio de horas de silencio",
+    "quietEndLabel": "Fin de horas de silencio",
+    "permissionDenied": "Notificaciones bloqueadas. Permítelas en la configuración del navegador para activarlas."
   }
 }

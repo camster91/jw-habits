@@ -43,6 +43,16 @@
     "dayFri": "Fri",
     "daySat": "Sat",
     "expand": "Settings",
-    "collapse": "Done"
+    "collapse": "Done",
+    "reminders": "Daily reminder",
+    "dailyReminder": "Daily reminder",
+    "reminderHelp": "Get a daily nudge to check off today's habits",
+    "reminderTimeLabel": "Time",
+    "testNotification": "Test",
+    "testFired": "Test notification sent",
+    "quietHoursLabel": "Quiet hours",
+    "quietStartLabel": "Quiet hours start",
+    "quietEndLabel": "Quiet hours end",
+    "permissionDenied": "Notifications blocked. Allow them in your browser's site settings to enable."
   }
 }

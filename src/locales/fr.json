@@ -43,6 +43,16 @@
     "dayFri": "Ven",
     "daySat": "Sam",
     "expand": "Paramètres",
-    "collapse": "Terminé"
+    "collapse": "Terminé",
+    "reminders": "Rappel quotidien",
+    "dailyReminder": "Rappel quotidien",
+    "reminderHelp": "Recevez un rappel quotidien pour vérifier vos habitudes du jour",
+    "reminderTimeLabel": "Heure",
+    "testNotification": "Tester",
+    "testFired": "Notification de test envoyée",
+    "quietHoursLabel": "Heures silencieuses",
+    "quietStartLabel": "Début des heures silencieuses",
+    "quietEndLabel": "Fin des heures silencieuses",
+    "permissionDenied": "Notifications bloquées. Autorisez-les dans les paramètres du navigateur pour les activer."
   }
 }

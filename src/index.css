@@ -802,3 +802,146 @@ input[type="range"]::-webkit-slider-thumb {
   /* Sits below the toggle; no card chrome, just the rows. */
   padding: 0;
 }
+
+/* iOS-style toggle switch (custom — Tailwind has toggle
+   patterns but iOS-fidelity requires explicit track + thumb). */
+.ios-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.ios-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+.ios-switch input:disabled + .ios-switch__track {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ios-switch__track {
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  background: rgba(120, 120, 128, 0.32);
+  border-radius: 13px;
+  transition: background-color 150ms ease;
+  position: relative;
+}
+.ios-switch__thumb {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+.ios-switch input:checked + .ios-switch__track {
+  background: var(--ios-green, #34C759);
+}
+.ios-switch input:checked + .ios-switch__track .ios-switch__thumb {
+  transform: translateX(18px);
+}
+.ios-switch input:focus-visible + .ios-switch__track {
+  outline: 2px solid var(--ios-blue, #007AFF);
+  outline-offset: 2px;
+}
+[data-theme="dark"] .ios-switch__track {
+  background: rgba(120, 120, 128, 0.32);
+}
+
+/* HH:MM time picker — two adjacent number inputs. No
+   spinners shown (we hide them via CSS). Looks like one
+   cohesive control. */
+.ios-timepicker {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(120, 120, 128, 0.16);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.ios-timepicker input {
+  width: 44px;
+  text-align: center;
+  font-size: 14px;
+  padding: 4px 0;
+  background: var(--ios-bg-elevated, #fff);
+  border: none;
+  border-radius: 6px;
+  color: var(--ios-label, #000);
+  -moz-appearance: textfield;
+}
+.ios-timepicker input::-webkit-outer-spin-button,
+.ios-timepicker input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.ios-timepicker input:focus {
+  outline: 2px solid var(--ios-blue, #007AFF);
+  outline-offset: 1px;
+}
+.ios-timepicker__sep {
+  font-weight: 600;
+  color: var(--ios-label, #000);
+  padding: 0 2px;
+}
+[data-theme="dark"] .ios-timepicker {
+  background: rgba(120, 120, 128, 0.24);
+}
+[data-theme="dark"] .ios-timepicker input {
+  background: rgba(58, 58, 60, 0.96);
+  color: #fff;
+}
+
+/* Small secondary action button — used for "Test
+   notification" in the reminders section. iOS-style:
+   text-first, blue tint, no fill. */
+.ios-btn-secondary {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ios-blue, #007AFF);
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+.ios-btn-secondary:hover {
+  background: rgba(0, 122, 255, 0.08);
+}
+.ios-btn-secondary:active {
+  background: rgba(0, 122, 255, 0.16);
+}
+[data-theme="dark"] .ios-btn-secondary:hover {
+  background: rgba(10, 132, 255, 0.16);
+}
+
+/* sr-only — visually hidden but readable by screen readers
+   for accessibility. Tailwind has this class but we don't
+   ship @apply utilities in CSS, so redefine it here. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Settings as SettingsIcon } from 'lucide-react';
+import { ChevronDown, Settings as SettingsIcon, Bell } from 'lucide-react';
 import { loadSettings, saveSettings, DEFAULTS } from '../utils/settingsStore';
+import {
+  getPermissionState,
+  requestNotificationPermission,
+  startReminder,
+  cancelReminder,
+  showReminderNotification,
+  NOTIFICATION_PERMISSION,
+} from '../utils/notificationScheduler';
 
 const DAYS = [
   { value: 0, key: 'daySun' },
@@ -48,26 +56,86 @@ function DayPicker({ value, onChange, label, ariaLabel }) {
   );
 }
 
+// Two-segment time picker (HH + MM). Lightweight — uses two
+// <input type="number"> fields with inputmode="numeric" for
+// mobile. No spinners (hide via CSS). Validates on change.
+function TimePicker({ value, onChange, ariaLabel, id }) {
+  // value is "HH:MM"; split into parts, default to 09:00.
+  const [hh, mm] = (value || '09:00').split(':');
+  const set = (newHh, newMm) => {
+    const p = (n) => String(n).padStart(2, '0');
+    onChange(`${p(newHh)}:${p(newMm)}`);
+  };
+  return (
+    <div
+      className="ios-timepicker"
+      role="group"
+      aria-label={ariaLabel}
+    >
+      <input
+        id={`${id}-hh`}
+        type="number"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        min="0"
+        max="23"
+        value={hh}
+        onChange={(e) => {
+          const n = Math.max(0, Math.min(23, parseInt(e.target.value || '0', 10)));
+          set(n, mm);
+        }}
+        aria-label={`${ariaLabel} hours`}
+      />
+      <span className="ios-timepicker__sep" aria-hidden="true">:</span>
+      <input
+        id={`${id}-mm`}
+        type="number"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        min="0"
+        max="59"
+        value={mm}
+        onChange={(e) => {
+          const n = Math.max(0, Math.min(59, parseInt(e.target.value || '0', 10)));
+          set(hh, n);
+        }}
+        aria-label={`${ariaLabel} minutes`}
+      />
+    </div>
+  );
+}
+
 /**
  * Settings — inline accordion at the bottom of the home page.
- * No top-bar chrome, no drawer, no new route. Lives where the
- * footer disclaimer lives — at the bottom, not the top. Saves
- * changes to localStorage immediately on click.
+ * No top-bar chrome, no drawer, no new route. Saves changes to
+ * localStorage immediately on click.
  */
 export default function SettingsAccordion() {
   const { t } = useTranslation();
-  // Settings are loaded once on mount. We don't need a state
-  // setter on the parent — the accordion is self-contained.
   const [settings, setSettings] = useState(() => loadSettings());
   const [open, setOpen] = useState(false);
 
-  // Save on every change. Cheap (one JSON.stringify) and
-  // ensures the user's choice is never lost on tab close.
-  const update = (patch) => {
-    const next = { ...settings, ...patch };
-    setSettings(next);
-    saveSettings(next);
-  };
+  // Permission state. If the browser doesn't support the
+  // Notification API at all, the toggle is hidden entirely.
+  const permSupported =
+    typeof window !== 'undefined' && 'Notification' in window;
+  const [perm, setPerm] = useState(() =>
+    permSupported ? getPermissionState() : NOTIFICATION_PERMISSION.UNSUPPORTED,
+  );
+  const [testFired, setTestFired] = useState(false);
+
+  // True when reminders are effectively enabled (toggle + valid
+  // reminderTime + permission granted).
+  const remindersOn =
+    !!settings.reminderTime &&
+    perm === NOTIFICATION_PERMISSION.GRANTED;
+
+  // Whenever settings.permission or .reminderTime changes,
+  // re-sync the scheduler. Cancel first to clear the old timer.
+  useEffect(() => {
+    cancelReminder();
+    if (remindersOn) startReminder();
+  }, [remindersOn, settings.reminderTime, settings.quietHours?.start, settings.quietHours?.end]);
 
   // If storage changes from another tab, sync. Matches the
   // existing pattern for jw-daily-habits-state.
@@ -78,6 +146,43 @@ export default function SettingsAccordion() {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  // Update + persist. Same shape as Wave 2 settings — no
+  // refactor, just adds fields.
+  const update = (patch) => {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    saveSettings(next);
+  };
+
+  // Toggle handler. Off → request permission, then turn on.
+  // On → turn off + cancel scheduler.
+  const handleToggleReminders = async (next) => {
+    if (next) {
+      if (perm === NOTIFICATION_PERMISSION.DEFAULT ||
+          perm === NOTIFICATION_PERMISSION.UNSUPPORTED) {
+        const result = await requestNotificationPermission();
+        setPerm(result);
+        if (result !== NOTIFICATION_PERMISSION.GRANTED) {
+          // User dismissed or denied — don't enable the toggle.
+          return;
+        }
+      }
+      update({ reminderTime: settings.reminderTime || '21:00' });
+    } else {
+      cancelReminder();
+      update({ reminderTime: null });
+    }
+  };
+
+  const handleTestNotification = async () => {
+    setTestFired(true);
+    await showReminderNotification({
+      title: 'JW Habits',
+      body: 'Time to check your daily habits.',
+    });
+    setTimeout(() => setTestFired(false), 2000);
+  };
 
   return (
     <section className="mt-6">
@@ -106,6 +211,7 @@ export default function SettingsAccordion() {
           id="settings-panel"
           className="ios-settings-panel mt-2"
         >
+          {/* ── Meeting days (Wave 2) ──────────────────────── */}
           <h2 className="ios-section-h">{t('settings.meetingDays')}</h2>
 
           <div className="ios-row flex-col items-stretch">
@@ -143,6 +249,113 @@ export default function SettingsAccordion() {
               ariaLabel={t('settings.weekend')}
             />
           </div>
+
+          {/* ── Daily reminders (Wave 3) ──────────────────── */}
+          {permSupported && (
+            <>
+              <h2 className="ios-section-h mt-6">{t('settings.reminders')}</h2>
+
+              <div className="ios-row flex-col items-stretch">
+                <div className="flex items-center gap-3 mb-2 w-full">
+                  <div className="ios-icon blue shrink-0" aria-hidden="true">
+                    <Bell className="w-4 h-4" />
+                  </div>
+                  <div className="body min-w-0 flex-1">
+                    <div className="title">{t('settings.dailyReminder')}</div>
+                    <div className="sub">{t('settings.reminderHelp')}</div>
+                  </div>
+                  <label className="ios-switch" aria-label={t('settings.dailyReminder')}>
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      aria-checked={remindersOn}
+                      checked={remindersOn}
+                      disabled={perm === NOTIFICATION_PERMISSION.DENIED}
+                      onChange={(e) => handleToggleReminders(e.target.checked)}
+                    />
+                    <span className="ios-switch__track" aria-hidden="true">
+                      <span className="ios-switch__thumb" />
+                    </span>
+                  </label>
+                </div>
+
+                {perm === NOTIFICATION_PERMISSION.DENIED && (
+                  <div className="text-xs text-base-content/60 mt-2 px-1">
+                    {t('settings.permissionDenied')}
+                  </div>
+                )}
+
+                {remindersOn && (
+                  <>
+                    <div className="flex items-center gap-3 mt-3">
+                      <div className="text-sm text-base-content/80 min-w-[80px]">
+                        {t('settings.reminderTimeLabel')}
+                      </div>
+                      <TimePicker
+                        id="reminder-time"
+                        ariaLabel={t('settings.reminderTimeLabel')}
+                        value={settings.reminderTime || '21:00'}
+                        onChange={(v) => update({ reminderTime: v })}
+                      />
+                      <button
+                        type="button"
+                        className="ios-btn-secondary ml-auto"
+                        onClick={handleTestNotification}
+                        aria-label={t('settings.testNotification')}
+                      >
+                        {t('settings.testNotification')}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-3">
+                      <label className="ios-switch" aria-label={t('settings.quietHoursLabel')}>
+                        <input
+                          type="checkbox"
+                          role="switch"
+                          aria-checked={!!settings.quietHours}
+                          checked={!!settings.quietHours}
+                          onChange={(e) => update({
+                            quietHours: e.target.checked
+                              ? { start: '22:00', end: '07:00' }
+                              : null,
+                          })}
+                        />
+                        <span className="ios-switch__track" aria-hidden="true">
+                          <span className="ios-switch__thumb" />
+                        </span>
+                      </label>
+                      <div className="text-sm text-base-content/80">
+                        {t('settings.quietHoursLabel')}
+                      </div>
+                    </div>
+
+                    {settings.quietHours && (
+                      <div className="flex items-center gap-3 mt-2 ml-11">
+                        <TimePicker
+                          id="quiet-start"
+                          ariaLabel={t('settings.quietStartLabel')}
+                          value={settings.quietHours.start}
+                          onChange={(v) => update({ quietHours: { ...settings.quietHours, start: v } })}
+                        />
+                        <span className="text-base-content/50" aria-hidden="true">→</span>
+                        <TimePicker
+                          id="quiet-end"
+                          ariaLabel={t('settings.quietEndLabel')}
+                          value={settings.quietHours.end}
+                          onChange={(v) => update({ quietHours: { ...settings.quietHours, end: v } })}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+                {testFired && (
+                  <div className="text-xs text-success mt-2 px-1">
+                    {t('settings.testFired')}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
     </section>

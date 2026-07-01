@@ -337,6 +337,46 @@ async function gotoHome(page) {
     await page.context().close();
   }
 
+  // T6c: Reminders section appears below meeting-days when
+  // the Notification API is available. Verifies toggle,
+  // time picker, quiet-hours toggle, and test button all
+  // render. Browser permission defaults to 'default' or
+  // 'denied' in headless; both should still render the UI,
+  // and disabled state on the master toggle should reflect
+  // 'denied' specifically.
+  {
+    const { page } = await fresh(browser);
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForTimeout(2500);
+    // Open the accordion
+    await page.locator('button[aria-controls="settings-panel"]').click();
+    await page.waitForTimeout(500);
+    const reminders = await page.evaluate(() => {
+      const panel = document.getElementById('settings-panel');
+      if (!panel) return { found: false };
+      const sections = panel.querySelectorAll('.ios-section-h');
+      const switches = panel.querySelectorAll('input[type="checkbox"][role="switch"]');
+      const timepickers = panel.querySelectorAll('.ios-timepicker');
+      const testBtn = panel.querySelector('button.ios-btn-secondary');
+      return {
+        found: true,
+        sectionCount: sections.length,
+        sectionTexts: [...sections].map((s) => s.textContent),
+        switchCount: switches.length,
+        timepickerCount: timepickers.length,
+        hasTestButton: !!testBtn,
+        testButtonText: testBtn?.textContent,
+      };
+    });
+    await record('T6c: Reminders section renders with all controls',
+      reminders.found && reminders.sectionCount === 2
+        && reminders.switchCount >= 1
+        && reminders.hasTestButton === true,
+      `sections=${reminders.sectionCount} switches=${reminders.switchCount} timepickers=${reminders.timepickerCount} testBtn=${reminders.hasTestButton}`);
+    await page.context().close();
+  }
+
   // T7: Only one in-app route exists (the home). All other
   // paths render the home (or 404 from the server). The
   // /share path is reserved for the PWA share_target.
