@@ -470,6 +470,7 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear()) {
  * adapts to the day of the week. The row tells the user what's
  * the most relevant JW thing right now:
  *
+ * Default schedule (matches jw.org globally):
  *   Sun (0): "Today — Public Meeting"      (weekend meeting)
  *   Mon (1): "Today — Midweek Meeting Prep"  (3 days to meeting)
  *   Tue (2): "Tonight — Midweek Meeting"    (meeting day!)
@@ -477,6 +478,12 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear()) {
  *   Thu (4): "Today — Midweek Meeting Prep"
  *   Fri (5): "Today — Midweek Meeting Prep"
  *   Sat (6): "Today — Field Service"        (Saturday ministry)
+ *
+ * The caller can override the meeting days via the
+ * `settings.midweekDay` and `settings.weekendDay` fields
+ * (from the user settings store) so the row reflects
+ * individual congregation schedules. Sat is always
+ * "Field Service" — that's cultural, not configurable.
  *
  * The href for the meeting-related days points at this
  * week's MWB schedule (already computed by
@@ -490,53 +497,72 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear()) {
  * the title and sub-text describe what kind of day it is.
  *
  * @param {Date} today - The current date (defaults to now)
+ * @param {{ midweekDay?: number, weekendDay?: number }} [settings]
+ *   User settings. midweekDay = 0..6 (default 2 = Tuesday).
+ *   weekendDay = 0..6 (default 0 = Sunday). Falls back to
+ *   defaults if missing or out of range.
  * @returns {{ title: string, sub: string, href: string, key: string } | null}
  *   - `null` if `today` is invalid
  *   - The caller renders this as the first habit row, above
  *     the 5 weekly rows. The checkbox tracks per-day
  *     completion (key 'today').
  */
-export function getTodayRow(today = new Date()) {
+export function getTodayRow(today = new Date(), settings = {}) {
   if (isNaN(today.getTime())) return null;
-  const dow = today.getDay(); // 0=Sun..6=Sat
   const thisWeek = getThisWeekMeetingUrl(today);
   const meetingHref = thisWeek.url;
+  // Coerce settings into the documented range; fall back
+  // to defaults on any malformed input.
+  const clampDay = (n, fallback) =>
+    Number.isInteger(n) && n >= 0 && n <= 6 ? n : fallback;
+  const midweekDay = clampDay(settings.midweekDay, 2);   // default Tuesday
+  const weekendDay = clampDay(settings.weekendDay, 0);    // default Sunday
 
-  switch (dow) {
-    case 0: // Sunday
-      return {
-        key: 'today',
-        title: 'Today',
-        sub: 'Public Meeting + Watchtower Study',
-        href: meetingHref,
-      };
-    case 1: // Monday
-    case 3: // Wednesday
-    case 4: // Thursday
-    case 5: // Friday
-      return {
-        key: 'today',
-        title: 'Today',
-        sub: 'Midweek Meeting Prep',
-        href: meetingHref,
-      };
-    case 2: // Tuesday — meeting day
-      return {
-        key: 'today',
-        title: 'Tonight',
-        sub: 'Midweek Meeting',
-        href: meetingHref,
-      };
-    case 6: // Saturday — field service
-      return {
-        key: 'today',
-        title: 'Today',
-        sub: 'Field Service',
-        // jw.org landing page that lists meeting/field
-        // service finders. Verified 200 (2026-06-17).
-        href: 'https://www.jw.org/en/jehovahs-witnesses/meetings/',
-      };
-    default:
-      return null;
+  const dow = today.getDay(); // 0=Sun..6=Sat
+
+  // Saturday (6) — fixed Field Service copy regardless of
+  // settings. Saturday is culturally the field-service day
+  // for JWs, not configurable.
+  if (dow === 6) {
+    return {
+      key: 'today',
+      title: 'Today',
+      sub: 'Field Service',
+      // jw.org landing page that lists meeting/field
+      // service finders. Verified 200 (2026-06-17).
+      href: 'https://www.jw.org/en/jehovahs-witnesses/meetings/',
+    };
   }
+
+  // Weekend meeting day (default Sunday) — "Today — Public Meeting"
+  if (dow === weekendDay) {
+    return {
+      key: 'today',
+      title: 'Today',
+      sub: 'Public Meeting + Watchtower Study',
+      href: meetingHref,
+    };
+  }
+
+  // Midweek meeting day (default Tuesday) — "Tonight — Midweek Meeting"
+  if (dow === midweekDay) {
+    return {
+      key: 'today',
+      title: 'Tonight',
+      sub: 'Midweek Meeting',
+      href: meetingHref,
+    };
+  }
+
+  // Otherwise (Mon, Wed, Thu, Fri) — "Today — Midweek Meeting Prep"
+  // These are the days of the week surrounding the midweek
+  // meeting; the user is either preparing for this week's
+  // meeting (Mon) or reviewing for next week's (Wed-Fri).
+  // All point at this week's MWB schedule.
+  return {
+    key: 'today',
+    title: 'Today',
+    sub: 'Midweek Meeting Prep',
+    href: meetingHref,
+  };
 }

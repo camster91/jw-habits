@@ -27,5 +27,22 @@
   },
   "home": {
     "firstRunHint": "Tap a row to open jw.org. Tap the checkbox when done."
+  },
+  "settings": {
+    "title": "Settings",
+    "meetingDays": "Meeting days",
+    "midweek": "Midweek meeting",
+    "midweekHelp": "Day of the week the midweek meeting is held",
+    "weekend": "Weekend meeting",
+    "weekendHelp": "Day of the week the public meeting is held",
+    "daySun": "Sun",
+    "dayMon": "Mon",
+    "dayTue": "Tue",
+    "dayWed": "Wed",
+    "dayThu": "Thu",
+    "dayFri": "Fri",
+    "daySat": "Sat",
+    "expand": "Settings",
+    "collapse": "Done"
   }
 }

@@ -734,3 +734,71 @@ input[type="range"]::-webkit-slider-thumb {
 .animate-gentle-pulse {
   animation: gentlePulse 3s ease-in-out infinite;
 }
+
+/* iOS segmented control — used in Settings for day-pickers.
+   Renders as a single rounded bar with N equal segments; the
+   active segment gets a solid background + shadow, mimicking
+   the iOS native picker. */
+.ios-segmented {
+  display: flex;
+  width: 100%;
+  background: rgba(120, 120, 128, 0.16);
+  border-radius: 9px;
+  padding: 2px;
+  gap: 2px;
+}
+.ios-segmented__btn {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 4px;
+  border-radius: 7px;
+  color: var(--ios-label, #000);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+  /* Smaller min touch target for tight settings rows. The
+     overall segmented control is still >44px tall total. */
+  min-height: 28px;
+}
+.ios-segmented__btn--active {
+  background: var(--ios-bg-elevated, #fff);
+  color: var(--ios-label, #000);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+}
+[data-theme="dark"] .ios-segmented {
+  background: rgba(120, 120, 128, 0.24);
+}
+[data-theme="dark"] .ios-segmented__btn--active {
+  background: rgba(58, 58, 60, 0.96);
+  color: #fff;
+}
+
+/* Settings accordion toggle — text-button with a chevron,
+   used at the bottom of the home page to reveal the
+   Settings panel. */
+.ios-settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+  text-align: left;
+}
+.ios-settings-toggle:hover {
+  background: rgba(120, 120, 128, 0.08);
+}
+[data-theme="dark"] .ios-settings-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.ios-settings-panel {
+  /* Sits below the toggle; no card chrome, just the rows. */
+  padding: 0;
+}

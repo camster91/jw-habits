@@ -27,5 +27,22 @@
   },
   "home": {
     "firstRunHint": "Toca una fila para abrir jw.org. Marca la casilla cuando termines."
+  },
+  "settings": {
+    "title": "Ajustes",
+    "meetingDays": "Días de reunión",
+    "midweek": "Reunión de entre semana",
+    "midweekHelp": "Día de la semana de la reunión de entre semana",
+    "weekend": "Reunión de fin de semana",
+    "weekendHelp": "Día de la semana de la reunión pública",
+    "daySun": "Dom",
+    "dayMon": "Lun",
+    "dayTue": "Mar",
+    "dayWed": "Mié",
+    "dayThu": "Jue",
+    "dayFri": "Vie",
+    "daySat": "Sáb",
+    "expand": "Ajustes",
+    "collapse": "Listo"
   }
 }

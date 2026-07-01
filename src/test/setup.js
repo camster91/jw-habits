@@ -13,11 +13,17 @@ i18n.use(initReactI18next).init({
 });
 
 // ── Mock localStorage ─────────────────────────────────
+// Real in-memory Map-backed store. The earlier vi.fn()
+// mock couldn't roundtrip values, which broke any test
+// that saved then read back (e.g. settingsStore).
+const localStorageStore = new Map();
 const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  clear: vi.fn(),
-  removeItem: vi.fn(),
+  getItem: (key) => (localStorageStore.has(key) ? localStorageStore.get(key) : null),
+  setItem: (key, value) => { localStorageStore.set(key, String(value)); },
+  removeItem: (key) => { localStorageStore.delete(key); },
+  clear: () => { localStorageStore.clear(); },
+  get length() { return localStorageStore.size; },
+  key: (i) => Array.from(localStorageStore.keys())[i] ?? null,
 };
 global.localStorage = localStorageMock;
 
@@ -37,5 +43,5 @@ global.navigator.serviceWorker = {
 // ── Reset mocks between tests ─────────────────────────
 beforeEach(() => {
   vi.clearAllMocks();
-  localStorageMock.getItem.mockReturnValue(null);
+  localStorageStore.clear();
 });

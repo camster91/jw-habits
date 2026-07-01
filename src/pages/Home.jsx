@@ -4,6 +4,8 @@ import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRoun
 import { getDailyTextLink, getMemorialRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 import { bibleReadingProgress, dailyTextProgress } from '../utils/habitProgress';
+import SettingsAccordion from '../components/SettingsAccordion';
+import { loadSettings } from '../utils/settingsStore';
 
 /**
  * Home — the only in-app page. Five habit rows:
@@ -121,6 +123,19 @@ function Home() {
     return loaded;
   });
 
+  // User settings (midweek day, weekend day). Re-read on
+  // 'storage' events so a change in one tab propagates to
+  // another. Settings are sticky (not per-day-reset), so we
+  // don't need a visibilitychange handler.
+  const [settings, setSettings] = useState(() => loadSettings());
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === 'jw-user-settings') setSettings(loadSettings());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   useEffect(() => {
     const refresh = () => setState(loadState());
     const onStorage = (e) => { if (e.key === STATE_KEY) refresh(); };
@@ -193,7 +208,7 @@ function Home() {
   // Public Meeting). Always rendered as the first habit
   // row, above the weekly rows. null-safe (returns null
   // if today is invalid, which won't happen in practice).
-  const todayRow = getTodayRow(new Date());
+  const todayRow = getTodayRow(new Date(), settings);
 
   // The 5 habit rows, in the order Cam listed them. Each
   // row has: a key (used for the done map), an icon
@@ -583,6 +598,14 @@ function Home() {
         <footer className="ios-footer">
           Unofficial third-party tool. Not affiliated with jw.org.
         </footer>
+
+        {/* Settings — inline accordion at the bottom of the
+            page. No top-bar chrome, no drawer, no new route.
+            Lives where the footer lives so the home stays
+            one-page-clean. The accordion reads its own state
+            from localStorage and re-renders when settings
+            change. */}
+        <SettingsAccordion />
 
         <div className="h-4" />
       </main>

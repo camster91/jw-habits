@@ -262,12 +262,21 @@ async function gotoHome(page) {
   // gear, no drawer. The top bar contains the app title only.
   // The app is one page; navigation goes out to jw.org, not
   // to other in-app routes.
+  //
+  // Note: a "Settings" accordion exists at the bottom of the
+  // home page (Wave 2). It's an inline disclosure, NOT a
+  // top-bar gear icon or drawer — so it doesn't violate the
+  // "no chrome" rule. The check below looks for a settings
+  // link/button in the TOP BAR specifically, which is the
+  // original intent of the test.
   {
     const { page } = await fresh(browser);
     await gotoHome(page);
     const chrome = await page.evaluate(() => ({
       hamburgerCount: document.querySelectorAll('button[aria-label="Open menu"]').length,
-      settingsGearCount: document.querySelectorAll('a[aria-label="Settings"]').length,
+      // Settings must not be reachable from the top bar.
+      // It IS reachable via the bottom accordion (T6b below).
+      topBarSettingsCount: document.querySelectorAll('header a[aria-label="Settings"], header button[aria-label="Settings"]').length,
       drawerCount: document.querySelectorAll('aside').length,
       // The top bar is a <div>, not a <header> element. Find
       // the JW Habits title by its uppercase class.
@@ -275,9 +284,56 @@ async function gotoHome(page) {
         .find((s) => /JW HABITS/i.test(s.textContent || ''))?.textContent.trim(),
     }));
     await record('T6: Home is the only page (no hamburger, no settings gear, no drawer)',
-      chrome.hamburgerCount === 0 && chrome.settingsGearCount === 0
+      chrome.hamburgerCount === 0 && chrome.topBarSettingsCount === 0
         && chrome.drawerCount === 0 && chrome.appTitle === 'JW Habits',
-      `hamburger=${chrome.hamburgerCount} gear=${chrome.settingsGearCount} drawer=${chrome.drawerCount} title=${chrome.appTitle}`);
+      `hamburger=${chrome.hamburgerCount} topBarSettings=${chrome.topBarSettingsCount} drawer=${chrome.drawerCount} title=${chrome.appTitle}`);
+    await page.context().close();
+  }
+
+  // T6b: Settings are reachable via an inline accordion at
+  // the bottom of the home page, NOT via top-bar chrome.
+  // Confirms the Wave 2 settings UX.
+  {
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    // Clear AFTER gotoHome so we can read localStorage
+    // (about:blank has no localStorage access).
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForTimeout(2000);
+    const settings = await page.evaluate(() => {
+      const toggle = document.querySelector('button.ios-settings-toggle, button[aria-controls="settings-panel"]');
+      return {
+        togglePresent: !!toggle,
+        toggleAriaExpanded: toggle?.getAttribute('aria-expanded'),
+        toggleAriaLabel: toggle?.getAttribute('aria-label'),
+      };
+    });
+    // Click to expand
+    if (settings.togglePresent) {
+      await page.locator('button[aria-controls="settings-panel"]').click();
+      await page.waitForTimeout(500);
+      const expanded = await page.evaluate(() => {
+        const panel = document.getElementById('settings-panel');
+        const segments = panel ? panel.querySelectorAll('.ios-segmented') : [];
+        const buttons = panel ? panel.querySelectorAll('button[role="radio"]') : [];
+        return {
+          panelPresent: !!panel,
+          segmentCount: segments.length,
+          buttonCount: buttons.length,
+        };
+      });
+      await record('T6b: Settings accordion expands inline at the bottom',
+        settings.togglePresent
+          && settings.toggleAriaExpanded === 'false'
+          && expanded.panelPresent
+          && expanded.segmentCount === 2
+          && expanded.buttonCount === 14, // 2 segments × 7 days each
+        `toggle=${settings.togglePresent} panel=${expanded.panelPresent} segs=${expanded.segmentCount} btns=${expanded.buttonCount}`);
+    } else {
+      await record('T6b: Settings accordion expands inline at the bottom',
+        false, 'No settings toggle button found on home');
+    }
     await page.context().close();
   }
 

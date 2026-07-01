@@ -497,5 +497,56 @@ describe('jwLibraryLinks', () => {
       expect(tuesday.href).toBe(wednesday.href);
       expect(monday.href).toContain('Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026');
     });
+
+    it('honors a custom midweekDay setting', () => {
+      // Move the midweek meeting to Wednesday. June 17 2026
+      // is Wednesday, so on that day the row should now be
+      // "Tonight — Midweek Meeting" (was "Midweek Meeting Prep"
+      // with the default Tuesday schedule).
+      const wednesdayMeeting = getTodayRow(new Date(2026, 5, 17), { midweekDay: 3 });
+      expect(wednesdayMeeting.title).toBe('Tonight');
+      expect(wednesdayMeeting.sub).toBe('Midweek Meeting');
+      // The day after the new meeting day (Thursday) should
+      // now read as "Midweek Meeting Prep" for next week.
+      const thursdayAfter = getTodayRow(new Date(2026, 5, 18), { midweekDay: 3 });
+      expect(thursdayAfter.sub).toBe('Midweek Meeting Prep');
+    });
+
+    it('honors a custom weekendDay setting', () => {
+      // Move the weekend meeting to Saturday. But the function
+      // treats Saturday (dow=6) as a fixed "Field Service" day
+      // regardless of the user's weekendDay — Saturday is
+      // culturally the JW field-service day, not configurable.
+      // So setting weekendDay=6 leaves the Saturday copy as
+      // "Field Service".
+      const saturday = getTodayRow(new Date(2026, 5, 20), { weekendDay: 6 });
+      expect(saturday.sub).toBe('Field Service');
+
+      // Move it to Friday instead — uncommon but valid. Now
+      // Friday is the weekend meeting day, and the day before
+      // (Thursday) is the prep day, but Thursday falls into
+      // the default "Midweek Meeting Prep" branch (it's not
+      // Saturday). So Thursday still shows "Midweek Meeting
+      // Prep" copy because that's the more useful signal.
+      // The Friday copy should be the weekend-meeting copy.
+      const fridayMeeting = getTodayRow(new Date(2026, 5, 19), { weekendDay: 5 });
+      expect(fridayMeeting.sub).toBe('Public Meeting + Watchtower Study');
+    });
+
+    it('coerces out-of-range day values to defaults', () => {
+      // midweekDay: 99 → falls back to default (Tuesday = 2).
+      // On Tuesday June 16, row should still be "Tonight".
+      const r = getTodayRow(new Date(2026, 5, 16), { midweekDay: 99, weekendDay: -1 });
+      expect(r.title).toBe('Tonight');
+      expect(r.sub).toBe('Midweek Meeting');
+    });
+
+    it('falls back to defaults when settings object is empty', () => {
+      // No settings arg at all — same as {}.
+      const r1 = getTodayRow(new Date(2026, 5, 16));
+      const r2 = getTodayRow(new Date(2026, 5, 16), {});
+      expect(r1.title).toBe(r2.title);
+      expect(r1.sub).toBe(r2.sub);
+    });
   });
 });
