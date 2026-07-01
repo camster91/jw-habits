@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRound, ArrowUpRight } from 'lucide-react';
 import { getDailyTextLink, getMemorialRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
+import { bibleReadingProgress, dailyTextProgress } from '../utils/habitProgress';
 
 /**
  * Home — the only in-app page. Five habit rows:
@@ -180,6 +181,11 @@ function Home() {
   // when the row should not appear).
   const memorial = getMemorialRow(new Date());
 
+  // Progress metadata for rows that show a thin progress bar.
+  // Both are calendar-based — no fetch, no jw.org content.
+  const bibleProgress = bibleReadingProgress(new Date());
+  const textProgress = dailyTextProgress(new Date());
+
   // "Today" — a day-of-week-aware row that tells the user
   // what's the most relevant JW thing right now. Title flips
   // to "Tonight" on Tuesday (meeting day) and sub-text
@@ -213,10 +219,13 @@ function Home() {
     {
       key: 'text',
       title: t('habit.text', 'Daily text'),
-      sub: t('habit.textSub', "Read today's scripture passage on jw.org"),
+      // Calendar-based day-of-month counter — honest metadata,
+      // not a claim about jw.org publishing cadence.
+      sub: textProgress.label,
       Icon: BookOpen,
       color: 'blue',
       href: getDailyTextLink(),
+      progress: textProgress,
     },
     {
       key: 'bible',
@@ -227,19 +236,40 @@ function Home() {
       Icon: BookMarked,
       color: 'purple',
       href: bibleHref,
+      progress: bibleProgress,
     },
     {
+      // Meeting prep — 3 MWB sections shown as sub-row labels.
+      // jw.org doesn't expose section-anchored URLs that work
+      // (verified 2026-06-30: all 4 candidate URLs 404), so
+      // the sub-rows are informational navigation hints, not
+      // separate links. The main row's href still opens the
+      // weekly schedule where all 3 sections are listed.
       key: 'meeting',
       title: t('habit.meeting', 'Meeting prep'),
       sub: t('habit.meetingSub', "This week's midweek + weekend workbook"),
+      subRows: [
+        { key: 'treasures',    label: t('habit.treasures',    'Treasures from God\'s Word') },
+        { key: 'ministry',     label: t('habit.ministry',     'Apply Yourself to the Field Ministry') },
+        { key: 'living',       label: t('habit.living',       'Living as Christians') },
+      ],
       Icon: Users,
       color: 'green',
       href: JW_ORG_SECTIONS.meetingWorkbooks,
     },
     {
+      // Family worship — 3 timing suggestions as sub-row
+      // labels. Not separate links because the destination
+      // page is the same generic landing; the timing
+      // suggestions are planning aids for the user.
       key: 'family',
       title: t('habit.family', 'Family worship'),
       sub: t('habit.familySub', 'Talk prompts, videos, family Bible ideas'),
+      subRows: [
+        { key: '15', label: t('habit.family15', '15 minutes') },
+        { key: '30', label: t('habit.family30', '30 minutes') },
+        { key: '60', label: t('habit.family60', '60 minutes') },
+      ],
       Icon: UsersRound,
       color: 'pink',
       href: JW_ORG_SECTIONS.marriageAndFamily,
@@ -440,65 +470,111 @@ function Home() {
             checkbox. No toast, no animation, no "complete" card. */}
         <div className="ios-grouped">
           {ROWS.map((row) => {
-            const { key, title, sub, color, href } = row;
+            const { key, title, sub, color, href, progress, subRows } = row;
             const RowIcon = row.Icon;
             const isDone = !!state.done[key];
             return (
-              <div
-                key={key}
-                className="ios-row"
-                // Dim the entire row + strike-through the title
-                // when the habit is marked done. Same iOS Reminders
-                // pattern — no animation, no toast, just a quiet
-                // visual signal. The row is still tappable to
-                // open jw.org.
-                style={isDone ? { opacity: 0.55 } : undefined}
-              >
-                {/* Left: link to jw.org */}
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 flex-1 min-w-0 text-left"
-                  aria-label={`${title} — opens jw.org in a new tab`}
+              <div key={key}>
+                <div
+                  className="ios-row"
+                  // Dim the entire row + strike-through the title
+                  // when the habit is marked done. Same iOS Reminders
+                  // pattern — no animation, no toast, just a quiet
+                  // visual signal. The row is still tappable to
+                  // open jw.org.
+                  style={isDone ? { opacity: 0.55 } : undefined}
                 >
-                  <div className={`ios-icon ${color}`}>
-                    <RowIcon className="w-4 h-4" />
-                  </div>
-                  <div className="body min-w-0">
-                    <div className={`title truncate ${isDone ? 'line-through' : ''}`}>{title}</div>
-                    {sub && <div className="sub truncate">{sub}</div>}
-                  </div>
-                  <ArrowUpRight className="ios-chev text-base-content/60 shrink-0" />
-                </a>
-                {/* Right: checkbox. Tapping it marks the habit done
-                    (or un-done). No animation, no toast, no
-                    celebration — just a quiet tick. */}
-                <button
-                  type="button"
-                  onClick={() => toggle(key)}
-                  className="ml-3 shrink-0"
-                  aria-label={isDone ? `Mark ${title} as not done` : `Mark ${title} as done`}
-                  aria-pressed={isDone}
-                >
-                  <span
-                    className={`ios-checkbox ${isDone ? 'done' : 'empty'}`}
+                  {/* Left: link to jw.org */}
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                    aria-label={`${title} — opens jw.org in a new tab`}
                   >
-                    {isDone && (
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
+                    <div className={`ios-icon ${color}`}>
+                      <RowIcon className="w-4 h-4" />
+                    </div>
+                    <div className="body min-w-0 flex-1">
+                      <div className={`title truncate ${isDone ? 'line-through' : ''}`}>{title}</div>
+                      {sub && <div className="sub truncate">{sub}</div>}
+                      {/* Progress bar — only for rows that have a
+                          progress object (Daily text, Bible reading).
+                          Thin, faded track + primary fill. 100% width
+                          of the title area, so it visually anchors
+                          below the sub-text. Pure metadata, no jw.org
+                          content implied. */}
+                      {progress && (
+                        <div
+                          className="mt-1.5 h-1 w-full rounded-full bg-base-content/15 overflow-hidden"
+                          role="progressbar"
+                          aria-valuenow={progress.current}
+                          aria-valuemin={0}
+                          aria-valuemax={progress.total}
+                          aria-label={progress.label}
+                        >
+                          <div
+                            className="h-full bg-primary rounded-full transition-all"
+                            style={{ width: `${Math.round(progress.pct * 100)}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <ArrowUpRight className="ios-chev text-base-content/60 shrink-0" />
+                  </a>
+                  {/* Right: checkbox. Tapping it marks the habit done
+                      (or un-done). No animation, no toast, no
+                      celebration — just a quiet tick. */}
+                  <button
+                    type="button"
+                    onClick={() => toggle(key)}
+                    className="ml-3 shrink-0"
+                    aria-label={isDone ? `Mark ${title} as not done` : `Mark ${title} as done`}
+                    aria-pressed={isDone}
+                  >
+                    <span
+                      className={`ios-checkbox ${isDone ? 'done' : 'empty'}`}
+                    >
+                      {isDone && (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </span>
+                  </button>
+                </div>
+                {/* Sub-rows: 3-section breakdown for Meeting prep
+                    (Treasures / Ministry / Living) and 3 timing
+                    options for Family worship. These are
+                    informational labels — they do NOT have separate
+                    links (jw.org doesn't expose section-anchored
+                    URLs that work, and timing doesn't change the
+                    destination). They sit visually nested under
+                    their parent row. */}
+                {subRows && subRows.length > 0 && (
+                  <div
+                    className="ml-12 mr-12 mb-2 -mt-1 text-xs text-base-content/60"
+                    aria-label={`${title} options`}
+                  >
+                    {subRows.map((s, i) => (
+                      <div
+                        key={s.key}
+                        className={`py-1 flex items-center gap-2 ${i < subRows.length - 1 ? 'border-b border-base-content/5' : ''}`}
                       >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </span>
-                </button>
+                        <span className="w-1 h-1 rounded-full bg-base-content/30 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{s.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

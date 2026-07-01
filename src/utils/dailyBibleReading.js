@@ -385,6 +385,11 @@ const SCHEDULE = [
   { day: 366, reading: 'Romans 8-11' },
 ];
 
+// Total entries in the schedule. Exported for callers that
+// want to render a "Day X / total" progress indicator
+// without re-importing the SCHEDULE const directly.
+export const SCHEDULE_TOTAL = SCHEDULE.length;
+
 let cache = { date: null, reading: null };
 
 function dayOfYear(d) {
