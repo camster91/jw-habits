@@ -27,13 +27,20 @@
     "family60": "60 minutes",
     "today": "Today",
     "tonight": "Tonight",
+    "yearText": "Year Text",
+    "yearTextSub": "{{year}} — Open this year's scripture",
+    "yearTextSubFallback": "View current Year Text on jw.org",
     "subFieldService": "Field Service",
     "subPublicMeeting": "Public Meeting + Watchtower Study",
     "subMidweekMeeting": "Midweek Meeting",
     "subMidweekMeetingPrep": "Midweek Meeting Prep"
   },
   "home": {
-    "firstRunHint": "Tap a row to open jw.org. Tap the checkbox when done."
+    "firstRunHint": "Tap a row to open jw.org. Tap the checkbox when done.",
+    "streakDay": "day streak",
+    "streakDays": "day streak",
+    "streakBest": "best",
+    "streakToday": "today"
   },
   "settings": {
     "title": "Settings",

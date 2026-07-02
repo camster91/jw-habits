@@ -27,13 +27,20 @@
     "family60": "60 minutos",
     "today": "Hoy",
     "tonight": "Esta noche",
+    "yearText": "Texto del año",
+    "yearTextSub": "{{year}} — Abra el texto del año en jw.org",
+    "yearTextSubFallback": "Ver el texto del año actual en jw.org",
     "subFieldService": "Servicio en el campo",
     "subPublicMeeting": "Reunión pública + Estudio de La Atalaya",
     "subMidweekMeeting": "Reunión de entre semana",
     "subMidweekMeetingPrep": "Preparación para la reunión de entre semana"
   },
   "home": {
-    "firstRunHint": "Toca una fila para abrir jw.org. Marca la casilla cuando termines."
+    "firstRunHint": "Toca una fila para abrir jw.org. Marca la casilla cuando termines.",
+    "streakDay": "días seguidos",
+    "streakDays": "días seguidos",
+    "streakBest": "mejor",
+    "streakToday": "hoy"
   },
   "settings": {
     "title": "Ajustes",

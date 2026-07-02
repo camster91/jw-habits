@@ -27,13 +27,20 @@
     "family60": "60 minutes",
     "today": "Aujourd'hui",
     "tonight": "Ce soir",
+    "yearText": "Texte de l'année",
+    "yearTextSub": "{{year}} — Ouvrir le texte de l'année sur jw.org",
+    "yearTextSubFallback": "Voir le texte de l'année actuel sur jw.org",
     "subFieldService": "Service sur le terrain",
     "subPublicMeeting": "Réunion publique + Étude de La Tour de Garde",
     "subMidweekMeeting": "Réunion de milieu de semaine",
     "subMidweekMeetingPrep": "Préparation à la réunion de milieu de semaine"
   },
   "home": {
-    "firstRunHint": "Touchez une ligne pour ouvrir jw.org. Cochez la case une fois terminé."
+    "firstRunHint": "Touchez une ligne pour ouvrir jw.org. Cochez la case une fois terminé.",
+    "streakDay": "jours d'affilée",
+    "streakDays": "jours d'affilée",
+    "streakBest": "meilleur",
+    "streakToday": "aujourd'hui"
   },
   "settings": {
     "title": "Paramètres",

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRound, ArrowUpRight } from 'lucide-react';
-import { getDailyTextLink, getMemorialRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
+import { getDailyTextLink, getCurrentYearTextUrl, getMemorialRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 import { bibleReadingProgress, dailyTextProgress } from '../utils/habitProgress';
+import { currentStreak, bestStreakFromHistory, todayProgress } from '../utils/streak';
 import SettingsAccordion from '../components/SettingsAccordion';
 import { loadSettings } from '../utils/settingsStore';
 
@@ -36,6 +37,7 @@ import { loadSettings } from '../utils/settingsStore';
 
 const STATE_KEY = 'jw-daily-habits-state';
 const FIRST_DONE_KEY = 'jw-habits-first-done';
+const BEST_STREAK_KEY = 'jw-habits-best-streak';
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -158,7 +160,21 @@ function Home() {
     };
   }, []);
 
+  // Track which row key just got toggled so we can apply a
+  // brief "pop" animation (scale 1 → 1.15 → 1, 200ms) to the
+  // checkbox. Cleared on a timer so re-toggles re-fire. Pure
+  // CSS animation defined in index.css under .ios-checkbox-pop.
+  const [popKey, setPopKey] = useState(null);
+  useEffect(() => {
+    if (!popKey) return;
+    const t = setTimeout(() => setPopKey(null), 220);
+    return () => clearTimeout(t);
+  }, [popKey]);
+
   const toggle = (key) => {
+    // Mark for the pop animation BEFORE the setState so the
+    // new render has both the new done value + the popKey set.
+    setPopKey(key);
     setState((prev) => {
       const nextDone = { ...prev.done, [key]: !prev.done[key] };
       // History: maintain a rolling 7-day list of dates where
@@ -180,6 +196,14 @@ function Home() {
       saveState(next);
       // First-ever interaction: hide the hint forever.
       try { localStorage.setItem(FIRST_DONE_KEY, '1'); } catch { /* swallow */ }
+      // Update best-streak whenever history changes. Pure localStorage,
+      // monotonically increases (never decreases). The current
+      // best is also visible in the home (under the dots strip).
+      try {
+        const cur = Number(localStorage.getItem(BEST_STREAK_KEY) || '0') || 0;
+        const computed = bestStreakFromHistory(history);
+        if (computed > cur) localStorage.setItem(BEST_STREAK_KEY, String(computed));
+      } catch { /* swallow */ }
       return next;
     });
   };
@@ -220,6 +244,26 @@ function Home() {
   // if today is invalid, which won't happen in practice).
   const todayRow = getTodayRow(new Date(), settings, t);
 
+  // "Year Text" — link to the current year's "Examining the
+  // Scriptures Daily" brochure on jw.org. Pure date math:
+  // resolves to the year-specific URL if the year has a
+  // published brochure, otherwise the generic brochures
+  // landing. ToS compliant (no verse text, no scripture
+  // reference — only the year + a link).
+  const yearText = getCurrentYearTextUrl(new Date());
+
+  // Streak + progress metadata. All derived from local state.
+  // - current: consecutive days ending today (or yesterday — grace).
+  // - best: monotonically-increasing all-time best in localStorage.
+  // - todayProgress: how many habit rows the user has checked today
+  //   out of how many are currently visible (Memorial only counts
+  //   when it's March/April).
+  const streak = currentStreak(state.history || [], todayKey());
+  let best = 0;
+  try { best = Number(localStorage.getItem(BEST_STREAK_KEY) || '0') || 0; } catch { /* swallow */ }
+  const visibleKeys = ['today', 'text', 'bible', 'meeting', 'family', 'thisWeek', ...(memorial ? ['memorial'] : [])];
+  const tp = todayProgress(state.done, visibleKeys);
+
   // The 5 habit rows, in the order Cam listed them. Each
   // row has: a key (used for the done map), an icon
   // component, a color (used for the ios-icon background), a
@@ -241,6 +285,22 @@ function Home() {
       color: 'indigo',
       href: todayRow.href,
     }] : []),
+    // "Year Text" — annual scripture. Always links to the
+    // current year's "Examining the Scriptures Daily"
+    // brochure on jw.org (verified 200 OK for 2024/25/26;
+    // unknown years fall back to the generic brochures
+    // landing). ToS compliant: shows only the year + a link.
+    // No verse text, no scripture reference, no theme text.
+    {
+      key: 'yearText',
+      title: t('habit.yearText', 'Year Text'),
+      sub: yearText.known
+        ? t('habit.yearTextSub', { defaultValue: `${yearText.year} — Open this year's scripture`, year: yearText.year })
+        : t('habit.yearTextSubFallback', { defaultValue: 'View current Year Text on jw.org', year: yearText.year }),
+      Icon: BookMarked,
+      color: 'yellow',
+      href: yearText.url,
+    },
     {
       key: 'text',
       title: t('habit.text', 'Daily text'),
@@ -472,8 +532,52 @@ function Home() {
           })}
         </div>
 
+        {/* Streak + today-progress line. A single quiet row
+            under the dots strip that shows: current streak
+            (consecutive days with at least one habit
+            checked), best streak (all-time, persisted),
+            and today's progress (X of N). Hidden until
+            the user has interacted at least once (so
+            first-time visitors aren't immediately
+            confronted with "0 day streak — start today!").
+
+            All values are pure localStorage / derived. No
+            jw.org content. Matches the iOS Reminders /
+            Apple Fitness style: small grey meta line under
+            a visualization. */}
+        {hasInteracted() && (streak > 0 || tp.done > 0 || best > 0) && (
+          <div
+            className="flex items-center justify-center gap-3 mb-4 text-xs text-base-content/70 select-none flex-wrap"
+            aria-label="Streak and today's progress"
+          >
+            {streak > 0 && (
+              <span
+                className="inline-flex items-center gap-1"
+                aria-label={`Current streak ${streak} ${streak === 1 ? 'day' : 'days'}`}
+              >
+                <span aria-hidden="true">🔥</span>
+                <span className="font-semibold text-base-content/90">{streak}</span>
+                <span>{t('home.streakDays', 'day streak')}</span>
+              </span>
+            )}
+            {best > 0 && best !== streak && (
+              <>
+                <span className="text-base-content/30" aria-hidden="true">·</span>
+                <span aria-label={`Best streak ${best} ${best === 1 ? 'day' : 'days'}`}>
+                  <span className="font-semibold text-base-content/90">{best}</span>
+                  {' '}{t('home.streakBest', 'best')}
+                </span>
+              </>
+            )}
+            <span className="text-base-content/30" aria-hidden="true">·</span>
+            <span aria-label={`Today ${tp.done} of ${tp.total}`}>
+              <span className="font-semibold text-base-content/90">{tp.done}</span>
+              <span>/{tp.total}</span>
+              {' '}{t('home.streakToday', 'today')}
+            </span>
+          </div>
+        )}
         {/* First-launch hint. Shows exactly once, ever, until the
-            user taps any checkbox. Then it disappears forever
             (the jw-habits-first-done localStorage key is set in
             toggle() and survives per-day resets). The hint is
             intentionally below the date and above the rows so
@@ -558,7 +662,7 @@ function Home() {
                     aria-pressed={isDone}
                   >
                     <span
-                      className={`ios-checkbox ${isDone ? 'done' : 'empty'}`}
+                      className={`ios-checkbox ${isDone ? 'done' : 'empty'} ${popKey === key ? 'ios-checkbox-pop' : ''}`}
                     >
                       {isDone && (
                         <svg

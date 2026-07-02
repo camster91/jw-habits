@@ -252,6 +252,25 @@
   stroke-width: 3;
 }
 
+/* Pop animation: brief scale-up on toggle. Triggered by
+   adding .ios-checkbox-pop to the span; auto-cleared after
+   220ms by the React side. iOS Reminders uses a similar
+   "checkmark bounce" — small, not celebratory. Respects
+   prefers-reduced-motion (disabled below). */
+.ios-checkbox-pop {
+  animation: ios-checkbox-pop 200ms ease-out;
+}
+@keyframes ios-checkbox-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ios-checkbox-pop {
+    animation: none;
+  }
+}
+
 /* Dark mode: empty checkbox border needs more contrast
    against the near-black card. */
 [data-theme="dark"] .ios-checkbox.empty {
