@@ -239,7 +239,7 @@ async function gotoHome(page) {
     await page.evaluate((y) => {
       localStorage.setItem('jw-daily-habits-state', JSON.stringify({
         date: y,
-        done: { today: true, yearText: true, text: true, bible: true, thisWeek: true, family: true, meeting: true },
+        done: { today: true, yearText: true, text: true, bible: true, thisWeek: true, family: true, meeting: true, conventions: true },
       }));
     }, yesterdayKey);
     await page.goto(URL('/'));
@@ -248,7 +248,7 @@ async function gotoHome(page) {
     const checkedStates = await page.evaluate(() => {
       return [...document.querySelectorAll('button[aria-pressed]')].map((el) => el.getAttribute('aria-pressed'));
     });
-    const allUnchecked = checkedStates.every((s) => s === 'false') && checkedStates.length === 7;
+    const allUnchecked = checkedStates.every((s) => s === 'false') && checkedStates.length === 8;
     // But the localStorage date should have been replaced with today
     const stored = await page.evaluate(() => {
       try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
@@ -521,7 +521,7 @@ async function gotoHome(page) {
       return document.querySelectorAll('div.ios-row').length;
     });
     await record('T11: /ideas resolves to the home (no separate ideas page)',
-      rows === 7,
+      rows === 8,
       `rows=${rows}`);
     await page.context().close();
   }
@@ -537,7 +537,7 @@ async function gotoHome(page) {
       return document.querySelectorAll('div.ios-row').length;
     });
     await record('T12: /about resolves to the home (disclaimer inline in footer, verified by T8)',
-      rows === 7,
+      rows === 8,
       `rows=${rows}`);
     await page.context().close();
   }
@@ -703,7 +703,7 @@ async function gotoHome(page) {
     const { page } = await fresh(browser);
     await gotoHome(page);
     // Pre-seed: 3-day streak ending today (today + yesterday +
-    // 2 days ago), with 4 of 7 habits checked today.
+    // 2 days ago), with 4 of 8 habits checked today.
     const today = new Date();
     const y = new Date(today); y.setDate(today.getDate() - 1);
     const d2 = new Date(today); d2.setDate(today.getDate() - 2);
@@ -713,7 +713,7 @@ async function gotoHome(page) {
       localStorage.setItem('jw-habits-first-done', '1');
       localStorage.setItem('jw-daily-habits-state', JSON.stringify({
         date: args.today,
-        done: { today: true, yearText: true, text: true, bible: true, meeting: false, family: false, thisWeek: false },
+        done: { today: true, yearText: true, text: true, bible: true, meeting: false, family: false, thisWeek: false, conventions: false },
         history: [args.d2, args.y, args.today],
       }));
       localStorage.setItem('jw-habits-best-streak', '5');
@@ -729,10 +729,10 @@ async function gotoHome(page) {
         text,
         hasStreak: /\b3\b/.test(text) && /streak/i.test(text),
         hasBest: /\b5\b/.test(text) && /best/i.test(text),
-        hasToday: /\b4\/7\b/.test(text) && /today/i.test(text),
+        hasToday: /\b4\/8\b/.test(text) && /today/i.test(text),
       };
     });
-    await record('T17: Streak line shows correct 🔥 3 day streak · 5 best · 4/7 today',
+    await record('T17: Streak line shows correct 🔥 3 day streak · 5 best · 4/8 today',
       streakInfo && streakInfo.hasStreak && streakInfo.hasBest && streakInfo.hasToday,
       `info=${JSON.stringify(streakInfo)}`);
     await page.context().close();
