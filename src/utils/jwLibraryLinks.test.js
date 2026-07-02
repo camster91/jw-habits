@@ -12,6 +12,7 @@ import {
   getTodayRow,
   parseReadingToLink,
   getISOWeekString,
+  getCurrentYearTextUrl,
 } from './jwLibraryLinks.js';
 
 // Build an English t() function from the en locale JSON.
@@ -567,6 +568,46 @@ describe('jwLibraryLinks', () => {
       const r2 = getTodayRow(new Date(2026, 5, 16), {}, tEn);
       expect(r1.title).toBe(r2.title);
       expect(r1.sub).toBe(r2.sub);
+    });
+  });
+
+  describe('getCurrentYearTextUrl', () => {
+    it('returns the year-specific brochure URL for known years', () => {
+      // 2024, 2025, 2026 are in the known set (verified 200 OK
+      // against jw.org on 2026-07-01).
+      const r2024 = getCurrentYearTextUrl(new Date(2024, 5, 15));
+      expect(r2024.year).toBe(2024);
+      expect(r2024.known).toBe(true);
+      expect(r2024.url).toBe('https://www.jw.org/en/library/brochures/Examining-the-Scriptures-Daily-2024/');
+
+      const r2026 = getCurrentYearTextUrl(new Date(2026, 6, 1));
+      expect(r2026.year).toBe(2026);
+      expect(r2026.known).toBe(true);
+      expect(r2026.url).toBe('https://www.jw.org/en/library/brochures/Examining-the-Scriptures-Daily-2026/');
+    });
+
+    it('falls back to the generic brochures landing for unknown years', () => {
+      // 2027 returns 404 today (brochure not yet published). The
+      // function should NOT link to a 404 — it falls back to the
+      // brochures landing which always lists the latest available.
+      const r2027 = getCurrentYearTextUrl(new Date(2027, 0, 1));
+      expect(r2027.year).toBe(2027);
+      expect(r2027.known).toBe(false);
+      expect(r2027.url).toBe('https://www.jw.org/en/library/brochures/');
+
+      const r2030 = getCurrentYearTextUrl(new Date(2030, 11, 31));
+      expect(r2030.known).toBe(false);
+      expect(r2030.url).toBe('https://www.jw.org/en/library/brochures/');
+    });
+
+    it('does not include any verse text or scripture reference in the URL', () => {
+      // ToS guard: the URL must be a generic year-brochure slug,
+      // never a verse-anchored URL. (Verse-anchored URLs would
+      // display content on click — we link out instead.)
+      const r = getCurrentYearTextUrl(new Date(2026, 0, 1));
+      expect(r.url).not.toMatch(/bible=\d+/);
+      expect(r.url).not.toMatch(/verse/i);
+      expect(r.url).not.toMatch(/scripture=/i);
     });
   });
 });

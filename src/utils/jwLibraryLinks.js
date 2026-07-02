@@ -85,7 +85,13 @@ export const JW_ORG_SECTIONS = {
   jwHub: 'https://hub.jw.org/',
   jwLibraryApp: 'https://www.jw.org/en/online-help/jw-library/',
   watchtowerLibrary: 'https://www.jw.org/en/online-help/watchtower-library/',
-  jwLanguage: 'https://www.jw.org/en/online-help/jw-language/'
+  jwLanguage: 'https://www.jw.org/en/online-help/jw-language/',
+
+  // Year Text ("Examining the Scriptures Daily") — the brochure
+  // that contains the annual scripture. Year-specific URLs only
+  // exist for years when the brochure has been published; unknown
+  // years fall back to the generic brochures landing.
+  yearTextBrochures: 'https://www.jw.org/en/library/brochures/'
 };
 
 /**
@@ -114,6 +120,44 @@ export function getDailyTextLink(date = new Date(), locale = 'E') {
   // On the web (no app), the link is a no-op — same trade-off
   // as the Bible reading row.
   return `jwlibrary:///showDailyText?wtlocale=${locale}&date=${dateStr}`;
+}
+
+/**
+ * Generate a link to the current year's "Year Text" brochure on jw.org.
+ *
+ * The Year Text is published each year as the brochure
+ * "Examining the Scriptures Daily—YYYY". The URL pattern is:
+ *   /en/library/brochures/Examining-the-Scriptures-Daily-YYYY/
+ *
+ * Verified 2026-07-01: 200 OK for 2024, 2025, 2026; 404 for 2027
+ * (not yet published — typically published ~Dec for the next year).
+ *
+ * For unknown / not-yet-published years, fall back to the generic
+ * brochures landing (`JW_ORG_SECTIONS.yearTextBrochures`) which
+ * lists all currently available brochures including the latest
+ * Year Text.
+ *
+ * ToS compliant: only the year + a link. No verse text, no
+ * scripture reference, no theme displayed.
+ *
+ * @param {Date} date - The date for which to resolve the year (defaults to today)
+ * @returns {{ url: string, year: number, known: boolean }}
+ */
+export function getCurrentYearTextUrl(date = new Date()) {
+  const year = date.getFullYear();
+  const KNOWN_YEARS = new Set([2024, 2025, 2026]);
+  if (KNOWN_YEARS.has(year)) {
+    return {
+      url: `https://www.jw.org/en/library/brochures/Examining-the-Scriptures-Daily-${year}/`,
+      year,
+      known: true,
+    };
+  }
+  return {
+    url: JW_ORG_SECTIONS.yearTextBrochures,
+    year,
+    known: false,
+  };
 }
 
 /**
