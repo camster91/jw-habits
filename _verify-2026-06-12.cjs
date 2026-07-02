@@ -78,14 +78,14 @@ async function gotoHome(page) {
     const rowTitles = await page.evaluate(() => {
       return [...document.querySelectorAll('div.ios-grouped div.ios-row .title')].map((el) => el.textContent.trim());
     });
-    const expected = ['Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'This week'];
+    const expected = ['Year Text', 'Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'This week'];
     const allPresent = expected.every((t) => rowTitles.includes(t));
     // Row 0 is the date-aware "Today" row: title is "Today" except
     // on Tuesdays (meeting day) when it flips to "Tonight".
     const firstIsTodayOrTonight = rowTitles[0] === 'Today' || rowTitles[0] === 'Tonight';
     const exactOrder = firstIsTodayOrTonight &&
       JSON.stringify(rowTitles.slice(1)) === JSON.stringify(expected);
-    await record('T1: Home has greeting + 6 habit rows in Cam\'s order',
+    await record('T1: Home has greeting + 7 habit rows in Cam\'s order',
       hasGreeting && allPresent && exactOrder,
       `greeting="${greet.slice(0, 60)}" rows=${JSON.stringify(rowTitles)}`);
     await page.context().close();
@@ -106,8 +106,8 @@ async function gotoHome(page) {
       l.href && (/^https:\/\/(www\.)?jw\.org\/|^https:\/\/wol\.jw\.org\/|^jwlibrary:\/\/\//.test(l.href)) &&
       l.target === '_blank' && l.rel && l.rel.includes('noopener')
     );
-    await record('T2: All 6 habit rows open jw.org or jwlibrary in new tab (noopener)',
-      allJwOrg && linkData.length === 6,
+    await record('T2: All 7 habit rows open jw.org or jwlibrary in new tab (noopener)',
+      allJwOrg && linkData.length === 7,
       `count=${linkData.length} urls=${JSON.stringify(linkData.map((l) => l.href?.slice(0, 50)))}`);
     await page.context().close();
   }
@@ -236,16 +236,16 @@ async function gotoHome(page) {
     await page.evaluate((y) => {
       localStorage.setItem('jw-daily-habits-state', JSON.stringify({
         date: y,
-        done: { today: true, text: true, bible: true, thisWeek: true, family: true, meeting: true },
+        done: { today: true, yearText: true, text: true, bible: true, thisWeek: true, family: true, meeting: true },
       }));
     }, yesterdayKey);
     await page.goto(URL('/'));
     await page.waitForTimeout(3000);
-    // All 5 checkboxes should be unchecked on screen (yesterday's done don't carry over)
+    // All 7 checkboxes should be unchecked on screen (yesterday's done don't carry over)
     const checkedStates = await page.evaluate(() => {
       return [...document.querySelectorAll('button[aria-pressed]')].map((el) => el.getAttribute('aria-pressed'));
     });
-    const allUnchecked = checkedStates.every((s) => s === 'false') && checkedStates.length === 6;
+    const allUnchecked = checkedStates.every((s) => s === 'false') && checkedStates.length === 7;
     // But the localStorage date should have been replaced with today
     const stored = await page.evaluate(() => {
       try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
@@ -518,7 +518,7 @@ async function gotoHome(page) {
       return document.querySelectorAll('div.ios-row').length;
     });
     await record('T11: /ideas resolves to the home (no separate ideas page)',
-      rows === 6,
+      rows === 7,
       `rows=${rows}`);
     await page.context().close();
   }
@@ -534,7 +534,7 @@ async function gotoHome(page) {
       return document.querySelectorAll('div.ios-row').length;
     });
     await record('T12: /about resolves to the home (disclaimer inline in footer, verified by T8)',
-      rows === 6,
+      rows === 7,
       `rows=${rows}`);
     await page.context().close();
   }

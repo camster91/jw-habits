@@ -33,7 +33,9 @@
     "subFieldService": "Field Service",
     "subPublicMeeting": "Public Meeting + Watchtower Study",
     "subMidweekMeeting": "Midweek Meeting",
-    "subMidweekMeetingPrep": "Midweek Meeting Prep"
+    "subMidweekMeetingPrep": "Midweek Meeting Prep",
+    "notePlaceholder": "A quick reminder for yourself — never leaves your device.",
+    "bibleReadDays": "days read"
   },
   "home": {
     "firstRunHint": "Tap a row to open jw.org. Tap the checkbox when done.",

@@ -33,7 +33,9 @@
     "subFieldService": "Service sur le terrain",
     "subPublicMeeting": "Réunion publique + Étude de La Tour de Garde",
     "subMidweekMeeting": "Réunion de milieu de semaine",
-    "subMidweekMeetingPrep": "Préparation à la réunion de milieu de semaine"
+    "subMidweekMeetingPrep": "Préparation à la réunion de milieu de semaine",
+    "notePlaceholder": "Un petit rappel pour vous — ne quitte jamais votre appareil.",
+    "bibleReadDays": "jours lus"
   },
   "home": {
     "firstRunHint": "Touchez une ligne pour ouvrir jw.org. Cochez la case une fois terminé.",

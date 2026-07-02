@@ -519,6 +519,21 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear(), t
     title: t('habit.memorial'),
     sub,
     href: 'https://www.jw.org/en/jehovahs-witnesses/memorial/',
+    // Number of days from `today` to the Memorial date.
+    // 0 = today, 1 = tomorrow, 30 = 30 days away. Null when
+    // the year is unknown (the user can find the date on
+    // jw.org). Used by Home to render a "X days away" chip
+    // and a "Share invite" button.
+    daysToMemorial: memorial ? daysToMemorial : null,
+    // Localized share text. Pre-filled with the date + jw.org
+    // Memorial URL so the user can tap "Share invite" and
+    // hand the message to a contact via the system share
+    // sheet. Date is plain English so it works in any locale;
+    // the link takes the recipient to jw.org for a properly
+    // localized landing.
+    shareText: memorial
+      ? `Join us for the Memorial of Christ's Death on ${memorial.weekOf}. Learn more: https://www.jw.org/en/jehovahs-witnesses/memorial/`
+      : `Join us for the Memorial of Christ's Death. Find the date near you: https://www.jw.org/en/jehovahs-witnesses/memorial/`,
     visible,
   };
 }

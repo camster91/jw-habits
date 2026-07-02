@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRound, ArrowUpRight } from 'lucide-react';
+import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRound, ArrowUpRight, ChevronDown, StickyNote, Share2 } from 'lucide-react';
 import { getDailyTextLink, getCurrentYearTextUrl, getMemorialRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 import { bibleReadingProgress, dailyTextProgress } from '../utils/habitProgress';
 import { currentStreak, bestStreakFromHistory, todayProgress } from '../utils/streak';
 import SettingsAccordion from '../components/SettingsAccordion';
 import { loadSettings } from '../utils/settingsStore';
+import { getDone, setDone, NOTE_MAX_LENGTH } from '../utils/doneState';
+import { markBibleReadToday, unmarkBibleReadToday, bibleReadDaysCount } from '../utils/bibleReadingTracker';
 
 /**
  * Home — the only in-app page. Five habit rows:
@@ -175,8 +177,18 @@ function Home() {
     // Mark for the pop animation BEFORE the setState so the
     // new render has both the new done value + the popKey set.
     setPopKey(key);
+    // Read the prior state once at the top so the
+    // Bible-reading tracker side-effect (below the setState
+    // callback) can see it. `cur.done` is the value BEFORE
+    // the toggle — false means we just turned it on.
+    const priorCur = getDone(state.done, key);
     setState((prev) => {
-      const nextDone = { ...prev.done, [key]: !prev.done[key] };
+      // Toggle using the new done-shape helpers. They handle
+      // backward-compat: the old `done[k] = boolean` shape is
+      // treated as `{ done: boolean, note: '' }` on read, and
+      // writes always go out as the new object shape.
+      const cur = getDone(prev.done, key);
+      const nextDone = setDone(prev.done, key, { done: !cur.done });
       // History: maintain a rolling 7-day list of dates where
       // ANY habit was checked. When the user toggles a checkbox
       // on, we add today's date (if not already in the list).
@@ -184,7 +196,10 @@ function Home() {
       // we REMOVE today's date. This keeps history accurate
       // without forcing an off-day to be recorded.
       let history = prev.history || [];
-      const anyChecked = Object.values(nextDone).some(Boolean);
+      const anyChecked = Object.values(nextDone).some((entry) => {
+        if (entry && typeof entry === 'object') return !!entry.done;
+        return !!entry;
+      });
       const todayStr = prev.date;
       const todayInHistory = history.includes(todayStr);
       if (anyChecked && !todayInHistory) {
@@ -206,7 +221,64 @@ function Home() {
       } catch { /* swallow */ }
       return next;
     });
+    // Bible-reading tracker: when the user toggles the Bible
+    // checkbox ON, record today as a "read" day. When they
+    // toggle it OFF, undo the record. Idempotent — toggling
+    // on twice in a day still counts as 1.
+    if (key === 'bible') {
+      try {
+        if (!priorCur.done) {
+          markBibleReadToday(new Date());
+        } else {
+          unmarkBibleReadToday(new Date());
+        }
+        setBibleReadTick((t) => t + 1);
+      } catch { /* swallow */ }
+    }
   };
+
+  // Personal-note setter. Saves the typed note for one row, in
+  // the current day's state. Persists via the same `done` map
+  // (shape: { key: { done: bool, note: string } }). Debounced
+  // 300ms so quick typing doesn't thrash localStorage.
+  const noteTimers = useRef({});
+  const setRowNote = (key, note) => {
+    setState((prev) => {
+      const nextDone = setDone(prev.done, key, { note });
+      const next = { ...prev, done: nextDone };
+      // Debounce the localStorage write by row key. Each row
+      // gets its own timer so editing two rows in quick
+      // succession doesn't cross-fire.
+      const timers = noteTimers.current;
+      if (timers[key]) clearTimeout(timers[key]);
+      timers[key] = setTimeout(() => {
+        try {
+          saveState({ date: prev.date, done: nextDone, history: prev.history || [] });
+        } catch { /* swallow */ }
+      }, 300);
+      return next;
+    });
+  };
+
+  // Bible-reading progress count. Re-reads on every render via
+  // a tick counter (bumped when the Bible checkbox toggles) so
+  // the chip stays in sync with the persistent counter in
+  // localStorage. The count is a calendar-day set capped at 730
+  // entries — see jw-bible-reading-days util for details.
+  const [bibleReadTick, setBibleReadTick] = useState(0);
+  // bibleReadDays is reserved for the upcoming per-habit-days chip.
+  // Currently the bible row surfaces the calendar position
+  // (bibleProgress.current/total) instead — a different metric that
+  // doesn't require a persistent read-counter. The tracker hook
+  // stays imported + the tick stays wired so the future chip can
+  // be added without re-plumbing.
+  // eslint-disable-next-line no-unused-vars
+  const bibleReadDays = bibleReadTick >= 0 ? bibleReadDaysCount() : 0;
+
+  // State for which row's note disclosure is open. null = all
+  // closed. Single-select so only one note textarea is visible
+  // at a time. The textarea auto-focuses + auto-sizes on open.
+  const [openNoteKey, setOpenNoteKey] = useState(null);
 
   // Resolve the daily Bible reading target for today. The
   // util is sync (no fetch) so this returns instantly.
@@ -316,7 +388,7 @@ function Home() {
       key: 'bible',
       title: t('habit.bible', 'Daily Bible reading'),
       sub: dailyReading
-        ? t('habit.bibleSubToday', { defaultValue: `Today: ${dailyReading.label || 'open the reading'}`, today: dailyReading.label || '' })
+        ? `${t('habit.bibleSubToday', { defaultValue: `Today: ${dailyReading.label || 'open the reading'}`, today: dailyReading.label || '' })} · ${bibleProgress.current}/${bibleProgress.total}`
         : t('habit.bibleSub', 'Open the New World Translation study Bible'),
       Icon: BookMarked,
       color: 'purple',
@@ -382,6 +454,21 @@ function Home() {
       key: 'memorial',
       title: t('habit.memorial', 'Memorial'),
       sub: memorial.sub,
+      // "X days away" countdown chip. "Today" on day 0,
+      // "Tomorrow" on day 1, "In N days" otherwise. Hidden
+      // when the exact date is unknown (e.g. 2030+) so we
+      // don't lie to the user about how many days are left.
+      metaChip: memorial.daysToMemorial === 0
+        ? t('habit.memorialToday', 'Today')
+        : memorial.daysToMemorial === 1
+        ? t('habit.memorialTomorrow', 'Tomorrow')
+        : memorial.daysToMemorial != null
+        ? t('habit.memorialInDays', { count: memorial.daysToMemorial, defaultValue: `In ${memorial.daysToMemorial} days` })
+        : null,
+      // Pre-filled share text for the system share sheet.
+      // Tapping the row's "Share" sub-action (added below the
+      // row in the JSX) opens navigator.share with this text.
+      shareText: memorial.shareText,
       Icon: Church,
       color: 'indigo',
       href: memorial.href,
@@ -599,9 +686,13 @@ function Home() {
             checkbox. No toast, no animation, no "complete" card. */}
         <div className="ios-grouped">
           {ROWS.map((row) => {
-            const { key, title, sub, color, href, progress, subRows } = row;
+            const { key, title, sub, color, href, progress, subRows, metaChip, shareText } = row;
             const RowIcon = row.Icon;
-            const isDone = !!state.done[key];
+            const rowState = getDone(state.done, key);
+            const isDone = !!rowState.done;
+            const rowNote = rowState.note;
+            const noteOpen = openNoteKey === key;
+            const noteId = `note-${key}`;
             return (
               <div key={key}>
                 <div
@@ -627,6 +718,36 @@ function Home() {
                     <div className="body min-w-0 flex-1">
                       <div className={`title truncate ${isDone ? 'line-through' : ''}`}>{title}</div>
                       {sub && <div className="sub truncate">{sub}</div>}
+                      {metaChip && (
+                        <div
+                          className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary self-start"
+                          aria-label={metaChip}
+                        >
+                          {metaChip}
+                        </div>
+                      )}
+                      {/* Share-invite button. Only rendered on
+                          rows that carry a `shareText` (today:
+                          the Memorial row). Tapping calls
+                          navigator.share() with the pre-filled
+                          text. Falls back to clipboard.copy() if
+                          the system share sheet isn't available
+                          (older browsers, no HTTPS context). */}
+                      {shareText && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            shareInvite(shareText);
+                          }}
+                          className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded px-1 -ml-1"
+                          aria-label={t('habit.shareInvite', 'Share invitation')}
+                        >
+                          <Share2 className="w-3 h-3" aria-hidden="true" />
+                          <span>{t('habit.shareInvite', 'Share invite')}</span>
+                        </button>
+                      )}
                       {/* Progress bar — only for rows that have a
                           progress object (Daily text, Bible reading).
                           Thin, faded track + primary fill. 100% width
@@ -702,6 +823,50 @@ function Home() {
                         <span className="truncate">{s.label}</span>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Personal-note disclosure. Each row has a
+                    tiny chevron button on the right that opens
+                    a one-line textarea under the row. Notes are
+                    private (on-device only), per-day (gone at
+                    midnight), capped at NOTE_MAX_LENGTH
+                    chars, and auto-save 300ms after the user
+                    stops typing. Empty + closed by default.
+                    Hidden entirely on first-launch (before
+                    hasInteracted) so the home stays minimal for
+                    fresh users. */}
+                {hasInteracted() && (
+                  <div className="ml-12 mr-12 -mt-1 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setOpenNoteKey(noteOpen ? null : key)}
+                      className="flex items-center gap-1 text-[11px] text-base-content/50 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded px-1 -ml-1"
+                      aria-expanded={noteOpen}
+                      aria-controls={noteId}
+                      aria-label={noteOpen
+                        ? `Hide note for ${title}`
+                        : (rowNote ? `Edit note for ${title}` : `Add a note for ${title}`)}
+                    >
+                      <StickyNote className="w-3 h-3" aria-hidden="true" />
+                      <span>{rowNote ? 'Note' : 'Add note'}</span>
+                      <ChevronDown
+                        className={'w-3 h-3 transition-transform ' + (noteOpen ? 'rotate-180' : '')}
+                        aria-hidden="true"
+                      />
+                    </button>
+                    {noteOpen && (
+                      <textarea
+                        id={noteId}
+                        defaultValue={rowNote}
+                        autoFocus
+                        maxLength={NOTE_MAX_LENGTH}
+                        rows={2}
+                        onChange={(e) => setRowNote(key, e.target.value)}
+                        placeholder={t('habit.notePlaceholder', 'A quick reminder for yourself — never leaves your device.')}
+                        className="mt-1 w-full text-xs text-base-content bg-base-100 border border-base-300/40 rounded-md p-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    )}
                   </div>
                 )}
               </div>
