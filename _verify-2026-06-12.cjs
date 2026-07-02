@@ -218,12 +218,19 @@ async function gotoHome(page) {
         try { return JSON.parse(localStorage.getItem('jw-daily-habits-state')); } catch { return null; }
       });
       // The first row is now "Today" (was "text" before). It
-      // stores under the 'today' key.
+      // stores under the 'today' key. The done-shape is now
+      // { done: bool, note: string } (post-notes infra). The
+      // un-toggle test asserts `done === false` (or legacy
+      // boolean false), not the wrapper object identity.
       const wasUntoggled = before === 'true' && after === 'false';
-      const wasUnStored = stored && stored.done?.today === false;
+      const storedToday = stored && stored.done && stored.done.today;
+      const storedTodayDone = storedToday && typeof storedToday === 'object'
+        ? storedToday.done
+        : storedToday;
+      const wasUnStored = storedTodayDone === false;
       await record('T4: Checkbox un-toggles a previously-marked habit',
         wasUntoggled && wasUnStored,
-        `aria_before=${before} aria_after=${after} stored_today=${stored?.done?.today}`);
+        `aria_before=${before} aria_after=${after} stored_today=${JSON.stringify(storedToday)}`);
     }
     await page.context().close();
   }
@@ -560,13 +567,14 @@ async function gotoHome(page) {
     await page.goto(URL('/?bust=' + Date.now()), { waitUntil: 'networkidle' });
     await page.waitForTimeout(3000);
 
-    // 6 habit rows visible (Today + 5 weekly) + Memorial row
-    // appears in March/April (so 6 rows today, 7 in March/April).
-    // The test is permissive: assert >= 6 (so it stays valid if
-    // we add more conditional rows in the future).
+    // 7 habit rows visible (Today + 5 weekly + Conventions) +
+    // Memorial row appears in March/April (so 7 rows July-on,
+    // 8 in March/April). The test is permissive: assert >= 7
+    // (so it stays valid if we add more conditional rows in
+    // the future).
     const hasFiveRows = await page.evaluate(() => {
       const count = document.querySelectorAll('div.ios-grouped div.ios-row').length;
-      return count === 6 || count === 7;
+      return count === 7 || count === 8;
     });
     const noOrphanRoutes = await page.evaluate(() => {
       // The home should be a single page; verify no leftover
@@ -578,7 +586,7 @@ async function gotoHome(page) {
     });
     const noErrors = errors.length === 0;
     const no404s = network404s.length === 0;
-    await record('T13: Home renders 6 rows, no /routine or /habits, no console errors, no 404s',
+    await record('T13: Home renders 7 rows, no /routine or /habits, no console errors, no 404s',
       hasFiveRows && noOrphanRoutes && noErrors && no404s,
       `rows=${hasFiveRows} no_orphan_routes=${noOrphanRoutes} errors=${errors.length} 404s=${network404s.length}`);
     if (errors.length) console.log('  errors:', errors);
@@ -703,11 +711,17 @@ async function gotoHome(page) {
     const { page } = await fresh(browser);
     await gotoHome(page);
     // Pre-seed: 3-day streak ending today (today + yesterday +
-    // 2 days ago), with 4 of 8 habits checked today.
+    // 2 days ago), with 3 of 6 visible habits checked today.
+    // visibleKeys (in the home) = ['today', 'text', 'bible',
+    // 'meeting', 'family', 'thisWeek']; Memorial is conditional
+    // and hidden in July. The "Today" line shows "3/6 today"
+    // in July, "3/7" in March/April.
     const today = new Date();
     const y = new Date(today); y.setDate(today.getDate() - 1);
     const d2 = new Date(today); d2.setDate(today.getDate() - 2);
     const toIso = (d) => d.toISOString().slice(0, 10);
+    const monthIsMemorial = today.getMonth() === 2 || today.getMonth() === 3;
+    const expectedTotal = monthIsMemorial ? '3/7' : '3/6';
     await page.evaluate((args) => {
       localStorage.setItem('jw-user-settings', '{"language":"en","midweek":"Tue","weekend":"Sun"}');
       localStorage.setItem('jw-habits-first-done', '1');
@@ -721,7 +735,7 @@ async function gotoHome(page) {
     await page.goto(URL('/'));
     await page.waitForFunction(() => document.querySelectorAll('button[aria-pressed]').length >= 5, { timeout: 10000 });
     await page.waitForTimeout(1500);
-    const streakInfo = await page.evaluate(() => {
+    const streakInfo = await page.evaluate((args) => {
       const line = document.querySelector('[aria-label="Streak and today\'s progress"]');
       if (!line) return null;
       const text = line.textContent || '';
@@ -729,10 +743,10 @@ async function gotoHome(page) {
         text,
         hasStreak: /\b3\b/.test(text) && /streak/i.test(text),
         hasBest: /\b5\b/.test(text) && /best/i.test(text),
-        hasToday: /\b4\/8\b/.test(text) && /today/i.test(text),
+        hasToday: new RegExp(args.expectedTotal.replace('/', '\\/')).test(text) && /today/i.test(text),
       };
-    });
-    await record('T17: Streak line shows correct 🔥 3 day streak · 5 best · 4/8 today',
+    }, { expectedTotal });
+    await record(`T17: Streak line shows correct 🔥 3 day streak · 5 best · ${expectedTotal} today`,
       streakInfo && streakInfo.hasStreak && streakInfo.hasBest && streakInfo.hasToday,
       `info=${JSON.stringify(streakInfo)}`);
     await page.context().close();
