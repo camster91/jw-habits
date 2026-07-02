@@ -24,6 +24,9 @@
 //   T14: Done state persists across page reload
 //   T15: First-launch hint shows once, hides after first tap
 //   T16: Last 7 days dots strip reflects per-day history (filled vs hollow)
+//   T17: Streak line shows correct "🔥 N day streak" + today's progress X/N
+//        after interaction (hidden for first-time visitors per the
+//        first-launch-hint policy).
 
 const { chromium } = require('playwright');
 
@@ -78,14 +81,14 @@ async function gotoHome(page) {
     const rowTitles = await page.evaluate(() => {
       return [...document.querySelectorAll('div.ios-grouped div.ios-row .title')].map((el) => el.textContent.trim());
     });
-    const expected = ['Year Text', 'Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'This week'];
+    const expected = ['Year Text', 'Daily text', 'Daily Bible reading', 'Meeting prep', 'Family worship', 'This week', 'Conventions'];
     const allPresent = expected.every((t) => rowTitles.includes(t));
     // Row 0 is the date-aware "Today" row: title is "Today" except
     // on Tuesdays (meeting day) when it flips to "Tonight".
     const firstIsTodayOrTonight = rowTitles[0] === 'Today' || rowTitles[0] === 'Tonight';
     const exactOrder = firstIsTodayOrTonight &&
       JSON.stringify(rowTitles.slice(1)) === JSON.stringify(expected);
-    await record('T1: Home has greeting + 7 habit rows in Cam\'s order',
+    await record('T1: Home has greeting + 8 habit rows in Cam\'s order',
       hasGreeting && allPresent && exactOrder,
       `greeting="${greet.slice(0, 60)}" rows=${JSON.stringify(rowTitles)}`);
     await page.context().close();
@@ -106,8 +109,8 @@ async function gotoHome(page) {
       l.href && (/^https:\/\/(www\.)?jw\.org\/|^https:\/\/wol\.jw\.org\/|^jwlibrary:\/\/\//.test(l.href)) &&
       l.target === '_blank' && l.rel && l.rel.includes('noopener')
     );
-    await record('T2: All 7 habit rows open jw.org or jwlibrary in new tab (noopener)',
-      allJwOrg && linkData.length === 7,
+    await record('T2: All 8 habit rows open jw.org or jwlibrary in new tab (noopener)',
+      allJwOrg && linkData.length === 8,
       `count=${linkData.length} urls=${JSON.stringify(linkData.map((l) => l.href?.slice(0, 50)))}`);
     await page.context().close();
   }
@@ -691,6 +694,47 @@ async function gotoHome(page) {
     await record('T16: Weekly dots strip reflects per-day history (filled vs hollow)',
       correctCount && allValid,
       `count=${dotStates ? dotStates.length : 'null'} states=${JSON.stringify(dotStates && dotStates.map((d) => d.filled ? 'F' : 'H'))}`);
+    await page.context().close();
+  }
+
+  // T17: Streak line shows correct "🔥 N day streak" + today's
+  // progress X/N after interaction. Hidden for first-time visitors.
+  {
+    const { page } = await fresh(browser);
+    await gotoHome(page);
+    // Pre-seed: 3-day streak ending today (today + yesterday +
+    // 2 days ago), with 4 of 7 habits checked today.
+    const today = new Date();
+    const y = new Date(today); y.setDate(today.getDate() - 1);
+    const d2 = new Date(today); d2.setDate(today.getDate() - 2);
+    const toIso = (d) => d.toISOString().slice(0, 10);
+    await page.evaluate((args) => {
+      localStorage.setItem('jw-user-settings', '{"language":"en","midweek":"Tue","weekend":"Sun"}');
+      localStorage.setItem('jw-habits-first-done', '1');
+      localStorage.setItem('jw-daily-habits-state', JSON.stringify({
+        date: args.today,
+        done: { today: true, yearText: true, text: true, bible: true, meeting: false, family: false, thisWeek: false },
+        history: [args.d2, args.y, args.today],
+      }));
+      localStorage.setItem('jw-habits-best-streak', '5');
+    }, { today: toIso(today), y: toIso(y), d2: toIso(d2) });
+    await page.goto(URL('/'));
+    await page.waitForFunction(() => document.querySelectorAll('button[aria-pressed]').length >= 5, { timeout: 10000 });
+    await page.waitForTimeout(1500);
+    const streakInfo = await page.evaluate(() => {
+      const line = document.querySelector('[aria-label="Streak and today\'s progress"]');
+      if (!line) return null;
+      const text = line.textContent || '';
+      return {
+        text,
+        hasStreak: /\b3\b/.test(text) && /streak/i.test(text),
+        hasBest: /\b5\b/.test(text) && /best/i.test(text),
+        hasToday: /\b4\/7\b/.test(text) && /today/i.test(text),
+      };
+    });
+    await record('T17: Streak line shows correct 🔥 3 day streak · 5 best · 4/7 today',
+      streakInfo && streakInfo.hasStreak && streakInfo.hasBest && streakInfo.hasToday,
+      `info=${JSON.stringify(streakInfo)}`);
     await page.context().close();
   }
 

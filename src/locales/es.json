@@ -30,12 +30,18 @@
     "yearText": "Texto del año",
     "yearTextSub": "{{year}} — Abra el texto del año en jw.org",
     "yearTextSubFallback": "Ver el texto del año actual en jw.org",
+    "conventions": "Convenciones",
+    "conventionsSub": "Encuentre una convención regional en jw.org",
     "subFieldService": "Servicio en el campo",
     "subPublicMeeting": "Reunión pública + Estudio de La Atalaya",
     "subMidweekMeeting": "Reunión de entre semana",
     "subMidweekMeetingPrep": "Preparación para la reunión de entre semana",
     "notePlaceholder": "Un recordatorio rápido para ti — nunca sale de tu dispositivo.",
-    "bibleReadDays": "días leídos"
+    "bibleReadDays": "días leídos",
+    "memorialToday": "Hoy",
+    "memorialTomorrow": "Mañana",
+    "memorialInDays": "En {{count}} días",
+    "shareInvite": "Compartir invitación"
   },
   "home": {
     "firstRunHint": "Toca una fila para abrir jw.org. Marca la casilla cuando termines.",

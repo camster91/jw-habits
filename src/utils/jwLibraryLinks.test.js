@@ -435,6 +435,32 @@ describe('jwLibraryLinks', () => {
       expect(r).toBeNull();
     });
 
+    it('returns daysToMemorial (0 on the day of the Memorial)', () => {
+      // 2026 Memorial is April 2 → 0 days away on April 2.
+      const r = getMemorialRow(new Date(2026, 3, 2), 2026, tEn);
+      expect(r).not.toBeNull();
+      expect(r.daysToMemorial).toBe(0);
+    });
+
+    it('returns daysToMemorial (10 ten days out)', () => {
+      // 2026 Memorial is April 2 → 10 days away on March 23.
+      const r = getMemorialRow(new Date(2026, 2, 23), 2026, tEn);
+      expect(r).not.toBeNull();
+      expect(r.daysToMemorial).toBe(10);
+    });
+
+    it('returns daysToMemorial = null for unknown years', () => {
+      const r = getMemorialRow(new Date(2030, 2, 15), 2030, tEn);
+      expect(r).not.toBeNull();
+      expect(r.daysToMemorial).toBeNull();
+    });
+
+    it('returns a shareText with the jw.org Memorial URL', () => {
+      const r = getMemorialRow(new Date(2026, 3, 2), 2026, tEn);
+      expect(r).not.toBeNull();
+      expect(r.shareText).toContain('https://www.jw.org/en/jehovahs-witnesses/memorial/');
+    });
+
     it('is visible for unknown years during March/April (e.g. 2030)', () => {
       // 2030 is not in the table. Without the date, we show
       // the row only in March/April as a heuristic.

@@ -30,12 +30,18 @@
     "yearText": "Texte de l'année",
     "yearTextSub": "{{year}} — Ouvrir le texte de l'année sur jw.org",
     "yearTextSubFallback": "Voir le texte de l'année actuel sur jw.org",
+    "conventions": "Conventions",
+    "conventionsSub": "Trouver une convention régionale sur jw.org",
     "subFieldService": "Service sur le terrain",
     "subPublicMeeting": "Réunion publique + Étude de La Tour de Garde",
     "subMidweekMeeting": "Réunion de milieu de semaine",
     "subMidweekMeetingPrep": "Préparation à la réunion de milieu de semaine",
     "notePlaceholder": "Un petit rappel pour vous — ne quitte jamais votre appareil.",
-    "bibleReadDays": "jours lus"
+    "bibleReadDays": "jours lus",
+    "memorialToday": "Aujourd'hui",
+    "memorialTomorrow": "Demain",
+    "memorialInDays": "Dans {{count}} jours",
+    "shareInvite": "Partager l'invitation"
   },
   "home": {
     "firstRunHint": "Touchez une ligne pour ouvrir jw.org. Cochez la case une fois terminé.",

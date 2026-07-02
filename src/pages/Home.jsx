@@ -45,6 +45,30 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Best-effort share-invite helper. Uses the system share sheet
+// (`navigator.share`) when available — the user picks their
+// recipient (Messages, WhatsApp, Email, copy, etc.). Falls back
+// to the async clipboard API in browsers that lack share. The
+// function is fire-and-forget; errors are swallowed because
+// "user canceled the share sheet" is a normal outcome, not a
+// failure.
+async function shareInvite(text) {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      await navigator.share({ text, title: 'Memorial invitation' });
+      return;
+    }
+  } catch {
+    // User dismissed the share sheet (AbortError) or share
+    // failed for another reason. Fall through to clipboard.
+  }
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    }
+  } catch { /* swallow */ }
+}
+
 // True after the user has tapped any checkbox at least once
 // in their lifetime on this device. Persisted across per-day
 // resets so the first-launch hint shows exactly once, ever.
@@ -444,6 +468,20 @@ function Home() {
       Icon: CalendarRange,
       color: 'teal',
       href: thisWeek.url,
+    },
+    // "Conventions" — link to jw.org's convention finder. JW
+    // conventions happen regionally in summer; the exact date
+    // depends on the user's location. ToS-clean Approach A
+    // (no date logic): always surface the jw.org finder.
+    // The row is always shown — it doesn't compete with
+    // Memorial (which is only visible March/April).
+    {
+      key: 'conventions',
+      title: t('habit.conventions', 'Conventions'),
+      sub: t('habit.conventionsSub', 'Find a regional convention on jw.org'),
+      Icon: Users,
+      color: 'orange',
+      href: JW_ORG_SECTIONS.findConvention,
     },
     // Memorial — a 6th row that ONLY appears within the
     // 30-day window before the annual Memorial. Hidden

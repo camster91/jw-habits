@@ -30,12 +30,18 @@
     "yearText": "Year Text",
     "yearTextSub": "{{year}} — Open this year's scripture",
     "yearTextSubFallback": "View current Year Text on jw.org",
+    "conventions": "Conventions",
+    "conventionsSub": "Find a regional convention on jw.org",
     "subFieldService": "Field Service",
     "subPublicMeeting": "Public Meeting + Watchtower Study",
     "subMidweekMeeting": "Midweek Meeting",
     "subMidweekMeetingPrep": "Midweek Meeting Prep",
     "notePlaceholder": "A quick reminder for yourself — never leaves your device.",
-    "bibleReadDays": "days read"
+    "bibleReadDays": "days read",
+    "memorialToday": "Today",
+    "memorialTomorrow": "Tomorrow",
+    "memorialInDays": "In {{count}} days",
+    "shareInvite": "Share invite"
   },
   "home": {
     "firstRunHint": "Tap a row to open jw.org. Tap the checkbox when done.",
