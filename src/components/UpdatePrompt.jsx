@@ -49,7 +49,7 @@ function UpdatePrompt() {
         className="pointer-events-auto mx-auto max-w-md flex items-center gap-2
                    bg-base-100/90 backdrop-blur-md border border-base-300/60
                    text-base-content rounded-full pl-3 pr-2 py-1.5
-                   shadow-sm"
+                   shadow-xs"
       >
         <RefreshCw className="w-4 h-4 text-base-content/70 shrink-0" />
         <span className="text-xs font-medium truncate">New version available</span>

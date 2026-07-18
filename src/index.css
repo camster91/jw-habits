@@ -1,6 +1,47 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: light --default, dark;
+}
+
+/* DaisyUI theme customization (migrated from tailwind.config.js).
+   Only the variables listed below override daisyUI's built-in
+   light/dark themes; everything else keeps the built-in values. */
+@plugin "daisyui/theme" {
+  name: "light";
+  --color-primary: #4A6FA4;
+  --color-secondary: #71BC37;
+  --color-accent: #f59e0b;
+  --color-neutral: #374151;
+  --color-base-100: #ffffff;
+  --color-base-200: #f3f4f6;
+  --color-base-300: #e5e7eb;
+}
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  --color-primary: #5b8fd9;
+  --color-secondary: #84d94a;
+  --color-accent: #fbbf24;
+  /* Override DaisyUI's default dim base-content to actual iOS dark
+     mode colors. iOS uses 3 surface layers (page < card <
+     card-elevated) and white text on the topmost layer.
+       page:    #000000 (true black, what iOS uses)
+       card:    #1C1C1E (the .ios-grouped card background)
+       text:    #FFFFFF (label, primary)
+       text-2:  rgba(235,235,245,0.78) → via text-base-content/70
+     base-content is pinned to white here; the existing
+     text-base-content/70 etc. classes render as 70% white-on-dark. */
+  --color-base-content: #FFFFFF;
+  --color-base-100: #1C1C1E;
+  --color-base-200: #000000;
+  --color-base-300: #2C2C2E;
+}
+
+@theme {
+  --color-jw-blue: #4A6FA4;
+  --color-jw-green: #71BC37;
+}
 
 /* ============================================================
    iOS HIG-Inspired Design System (Phase 1.5)
@@ -364,12 +405,12 @@ html {
   }
 
   .btn-primary-custom {
-    @apply bg-jw-blue hover:bg-blue-700 text-white font-bold py-2 px-4 rounded;
+    @apply bg-jw-blue hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-sm;
   }
 
   /* Mobile-optimized card */
   .card-mobile {
-    @apply bg-base-100 rounded-2xl shadow-sm border border-base-200/50;
+    @apply bg-base-100 rounded-2xl shadow-xs border border-base-200/50;
     @apply active:scale-[0.98] transition-transform duration-150;
   }
 
@@ -413,7 +454,7 @@ html {
 
   /* Progress bar with gradient */
   .progress-gradient {
-    @apply bg-gradient-to-r from-primary to-secondary;
+    @apply bg-linear-to-r from-primary to-secondary;
   }
 
   /* Checkbox with better touch target */
@@ -464,7 +505,7 @@ html {
 
   /* Gradient text */
   .text-gradient {
-    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+    @apply bg-linear-to-r from-primary to-secondary bg-clip-text text-transparent;
   }
 }
 
@@ -538,7 +579,7 @@ html {
 }
 
 .tab-active {
-  @apply shadow-sm;
+  @apply shadow-xs;
 }
 
 /* Better range input for mobile */
