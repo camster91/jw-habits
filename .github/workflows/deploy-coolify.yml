@@ -74,7 +74,7 @@ jobs:
         continue-on-error: true
 
       - name: Build image on Coolify server
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.COOLIFY_HOST }}
           username: ${{ secrets.COOLIFY_USER }}
