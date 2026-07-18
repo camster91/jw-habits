@@ -180,7 +180,7 @@ What survives is:
 
 ## Known gotchas (for future agents)
 
-- **Tailwind v3 only.** Don't bump to v4 — dependabot PR #100 broke the build because v4 moved to `@tailwindcss/postcss`. Pinned to `3.4.19` exact. If a future agent upgrades Tailwind, expect to rewrite `postcss.config.js`.
+- **Tailwind v4 + Vite 8.** Migrated to `tailwindcss` v4 (CSS-first config in `src/index.css` via `@import "tailwindcss"` + `@theme` + `@plugin "daisyui"` blocks; daisyUI 5), `vite` 8, `@vitejs/plugin-react` 6. There is no `tailwind.config.js` or `postcss.config.js` anymore — Tailwind runs through `@tailwindcss/vite`. Theme tweaks go in the `@theme` / `@plugin "daisyui/theme"` blocks in `src/index.css`, not a JS config.
 - **Dependabot bumps need a CI gate.** Currently 5 dependabot PRs merged in June without a build check. One (Tailwind v4) silently broke the build. **Future bumps should be reviewed, not auto-merged.** Or add a CI workflow that runs `npm run build` on every PR.
 - **VPS git repo corruption:** `git pull --rebase` can leave bad objects. Fix: `rm -rf /root/jw-habits && git clone` fresh.
 - **Cert recovery:** if `/etc/traefik/certs/jwhabits.ashbi.ca.{crt,key}` is missing, extract from `/opt/traefik/acme.json` (`Certificates[].certificate/key` fields, base64 with literal newlines in key). Traefik serves from in-memory ACME store but will break on restart if disk cert is missing.

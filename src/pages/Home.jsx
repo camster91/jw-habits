@@ -779,7 +779,7 @@ function Home() {
                             e.stopPropagation();
                             shareInvite(shareText);
                           }}
-                          className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded px-1 -ml-1"
+                          className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-sm px-1 -ml-1"
                           aria-label={t('habit.shareInvite', 'Share invitation')}
                         >
                           <Share2 className="w-3 h-3" aria-hidden="true" />
@@ -879,7 +879,7 @@ function Home() {
                     <button
                       type="button"
                       onClick={() => setOpenNoteKey(noteOpen ? null : key)}
-                      className="flex items-center gap-1 text-[11px] text-base-content/50 hover:text-base-content/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded px-1 -ml-1"
+                      className="flex items-center gap-1 text-[11px] text-base-content/50 hover:text-base-content/70 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-sm px-1 -ml-1"
                       aria-expanded={noteOpen}
                       aria-controls={noteId}
                       aria-label={noteOpen
@@ -902,7 +902,7 @@ function Home() {
                         rows={2}
                         onChange={(e) => setRowNote(key, e.target.value)}
                         placeholder={t('habit.notePlaceholder', 'A quick reminder for yourself — never leaves your device.')}
-                        className="mt-1 w-full text-xs text-base-content bg-base-100 border border-base-300/40 rounded-md p-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="mt-1 w-full text-xs text-base-content bg-base-100 border border-base-300/40 rounded-md p-2 resize-none focus:outline-hidden focus:ring-2 focus:ring-primary"
                       />
                     )}
                   </div>
