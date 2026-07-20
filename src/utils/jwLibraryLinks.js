@@ -95,6 +95,60 @@ export const JW_ORG_SECTIONS = {
 };
 
 /**
+ * Generate a JW Library deep link for a publication (Watchtower
+ * article, midweek meeting workbook, etc.) given its WOL
+ * docid.
+ *
+ * Schema (verified March 2025 on jwtalk.net):
+ *   jwpub://p/<locale>:<docid>            opens the publication
+ *   jwpub://p/<locale>:<docid>/<paragraph> opens at a paragraph
+ *
+ * The docid is WOL's internal id, e.g.:
+ *   202026243 — Midweek meeting workbook (week 30, 2026)
+ *   2026402   — Sunday Watchtower Study article (week 30, 2026)
+ *
+ * On the desktop web (no JW Library installed) the link is a
+ * no-op — the user must have the app on iOS/Android/desktop to
+ * receive the deep link. For desktop fallback see
+ * `getPublicationFinderUrl(docid, locale)` below.
+ *
+ * ToS clean: this only generates a URL, no content.
+ *
+ * @param {string|number} docid  WOL docid
+ * @param {string} locale        Language code (default 'E')
+ * @returns {string} jwlibrary publication URL
+ */
+export function jwlibraryPublicationUrl(docid, locale = 'E') {
+  if (docid == null || docid === '') return null;
+  const cleanLocale = String(locale || 'E').slice(0, 4) || 'E';
+  return `jwlibrary:///finder?wtlocale=${cleanLocale}&docid=${docid}`;
+}
+
+/**
+ * Desktop-fallback URL that always works in a web browser
+ * (whether or not JW Library is installed). Redirects to the
+ * canonical jw.org article page.
+ *
+ * Schema:
+ *   https://www.jw.org/finder?wtlocale=E&prefer=lang&docid=<id>
+ *
+ * The user's deep link convention with `srcid=jwlshare` is
+ * mobile-only — it instructs the OS to hand the URL to the
+ * JW Library app (if installed) instead of opening the
+ * browser. On desktop without `srcid=jwlshare` the finder
+ * redirects to the canonical jw.org surface for that
+ * publication.
+ *
+ * @param {string|number} docid
+ * @param {string} locale
+ */
+export function getPublicationFinderUrl(docid, locale = 'E') {
+  if (docid == null || docid === '') return null;
+  const cleanLocale = String(locale || 'E').slice(0, 4) || 'E';
+  return `https://www.jw.org/finder?srcid=jwlshare&wtlocale=${cleanLocale}&prefer=lang&docid=${docid}`;
+}
+
+/**
  * Generate a daily text link for JW Library
  * @param {Date} date - The date for daily text
  * @param {string} locale - Language code (default: 'E' for English)
@@ -181,7 +235,7 @@ export function getCurrentYearTextUrl(date = new Date()) {
  * @param {Date} [date] - defaults to today
  * @returns {{ title, sub, href, weekOf, studyWeek } | null}
  */
-export function getSundayWatchtowerRow(date = new Date(), t = (k, dflt) => dflt ?? k) {
+export function getSundayWatchtowerRow(date = new Date(), t = (k, dflt) => dflt ?? k, docid = null) {
   if (isNaN(date.getTime())) return null;
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const dow = d.getDay(); // 0=Sun..6=Sat
@@ -231,6 +285,19 @@ export function getSundayWatchtowerRow(date = new Date(), t = (k, dflt) => dflt 
     href,
     weekOf: weekOfLabel,
     studyWeek: isoStr,
+    // WOL docid (if known) lets the row open the article
+    // directly in JW Library via jwlibrary:///finder?docid=…
+    // — the user's tapped-row convention is to navigate to
+    // the WOL meetings index first and drill down. So we
+    // expose the docid here for downstream consumers (e.g.
+    // Home.jsx), not the URL itself.
+    docid,
+    // Pre-computed URLs in case Home.jsx wants to wire
+    // them into a sub-action button. Both null when no
+    // docid is provided so consumers can do `href || ''`
+    // safely.
+    jwlibraryUrl: docid == null ? null : jwlibraryPublicationUrl(docid, 'E'),
+    finderUrl: docid == null ? null : getPublicationFinderUrl(docid, 'E'),
   };
 }
 
