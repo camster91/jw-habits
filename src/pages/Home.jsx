@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRound, ArrowUpRight, ChevronDown, StickyNote, Share2 } from 'lucide-react';
-import { getDailyTextLink, getCurrentYearTextUrl, getMemorialRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
+import { getDailyTextLink, getCurrentYearTextUrl, getMemorialRow, getSundayWatchtowerRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 import { bibleReadingProgress, dailyTextProgress } from '../utils/habitProgress';
 import { currentStreak, bestStreakFromHistory, todayProgress } from '../utils/streak';
@@ -9,14 +9,22 @@ import SettingsAccordion from '../components/SettingsAccordion';
 import { loadSettings } from '../utils/settingsStore';
 import { getDone, setDone, NOTE_MAX_LENGTH } from '../utils/doneState';
 import { markBibleReadToday, unmarkBibleReadToday, bibleReadDaysCount } from '../utils/bibleReadingTracker';
+import { markSundayWatchtowerWeek, unmarkSundayWatchtowerWeek, sundayWatchtowerWeeksCount } from '../utils/sundayWatchtowerTracker';
 
 /**
- * Home — the only in-app page. Five habit rows:
+ * Home — the only in-app page. Five habit rows plus two
+ * special-date rows:
  *   1. Daily text         → opens jw.org
  *   2. Bible reading     → opens today's reading on jw.org
  *   3. Prayer            → links to a quiet reflection page
  *   4. Family worship     → links to family resources
  *   5. Meeting prep      → links to this week's workbook
+ *   6. Sunday Watchtower Study  → visible Sat 8 AM - Sun EOD
+ *
+ * Special-date rows (Memorial + Sunday Watchtower) render
+ * only on the relevant dates; see `getMemorialRow` and
+ * `getSundayWatchtowerRow` in jwLibraryLinks.js. Outside their
+ * windows the rows are omitted entirely (null-safe).
  *
  * Each row has two tap targets:
  *   - the title / icon / link arrow: open the jw.org surface
@@ -259,6 +267,22 @@ function Home() {
         setBibleReadTick((t) => t + 1);
       } catch { /* swallow */ }
     }
+    // Sunday Watchtower tracker: same pattern as Bible
+    // reading but records the ISO week (not the date) so
+    // Saturday-afternoon check-offs and Sunday-evening
+    // check-offs both map to the same study week. The
+    // history graph stays at 0 because weekly attendance
+    // is independent of daily habit streaks.
+    if (key === 'sundayWatchtower') {
+      try {
+        if (!priorCur.done) {
+          markSundayWatchtowerWeek(new Date());
+        } else {
+          unmarkSundayWatchtowerWeek(new Date());
+        }
+        setSundayWatchtowerTick((t) => t + 1);
+      } catch { /* swallow */ }
+    }
   };
 
   // Personal-note setter. Saves the typed note for one row, in
@@ -290,6 +314,11 @@ function Home() {
   // localStorage. The count is a calendar-day set capped at 730
   // entries — see jw-bible-reading-days util for details.
   const [bibleReadTick, setBibleReadTick] = useState(0);
+  // Mirror of `bibleReadTick` for the Sunday Watchtower
+  // tracker: bumped every time the user toggles the Sunday
+  // Watchtower row so the count re-renders. Pairs with
+  // `markSundayWatchtowerWeek` / `unmarkSundayWatchtowerWeek`.
+  const [sundayWatchtowerTick, setSundayWatchtowerTick] = useState(0);
   // bibleReadDays is reserved for the upcoming per-habit-days chip.
   // Currently the bible row surfaces the calendar position
   // (bibleProgress.current/total) instead — a different metric that
@@ -298,6 +327,10 @@ function Home() {
   // be added without re-plumbing.
   // eslint-disable-next-line no-unused-vars
   const bibleReadDays = bibleReadTick >= 0 ? bibleReadDaysCount() : 0;
+  // Sunday Watchtower attendance — total ISO weeks studied.
+  // Shown only when the row is visible, so it's unused
+  // on Mon-Fri.
+  const sundayWatchtowerWeeks = sundayWatchtowerTick >= 0 ? sundayWatchtowerWeeksCount() : 0;
 
   // State for which row's note disclosure is open. null = all
   // closed. Single-select so only one note textarea is visible
@@ -325,6 +358,14 @@ function Home() {
   // March/April. The function is null-safe (returns null
   // when the row should not appear).
   const memorial = getMemorialRow(new Date(), undefined, t);
+
+  // "Sunday Watchtower Study" — a 2nd-row that ONLY appears
+  // during the study window (Saturday morning through Sunday
+  // evening). Outside this window returns null and Home.jsx
+  // omits the row (mirrors the Memorial pattern). ToS clean:
+  // no verse text, no scripture reference, no article body —
+  // only the WOL meetings index URL for that ISO week.
+  const sundayWatchtower = getSundayWatchtowerRow(new Date(), t);
 
   // Progress metadata for rows that show a thin progress bar.
   // Both are calendar-based — no fetch, no jw.org content.
@@ -357,7 +398,7 @@ function Home() {
   const streak = currentStreak(state.history || [], todayKey());
   let best = 0;
   try { best = Number(localStorage.getItem(BEST_STREAK_KEY) || '0') || 0; } catch { /* swallow */ }
-  const visibleKeys = ['today', 'text', 'bible', 'meeting', 'family', 'thisWeek', ...(memorial ? ['memorial'] : [])];
+  const visibleKeys = ['today', 'text', 'bible', 'meeting', 'family', 'thisWeek', ...(memorial ? ['memorial'] : []), ...(sundayWatchtower ? ['sundayWatchtower'] : [])];
   const tp = todayProgress(state.done, visibleKeys);
 
   // The 5 habit rows, in the order Cam listed them. Each
@@ -510,6 +551,30 @@ function Home() {
       Icon: Church,
       color: 'indigo',
       href: memorial.href,
+    }] : []),
+    // "Sunday Watchtower Study" — appears Saturday 8 AM
+    // through Sunday end-of-day. Hidden Mon-Fri. The href
+    // opens the WOL meetings index for the ISO week
+    // containing the upcoming Sunday; from there the user
+    // can open the actual article in JW Library. No
+    // checklist here — completion is a single tap on the
+    // row's checkbox (same pattern as Daily text + Bible
+    // reading). ToS clean: no verse text, no scripture.
+    ...(sundayWatchtower ? [{
+      key: 'sundayWatchtower',
+      title: t('habit.sundayWatchtower', 'Sunday Watchtower Study'),
+      // Title shows the Sunday date; sub shows the running
+      // count of weeks studied (or stays the helper string if
+      // sundayWatchtowerWeeks is 0). The chip flips to a
+      // generic "study window" line on Saturday morning to
+      // nudge studying ahead.
+      sub: t('habit.sundayWatchtowerSub', { weekOf: sundayWatchtower.weekOf }),
+      metaChip: sundayWatchtowerWeeks > 0
+        ? t('habit.sundayWatchtowerWeeks', { count: sundayWatchtowerWeeks, defaultValue: sundayWatchtowerWeeks + ' weeks attended' })
+        : null,
+      Icon: BookOpen,
+      color: 'purple',
+      href: sundayWatchtower.href,
     }] : []),
   ];
 

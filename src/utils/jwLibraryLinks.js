@@ -161,6 +161,104 @@ export function getCurrentYearTextUrl(date = new Date()) {
 }
 
 /**
+ * Sunday Watchtower Study — when is the row visible?
+ *
+ * The Sunday public meeting is a *weekly* event (not daily),
+ * so surfacing the row 24/7 would create noise. The row
+ * appears within a "study window":
+ *   - Saturday morning (8 AM local) through Sunday evening (11 PM)
+ *   - The "weekend meeting prep" Saturday row doubles as a
+ *     breadcrumb link to next Sunday's article, so users can
+ *     study ahead.
+ *
+ * Outside this window the function returns `null` and Home.jsx
+ * omits the row entirely (mirrors the Memorial pattern).
+ *
+ * ToS clean: no verse text, no scripture reference, no
+ * article body. Only a date-derived Watchtower study index
+ * link + week label.
+ *
+ * @param {Date} [date] - defaults to today
+ * @returns {{ title, sub, href, weekOf, studyWeek } | null}
+ */
+export function getSundayWatchtowerRow(date = new Date(), t = (k, dflt) => dflt ?? k) {
+  if (isNaN(date.getTime())) return null;
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dow = d.getDay(); // 0=Sun..6=Sat
+  const hour = date.getHours();
+  // Visible window: Saturday (6) from 08:00 local through
+  // Sunday (0) end-of-day (23:59). Hidden on Mon-Fri.
+  const inWindow =
+    (dow === 6 && hour >= 8) ||
+    dow === 0;
+  if (!inWindow) return null;
+
+  // Compute the Sunday's ISO week number (Mon-Sun ISO).
+  // Saturday is part of the SAME ISO week as the upcoming
+  // Sunday: Saturday + 1 = Sunday, both in week `dow===6 || 0`.
+  // We just resolve the Sunday that owns this weekend.
+  const sunday = new Date(d.getTime());
+  if (dow === 6) sunday.setDate(sunday.getDate() + 1);
+
+  // Format the weekOf label (e.g., "Sunday, October 26").
+  const localeMap = { en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+  const activeLang =
+    (typeof window !== 'undefined' && window.__jw_lang) || 'en';
+  const fmtLocale = localeMap[activeLang] || 'en-US';
+  const weekOfLabel = sunday.toLocaleString(fmtLocale, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  // The WOL meetings index shows the Sunday Watchtower Study
+  // docid for the ISO week containing `sunday`. URL shape:
+  //   https://wol.jw.org/en/wol/meetings/r1/lp-e/<year>/<iso-week>
+  // (Verified against the midweek-meeting-prep skill — same
+  //  endpoint, weekday pattern differs but ISO-week math is
+  //  identical.)
+  const iso = isoWeekOf(sunday);
+  const isoStr = `${iso.year}-W${String(iso.week).padStart(2, '0')}`;
+  const href = `https://wol.jw.org/en/wol/meetings/r1/lp-e/${iso.year}/${iso.week}`;
+  // sub stays as a plain string so it renders in the row
+  // unchanged (Home.jsx renders row.sub directly). i18n
+  // translation is added via the new locale keys below.
+  const sub = `Sunday Watchtower Study — ${weekOfLabel}`;
+
+  return {
+    title: t('habit.sundayWatchtower', 'Sunday Watchtower Study'),
+    sub,
+    href,
+    weekOf: weekOfLabel,
+    studyWeek: isoStr,
+  };
+}
+
+/**
+ * Pure-ISO-week computation (year + week). Derived from the
+ * midweek-meeting-prep skill's verified-working algorithm.
+ *
+ * @param {Date} d
+ * @returns {{ year: number, week: number }}
+ */
+function isoWeekOf(d) {
+  // Make a copy so we don't mutate the caller's date.
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  // ISO weeks start on Monday. Thursday of the current week
+  // determines the ISO year (the week containing Thursday is
+  // week N). Move to Thursday of THIS week.
+  const dow = (target.getDay() + 6) % 7; // 0=Mon..6=Sun
+  target.setDate(target.getDate() - dow + 3);
+  // First Thursday of that ISO year = Jan 4.
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const firstThursdayDow = (firstThursday.getDay() + 6) % 7;
+  firstThursday.setDate(firstThursday.getDate() - firstThursdayDow + 3);
+  const week = Math.round((target - firstThursday) / (7 * 24 * 3600 * 1000)) + 1;
+  return { year: target.getFullYear(), week };
+}
+
+
+/**
  * Generate a Bible reading link for JW Library
  * @param {number} bookNum - Bible book number (1-66)
  * @param {number} startChapter - Starting chapter
