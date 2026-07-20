@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+     Export options for `xcodebuild -exportArchive`.
+     Targeted by the ios-testflight.yml workflow's
+     "Build iOS archive (Release)" step.
+     -->
+    <key>method</key>
+    <string>app-store-connect</string>
+    <!--
+     uploadSymbols packs the dSYM bundle so Crashlytics-style
+     symbol upload works in TestFlight. Keep this on for
+     release builds; the workflow's macos-latest runner has
+     the symbol toolchain pre-installed.
+     -->
+    <key>uploadSymbols</key>
+    <true/>
+    <!--
+     uploadBitcode=false: capacitor + vite don't ship bitcode;
+     swift-only bitcode was deprecated by Apple in Xcode 14+.
+     -->
+    <key>uploadBitcode</key>
+    <false/>
+    <!--
+     compileBitcode=false: same reasoning as uploadBitcode.
+     -->
+    <key>compileBitcode</key>
+    <false/>
+    <!--
+     Signing identity: blank — the workflow's
+     `xcodebuild -allowProvisioningUpdates` does interactive
+     signing against whichever distribution cert + provisioning
+     profile the team's keychain has. With Apple's automatic
+     signing, that resolves to the right profile for the
+     bundle id com.ashbi.jwnews without any manual setup.
+     -->
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>destination</key>
+    <string>export</string>
+</dict>
+</plist>
