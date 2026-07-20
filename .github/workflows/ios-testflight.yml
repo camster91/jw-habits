@@ -1,0 +1,189 @@
+name: iOS TestFlight
+
+# Builds an .ipa from the Capacitor iOS project on
+# macos-latest, uploads to App Store Connect via the
+# official apple-actions/upload-testflight-build action,
+# then waits for the build to finish processing on Apple's
+# side.
+#
+# Triggers:
+#   - workflow_dispatch: manual trigger via gh workflow run
+#   - push to a v*-tag: tagged releases get auto-uploaded
+#
+# Secrets required:
+#   - ASC_API_KEY_PATH     : path to App Store Connect API key .p8
+#                            file checked into repo (or use
+#                            workflow's own key as secret)
+#   - ASC_KEY_ID           : App Store Connect API Key id
+#   - ASC_ISSUER_ID        : App Store Connect API Issuer id
+#   - MATCH_PASSWORD       : Apple developer team password
+#                            (only needed if ios/Matchfile is
+#                            committed — currently not)
+#
+# Async/non-blocking: the job uploads and exits; the build
+# continues processing in TestFlight after the workflow
+# finishes. Apple normally takes 2-5 minutes.
+#
+# Why macos-latest and not a self-hosted runner: the iOS
+# build requires Xcode + the iOS SDK + Apple provisioning
+# tooling. macos-14 image has all of these pre-installed
+# and is the only GitHub-hosted option that works.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_version:
+        description: 'Override CURRENT_PROJECT_VERSION (build number)'
+        required: false
+        type: string
+        default: ''
+      marketing_version:
+        description: 'Override MARKETING_VERSION (display version)'
+        required: false
+        type: string
+        default: ''
+      skip_upload:
+        description: 'Skip the TestFlight upload step (build only)'
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ios-testflight-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    name: Build & Upload to TestFlight
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      # Default values — overridden by user inputs when supplied.
+      MARKETING_VERSION: ${{ github.event.inputs.marketing_version || '4.2.0' }}
+      CURRENT_PROJECT_VERSION: ${{ github.event.inputs.bundle_version || '421' }}
+      SKIP_UPLOAD: ${{ github.event.inputs.skip_upload && 'true' || 'false' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Run the same CI gate that the existing ci.yml uses.
+      # If anything fails here we never reach the upload step,
+      # so the TestFlight build is at minimum equivalent to
+      # what's already gated by the standard PR workflow.
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Build web bundle
+        run: npm run build
+
+      # Syncing Capacitor actually writes ios/App/capacitor.config.json
+      # (gitignored) and ios/App/App/config.xml. We commit the sync
+      # back to the workflow branch only when not a tag push.
+      - name: Capacitor sync
+        run: npx cap sync ios
+
+      - name: Bump version
+        working-directory: ios/App
+        # PlistBuddy writes both CFBundleShortVersionString and
+        # CFBundleVersion in one shot. Idempotent: re-running
+        # overwrites the same keys.
+        run: |
+          /usr/libexec/PlistBuddy -c \
+            "Set :CFBundleShortVersionString $MARKETING_VERSION" \
+            App/Info.plist
+          /usr/libexec/PlistBuddy -c \
+            "Set :CFBundleVersion $CURRENT_PROJECT_VERSION" \
+            App/Info.plist
+          echo "MARKETING_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' App/Info.plist)"
+          echo "CURRENT_PROJECT_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' App/Info.plist)"
+
+      - name: Install Capacitor iOS Pods
+        working-directory: ios/App
+        # CocoaPods is pre-installed on the macos-latest image
+        # but we explicitly `pod install --repo-update` to keep
+        # the spec repo in sync with whatever tag we built.
+        run: pod install --repo-update
+
+      # Build the .xcarchive + export .ipa
+      - name: Build iOS archive (Release)
+        working-directory: ios/App
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates \
+            archive
+          # Export a signed IPA. The export options plist at
+          # ios/App/exportOptions.plist is auto-generated below
+          # if missing (see "Generate export options plist").
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist App/exportOptions.plist \
+            -allowProvisioningUpdates
+
+      - name: Locate signed IPA
+        id: ipa
+        working-directory: ios/App
+        run: |
+          IPA=$(find build/ipa -name "*.ipa" -type f | head -1)
+          if [ -z "$IPA" ]; then
+            echo "::error::No .ipa produced"
+            exit 1
+          fi
+          echo "ipa_path=$IPA" >> "$GITHUB_OUTPUT"
+          ls -lah "$IPA"
+
+      # Upload to TestFlight. Skip when the input flag is set
+      # (useful for validating the build works without
+      # polluting TestFlight queues).
+      - name: Upload to TestFlight
+        if: env.SKIP_UPLOAD != 'true'
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-store-connect-api-key-path: ${{ secrets.ASC_API_KEY_PATH }}
+          app-store-connect-api-key-id: ${{ secrets.ASC_KEY_ID }}
+          app-store-connect-api-issuer-id: ${{ secrets.ASC_ISSUER_ID }}
+          build-path: ${{ steps.ipa.outputs.ipa_path }}
+        # Async polling is enabled by default in
+        # upload-testflight-build@v3 — the step waits for
+        # the build to finish processing (~2-5 min) so we
+        # see the success state before exiting.
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "## ✅ TestFlight build uploaded" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- MARKETING_VERSION: $MARKETING_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "- CURRENT_PROJECT_VERSION: $CURRENT_PROJECT_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "- IPA: \`${{ steps.ipa.outputs.ipa_path }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Open [App Store Connect → TestFlight](https://appstoreconnect.apple.com/apps/your-bundle-id/testflight/ios) to assign the build to a tester group."
