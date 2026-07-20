@@ -196,10 +196,13 @@ export function skipQuiet(t, quietHours) {
  *
  * Generic copy — no jw.org content, just a habit-check prompt.
  */
-export async function showReminderNotification({ title, body }) {
+export async function showReminderNotification({ title, body, tag: explicitTag }) {
   const finalTitle = title || 'JW Habits';
   const finalBody = body || 'Time to check your daily habits.';
-  const tag = 'jw-habits-reminder';
+  // Default tag for the daily reminder. Weekly notifications
+  // (Sunday Watchtower study) pass their own tag so OS-level
+  // notification stacks treat them as separate threads.
+  const tag = explicitTag || 'jw-habits-reminder';
   const data = { url: '/' };
 
   // Prefer SW path — works on iOS Safari with installed PWA.
@@ -275,6 +278,108 @@ export function cancelReminder() {
     clearTimeout(timerId);
     timerId = null;
   }
+}
+
+/* ─── Sunday Watchtower notifications ──────────────────────────────
+ *
+ * These fire on a weekly cadence (not daily) because Sunday
+ * Watchtower study is a *weekly* habit. The scheduler keys
+ * each timer separately so they coexist with the daily
+ * habit reminder and don't trip over each other's state.
+ *
+ *   scheduleSaturdayWindowOpen():
+ *     Saturday 8 AM local — fires once a week.
+ *     Copy: "Sunday Watchtower Study is ready. Tap to study."
+ *     No jw.org content; just a habit-check prompt.
+ *
+ *   scheduleSundayEveningCheck():
+ *     Sunday 6 PM local — fires once a week.
+ *     Copy: "Did you study this week's Sunday article?"
+ *
+ * Both are "page-open only" (same constraint as the daily
+ * reminder): when the page is closed the setTimeout is lost.
+ * True weekly background push needs a server with VAPID keys.
+ */
+
+let saturdayTimer = null;
+let sundayTimer = null;
+
+/** Schedule the Saturday-8 AM study-window-open notification. */
+export function scheduleSaturdayWindowOpen() {
+  cancelSaturdayWindowOpen();
+  const target = nextWeeklyFire(new Date(), 6, 8, 0); // 6 = Saturday
+  if (!target) return;
+  const delay = Math.max(0, target.getTime() - Date.now());
+  saturdayTimer = setTimeout(() => {
+    showReminderNotification({
+      title: 'Sunday Watchtower Study',
+      body: "This week's article is ready. Tap to study.",
+      tag: 'jw-saturday-window',
+    });
+    // Reschedule for next Saturday.
+    scheduleSaturdayWindowOpen();
+  }, delay);
+}
+
+/** Cancel the Saturday-window timer. Idempotent. */
+export function cancelSaturdayWindowOpen() {
+  if (saturdayTimer != null) {
+    clearTimeout(saturdayTimer);
+    saturdayTimer = null;
+  }
+}
+
+/** Schedule the Sunday-6 PM "did you study this week?" nudge. */
+export function scheduleSundayEveningCheck() {
+  cancelSundayEveningCheck();
+  const target = nextWeeklyFire(new Date(), 0, 18, 0); // 0 = Sunday
+  if (!target) return;
+  const delay = Math.max(0, target.getTime() - Date.now());
+  sundayTimer = setTimeout(() => {
+    showReminderNotification({
+      title: 'Sunday Watchtower Study',
+      body: 'Did you study this week\'s article? Tap to mark done.',
+      tag: 'jw-sunday-check',
+    });
+    scheduleSundayEveningCheck();
+  }, delay);
+}
+
+/** Cancel the Sunday-evening timer. Idempotent. */
+export function cancelSundayEveningCheck() {
+  if (sundayTimer != null) {
+    clearTimeout(sundayTimer);
+    sundayTimer = null;
+  }
+}
+
+/**
+ * Compute the next moment for a weekly fire (specific
+ * weekday + HH:MM local). Returns a Date, or null if input
+ * is invalid.
+ *
+ * Pure function — does not call new Date() internally. Tests
+ * pass `now` explicitly so behavior is reproducible.
+ *
+ * @param {Date} now
+ * @param {number} weekday - 0=Sun..6=Sat
+ * @param {number} hours
+ * @param {number} minutes
+ */
+export function nextWeeklyFire(now, weekday, hours, minutes) {
+  if (!(now instanceof Date) || isNaN(now.getTime())) return null;
+  if (weekday < 0 || weekday > 6) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
+  const curDow = now.getDay();
+  let delta = (weekday - curDow + 7) % 7;
+  target.setDate(target.getDate() + delta);
+  // If the candidate is exactly `now` (delta=0, same time),
+  // schedule for next week's same day. Avoids immediate-fire.
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 7);
+  }
+  return target;
 }
 
 /**
