@@ -21,6 +21,8 @@
     "sundayWatchtowerSub": "Estudio dominical de La Atalaya — {{weekOf}}",
     "sundayWatchtowerWeeks": "{{count}} semana asistida",
     "sundayWatchtowerWeeks_plural": "{{count}} semanas asistidas",
+    "openInJwLibrary": "Abrir en JW Library",
+    "openInJwLibraryAria": "Abrir el artículo de La Atalaya de esta semana en JW Library",
     "memorial": "Conmemoración",
     "memorialSeeDate": "Consulta jw.org para ver la fecha",
     "treasures": "Tesoros de la Palabra de Dios",

@@ -21,6 +21,8 @@
     "sundayWatchtowerSub": "Sunday Watchtower Study — {{weekOf}}",
     "sundayWatchtowerWeeks": "{{count}} week attended",
     "sundayWatchtowerWeeks_plural": "{{count}} weeks attended",
+    "openInJwLibrary": "Open in JW Library",
+    "openInJwLibraryAria": "Open this week's Watchtower article in JW Library",
     "memorial": "Memorial",
     "memorialSeeDate": "See jw.org for the date",
     "treasures": "Treasures from God's Word",
