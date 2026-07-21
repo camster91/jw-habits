@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRound, ArrowUpRight, ChevronDown, StickyNote, Share2 } from 'lucide-react';
+import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRound, ArrowUpRight, ChevronDown, StickyNote, Share2, ExternalLink } from 'lucide-react';
 import { getDailyTextLink, getCurrentYearTextUrl, getMemorialRow, getSundayWatchtowerRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 import { bibleReadingProgress, dailyTextProgress } from '../utils/habitProgress';
@@ -575,6 +575,26 @@ function Home() {
       Icon: BookOpen,
       color: 'purple',
       href: sundayWatchtower.href,
+      // Inline sub-action: when a docid is seeded for this
+      // ISO week, surface "Open in JW Library" — taps
+      // open the registered jwlibrary:// URL scheme which
+      // the OS hands to the JW Library app (iOS/Android/
+      // desktop). On platforms without JW Library installed
+      // the OS shows a fallback or no-op; the parent href
+      // (WOL meetings index) stays as the fallback target.
+      // Hidden when no docid is seeded yet.
+      subActions: sundayWatchtower.jwlibraryUrl
+        ? [{
+            key: 'openInJwLibrary',
+            kind: 'link',
+            label: t('habit.openInJwLibrary', 'Open in JW Library'),
+            ariaLabel: t('habit.openInJwLibraryAria', {
+              defaultValue: 'Open this week\'s Watchtower article in JW Library',
+            }),
+            url: sundayWatchtower.jwlibraryUrl,
+            icon: ExternalLink,
+          }]
+        : [],
     }] : []),
   ];
 
@@ -836,7 +856,50 @@ function Home() {
                           text. Falls back to clipboard.copy() if
                           the system share sheet isn't available
                           (older browsers, no HTTPS context). */}
-                      {shareText && (
+                      {/* Sub-actions. Each row can expose 0..N
+                          chip-style inline buttons under its
+                          sub-text. Current consumers:
+                            - shareText: opens the system share
+                              sheet (Memorial row).
+                            - jwlibraryUrl: inline link to open
+                              the publication in the JW Library
+                              app via jwlibrary:// URL scheme
+                              (Sunday Watchtower row).
+                          All sub-actions render with the same
+                          chip styling; only the click handler
+                          and target differ. Tapping any
+                          sub-action stops propagation so the
+                          parent <a> doesn't also navigate. */}
+                      {Array.isArray(row.subActions) && row.subActions.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {row.subActions.map((act) => (
+                            <button
+                              key={act.key}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (act.onClick) return act.onClick(e);
+                                if (act.kind === 'share') return shareInvite(act.text);
+                                if (act.kind === 'link' && act.url) {
+                                  window.open(act.url, '_blank', 'noopener,noreferrer');
+                                  return;
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-sm px-1 -ml-1"
+                              aria-label={act.ariaLabel || act.label}
+                            >
+                              {act.icon && <act.icon className="w-3 h-3" aria-hidden="true" />}
+                              <span>{act.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {/* Legacy shareText prop — kept so the
+                          Memorial row still works without
+                          translation. New rows should use the
+                          subActions array above instead. */}
+                      {shareText && !Array.isArray(row.subActions) && (
                         <button
                           type="button"
                           onClick={(e) => {

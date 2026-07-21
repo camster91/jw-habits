@@ -235,6 +235,67 @@ export function getCurrentYearTextUrl(date = new Date()) {
  * @param {Date} [date] - defaults to today
  * @returns {{ title, sub, href, weekOf, studyWeek } | null}
  */
+/**
+ * Sunday Watchtower publication docid lookup.
+ *
+ * WOL docids for the Sunday Watchtower Study article
+ * (e.g. 2026402 for week 30, 2026 — "Make Wise Decisions
+ * Regarding Additional Education") follow a year-bounded
+ * numbering scheme. JW publishes the next month's docid
+ * roughly 4-6 weeks ahead of the meeting date.
+ *
+ * Seed this when you see the next month's article appear
+ * in WOL (https://wol.jw.org/en/wol/meetings/r1/lp-e/<year>/<week>).
+ * Until a docid is seeded, the row's primary href stays on
+ * the WOL meetings index (the user can drill down manually)
+ * and the "Open in JW Library" sub-action stays hidden.
+ *
+ * Keyed by ISO year+week string, e.g. '2026-W30'. Two
+ * consecutive years where the same week number collides
+ * (rare — happens near year boundaries) are disambiguated
+ * by year automatically.
+ */
+const WATCHTOWER_DOCIDS = Object.freeze({
+  // 2026-07-26 through 2026-08-01 — "Make Wise Decisions
+  // Regarding Additional Education", w26 May pp. 14-19.
+  '2026-W30': 2026402,
+  // Extend as new weeks publish. Examples:
+  //   '2026-W31': 2027200,  // (not yet published — placeholder)
+  //   '2026-W32': 2027201,  // (placeholder)
+});
+
+/**
+ * Resolve the Sunday Watchtower Study docid for an ISO
+ * week. Returns null when no docid is seeded for that
+ * week — callers fall back to the WOL meetings index.
+ *
+ * Pure function over WATCHTOWER_DOCIDS — pass an explicit
+ * `override` map for testability (avoids mutating the
+ * frozen constant).
+ *
+ * @param {string} studyWeek  ISO week id like '2026-W30'
+ * @param {Record<string, number>} [override]  Optional map override
+ * @returns {number | null}
+ */
+export function getSundayWatchtowerDocid(studyWeek, override = null) {
+  if (typeof studyWeek !== 'string' || !/^\d{4}-W\d{2}$/.test(studyWeek)) {
+    return null;
+  }
+  const map = override || WATCHTOWER_DOCIDS;
+  const docid = map[studyWeek];
+  return typeof docid === 'number' && docid > 0 ? docid : null;
+}
+
+/**
+ * Sunday Watchtower publication lookup — returns the docid
+ * from the static map, or null. Caller passes the
+ * already-computed studyWeek id (e.g. '2026-W30') from
+ * `getSundayWatchtowerRow().studyWeek`.
+ */
+export function sundayDocidForWeek(studyWeek) {
+  return getSundayWatchtowerDocid(studyWeek);
+}
+
 export function getSundayWatchtowerRow(date = new Date(), t = (k, dflt) => dflt ?? k, docid = null) {
   if (isNaN(date.getTime())) return null;
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -279,25 +340,28 @@ export function getSundayWatchtowerRow(date = new Date(), t = (k, dflt) => dflt 
   // translation is added via the new locale keys below.
   const sub = `Sunday Watchtower Study — ${weekOfLabel}`;
 
+  // Resolve the Watchtower publication docid: caller can
+  // override (e.g. for tests or unit-of-week-ahead seeding),
+  // otherwise look up the static WATCHTOWER_DOCIDS map.
+  // Returns null when the week isn't seeded — the row's
+  // sub-action button stays hidden in that case and the
+  // parent href remains the WOL meetings index fallback.
+  const resolvedDocid = docid != null ? docid : getSundayWatchtowerDocid(isoStr);
+
   return {
     title: t('habit.sundayWatchtower', 'Sunday Watchtower Study'),
     sub,
     href,
     weekOf: weekOfLabel,
     studyWeek: isoStr,
-    // WOL docid (if known) lets the row open the article
-    // directly in JW Library via jwlibrary:///finder?docid=…
-    // — the user's tapped-row convention is to navigate to
-    // the WOL meetings index first and drill down. So we
-    // expose the docid here for downstream consumers (e.g.
-    // Home.jsx), not the URL itself.
-    docid,
-    // Pre-computed URLs in case Home.jsx wants to wire
-    // them into a sub-action button. Both null when no
-    // docid is provided so consumers can do `href || ''`
-    // safely.
-    jwlibraryUrl: docid == null ? null : jwlibraryPublicationUrl(docid, 'E'),
-    finderUrl: docid == null ? null : getPublicationFinderUrl(docid, 'E'),
+    // Resolved WOL docid for this ISO week. Null when the
+    // week isn't seeded — Home.jsx hides the sub-action and
+    // keeps the parent href as the only link.
+    docid: resolvedDocid,
+    // Pre-computed URLs so Home.jsx can wire them into a
+    // sub-action button without re-running URL math.
+    jwlibraryUrl: resolvedDocid == null ? null : jwlibraryPublicationUrl(resolvedDocid, 'E'),
+    finderUrl:    resolvedDocid == null ? null : getPublicationFinderUrl(resolvedDocid, 'E'),
   };
 }
 
