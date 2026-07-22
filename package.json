@@ -36,7 +36,10 @@
         "android:build:debug": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
         "android:build:release": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
         "android:bundle": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease",
-        "ios:build": "npm run build && npx cap sync ios"
+        "ios:build": "npm run build && npx cap sync ios",
+        "smoke": "node scripts/verify/smoke.cjs",
+        "smoke:spawn": "SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs",
+        "verify:persona": "node scripts/verify/jw-habits.cjs"
     },
     "dependencies": {
         "@capacitor/android": "^8.3.0",
