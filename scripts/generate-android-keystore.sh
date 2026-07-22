@@ -4,8 +4,18 @@
 
 KEYSTORE_FILE="jwnews-release.keystore"  # legacy filename from JW News era
 KEY_ALIAS="jwnews"                        # legacy alias (Google Play treats this as immutable once uploaded)
-KEYSTORE_PASSWORD="***"
-KEY_PASSWORD="***"
+# SECURITY: passwords must be supplied via env vars or interactive prompt.
+# Never commit real credentials to this file. See docs/keystore-rotation-2026-07.md
+# for the rotation runbook (this script was the source of a P0 leak in 2026-07).
+KEYSTORE_PASSWORD="${KEYSTORE_PASSWORD:-}"
+KEY_PASSWORD="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+if [ -z "$KEYSTORE_PASSWORD" ]; then
+  read -s -p "Keystore password: " KEYSTORE_PASSWORD
+  echo
+  read -s -p "Key password (Enter = same as keystore): " KEY_PASSWORD
+  echo
+  KEY_PASSWORD="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+fi
 VALIDITY_DAYS=10000
 
 echo "=================================="
@@ -13,7 +23,8 @@ echo "JW Habits Android Keystore Generator"
 echo "=================================="
 echo ""
 echo "This will create a release keystore for Google Play submission."
-echo "IMPORTANT: Save these credentials securely - you cannot recover them!"
+echo "IMPORTANT: Save these credentials securely (1Password recommended) - you cannot recover them!"
+echo "DO NOT commit $KEYSTORE_FILE to git. It is already in .gitignore."
 echo ""
 
 # Check if keystore already exists

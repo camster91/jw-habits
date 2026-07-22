@@ -11,7 +11,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
-const OUT = path.join(__dirname, 'marketing', 'app-feature-graphic-1024x500.png');
+const OUT = path.join(__dirname, 'app-feature-graphic-1024x500.png');
 if (!fs.existsSync(path.dirname(OUT))) {
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
 }

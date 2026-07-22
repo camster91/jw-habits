@@ -8,6 +8,8 @@
  * week strip. No external state, no jw.org content, no fetch.
  */
 
+import { isDone } from './doneState.js';
+
 /**
  * Compute the current streak: consecutive days ending today (or
  * yesterday — a 1-day grace so the streak doesn't break before
@@ -21,7 +23,9 @@
 export function currentStreak(history, today) {
   if (!Array.isArray(history) || history.length === 0 || !today) return 0;
   // De-dupe and sort descending (newest first).
-  const set = new Set(history.filter((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)));
+  const set = new Set(
+    history.filter((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
+  );
   const sortedDesc = Array.from(set).sort().reverse();
   if (sortedDesc.length === 0) return 0;
   const todayDate = new Date(today + 'T00:00:00');
@@ -52,7 +56,9 @@ export function currentStreak(history, today) {
  */
 export function bestStreakFromHistory(history) {
   if (!Array.isArray(history) || history.length === 0) return 0;
-  const set = new Set(history.filter((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)));
+  const set = new Set(
+    history.filter((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
+  );
   const sorted = Array.from(set).sort();
   if (sorted.length === 0) return 0;
   let best = 1;
@@ -88,6 +94,11 @@ function isoDate(d) {
  * Count of habits checked today vs total visible habit rows.
  * Pure local state — uses the per-day `done` map.
  *
+ * Note: the `done` map may use either the legacy `{ key: boolean }`
+ * shape or the new `{ key: { done: boolean, note: string } }` shape.
+ * A row that has only a typed note (note + `done: false`) must NOT
+ * count as done. Use `isDone()` to normalize both shapes correctly.
+ *
  * @param {object} done - The `done` map from `jw-daily-habits-state.done`.
  * @param {string[]} keys - The list of row keys currently rendered (e.g. ['today','text','bible','meeting','family','thisWeek']).
  *   When the Memorial row is hidden, omit its key; this function
@@ -98,7 +109,7 @@ export function todayProgress(done, keys) {
   if (!done || !Array.isArray(keys) || keys.length === 0) return { done: 0, total: 0 };
   let count = 0;
   for (const k of keys) {
-    if (done[k]) count++;
+    if (isDone(done, k)) count++;
   }
   return { done: count, total: keys.length };
 }

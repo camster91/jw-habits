@@ -56,7 +56,7 @@ describe('bibleReadingTracker', () => {
     expect(bibleReadDaysCount()).toBe(0);
   });
 
-  it('isTodayBibleRead reflects today\'s state', () => {
+  it("isTodayBibleRead reflects today's state", () => {
     expect(isTodayBibleRead(new Date('2026-07-01T12:00:00Z'))).toBe(false);
     markBibleReadToday(new Date('2026-07-01T12:00:00Z'));
     expect(isTodayBibleRead(new Date('2026-07-01T23:59:00Z'))).toBe(true);

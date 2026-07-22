@@ -11,7 +11,9 @@ export function createStorageErrorHandler(storeName) {
         error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
         error.code === 22)
     ) {
-      console.warn(`[Zustand Persist] localStorage quota exceeded for "${storeName}". Attempting cleanup...`);
+      console.warn(
+        `[Zustand Persist] localStorage quota exceeded for "${storeName}". Attempting cleanup...`
+      );
 
       try {
         // LRU eviction: remove oldest app-owned keys first, keep recent data
@@ -19,7 +21,7 @@ export function createStorageErrorHandler(storeName) {
         const appKeys = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
-          if (key && appPrefixes.some(prefix => key.startsWith(prefix))) {
+          if (key && appPrefixes.some((prefix) => key.startsWith(prefix))) {
             appKeys.push(key);
           }
         }

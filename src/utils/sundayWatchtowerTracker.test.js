@@ -59,7 +59,7 @@ describe('sundayWatchtowerTracker', () => {
 
   it('distinguishes two different ISO weeks', () => {
     const sun1 = new Date(2026, 6, 26, 14, 0); // week 30
-    const sun2 = new Date(2026, 7, 2, 14, 0);  // week 31
+    const sun2 = new Date(2026, 7, 2, 14, 0); // week 31
     markSundayWatchtowerWeek(sun1);
     markSundayWatchtowerWeek(sun2);
     expect(sundayWatchtowerWeeksCount()).toBe(2);

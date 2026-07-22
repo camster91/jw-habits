@@ -51,7 +51,9 @@ describe('getSundayWatchtowerRow auto-resolves docid', () => {
     );
     // Canonical full URL — sanity check the formula matches `jwlibraryPublicationUrl`.
     expect(r.jwlibraryUrl).toBe('jwlibrary:///finder?wtlocale=E&docid=2026402');
-    expect(r.finderUrl).toBe('https://www.jw.org/finder?srcid=jwlshare&wtlocale=E&prefer=lang&docid=2026402');
+    expect(r.finderUrl).toBe(
+      'https://www.jw.org/finder?srcid=jwlshare&wtlocale=E&prefer=lang&docid=2026402'
+    );
   });
 
   it('returns null docid when the current week is not in the static map', () => {

@@ -64,7 +64,9 @@ function save(set) {
     const arr = Array.from(set).sort();
     const trimmed = arr.length > MAX_ENTRIES ? arr.slice(-MAX_ENTRIES) : arr;
     localStorage.setItem(KEY, JSON.stringify(trimmed));
-  } catch { /* swallow */ }
+  } catch {
+    /* swallow */
+  }
 }
 
 /**

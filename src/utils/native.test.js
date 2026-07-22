@@ -48,7 +48,18 @@ vi.mock('@capacitor/splash-screen', () => ({
   },
 }));
 
-import { haptics, statusBar, keyboard, appLifecycle, splash, isNative, isIOS, isAndroid, isWeb, initializeNative } from './native.js';
+import {
+  haptics,
+  statusBar,
+  keyboard,
+  appLifecycle,
+  splash,
+  isNative,
+  isIOS,
+  isAndroid,
+  isWeb,
+  initializeNative,
+} from './native.js';
 import { Haptics } from '@capacitor/haptics';
 import { StatusBar } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';

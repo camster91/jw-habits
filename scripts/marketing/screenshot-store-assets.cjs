@@ -2,7 +2,7 @@
 //
 // Captures store-listing screenshots for JW Habits in the exact
 // dimensions required by Apple App Store and Google Play Store.
-// Run with: node screenshot-store-assets.cjs
+// Run from repo root: node scripts/marketing/screenshot-store-assets.cjs
 //
 // Outputs go to ./store-screenshots/<view-name>-<size>.png
 // E.g. ./store-screenshots/home-iphone-67-1290x2796.png
@@ -15,7 +15,7 @@ const path = require('path');
 const fs = require('fs');
 
 const URL = 'https://jwhabits.ashbi.ca/';
-const OUTPUT_DIR = path.join(__dirname, 'store-screenshots');
+const OUTPUT_DIR = path.resolve(__dirname, '..', '..', 'store-screenshots');
 
 if (!fs.existsSync(OUTPUT_DIR)) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });

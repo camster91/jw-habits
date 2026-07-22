@@ -22,6 +22,8 @@
 *.jks
 *.keystore
 *.log
+*.p8
+*.p12
 *.swo
 *.swp
 *.tsbuildinfo
@@ -48,14 +50,18 @@ _verify-*.cjs
 android/.gradle/
 android/app/build/
 android/app/debug.keystore
+android/app/*.keystore
+android/app/*.jks
 android/build/
 android/keystore.properties
+android/app/keystore.properties
 android/local.properties
 audit-shots-*/
 capacitor.config.ts
 coverage/
 dev-dist/
 dist/
+gitleaks-report.*
 history.json
 index.cjs
 ios/App/build/

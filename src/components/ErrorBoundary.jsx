@@ -66,13 +66,13 @@ class ErrorBoundary extends Component {
       // Clear service worker caches (but not localStorage to preserve user data)
       if ('caches' in window) {
         const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
       }
 
       // Unregister service workers
       if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map(reg => reg.unregister()));
+        await Promise.all(registrations.map((reg) => reg.unregister()));
       }
 
       // Reload the page
@@ -104,13 +104,12 @@ class ErrorBoundary extends Component {
               </div>
 
               {/* Error Title */}
-              <h2 className="text-xl font-bold text-base-content">
-                Something went wrong
-              </h2>
+              <h2 className="text-xl font-bold text-base-content">Something went wrong</h2>
 
               {/* Error Description */}
               <p className="text-sm text-base-content/70 mt-2">
-                The app encountered an unexpected error. Your data is safe, and you can try reloading the page.
+                The app encountered an unexpected error. Your data is safe, and you can try
+                reloading the page.
               </p>
 
               {/* Error Details (Development Only) */}
@@ -128,18 +127,12 @@ class ErrorBoundary extends Component {
 
               {/* Action Buttons */}
               <div className="flex flex-col gap-2 mt-6">
-                <button
-                  onClick={this.handleReload}
-                  className="btn btn-primary gap-2"
-                >
+                <button onClick={this.handleReload} className="btn btn-primary gap-2">
                   <RefreshCw className="w-4 h-4" />
                   Reload Page
                 </button>
 
-                <button
-                  onClick={this.handleGoHome}
-                  className="btn btn-outline gap-2"
-                >
+                <button onClick={this.handleGoHome} className="btn btn-outline gap-2">
                   <Home className="w-4 h-4" />
                   Go to Home
                 </button>
