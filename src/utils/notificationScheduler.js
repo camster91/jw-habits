@@ -52,10 +52,14 @@ export function getPermissionState() {
   if (typeof window === 'undefined') return NOTIFICATION_PERMISSION.UNSUPPORTED;
   if (!('Notification' in window)) return NOTIFICATION_PERMISSION.UNSUPPORTED;
   switch (Notification.permission) {
-    case 'granted':   return NOTIFICATION_PERMISSION.GRANTED;
-    case 'denied':    return NOTIFICATION_PERMISSION.DENIED;
-    case 'default':   return NOTIFICATION_PERMISSION.DEFAULT;
-    default:          return NOTIFICATION_PERMISSION.DEFAULT;
+    case 'granted':
+      return NOTIFICATION_PERMISSION.GRANTED;
+    case 'denied':
+      return NOTIFICATION_PERMISSION.DENIED;
+    case 'default':
+      return NOTIFICATION_PERMISSION.DEFAULT;
+    default:
+      return NOTIFICATION_PERMISSION.DEFAULT;
   }
 }
 
@@ -65,9 +69,12 @@ export async function requestNotificationPermission() {
   try {
     const result = await Notification.requestPermission();
     switch (result) {
-      case 'granted':   return NOTIFICATION_PERMISSION.GRANTED;
-      case 'denied':    return NOTIFICATION_PERMISSION.DENIED;
-      default:          return NOTIFICATION_PERMISSION.DEFAULT;
+      case 'granted':
+        return NOTIFICATION_PERMISSION.GRANTED;
+      case 'denied':
+        return NOTIFICATION_PERMISSION.DENIED;
+      default:
+        return NOTIFICATION_PERMISSION.DEFAULT;
     }
   } catch {
     return NOTIFICATION_PERMISSION.UNSUPPORTED;
@@ -123,7 +130,7 @@ export function nextFireTime(now = new Date(), reminderTime, quietHours) {
     hours,
     minutes,
     0,
-    0,
+    0
   );
   if (candidate.getTime() <= now.getTime()) {
     // Already past today → push to tomorrow.
@@ -158,9 +165,15 @@ export function skipQuiet(t, quietHours) {
   // Boundary semantics: the start moment is INCLUSIVE (fire at
   // exactly start.hours:start.minutes is allowed), the end moment
   // is EXCLUSIVE (no quiet at the exact end minute).
-  const sameStart = new Date(t.getFullYear(), t.getMonth(), t.getDate(), start.hours, start.minutes);
-  const sameEnd   = new Date(t.getFullYear(), t.getMonth(), t.getDate(), end.hours,   end.minutes);
-  const wrapEnd   = new Date(t.getFullYear(), t.getMonth(), t.getDate(), end.hours,   end.minutes);
+  const sameStart = new Date(
+    t.getFullYear(),
+    t.getMonth(),
+    t.getDate(),
+    start.hours,
+    start.minutes
+  );
+  const sameEnd = new Date(t.getFullYear(), t.getMonth(), t.getDate(), end.hours, end.minutes);
+  const wrapEnd = new Date(t.getFullYear(), t.getMonth(), t.getDate(), end.hours, end.minutes);
   if (start.hours > end.hours) wrapEnd.setDate(wrapEnd.getDate() + 1);
 
   const inWindow = (() => {
@@ -338,7 +351,7 @@ export function scheduleSundayEveningCheck() {
   sundayTimer = setTimeout(() => {
     showReminderNotification({
       title: 'Sunday Watchtower Study',
-      body: 'Did you study this week\'s article? Tap to mark done.',
+      body: "Did you study this week's article? Tap to mark done.",
       tag: 'jw-sunday-check',
     });
     scheduleSundayEveningCheck();
@@ -395,12 +408,13 @@ function loadReminderSettings() {
     if (!raw || typeof raw !== 'object') return null;
     return {
       reminderTime: typeof raw.reminderTime === 'string' ? raw.reminderTime : null,
-      quietHours: raw.quietHours && typeof raw.quietHours === 'object'
-        ? {
-            start: typeof raw.quietHours.start === 'string' ? raw.quietHours.start : null,
-            end:   typeof raw.quietHours.end   === 'string' ? raw.quietHours.end   : null,
-          }
-        : null,
+      quietHours:
+        raw.quietHours && typeof raw.quietHours === 'object'
+          ? {
+              start: typeof raw.quietHours.start === 'string' ? raw.quietHours.start : null,
+              end: typeof raw.quietHours.end === 'string' ? raw.quietHours.end : null,
+            }
+          : null,
     };
   } catch {
     return null;

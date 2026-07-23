@@ -47,7 +47,9 @@ function save(set) {
     // Keep the most recent MAX_ENTRIES (drop the oldest).
     const trimmed = arr.length > MAX_ENTRIES ? arr.slice(-MAX_ENTRIES) : arr;
     localStorage.setItem(KEY, JSON.stringify(trimmed));
-  } catch { /* swallow */ }
+  } catch {
+    /* swallow */
+  }
 }
 
 /**

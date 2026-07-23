@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-import {
-  createStorageErrorHandler,
-  createSafeStorage,
-} from './storageErrorHandler.js';
+import { createStorageErrorHandler, createSafeStorage } from './storageErrorHandler.js';
 
 // The shared test setup at src/test/setup.js replaces global.localStorage
 // with a stub that exposes only getItem/setItem/clear/removeItem — no
@@ -21,10 +18,18 @@ const makeStorageShim = () => {
   const data = new Map();
   return {
     getItem: (k) => (data.has(k) ? data.get(k) : null),
-    setItem: (k, v) => { data.set(k, String(v)); },
-    removeItem: (k) => { data.delete(k); },
-    clear: () => { data.clear(); },
-    get length() { return data.size; },
+    setItem: (k, v) => {
+      data.set(k, String(v));
+    },
+    removeItem: (k) => {
+      data.delete(k);
+    },
+    clear: () => {
+      data.clear();
+    },
+    get length() {
+      return data.size;
+    },
     key: (i) => Array.from(data.keys())[i] ?? null,
   };
 };
@@ -170,7 +175,7 @@ describe('createStorageErrorHandler', () => {
     it('emits a warn line identifying the store name', () => {
       const handler = createStorageErrorHandler('my-cool-store');
       handler(new DOMException('quota', 'QuotaExceededError'));
-      const allWarn = warnSpy.mock.calls.map(c => String(c[0])).join('\n');
+      const allWarn = warnSpy.mock.calls.map((c) => String(c[0])).join('\n');
       expect(allWarn).toMatch(/my-cool-store/);
     });
   });
@@ -248,7 +253,7 @@ describe('createSafeStorage', () => {
       // Should NOT throw — the error handler swallows the quota error
       expect(() => storage2.setItem('jw-progress-storage', { a: 1 })).not.toThrow();
       // The warn line about quota was emitted
-      const allWarn = warnSpy.mock.calls.map(c => String(c[0])).join('\n');
+      const allWarn = warnSpy.mock.calls.map((c) => String(c[0])).join('\n');
       expect(allWarn).toMatch(/quota/i);
     });
 
@@ -293,7 +298,7 @@ describe('createSafeStorage', () => {
       // Should NOT throw — the wrapper catches and logs
       expect(() => storage2.setItem('jw-progress-storage', { x: 1 })).not.toThrow();
       // The "after eviction" warning was emitted
-      const allWarn = warnSpy.mock.calls.map(c => String(c[0])).join('\n');
+      const allWarn = warnSpy.mock.calls.map((c) => String(c[0])).join('\n');
       expect(allWarn).toMatch(/after eviction/i);
     });
   });

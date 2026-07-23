@@ -52,8 +52,7 @@ describe('getDailyReading', () => {
     const reading = getDailyReading(new Date('2026-06-15T12:00:00Z'));
     expect(reading.url).toBeTruthy();
     expect(
-      reading.url.startsWith('jwlibrary://') ||
-      reading.url.startsWith('https://www.jw.org/'),
+      reading.url.startsWith('jwlibrary://') || reading.url.startsWith('https://www.jw.org/')
     ).toBe(true);
   });
 });

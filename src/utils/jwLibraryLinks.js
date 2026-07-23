@@ -30,7 +30,8 @@ export const JW_ORG_SECTIONS = {
   children: 'https://www.jw.org/en/bible-teachings/children/',
   faithInGod: 'https://www.jw.org/en/bible-teachings/questions/does-god-exist/',
   scienceAndBible: 'https://www.jw.org/en/bible-teachings/science/',
-  historyAndBible: 'https://www.jw.org/en/library/magazines/awake-no1-2017-january/bible-and-history/',
+  historyAndBible:
+    'https://www.jw.org/en/library/magazines/awake-no1-2017-january/bible-and-history/',
 
   // Library
   library: 'https://www.jw.org/en/library/',
@@ -50,7 +51,8 @@ export const JW_ORG_SECTIONS = {
   // Media
   broadcasting: 'https://www.jw.org/en/library/videos/#en/mediaitems/LatestVideos',
   videos: 'https://www.jw.org/en/library/videos/',
-  videosAudioDescription: 'https://www.jw.org/en/library/videos/#en/categories/VideoOnDemand/VODAudioDescriptions',
+  videosAudioDescription:
+    'https://www.jw.org/en/library/videos/#en/categories/VideoOnDemand/VODAudioDescriptions',
   music: 'https://www.jw.org/en/library/music/',
   audioDramas: 'https://www.jw.org/en/library/audio-drama/',
   dramaticBibleReadings: 'https://www.jw.org/en/library/dramatic-bible-readings/',
@@ -91,7 +93,7 @@ export const JW_ORG_SECTIONS = {
   // that contains the annual scripture. Year-specific URLs only
   // exist for years when the brochure has been published; unknown
   // years fall back to the generic brochures landing.
-  yearTextBrochures: 'https://www.jw.org/en/library/brochures/'
+  yearTextBrochures: 'https://www.jw.org/en/library/brochures/',
 };
 
 /**
@@ -296,16 +298,18 @@ export function sundayDocidForWeek(studyWeek) {
   return getSundayWatchtowerDocid(studyWeek);
 }
 
-export function getSundayWatchtowerRow(date = new Date(), t = (k, dflt) => dflt ?? k, docid = null) {
+export function getSundayWatchtowerRow(
+  date = new Date(),
+  t = (k, dflt) => dflt ?? k,
+  docid = null
+) {
   if (isNaN(date.getTime())) return null;
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const dow = d.getDay(); // 0=Sun..6=Sat
   const hour = date.getHours();
   // Visible window: Saturday (6) from 08:00 local through
   // Sunday (0) end-of-day (23:59). Hidden on Mon-Fri.
-  const inWindow =
-    (dow === 6 && hour >= 8) ||
-    dow === 0;
+  const inWindow = (dow === 6 && hour >= 8) || dow === 0;
   if (!inWindow) return null;
 
   // Compute the Sunday's ISO week number (Mon-Sun ISO).
@@ -317,8 +321,7 @@ export function getSundayWatchtowerRow(date = new Date(), t = (k, dflt) => dflt 
 
   // Format the weekOf label (e.g., "Sunday, October 26").
   const localeMap = { en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
-  const activeLang =
-    (typeof window !== 'undefined' && window.__jw_lang) || 'en';
+  const activeLang = (typeof window !== 'undefined' && window.__jw_lang) || 'en';
   const fmtLocale = localeMap[activeLang] || 'en-US';
   const weekOfLabel = sunday.toLocaleString(fmtLocale, {
     weekday: 'long',
@@ -361,7 +364,7 @@ export function getSundayWatchtowerRow(date = new Date(), t = (k, dflt) => dflt 
     // Pre-computed URLs so Home.jsx can wire them into a
     // sub-action button without re-running URL math.
     jwlibraryUrl: resolvedDocid == null ? null : jwlibraryPublicationUrl(resolvedDocid, 'E'),
-    finderUrl:    resolvedDocid == null ? null : getPublicationFinderUrl(resolvedDocid, 'E'),
+    finderUrl: resolvedDocid == null ? null : getPublicationFinderUrl(resolvedDocid, 'E'),
   };
 }
 
@@ -388,7 +391,6 @@ function isoWeekOf(d) {
   return { year: target.getFullYear(), week };
 }
 
-
 /**
  * Generate a Bible reading link for JW Library
  * @param {number} bookNum - Bible book number (1-66)
@@ -397,7 +399,12 @@ function isoWeekOf(d) {
  * @param {string} locale - Language code (default: 'E' for English)
  * @returns {string} JW Library finder URL
  */
-export function getBibleReadingLink(bookNum, startChapter, endChapter = startChapter, locale = 'E') {
+export function getBibleReadingLink(
+  bookNum,
+  startChapter,
+  endChapter = startChapter,
+  locale = 'E'
+) {
   // Format: BBCCCVVV where BB=book(01-66), CCC=chapter(001-150), VVV=verse(001-176)
   const bookStr = String(bookNum).padStart(2, '0');
   const startRef = `${bookStr}${String(startChapter).padStart(3, '0')}001`;
@@ -464,8 +471,7 @@ export function getThisWeekMeetingUrl(date = new Date()) {
   // probe the active language from the navigator + localStorage.
   // For now: caller passes the language via the (unstable)
   // global window.__jw_lang if set; otherwise default to en-US.
-  const activeLang =
-    (typeof window !== 'undefined' && window.__jw_lang) || 'en';
+  const activeLang = (typeof window !== 'undefined' && window.__jw_lang) || 'en';
   const fmtLocale = localeMap[activeLang] || 'en-US';
   const fmtMonth = (d) => d.toLocaleString(fmtLocale, { month: 'long' });
 
@@ -499,9 +505,9 @@ export function getThisWeekMeetingUrl(date = new Date()) {
   const year = weekStart.getFullYear();
   const VOLUMES = [
     { slug: 'january-february-2026-mwb', months: [0, 1] },
-    { slug: 'march-april-2026-mwb',      months: [2, 3] },
-    { slug: 'may-june-2026-mwb',         months: [4, 5] },
-    { slug: 'july-august-2026-mwb',      months: [6, 7] },
+    { slug: 'march-april-2026-mwb', months: [2, 3] },
+    { slug: 'may-june-2026-mwb', months: [4, 5] },
+    { slug: 'july-august-2026-mwb', months: [6, 7] },
     { slug: 'september-october-2026-mwb', months: [8, 9] },
     { slug: 'november-december-2026-mwb', months: [10, 11] },
   ];
@@ -528,9 +534,7 @@ export function getThisWeekMeetingUrl(date = new Date()) {
     slug = `${startMonth}-${endMonth}-${year}-mwb`;
   }
 
-  const url =
-    `https://www.jw.org/en/library/jw-meeting-workbook/${slug}/` +
-    `${seg}/`;
+  const url = `https://www.jw.org/en/library/jw-meeting-workbook/${slug}/` + `${seg}/`;
 
   return {
     url,
@@ -626,7 +630,7 @@ export function getISOWeekString(date) {
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }
 
@@ -663,9 +667,9 @@ export function getMemorialDate(year) {
   const TABLE = {
     2024: { month: 2, day: 24 }, // March 24, 2024
     2025: { month: 3, day: 12 }, // April 12, 2025
-    2026: { month: 3, day: 2 },  // April 2, 2026
+    2026: { month: 3, day: 2 }, // April 2, 2026
     2027: { month: 2, day: 22 }, // March 22, 2027
-    2028: { month: 3, day: 9 },  // April 9, 2028
+    2028: { month: 3, day: 9 }, // April 9, 2028
     2029: { month: 2, day: 29 }, // March 29, 2029
   };
   const entry = TABLE[year];
@@ -674,8 +678,7 @@ export function getMemorialDate(year) {
   // Map our i18n keys to BCP-47 locale codes for the date
   // formatter. Same mapping as getThisWeekMeetingUrl.
   const localeMap = { en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
-  const activeLang =
-    (typeof window !== 'undefined' && window.__jw_lang) || 'en';
+  const activeLang = (typeof window !== 'undefined' && window.__jw_lang) || 'en';
   const fmtLocale = localeMap[activeLang] || 'en-US';
   return {
     date,
@@ -740,9 +743,7 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear(), t
 
   if (!visible) return null;
 
-  const sub = memorial
-    ? memorial.weekOf
-    : t('habit.memorialSeeDate');
+  const sub = memorial ? memorial.weekOf : t('habit.memorialSeeDate');
 
   return {
     title: t('habit.memorial'),
@@ -766,7 +767,6 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear(), t
     visible,
   };
 }
-
 
 /**
  * Get the "Today" row for the home — a contextual row that
@@ -816,10 +816,9 @@ export function getTodayRow(today = new Date(), settings = {}, t = (k) => k) {
   const meetingHref = thisWeek.url;
   // Coerce settings into the documented range; fall back
   // to defaults on any malformed input.
-  const clampDay = (n, fallback) =>
-    Number.isInteger(n) && n >= 0 && n <= 6 ? n : fallback;
-  const midweekDay = clampDay(settings.midweekDay, 2);   // default Tuesday
-  const weekendDay = clampDay(settings.weekendDay, 0);    // default Sunday
+  const clampDay = (n, fallback) => (Number.isInteger(n) && n >= 0 && n <= 6 ? n : fallback);
+  const midweekDay = clampDay(settings.midweekDay, 2); // default Tuesday
+  const weekendDay = clampDay(settings.weekendDay, 0); // default Sunday
 
   const dow = today.getDay(); // 0=Sun..6=Sat
 

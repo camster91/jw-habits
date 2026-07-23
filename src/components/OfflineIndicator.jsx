@@ -39,9 +39,7 @@ function OfflineIndicator() {
     <div className="fixed top-0 left-0 right-0 z-40 safe-area-top">
       <div
         className={`p-3 transition-colors ${
-          isOnline
-            ? 'bg-success text-success-content'
-            : 'bg-warning text-warning-content'
+          isOnline ? 'bg-success text-success-content' : 'bg-warning text-warning-content'
         }`}
       >
         <div className="flex items-center justify-center gap-2">
@@ -53,7 +51,9 @@ function OfflineIndicator() {
           ) : (
             <>
               <WifiOff className="w-5 h-5" />
-              <span className="text-sm font-medium">You&apos;re offline - Some features may be limited</span>
+              <span className="text-sm font-medium">
+                You&apos;re offline - Some features may be limited
+              </span>
             </>
           )}
         </div>

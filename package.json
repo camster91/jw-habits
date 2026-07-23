@@ -7,7 +7,10 @@
     "overrides": {
         "ws": ">=8.20.1",
         "shell-quote": "^1.8.4",
-        "@babel/plugin-transform-runtime": "^7.29.0"
+        "@babel/plugin-transform-runtime": "^7.29.0",
+        "tar": ">=7.5.19",
+        "fast-uri": "^3.1.4",
+        "js-yaml": "^4.3.0"
     },
     "scripts": {
         "dev": "vite",
@@ -33,7 +36,10 @@
         "android:build:debug": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
         "android:build:release": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
         "android:bundle": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease",
-        "ios:build": "npm run build && npx cap sync ios"
+        "ios:build": "npm run build && npx cap sync ios",
+        "smoke": "node scripts/verify/smoke.cjs",
+        "smoke:spawn": "SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs",
+        "verify:persona": "node scripts/verify/jw-habits.cjs"
     },
     "dependencies": {
         "@capacitor/android": "^8.3.0",
@@ -44,7 +50,6 @@
         "@capacitor/keyboard": "^8.0.5",
         "@capacitor/local-notifications": "^8.0.2",
         "@capacitor/preferences": "^8.0.1",
-        "@capacitor/push-notifications": "^8.0.3",
         "@capacitor/splash-screen": "^8.0.1",
         "@capacitor/status-bar": "^8.0.2",
         "date-fns": "^4.4.0",
@@ -54,8 +59,7 @@
         "react": "^19.2.0",
         "react-dom": "^19.2.6",
         "react-i18next": "^17.0.8",
-        "react-router-dom": "^7.17.0",
-        "zustand": "^5.0.14"
+        "react-router-dom": "^7.17.0"
     },
     "devDependencies": {
         "@capacitor/cli": "^8.3.0",
@@ -76,7 +80,7 @@
         "jsdom": "^29.1.1",
         "playwright": "^1.59.1",
         "prettier": "^3.8.4",
-        "sharp": "^0.34.5",
+        "sharp": "^0.35.3",
         "tailwindcss": "^4.3.3",
         "typescript": "^5.9.3",
         "vite": "^8.1.5",

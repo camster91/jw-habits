@@ -43,9 +43,7 @@ export function setDone(done, key, patch) {
   const next = {
     ...cur,
     ...(patch && typeof patch === 'object' ? patch : {}),
-    note: typeof (patch && patch.note) === 'string'
-      ? patch.note.slice(0, NOTE_MAX)
-      : cur.note,
+    note: typeof (patch && patch.note) === 'string' ? patch.note.slice(0, NOTE_MAX) : cur.note,
   };
   return { ...done, [key]: next };
 }

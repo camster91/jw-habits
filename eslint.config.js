@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'dev-dist', 'ios', 'android', 'node_modules', 'coverage', '**/*.ts', '**/*.tsx']),
+  globalIgnores(['dist', 'dev-dist', 'ios', 'android', 'node_modules', 'coverage']),
   {
     files: ['**/*.{js,jsx}'],
     ignores: ['**/*.test.{js,jsx}', '**/test/**'],
@@ -27,14 +27,9 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
-  {
-    files: ['api-server.js', 'simple-api-server.js', '**/*.server.js'],
-    extends: [js.configs.recommended],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.node,
-    },
-  },
+  // Removed 2026-07-22: api-server.js block was a dead reference (both
+  // api-server.js and simple-api-server.js were deleted 2026-06-30).
+  // ESLint silently ignored the glob; the block served no purpose.
   {
     files: ['**/*.test.{js,jsx}', '**/test/**/*.{js,jsx}'],
     extends: [js.configs.recommended],

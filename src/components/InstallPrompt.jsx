@@ -73,14 +73,9 @@ function InstallPrompt() {
           <Smartphone className="w-4 h-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium leading-tight truncate">
-            Add to your home screen
-          </p>
+          <p className="text-xs font-medium leading-tight truncate">Add to your home screen</p>
         </div>
-        <button
-          onClick={handleInstall}
-          className="btn btn-primary btn-xs gap-1 rounded-full"
-        >
+        <button onClick={handleInstall} className="btn btn-primary btn-xs gap-1 rounded-full">
           <Download className="w-3 h-3" />
           Install
         </button>

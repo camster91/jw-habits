@@ -14,9 +14,7 @@ const t = (key, dflt) => dflt ?? key;
 
 describe('jwlibraryPublicationUrl', () => {
   it('produces the jwlibrary:///finder URL for a docid', () => {
-    expect(jwlibraryPublicationUrl(2026402)).toBe(
-      'jwlibrary:///finder?wtlocale=E&docid=2026402'
-    );
+    expect(jwlibraryPublicationUrl(2026402)).toBe('jwlibrary:///finder?wtlocale=E&docid=2026402');
   });
 
   it('produces the same for the midweek meeting workbook docid', () => {
@@ -59,14 +57,12 @@ describe('getPublicationFinderUrl', () => {
 
 describe('getSundayWatchtowerRow with docid', () => {
   it('returns jwlibraryUrl + finderUrl when a docid is supplied', () => {
-    const r = getSundayWatchtowerRow(
-      new Date(2026, 6, 26, 14, 0),
-      t,
-      2026402
-    );
+    const r = getSundayWatchtowerRow(new Date(2026, 6, 26, 14, 0), t, 2026402);
     expect(r.docid).toBe(2026402);
     expect(r.jwlibraryUrl).toBe('jwlibrary:///finder?wtlocale=E&docid=2026402');
-    expect(r.finderUrl).toBe('https://www.jw.org/finder?srcid=jwlshare&wtlocale=E&prefer=lang&docid=2026402');
+    expect(r.finderUrl).toBe(
+      'https://www.jw.org/finder?srcid=jwlshare&wtlocale=E&prefer=lang&docid=2026402'
+    );
   });
 
   it('returns null URLs for weeks not in the static docid map', () => {

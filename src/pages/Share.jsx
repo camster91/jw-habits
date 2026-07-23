@@ -49,7 +49,9 @@ function SharePage() {
                   <div className="flex items-start gap-3">
                     <FileText className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-xs font-medium text-base-content/70 uppercase tracking-wider">Title</p>
+                      <p className="text-xs font-medium text-base-content/70 uppercase tracking-wider">
+                        Title
+                      </p>
                       <p className="font-semibold text-base-content mt-0.5">{title}</p>
                     </div>
                   </div>
@@ -60,7 +62,9 @@ function SharePage() {
                   <div className="flex items-start gap-3">
                     <FileText className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-xs font-medium text-base-content/70 uppercase tracking-wider">Text</p>
+                      <p className="text-xs font-medium text-base-content/70 uppercase tracking-wider">
+                        Text
+                      </p>
                       <p className="text-base-content/80 mt-0.5 whitespace-pre-wrap">{text}</p>
                     </div>
                   </div>
@@ -71,7 +75,9 @@ function SharePage() {
                   <div className="flex items-start gap-3">
                     <LinkIcon className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-base-content/70 uppercase tracking-wider">URL</p>
+                      <p className="text-xs font-medium text-base-content/70 uppercase tracking-wider">
+                        URL
+                      </p>
                       <p className="text-primary mt-0.5 break-all text-sm">{url}</p>
                     </div>
                   </div>
@@ -80,10 +86,7 @@ function SharePage() {
                 {/* Open Link Button */}
                 {url && (
                   <div className="pt-2">
-                    <button
-                      onClick={handleOpenLink}
-                      className="btn btn-primary btn-block gap-2"
-                    >
+                    <button onClick={handleOpenLink} className="btn btn-primary btn-block gap-2">
                       <ExternalLink className="w-4 h-4" />
                       Open Link
                     </button>
@@ -93,10 +96,7 @@ function SharePage() {
             </div>
 
             {/* Back to Home */}
-            <button
-              onClick={handleBack}
-              className="btn btn-outline btn-block gap-2"
-            >
+            <button onClick={handleBack} className="btn btn-outline btn-block gap-2">
               <Home className="w-4 h-4" />
               Back to Home
             </button>
@@ -109,12 +109,10 @@ function SharePage() {
             </div>
             <h2 className="text-xl font-bold text-base-content/70">No Shared Content</h2>
             <p className="text-sm text-base-content/70 mt-2 max-w-xs mx-auto">
-              This page receives content shared from other apps. Try sharing a link or text to JW Habits.
+              This page receives content shared from other apps. Try sharing a link or text to JW
+              Habits.
             </p>
-            <button
-              onClick={handleBack}
-              className="btn btn-primary mt-6 gap-2"
-            >
+            <button onClick={handleBack} className="btn btn-primary mt-6 gap-2">
               <ArrowLeft className="w-4 h-4" />
               Back to Home
             </button>
