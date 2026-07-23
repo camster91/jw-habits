@@ -6,14 +6,16 @@
 
 ## Credentials that were exposed
 
-| Variable | Value | Where it appeared | Currently in HEAD? |
-|---|---|---|---|
-| `KEYSTORE_PASSWORD` | `jwnews2024secure` | `scripts/generate-android-keystore.sh:11` | No (redacted to `***`) |
-| `KEY_PASSWORD` | `jwnews2024secure` | `scripts/generate-android-keystore.sh:12` | No (redacted to `***`) |
-| `storePassword` (gradle) | `jwnews2024release` | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
-| `keyPassword` (gradle) | `jwnews2024release` | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
+The following values were leaked and are still recoverable via `git log -p --all | grep -E "jwnews-2024-prefix"` (substitute the actual leaked prefix). Full values are in 1Password under `JW Habits / Android Signing (2026 rotation)` — never in source.
 
-The values are still recoverable via `git log -p --all | grep -E "jwnews2024"` — that's why this is a P0.
+| Variable | Was at | Currently in HEAD? |
+|---|---|---|
+| `KEYSTORE_PASSWORD` | `scripts/generate-android-keystore.sh:11` | No (redacted to `[REDACTED]`) |
+| `KEY_PASSWORD` | `scripts/generate-android-keystore.sh:12` | No (redacted to `[REDACTED]`) |
+| `storePassword` (gradle) | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
+| `keyPassword` (gradle) | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
+
+The values are still recoverable via `git log -p --all | grep -E "jwnews-2024-prefix"` — that's why this is a P0.
 
 ## Action checklist (Cam)
 
@@ -88,7 +90,7 @@ cd ~/Code/jw-habits
 git filter-repo --invert-paths \
   --path-glob 'scripts/generate-android-keystore.sh' \
   --path-glob 'android/app/build.gradle' \
-  --blob-callback 'cb: if b.decode(errors="ignore").find(b"jwnews2024") != -1: skip()'
+  --blob-callback 'cb: if b.decode(errors="ignore").find(b"jwnews-2024-prefix") != -1: skip()'
 
 # Force-push (this is destructive — coordinate with team first)
 git remote add origin https://github.com/camster91/jw-habits.git
@@ -121,7 +123,8 @@ Add to `.git/hooks/pre-commit` (Cam's local machine):
 ```bash
 #!/bin/sh
 # Block commits that contain anything resembling a credential
-if git diff --cached | grep -iE "(jwnews2024|KEYSTORE_PASSWORD\s*=\s*['\"][^'\"*])"; then
+# Substitute YOUR_LEAKED_PREFIX for the actual leaked prefix string.
+if git diff --cached | grep -iE "(YOUR_LEAKED_PREFIX|KEYSTORE_PASSWORD\s*=\s*['\"][^'\"*])"; then
   echo "ERROR: credential-looking string detected in diff"
   echo "If this is intentional, override with: git commit --no-verify"
   exit 1
