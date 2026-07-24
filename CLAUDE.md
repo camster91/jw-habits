@@ -1,6 +1,6 @@
 # CLAUDE.md — JW Habits
 
-**Last audited against source: 2026-07-22** (full review in `REVIEW-2026-07-22.md`).
+**Last audited against source: 2026-07-24** (full review in `REVIEW-2026-07-22.md`; follow-ups in `REVIEW-2026-07-23-POST-MERGE.md`).
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -41,35 +41,40 @@ src/
 ├── sw.js                 # Workbox service worker (precache + SPA navigation fallback)
 ├── index.css             # Tailwind 4 + iOS tokens + dark-mode overrides
 ├── pages/
-│   ├── Home.jsx          # The only user-facing page (~1061 lines — TODO split)
-│   └── Share.jsx         # PWA share_target landing (OS-level entry point)
+│   ├── Home.jsx               # The only user-facing page (~1079 lines — WeekStrip/HabitRow still inline)
+│   ├── Home.test.jsx          # Component tests for Home
+│   └── Share.jsx              # PWA share_target landing (OS-level entry point)
 ├── components/
 │   ├── ErrorBoundary.jsx
 │   ├── InstallPrompt.jsx
 │   ├── OfflineIndicator.jsx
-│   ├── SettingsAccordion.jsx   # ⚠ CLAUDE.md previously said "deleted"; it is LIVE.
+│   ├── SettingsAccordion.jsx  # Collapsed settings section inside Home
 │   └── UpdatePrompt.jsx
 ├── hooks/
+│   ├── useHabitState.js       # Extracted from Home (#148)
 │   └── usePWA.js
 ├── locales/
-│   ├── en.json           # 50+ active keys
+│   ├── en.json                # 50+ active keys
 │   ├── es.json
 │   └── fr.json
 ├── test/
-│   └── setup.js          # Vitest setup: i18n init, localStorage/Notification/SW mocks
+│   └── setup.js               # Vitest setup: i18n init, localStorage/Notification/SW mocks
 └── utils/
     ├── bibleBooks.ts          # 66-book name → number map
     ├── bibleReadingTracker.js # Bible-reading daily tracker (separate from streak)
     ├── dailyBibleReading.js   # 366-entry schedule → jwlibrary:// deep link
     ├── doneState.js           # NEW shape: { key: { done: boolean, note: string } } + legacy compat
     ├── habitProgress.js
-    ├── jwLibraryLinks.js      # All jw.org / jwlibrary:// URL builders
+    ├── jwLibraryLinks.js      # Barrel re-exports (split in #148)
+    ├── jwLibraryLinks.dailyContent.js
+    ├── jwLibraryLinks.meetingWorkbook.js
+    ├── jwLibraryLinks.publications.js
+    ├── jwLibraryLinks.weeklyObservances.js
     ├── native.js              # Capacitor wrappers: haptics, statusBar, keyboard, splash
     ├── notificationScheduler.js # Web Notification API + weekly reminders
     ├── pwa.js
     ├── relativeDate.js
     ├── settingsStore.js       # localStorage wrapper (NOT Zustand; "settingsStore" name predates that)
-    ├── storageErrorHandler.js # LRU eviction for localStorage quota (used only by deleted code path; consider removing)
     ├── streak.js              # currentStreak, bestStreakFromHistory, todayProgress
     └── sundayWatchtowerTracker.js # Weekly Sunday Watchtower attendance counter
 ```
@@ -153,12 +158,11 @@ src/
 
 ## Known tech debt (not blockers)
 
-- `src/pages/Home.jsx` is 1061 lines — split candidate (`useHabitState.js` hook + `WeekStrip.jsx` + `HabitRow.jsx`)
-- `src/utils/jwLibraryLinks.js` is 871 lines — split candidate (`memorial.js`, `isoWeek.js`, `parseReading.js`)
-- `src/utils/storageErrorHandler.js` is dead code from a deleted feature — consider removing
-- No component tests for `Home.jsx` / `Share.jsx` / `SettingsAccordion.jsx` (only utils have unit tests)
+- `src/pages/Home.jsx` is still ~1079 lines — `useHabitState.js` extracted; further split candidates: `WeekStrip.jsx` + `HabitRow.jsx`
+- `src/utils/jwLibraryLinks.js` split into domain modules (#148); barrel remains
+- No component tests for `Share.jsx` / `SettingsAccordion.jsx` (`Home.test.jsx` added in #148)
 - vite-plugin-pwa v1.3 SW build emits `inlineDynamicImports is deprecated` warning — fixed in vite-plugin-pwa >1.3; defer to dependabot
-- Dockerfile base images (`node:22-alpine`, `nginx:1.27-alpine`) are not pinned by digest — pin when next bumped
+- Dockerfile base images (`node:22-alpine`, `nginx:1.27-alpine`) pinned by digest; refresh digests on every bump
 
 ## Recent material changes (last 10 PRs)
 

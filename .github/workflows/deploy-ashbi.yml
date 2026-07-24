@@ -1,23 +1,7 @@
 # jw-habits — VPS deploy via camster91/ashbi-deploy reusable
 #
-# Thin caller for the reusable workflow. Replaces the existing
-# .github/workflows/deploy.yml (Coolify trigger) and
-# .github/workflows/deploy-coolify.yml (full Coolify deploy).
-#
-# After dispatch is verified end-to-end, delete both old files.
-# Caddy vhost for jwhabits.ashbi.ca is already declared in
-# /opt/caddy/Caddyfile on the host.
-#
-# The compose is pull-only: image is prebuilt by
-# .github/workflows/build-and-push.yml and pushed to
-# ghcr.io/camster91/jw-habits. The reusable's
-# `docker compose build --no-cache` is a no-op (no `build:` block).
-#
-# File name is `deploy-ashbi.yml` (not `deploy.yml`) so it
-# doesn't collide with the existing Coolify deploy.yml while
-# both workflows exist. Rename to deploy.yml + delete the
-# Coolify files once the new path is verified.
-
+# Pull-only compose: image is prebuilt by build-and-push.yml and pushed
+# to ghcr.io. The reusable's SSH + pull + up flow handles the rest.
 name: Deploy (ashbi)
 
 on:
