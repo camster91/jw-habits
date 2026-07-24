@@ -57,8 +57,8 @@ describe('nextFireTime', () => {
     // quiet hours end, not at the next day's reminder time.
     const now = new Date(2026, 5, 30, 8, 0);
     const t = nextFireTime(now, '21:00', { start: '06:00', end: '22:00' });
-    expect(t.getDate()).toBe(30);    // Same day, June 30
-    expect(t.getHours()).toBe(22);    // End of quiet hours
+    expect(t.getDate()).toBe(30); // Same day, June 30
+    expect(t.getHours()).toBe(22); // End of quiet hours
     expect(t.getMinutes()).toBe(0);
   });
 
@@ -71,8 +71,8 @@ describe('nextFireTime', () => {
     // Jul 2 02:00.
     const now = new Date(2026, 5, 30, 23, 0);
     const t = nextFireTime(now, '21:00', { start: '14:00', end: '02:00' });
-    expect(t.getDate()).toBe(2);    // July 2
-    expect(t.getHours()).toBe(2);    // End of Jul 1 quiet hours
+    expect(t.getDate()).toBe(2); // July 2
+    expect(t.getHours()).toBe(2); // End of Jul 1 quiet hours
     expect(t.getMinutes()).toBe(0);
   });
 
@@ -83,8 +83,8 @@ describe('nextFireTime', () => {
     // to end-of-quiet same day at 22:00.
     const now = new Date(2026, 5, 30, 23, 0);
     const t = nextFireTime(now, '08:00', { start: '06:00', end: '22:00' });
-    expect(t.getDate()).toBe(1);    // July 1
-    expect(t.getHours()).toBe(22);   // End of Jul 1 quiet hours
+    expect(t.getDate()).toBe(1); // July 1
+    expect(t.getHours()).toBe(22); // End of Jul 1 quiet hours
   });
 
   it('does not shift when the bumped reminder lands outside quiet hours', () => {
@@ -95,8 +95,8 @@ describe('nextFireTime', () => {
     // Result: July 1 at 03:00.
     const now = new Date(2026, 5, 30, 23, 0);
     const t = nextFireTime(now, '03:00', { start: '06:00', end: '22:00' });
-    expect(t.getDate()).toBe(1);    // July 1
-    expect(t.getHours()).toBe(3);    // 03:00 — before 06:00 quiet start
+    expect(t.getDate()).toBe(1); // July 1
+    expect(t.getHours()).toBe(3); // 03:00 — before 06:00 quiet start
   });
 });
 

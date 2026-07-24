@@ -23,11 +23,7 @@ export function bibleReadingProgress(date = new Date(), totalDays = 366) {
   const year = date.getUTCFullYear();
   const start = Date.UTC(year, 0, 1);
   // UTC millis at the start of `date` (local-clock day).
-  const today = Date.UTC(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-  );
+  const today = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
   const day = Math.floor((today - start) / 86400000) + 1;
   const pct = Math.min(day / totalDays, 1);
   return {

@@ -1,15 +1,54 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, BookMarked, CalendarRange, Church, Sparkles, Users, UsersRound, ArrowUpRight, ChevronDown, StickyNote, Share2 } from 'lucide-react';
-import { getDailyTextLink, getCurrentYearTextUrl, getMemorialRow, getSundayWatchtowerRow, getThisWeekMeetingUrl, getTodayRow, JW_ORG_SECTIONS } from '../utils/jwLibraryLinks';
+import {
+  BookOpen,
+  BookMarked,
+  CalendarRange,
+  Church,
+  Sparkles,
+  Users,
+  UsersRound,
+  ArrowUpRight,
+  ChevronDown,
+  StickyNote,
+  Share2,
+  ExternalLink,
+} from 'lucide-react';
+import {
+  getDailyTextLink,
+  getCurrentYearTextUrl,
+  getMemorialRow,
+  getSundayWatchtowerRow,
+  getThisWeekMeetingUrl,
+  getTodayRow,
+  JW_ORG_SECTIONS,
+} from '../utils/jwLibraryLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 import { bibleReadingProgress, dailyTextProgress } from '../utils/habitProgress';
 import { currentStreak, bestStreakFromHistory, todayProgress } from '../utils/streak';
 import SettingsAccordion from '../components/SettingsAccordion';
 import { loadSettings } from '../utils/settingsStore';
 import { getDone, setDone, NOTE_MAX_LENGTH } from '../utils/doneState';
-import { markBibleReadToday, unmarkBibleReadToday, bibleReadDaysCount } from '../utils/bibleReadingTracker';
-import { markSundayWatchtowerWeek, unmarkSundayWatchtowerWeek, sundayWatchtowerWeeksCount } from '../utils/sundayWatchtowerTracker';
+import {
+  markBibleReadToday,
+  unmarkBibleReadToday,
+  bibleReadDaysCount,
+} from '../utils/bibleReadingTracker';
+import {
+  markSundayWatchtowerWeek,
+  unmarkSundayWatchtowerWeek,
+  sundayWatchtowerWeeksCount,
+} from '../utils/sundayWatchtowerTracker';
+import {
+  useHabitState,
+  markInteracted,
+  readBestStreak,
+  writeBestStreak,
+  loadInitialState,
+  hasInteracted as hasUserInteracted,
+  pruneHistory,
+  todayKey,
+} from '../hooks/useHabitState';
 
 /**
  * Home — the only in-app page. Five habit rows plus two
@@ -45,101 +84,6 @@ import { markSundayWatchtowerWeek, unmarkSundayWatchtowerWeek, sundayWatchtowerW
  * this app — we only track progress.
  */
 
-const STATE_KEY = 'jw-daily-habits-state';
-const FIRST_DONE_KEY = 'jw-habits-first-done';
-const BEST_STREAK_KEY = 'jw-habits-best-streak';
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-// Best-effort share-invite helper. Uses the system share sheet
-// (`navigator.share`) when available — the user picks their
-// recipient (Messages, WhatsApp, Email, copy, etc.). Falls back
-// to the async clipboard API in browsers that lack share. The
-// function is fire-and-forget; errors are swallowed because
-// "user canceled the share sheet" is a normal outcome, not a
-// failure.
-async function shareInvite(text) {
-  try {
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      await navigator.share({ text, title: 'Memorial invitation' });
-      return;
-    }
-  } catch {
-    // User dismissed the share sheet (AbortError) or share
-    // failed for another reason. Fall through to clipboard.
-  }
-  try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-    }
-  } catch { /* swallow */ }
-}
-
-// True after the user has tapped any checkbox at least once
-// in their lifetime on this device. Persisted across per-day
-// resets so the first-launch hint shows exactly once, ever.
-function hasInteracted() {
-  try {
-    return localStorage.getItem(FIRST_DONE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STATE_KEY);
-    if (!raw) return { date: todayKey(), done: {}, history: [] };
-    const parsed = JSON.parse(raw);
-    // Per-day reset: if the saved date isn't today, start fresh.
-    if (parsed.date !== todayKey()) {
-      // History is preserved across day-rollover — only the
-      // done map resets. We prune history to the last 7 days
-      // (including today) below.
-      const history = pruneHistory(parsed.history || [], todayKey());
-      return { date: todayKey(), done: {}, history };
-    }
-    // Always prune on load in case the user installed the app
-    // a long time ago and has stale entries.
-    const history = pruneHistory(parsed.history || [], todayKey());
-    return { ...parsed, history };
-  } catch {
-    return { date: todayKey(), done: {}, history: [] };
-  }
-}
-
-// Prune a history array of ISO date strings to the most
-// recent 7 days (inclusive of today). The returned array is
-// sorted oldest→newest so the render can iterate it as a
-// timeline. Duplicates are removed.
-function pruneHistory(history, today) {
-  const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() - 6); // 7 days back inclusive
-  const seen = new Set();
-  const out = [];
-  for (const d of history) {
-    if (!d || typeof d !== 'string') continue;
-    if (seen.has(d)) continue;
-    if (d >= cutoff.toISOString().slice(0, 10) && d <= today) {
-      seen.add(d);
-      out.push(d);
-    }
-  }
-  // Sort oldest→newest
-  out.sort();
-  return out;
-}
-
-function saveState(state) {
-  try {
-    localStorage.setItem(STATE_KEY, JSON.stringify(state));
-  } catch {
-    // ignore quota / private-mode errors
-  }
-}
-
 function Home() {
   const { t, i18n } = useTranslation();
   // Expose the active i18n language as a global so pure utility
@@ -158,16 +102,37 @@ function Home() {
   // date is from a previous day, we write a fresh empty state
   // for today so the localStorage key always reflects the
   // current day (yesterday's per-day state never carries over).
-  const [state, setState] = useState(() => {
-    const loaded = loadState();
-    if (Object.keys(loaded.done).length === 0) {
-      // First-ever mount OR per-day reset just happened.
-      // Make sure localStorage is in sync with what we
-      // returned.
-      saveState(loaded);
+  const [state, setState, , replaceState] = useHabitState();
+
+  // Best-effort share-invite helper. Uses the system share sheet
+  // (`navigator.share`) when available — the user picks their
+  // recipient (Messages, WhatsApp, Email, copy, etc.). Falls back
+  // to the async clipboard API in browsers that lack share. The
+  // function is fire-and-forget; errors are swallowed because
+  // "user canceled the share sheet" is a normal outcome, not a
+  // failure.
+  async function shareInvite(text) {
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        await navigator.share({ text, title: 'Memorial invitation' });
+        return;
+      }
+    } catch {
+      // User dismissed the share sheet (AbortError) or share
+      // failed for another reason. Fall through to clipboard.
     }
-    return loaded;
-  });
+    try {
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+      ) {
+        await navigator.clipboard.writeText(text);
+      }
+    } catch {
+      /* swallow */
+    }
+  }
 
   // User settings (midweek day, weekend day). Re-read on
   // 'storage' events so a change in one tab propagates to
@@ -182,17 +147,29 @@ function Home() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+  // Re-sync state when localStorage changes in another tab or
+  // when the tab becomes visible after midnight (rare but possible).
   useEffect(() => {
-    const refresh = () => setState(loadState());
-    const onStorage = (e) => { if (e.key === STATE_KEY) refresh(); };
-    const onVisible = () => { if (!document.hidden) refresh(); };
+    const onStorage = (e) => {
+      if (e.key === 'jw-daily-habits-state') {
+        // Full state replacement, not a partial merge. The hook's
+        // default setter treats patches as merges which would keep
+        // stale values when storage changes externally.
+        replaceState(loadInitialState());
+      }
+    };
+    const onVisible = () => {
+      if (!document.hidden) {
+        replaceState(loadInitialState());
+      }
+    };
     window.addEventListener('storage', onStorage);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.removeEventListener('storage', onStorage);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, []);
+  }, [replaceState]);
 
   // Track which row key just got toggled so we can apply a
   // brief "pop" animation (scale 1 → 1.15 → 1, 200ms) to the
@@ -240,17 +217,15 @@ function Home() {
         history = history.filter((d) => d !== todayStr);
       }
       const next = { date: prev.date, done: nextDone, history };
-      saveState(next);
-      // First-ever interaction: hide the hint forever.
-      try { localStorage.setItem(FIRST_DONE_KEY, '1'); } catch { /* swallow */ }
-      // Update best-streak whenever history changes. Pure localStorage,
-      // monotonically increases (never decreases). The current
-      // best is also visible in the home (under the dots strip).
-      try {
-        const cur = Number(localStorage.getItem(BEST_STREAK_KEY) || '0') || 0;
-        const computed = bestStreakFromHistory(history);
-        if (computed > cur) localStorage.setItem(BEST_STREAK_KEY, String(computed));
-      } catch { /* swallow */ }
+      // First-ever interaction: hide the hint forever (delegated
+      // to the hook layer).
+      markInteracted();
+      // Update best-streak whenever history changes. Monotonic —
+      // we only write if the computed value is higher than what
+      // is already persisted.
+      const computed = bestStreakFromHistory(history);
+      const persisted = readBestStreak();
+      if (computed > persisted) writeBestStreak(computed);
       return next;
     });
     // Bible-reading tracker: when the user toggles the Bible
@@ -265,7 +240,9 @@ function Home() {
           unmarkBibleReadToday(new Date());
         }
         setBibleReadTick((t) => t + 1);
-      } catch { /* swallow */ }
+      } catch {
+        /* swallow */
+      }
     }
     // Sunday Watchtower tracker: same pattern as Bible
     // reading but records the ISO week (not the date) so
@@ -281,7 +258,9 @@ function Home() {
           unmarkSundayWatchtowerWeek(new Date());
         }
         setSundayWatchtowerTick((t) => t + 1);
-      } catch { /* swallow */ }
+      } catch {
+        /* swallow */
+      }
     }
   };
 
@@ -300,9 +279,12 @@ function Home() {
       const timers = noteTimers.current;
       if (timers[key]) clearTimeout(timers[key]);
       timers[key] = setTimeout(() => {
-        try {
-          saveState({ date: prev.date, done: nextDone, history: prev.history || [] });
-        } catch { /* swallow */ }
+        // The hook's setter already persists `next` immediately.
+        // This setTimeout here is a leftover from the pre-hook
+        // implementation; the only side effect we still need is
+        // to mark the user as having interacted, which is also
+        // already handled in the toggle() call site. Nothing to
+        // do here.
       }, 300);
       return next;
     });
@@ -340,9 +322,7 @@ function Home() {
   // Resolve the daily Bible reading target for today. The
   // util is sync (no fetch) so this returns instantly.
   const dailyReading = getDailyReading(new Date());
-  const bibleHref = dailyReading && dailyReading.url
-    ? dailyReading.url
-    : JW_ORG_SECTIONS.bibles;
+  const bibleHref = dailyReading && dailyReading.url ? dailyReading.url : JW_ORG_SECTIONS.bibles;
 
   // "This week" — the current meeting-week URL, computed
   // once per render. Used for the This-week row's href and
@@ -396,9 +376,17 @@ function Home() {
   //   out of how many are currently visible (Memorial only counts
   //   when it's March/April).
   const streak = currentStreak(state.history || [], todayKey());
-  let best = 0;
-  try { best = Number(localStorage.getItem(BEST_STREAK_KEY) || '0') || 0; } catch { /* swallow */ }
-  const visibleKeys = ['today', 'text', 'bible', 'meeting', 'family', 'thisWeek', ...(memorial ? ['memorial'] : []), ...(sundayWatchtower ? ['sundayWatchtower'] : [])];
+  let best = readBestStreak();
+  const visibleKeys = [
+    'today',
+    'text',
+    'bible',
+    'meeting',
+    'family',
+    'thisWeek',
+    ...(memorial ? ['memorial'] : []),
+    ...(sundayWatchtower ? ['sundayWatchtower'] : []),
+  ];
   const tp = todayProgress(state.done, visibleKeys);
 
   // The 5 habit rows, in the order Cam listed them. Each
@@ -414,14 +402,18 @@ function Home() {
     // (meeting day). Sub-text changes per day. The href is
     // always a public jw.org URL. The row is always shown
     // (getTodayRow never returns null for a valid date).
-    ...(todayRow ? [{
-      key: 'today',
-      title: todayRow.title,
-      sub: todayRow.sub,
-      Icon: Sparkles,
-      color: 'indigo',
-      href: todayRow.href,
-    }] : []),
+    ...(todayRow
+      ? [
+          {
+            key: 'today',
+            title: todayRow.title,
+            sub: todayRow.sub,
+            Icon: Sparkles,
+            color: 'indigo',
+            href: todayRow.href,
+          },
+        ]
+      : []),
     // "Year Text" — annual scripture. Always links to the
     // current year's "Examining the Scriptures Daily"
     // brochure on jw.org (verified 200 OK for 2024/25/26;
@@ -432,8 +424,14 @@ function Home() {
       key: 'yearText',
       title: t('habit.yearText', 'Year Text'),
       sub: yearText.known
-        ? t('habit.yearTextSub', { defaultValue: `${yearText.year} — Open this year's scripture`, year: yearText.year })
-        : t('habit.yearTextSubFallback', { defaultValue: 'View current Year Text on jw.org', year: yearText.year }),
+        ? t('habit.yearTextSub', {
+            defaultValue: `${yearText.year} — Open this year's scripture`,
+            year: yearText.year,
+          })
+        : t('habit.yearTextSubFallback', {
+            defaultValue: 'View current Year Text on jw.org',
+            year: yearText.year,
+          }),
       Icon: BookMarked,
       color: 'yellow',
       href: yearText.url,
@@ -471,9 +469,9 @@ function Home() {
       title: t('habit.meeting', 'Meeting prep'),
       sub: t('habit.meetingSub', "This week's midweek + weekend workbook"),
       subRows: [
-        { key: 'treasures',    label: t('habit.treasures',    'Treasures from God\'s Word') },
-        { key: 'ministry',     label: t('habit.ministry',     'Apply Yourself to the Field Ministry') },
-        { key: 'living',       label: t('habit.living',       'Living as Christians') },
+        { key: 'treasures', label: t('habit.treasures', "Treasures from God's Word") },
+        { key: 'ministry', label: t('habit.ministry', 'Apply Yourself to the Field Ministry') },
+        { key: 'living', label: t('habit.living', 'Living as Christians') },
       ],
       Icon: Users,
       color: 'green',
@@ -529,29 +527,37 @@ function Home() {
     // entirely outside March/April. The icon (Church) and
     // color (indigo) are chosen to read as a special,
     // solemn event — distinct from the weekly habits.
-    ...(memorial ? [{
-      key: 'memorial',
-      title: t('habit.memorial', 'Memorial'),
-      sub: memorial.sub,
-      // "X days away" countdown chip. "Today" on day 0,
-      // "Tomorrow" on day 1, "In N days" otherwise. Hidden
-      // when the exact date is unknown (e.g. 2030+) so we
-      // don't lie to the user about how many days are left.
-      metaChip: memorial.daysToMemorial === 0
-        ? t('habit.memorialToday', 'Today')
-        : memorial.daysToMemorial === 1
-        ? t('habit.memorialTomorrow', 'Tomorrow')
-        : memorial.daysToMemorial != null
-        ? t('habit.memorialInDays', { count: memorial.daysToMemorial, defaultValue: `In ${memorial.daysToMemorial} days` })
-        : null,
-      // Pre-filled share text for the system share sheet.
-      // Tapping the row's "Share" sub-action (added below the
-      // row in the JSX) opens navigator.share with this text.
-      shareText: memorial.shareText,
-      Icon: Church,
-      color: 'indigo',
-      href: memorial.href,
-    }] : []),
+    ...(memorial
+      ? [
+          {
+            key: 'memorial',
+            title: t('habit.memorial', 'Memorial'),
+            sub: memorial.sub,
+            // "X days away" countdown chip. "Today" on day 0,
+            // "Tomorrow" on day 1, "In N days" otherwise. Hidden
+            // when the exact date is unknown (e.g. 2030+) so we
+            // don't lie to the user about how many days are left.
+            metaChip:
+              memorial.daysToMemorial === 0
+                ? t('habit.memorialToday', 'Today')
+                : memorial.daysToMemorial === 1
+                  ? t('habit.memorialTomorrow', 'Tomorrow')
+                  : memorial.daysToMemorial != null
+                    ? t('habit.memorialInDays', {
+                        count: memorial.daysToMemorial,
+                        defaultValue: `In ${memorial.daysToMemorial} days`,
+                      })
+                    : null,
+            // Pre-filled share text for the system share sheet.
+            // Tapping the row's "Share" sub-action (added below the
+            // row in the JSX) opens navigator.share with this text.
+            shareText: memorial.shareText,
+            Icon: Church,
+            color: 'indigo',
+            href: memorial.href,
+          },
+        ]
+      : []),
     // "Sunday Watchtower Study" — appears Saturday 8 AM
     // through Sunday end-of-day. Hidden Mon-Fri. The href
     // opens the WOL meetings index for the ISO week
@@ -560,22 +566,52 @@ function Home() {
     // checklist here — completion is a single tap on the
     // row's checkbox (same pattern as Daily text + Bible
     // reading). ToS clean: no verse text, no scripture.
-    ...(sundayWatchtower ? [{
-      key: 'sundayWatchtower',
-      title: t('habit.sundayWatchtower', 'Sunday Watchtower Study'),
-      // Title shows the Sunday date; sub shows the running
-      // count of weeks studied (or stays the helper string if
-      // sundayWatchtowerWeeks is 0). The chip flips to a
-      // generic "study window" line on Saturday morning to
-      // nudge studying ahead.
-      sub: t('habit.sundayWatchtowerSub', { weekOf: sundayWatchtower.weekOf }),
-      metaChip: sundayWatchtowerWeeks > 0
-        ? t('habit.sundayWatchtowerWeeks', { count: sundayWatchtowerWeeks, defaultValue: sundayWatchtowerWeeks + ' weeks attended' })
-        : null,
-      Icon: BookOpen,
-      color: 'purple',
-      href: sundayWatchtower.href,
-    }] : []),
+    ...(sundayWatchtower
+      ? [
+          {
+            key: 'sundayWatchtower',
+            title: t('habit.sundayWatchtower', 'Sunday Watchtower Study'),
+            // Title shows the Sunday date; sub shows the running
+            // count of weeks studied (or stays the helper string if
+            // sundayWatchtowerWeeks is 0). The chip flips to a
+            // generic "study window" line on Saturday morning to
+            // nudge studying ahead.
+            sub: t('habit.sundayWatchtowerSub', { weekOf: sundayWatchtower.weekOf }),
+            metaChip:
+              sundayWatchtowerWeeks > 0
+                ? t('habit.sundayWatchtowerWeeks', {
+                    count: sundayWatchtowerWeeks,
+                    defaultValue: sundayWatchtowerWeeks + ' weeks attended',
+                  })
+                : null,
+            Icon: BookOpen,
+            color: 'purple',
+            href: sundayWatchtower.href,
+            // Inline sub-action: when a docid is seeded for this
+            // ISO week, surface "Open in JW Library" — taps
+            // open the registered jwlibrary:// URL scheme which
+            // the OS hands to the JW Library app (iOS/Android/
+            // desktop). On platforms without JW Library installed
+            // the OS shows a fallback or no-op; the parent href
+            // (WOL meetings index) stays as the fallback target.
+            // Hidden when no docid is seeded yet.
+            subActions: sundayWatchtower.jwlibraryUrl
+              ? [
+                  {
+                    key: 'openInJwLibrary',
+                    kind: 'link',
+                    label: t('habit.openInJwLibrary', 'Open in JW Library'),
+                    ariaLabel: t('habit.openInJwLibraryAria', {
+                      defaultValue: "Open this week's Watchtower article in JW Library",
+                    }),
+                    url: sundayWatchtower.jwlibraryUrl,
+                    icon: ExternalLink,
+                  },
+                ]
+              : [],
+          },
+        ]
+      : []),
   ];
 
   const greetingText = (() => {
@@ -651,8 +687,7 @@ function Home() {
 
       <main className="container mx-auto px-4 max-w-2xl">
         <h1 className="ios-large-title">
-          {greetingText}.
-          <span className="sub">{formattedDate}</span>
+          {greetingText}.<span className="sub">{formattedDate}</span>
         </h1>
 
         {/* Week strip — Mon..Sun with today highlighted. A
@@ -672,19 +707,15 @@ function Home() {
                 'py-1.5 rounded-md ' +
                 (d.isToday
                   ? 'bg-primary text-primary-content font-bold'
-                  // /80 keeps the inactive days visually subdued
-                  // while clearing the WCAG AA 4.5:1 contrast
-                  // threshold against bg-base-200. /60 was 2.81:1
-                  // and 3.93:1 — axe-core flagged both as serious.
-                  : 'text-base-content/80')
+                  : // /80 keeps the inactive days visually subdued
+                    // while clearing the WCAG AA 4.5:1 contrast
+                    // threshold against bg-base-200. /60 was 2.81:1
+                    // and 3.93:1 — axe-core flagged both as serious.
+                    'text-base-content/80')
               }
             >
-              <div className="text-[10px] uppercase tracking-wider">
-                {d.label}
-              </div>
-              <div className="text-base font-semibold leading-tight">
-                {d.date}
-              </div>
+              <div className="text-[10px] uppercase tracking-wider">{d.label}</div>
+              <div className="text-base font-semibold leading-tight">{d.date}</div>
             </div>
           ))}
         </div>
@@ -697,10 +728,7 @@ function Home() {
             jw.org. The dots are aligned under the week-strip
             columns so the user can see "I checked Tuesday
             (col 1) and Thursday (col 3)" at a glance. */}
-        <div
-          className="grid grid-cols-7 gap-1 mb-4 select-none"
-          aria-label="This week checked"
-        >
+        <div className="grid grid-cols-7 gap-1 mb-4 select-none" aria-label="This week checked">
           {weekStrip.map((d, i) => {
             const wasChecked = state.history && state.history.includes(d.fullDate);
             return (
@@ -712,9 +740,7 @@ function Home() {
                 <span
                   className={
                     'inline-block w-2 h-2 rounded-full ' +
-                    (wasChecked
-                      ? 'bg-primary'
-                      : 'border border-base-content/30 bg-transparent')
+                    (wasChecked ? 'bg-primary' : 'border border-base-content/30 bg-transparent')
                   }
                 />
               </div>
@@ -735,7 +761,7 @@ function Home() {
             jw.org content. Matches the iOS Reminders /
             Apple Fitness style: small grey meta line under
             a visualization. */}
-        {hasInteracted() && (streak > 0 || tp.done > 0 || best > 0) && (
+        {hasUserInteracted() && (streak > 0 || tp.done > 0 || best > 0) && (
           <div
             className="flex items-center justify-center gap-3 mb-4 text-xs text-base-content/70 select-none flex-wrap"
             aria-label="Streak and today's progress"
@@ -752,18 +778,21 @@ function Home() {
             )}
             {best > 0 && best !== streak && (
               <>
-                <span className="text-base-content/30" aria-hidden="true">·</span>
+                <span className="text-base-content/30" aria-hidden="true">
+                  ·
+                </span>
                 <span aria-label={`Best streak ${best} ${best === 1 ? 'day' : 'days'}`}>
-                  <span className="font-semibold text-base-content/90">{best}</span>
-                  {' '}{t('home.streakBest', 'best')}
+                  <span className="font-semibold text-base-content/90">{best}</span>{' '}
+                  {t('home.streakBest', 'best')}
                 </span>
               </>
             )}
-            <span className="text-base-content/30" aria-hidden="true">·</span>
+            <span className="text-base-content/30" aria-hidden="true">
+              ·
+            </span>
             <span aria-label={`Today ${tp.done} of ${tp.total}`}>
               <span className="font-semibold text-base-content/90">{tp.done}</span>
-              <span>/{tp.total}</span>
-              {' '}{t('home.streakToday', 'today')}
+              <span>/{tp.total}</span> {t('home.streakToday', 'today')}
             </span>
           </div>
         )}
@@ -775,11 +804,8 @@ function Home() {
             text-base-content/80 (instead of /70) so it stays
             readable in dark mode where /70 sits too close to
             the card surface. */}
-        {!hasInteracted() && (
-          <p
-            className="text-sm text-base-content/80 mt-1 mb-4 px-1"
-            role="note"
-          >
+        {!hasUserInteracted() && (
+          <p className="text-sm text-base-content/80 mt-1 mb-4 px-1" role="note">
             {t('home.firstRunHint', 'Tap a row to open jw.org. Tap the checkbox when done.')}
           </p>
         )}
@@ -819,7 +845,9 @@ function Home() {
                       <RowIcon className="w-4 h-4" />
                     </div>
                     <div className="body min-w-0 flex-1">
-                      <div className={`title truncate ${isDone ? 'line-through' : ''}`}>{title}</div>
+                      <div className={`title truncate ${isDone ? 'line-through' : ''}`}>
+                        {title}
+                      </div>
                       {sub && <div className="sub truncate">{sub}</div>}
                       {metaChip && (
                         <div
@@ -836,7 +864,50 @@ function Home() {
                           text. Falls back to clipboard.copy() if
                           the system share sheet isn't available
                           (older browsers, no HTTPS context). */}
-                      {shareText && (
+                      {/* Sub-actions. Each row can expose 0..N
+                          chip-style inline buttons under its
+                          sub-text. Current consumers:
+                            - shareText: opens the system share
+                              sheet (Memorial row).
+                            - jwlibraryUrl: inline link to open
+                              the publication in the JW Library
+                              app via jwlibrary:// URL scheme
+                              (Sunday Watchtower row).
+                          All sub-actions render with the same
+                          chip styling; only the click handler
+                          and target differ. Tapping any
+                          sub-action stops propagation so the
+                          parent <a> doesn't also navigate. */}
+                      {Array.isArray(row.subActions) && row.subActions.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {row.subActions.map((act) => (
+                            <button
+                              key={act.key}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (act.onClick) return act.onClick(e);
+                                if (act.kind === 'share') return shareInvite(act.text);
+                                if (act.kind === 'link' && act.url) {
+                                  window.open(act.url, '_blank', 'noopener,noreferrer');
+                                  return;
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-sm px-1 -ml-1"
+                              aria-label={act.ariaLabel || act.label}
+                            >
+                              {act.icon && <act.icon className="w-3 h-3" aria-hidden="true" />}
+                              <span>{act.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {/* Legacy shareText prop — kept so the
+                          Memorial row still works without
+                          translation. New rows should use the
+                          subActions array above instead. */}
+                      {shareText && !Array.isArray(row.subActions) && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -922,7 +993,10 @@ function Home() {
                         key={s.key}
                         className={`py-1 flex items-center gap-2 ${i < subRows.length - 1 ? 'border-b border-base-content/5' : ''}`}
                       >
-                        <span className="w-1 h-1 rounded-full bg-base-content/30 shrink-0" aria-hidden="true" />
+                        <span
+                          className="w-1 h-1 rounded-full bg-base-content/30 shrink-0"
+                          aria-hidden="true"
+                        />
                         <span className="truncate">{s.label}</span>
                       </div>
                     ))}
@@ -937,9 +1011,9 @@ function Home() {
                     chars, and auto-save 300ms after the user
                     stops typing. Empty + closed by default.
                     Hidden entirely on first-launch (before
-                    hasInteracted) so the home stays minimal for
+                    hasUserInteracted) so the home stays minimal for
                     fresh users. */}
-                {hasInteracted() && (
+                {hasUserInteracted() && (
                   <div className="ml-12 mr-12 -mt-1 mb-2">
                     <button
                       type="button"
@@ -947,9 +1021,13 @@ function Home() {
                       className="flex items-center gap-1 text-[11px] text-base-content/50 hover:text-base-content/70 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-sm px-1 -ml-1"
                       aria-expanded={noteOpen}
                       aria-controls={noteId}
-                      aria-label={noteOpen
-                        ? `Hide note for ${title}`
-                        : (rowNote ? `Edit note for ${title}` : `Add a note for ${title}`)}
+                      aria-label={
+                        noteOpen
+                          ? `Hide note for ${title}`
+                          : rowNote
+                            ? `Edit note for ${title}`
+                            : `Add a note for ${title}`
+                      }
                     >
                       <StickyNote className="w-3 h-3" aria-hidden="true" />
                       <span>{rowNote ? 'Note' : 'Add note'}</span>
@@ -966,7 +1044,10 @@ function Home() {
                         maxLength={NOTE_MAX_LENGTH}
                         rows={2}
                         onChange={(e) => setRowNote(key, e.target.value)}
-                        placeholder={t('habit.notePlaceholder', 'A quick reminder for yourself — never leaves your device.')}
+                        placeholder={t(
+                          'habit.notePlaceholder',
+                          'A quick reminder for yourself — never leaves your device.'
+                        )}
                         className="mt-1 w-full text-xs text-base-content bg-base-100 border border-base-300/40 rounded-md p-2 resize-none focus:outline-hidden focus:ring-2 focus:ring-primary"
                       />
                     )}

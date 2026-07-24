@@ -82,32 +82,18 @@ export default defineConfig({
           }
         ],
         shortcuts: [
+          // All shortcuts route to `/` (the only page). Each shortcut's
+          // URL is informational for the OS launcher; the home renders
+          // the full list of habit rows. Future per-shortcut focus
+          // behavior (e.g., scroll to a specific row, open a specific
+          // section) requires Home.jsx to read `useSearchParams` and
+          // match against row ids — deferred until the Home.jsx split
+          // (issue #140) lands.
           {
-            name: 'Daily Text',
-            short_name: 'Text',
-            description: 'Read today\'s daily text',
-            url: '/?focus=dailytext',
-            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
-          },
-          {
-            name: 'Study',
-            short_name: 'Study',
-            description: 'Meeting prep & deeper study',
-            url: '/study',
-            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
-          },
-          {
-            name: 'View Stats',
-            short_name: 'Stats',
-            description: 'View your progress statistics',
-            url: '/statistics',
-            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
-          },
-          {
-            name: 'Settings',
-            short_name: 'Settings',
-            description: 'Configure app settings',
-            url: '/settings',
+            name: 'Today\'s Habits',
+            short_name: 'Today',
+            description: 'Open the home screen and start your daily habits',
+            url: '/',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           }
         ],

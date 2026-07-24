@@ -22,9 +22,7 @@ function UpdatePrompt() {
   // Read once on mount; if the user dismissed this session, don't
   // show it again. We don't persist across sessions — on next reload
   // we'll re-evaluate.
-  const [dismissed, setDismissed] = useState(
-    () => sessionStorage.getItem(DISMISS_KEY) === '1'
-  );
+  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem(DISMISS_KEY) === '1');
 
   if (!updateAvailable || dismissed) {
     return null;

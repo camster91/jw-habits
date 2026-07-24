@@ -1,0 +1,66 @@
+name: Smoke
+
+# Automated smoke test for jw-habits. Runs the Playwright smoke suite at
+# scripts/verify/smoke.cjs against the production build served by vite
+# preview. Complements ci.yml (lint + unit tests + build + format + gitleaks).
+#
+# What it covers:
+#   S1: Per-day reset
+#   S2: Done state persists across reload
+#   S3: P0-4 regression — note-only row does NOT count as done
+#   S4: Legacy boolean done shape still works
+#   S5: New {done, note} shape round-trips
+#   S6: First-launch hint hides after first tap
+#   S7: Home renders without console errors
+#
+# Run locally: `npm run smoke:spawn`
+#
+# Added 2026-07-22 alongside the keystore + Dockerfile + deploy fix PR.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Playwright smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Smoke script uses SPAWN_PREVIEW=1 to launch vite preview itself.
+      # Build first so preview has something to serve.
+      - name: Build
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Run smoke
+        run: SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs
+        env:
+          CI: true

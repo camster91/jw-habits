@@ -11,9 +11,11 @@
 /** PWA capability detection — true if the browser supports
  * `beforeinstallprompt` + a service worker. */
 export function isPWACapable() {
-  return typeof window !== 'undefined' &&
+  return (
+    typeof window !== 'undefined' &&
     'serviceWorker' in navigator &&
-    'BeforeInstallPromptEvent' in window;
+    'BeforeInstallPromptEvent' in window
+  );
 }
 
 let deferredPrompt = null;
@@ -29,8 +31,9 @@ export function setDeferredPrompt(e) {
 /** True if the app is currently running as an installed PWA. */
 export function isInstalled() {
   if (typeof window === 'undefined') return false;
-  return window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
+  );
 }
 
 /** Trigger the browser's native install prompt. Returns a promise

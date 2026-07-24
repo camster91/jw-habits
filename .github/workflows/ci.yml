@@ -36,6 +36,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -67,3 +69,21 @@ jobs:
         env:
           NODE_ENV: production
           CI: true
+
+      # Format check. Was previously a separate format.yml workflow (now
+      # removed in the 2026-07-22 review follow-up because it duplicated
+      # this ci.yml pipeline). Uses --check so a bad diff fails CI rather
+      # than silently rewriting the working tree.
+      - name: Format check
+        run: npm run format:check
+        env:
+          CI: true
+
+      # Secret scan. Catches committed credentials before they reach main.
+      # Added 2026-07-22 after the keystore-password P0 leak review.
+      # Public repo config; for private repos, switch to the GitHub App.
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}

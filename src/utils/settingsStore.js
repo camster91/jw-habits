@@ -64,7 +64,12 @@ function mergeWithDefaults(raw) {
     } else if (key === 'reminderTime') {
       out[key] = typeof value === 'string' && /^\d{2}:\d{2}$/.test(value) ? value : def;
     } else if (key === 'quietHours') {
-      if (value && typeof value === 'object' && typeof value.start === 'string' && typeof value.end === 'string') {
+      if (
+        value &&
+        typeof value === 'object' &&
+        typeof value.start === 'string' &&
+        typeof value.end === 'string'
+      ) {
         out[key] = { start: value.start, end: value.end };
       } else if (value === null) {
         out[key] = null;

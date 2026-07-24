@@ -62,11 +62,22 @@ describe('jwLibraryLinks', () => {
 
     it('should have all expected sections', () => {
       const expectedSections = [
-        'home', 'news', 'whatsNew', 'library', 'magazines',
-        'watchtowerStudy', 'awake', 'videos', 'broadcasting',
-        'music', 'meetingWorkbooks', 'bibles', 'bibleTeachings', 'aboutUs'
+        'home',
+        'news',
+        'whatsNew',
+        'library',
+        'magazines',
+        'watchtowerStudy',
+        'awake',
+        'videos',
+        'broadcasting',
+        'music',
+        'meetingWorkbooks',
+        'bibles',
+        'bibleTeachings',
+        'aboutUs',
       ];
-      expectedSections.forEach(section => {
+      expectedSections.forEach((section) => {
         expect(JW_ORG_SECTIONS[section]).toBeDefined();
         expect(JW_ORG_SECTIONS[section]).toContain('jw.org');
       });
@@ -85,9 +96,7 @@ describe('jwLibraryLinks', () => {
       // JW Library app on Android and iOS. On the web (no app),
       // the link is a no-op — same trade-off as the Bible
       // reading row.
-      expect(link).toBe(
-        'jwlibrary:///showDailyText?wtlocale=E&date=20260617'
-      );
+      expect(link).toBe('jwlibrary:///showDailyText?wtlocale=E&date=20260617');
     });
 
     it('should pad single-digit months and days', () => {
@@ -95,9 +104,7 @@ describe('jwLibraryLinks', () => {
       const date = new Date(2026, 0, 5);
       const link = getDailyTextLink(date);
 
-      expect(link).toBe(
-        'jwlibrary:///showDailyText?wtlocale=E&date=20260105'
-      );
+      expect(link).toBe('jwlibrary:///showDailyText?wtlocale=E&date=20260105');
     });
 
     it('should always default to English (E) locale', () => {
@@ -120,9 +127,7 @@ describe('jwLibraryLinks', () => {
     it('should default to today when no date is passed', () => {
       const link = getDailyTextLink();
       // Just verify the format — the date is today.
-      expect(link).toMatch(
-        /^jwlibrary:\/\/\/showDailyText\?wtlocale=E&date=\d{8}$/
-      );
+      expect(link).toMatch(/^jwlibrary:\/\/\/showDailyText\?wtlocale=E&date=\d{8}$/);
     });
 
     it('should use the local date (not UTC) so the EDT user gets their day', () => {
@@ -183,7 +188,7 @@ describe('jwLibraryLinks', () => {
       expect(result).not.toBeNull();
       expect(result.url).toBe(
         'https://www.jw.org/en/library/jw-meeting-workbook/may-june-2026-mwb/' +
-        'Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026/'
+          'Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026/'
       );
       expect(result.weekOf).toBe('June 15–21, 2026');
     });
@@ -234,7 +239,7 @@ describe('jwLibraryLinks', () => {
       // with year-on-each-end in the URL segment.
       expect(r.url).toBe(
         'https://www.jw.org/en/library/jw-meeting-workbook/november-december-2025-mwb/' +
-        'Life-and-Ministry-Meeting-Schedule-for-December-29-2025-January-4-2026/'
+          'Life-and-Ministry-Meeting-Schedule-for-December-29-2025-January-4-2026/'
       );
     });
 
@@ -249,7 +254,7 @@ describe('jwLibraryLinks', () => {
       const r = getThisWeekMeetingUrl(new Date(2026, 5, 30));
       expect(r.url).toBe(
         'https://www.jw.org/en/library/jw-meeting-workbook/may-june-2026-mwb/' +
-        'Life-and-Ministry-Meeting-Schedule-for-June-29-July-5-2026/'
+          'Life-and-Ministry-Meeting-Schedule-for-June-29-July-5-2026/'
       );
       expect(r.weekOf).toBe('June 29 – July 5, 2026');
     });
@@ -368,7 +373,6 @@ describe('jwLibraryLinks', () => {
       expect(weekString).toMatch(/-W0\d$/);
     });
   });
-
 
   describe('getMemorialDate', () => {
     it('returns the published 2024 date (Sunday, March 24)', () => {
@@ -489,7 +493,6 @@ describe('jwLibraryLinks', () => {
     });
   });
 
-
   describe('getTodayRow', () => {
     it('returns "Tonight — Midweek Meeting" on Tuesday', () => {
       const r = getTodayRow(new Date(2026, 5, 16), {}, tEn); // June 16 = Tue
@@ -536,7 +539,7 @@ describe('jwLibraryLinks', () => {
       expect(r).toBeNull();
     });
 
-    it('points to this week\'s MWB schedule on meeting-related days', () => {
+    it("points to this week's MWB schedule on meeting-related days", () => {
       const monday = getTodayRow(new Date(2026, 5, 15), {}, tEn);
       const tuesday = getTodayRow(new Date(2026, 5, 16), {}, tEn);
       const wednesday = getTodayRow(new Date(2026, 5, 17), {}, tEn);
@@ -604,12 +607,16 @@ describe('jwLibraryLinks', () => {
       const r2024 = getCurrentYearTextUrl(new Date(2024, 5, 15));
       expect(r2024.year).toBe(2024);
       expect(r2024.known).toBe(true);
-      expect(r2024.url).toBe('https://www.jw.org/en/library/brochures/Examining-the-Scriptures-Daily-2024/');
+      expect(r2024.url).toBe(
+        'https://www.jw.org/en/library/brochures/Examining-the-Scriptures-Daily-2024/'
+      );
 
       const r2026 = getCurrentYearTextUrl(new Date(2026, 6, 1));
       expect(r2026.year).toBe(2026);
       expect(r2026.known).toBe(true);
-      expect(r2026.url).toBe('https://www.jw.org/en/library/brochures/Examining-the-Scriptures-Daily-2026/');
+      expect(r2026.url).toBe(
+        'https://www.jw.org/en/library/brochures/Examining-the-Scriptures-Daily-2026/'
+      );
     });
 
     it('falls back to the generic brochures landing for unknown years', () => {

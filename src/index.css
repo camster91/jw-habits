@@ -1,16 +1,18 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "daisyui" {
-  themes: light --default, dark;
+  themes:
+    light --default,
+    dark;
 }
 
 /* DaisyUI theme customization (migrated from tailwind.config.js).
    Only the variables listed below override daisyUI's built-in
    light/dark themes; everything else keeps the built-in values. */
 @plugin "daisyui/theme" {
-  name: "light";
-  --color-primary: #4A6FA4;
-  --color-secondary: #71BC37;
+  name: 'light';
+  --color-primary: #4a6fa4;
+  --color-secondary: #71bc37;
   --color-accent: #f59e0b;
   --color-neutral: #374151;
   --color-base-100: #ffffff;
@@ -19,7 +21,7 @@
 }
 
 @plugin "daisyui/theme" {
-  name: "dark";
+  name: 'dark';
   --color-primary: #5b8fd9;
   --color-secondary: #84d94a;
   --color-accent: #fbbf24;
@@ -32,15 +34,15 @@
        text-2:  rgba(235,235,245,0.78) → via text-base-content/70
      base-content is pinned to white here; the existing
      text-base-content/70 etc. classes render as 70% white-on-dark. */
-  --color-base-content: #FFFFFF;
-  --color-base-100: #1C1C1E;
+  --color-base-content: #ffffff;
+  --color-base-100: #1c1c1e;
   --color-base-200: #000000;
-  --color-base-300: #2C2C2E;
+  --color-base-300: #2c2c2e;
 }
 
 @theme {
-  --color-jw-blue: #4A6FA4;
-  --color-jw-green: #71BC37;
+  --color-jw-blue: #4a6fa4;
+  --color-jw-green: #71bc37;
 }
 
 /* ============================================================
@@ -75,24 +77,24 @@
    *   - row-press: rgba(255,255,255,0.1) (dark) vs rgba(0,0,0,0.05) (light)
    */
   :root {
-    --ios-label:    #000000;
-    --ios-label-2:  #636366;
-    --ios-label-3:  #8E8E93;
-    --ios-label-4:  #C7C7CC;
-    --ios-separator:  rgba(60, 60, 67, 0.29);
-    --ios-bg-elevated: #FFFFFF;
-    --ios-row-bg:     #FFFFFF;
-    --ios-row-press:  rgba(0, 0, 0, 0.05);
+    --ios-label: #000000;
+    --ios-label-2: #636366;
+    --ios-label-3: #8e8e93;
+    --ios-label-4: #c7c7cc;
+    --ios-separator: rgba(60, 60, 67, 0.29);
+    --ios-bg-elevated: #ffffff;
+    --ios-row-bg: #ffffff;
+    --ios-row-press: rgba(0, 0, 0, 0.05);
   }
-  [data-theme="dark"] {
-    --ios-label:    #FFFFFF;
-    --ios-label-2:  rgba(235, 235, 245, 0.78);  /* ~#C7C7CC, WCAG AA on #1C1C1E */
-    --ios-label-3:  rgba(235, 235, 245, 0.50);  /* ~#7F7F85, OK for tertiary */
-    --ios-label-4:  rgba(235, 235, 245, 0.30);  /* quaternary / dividers */
-    --ios-separator:  rgba(84, 84, 88, 0.65);
-    --ios-bg-elevated: #1C1C1E;
-    --ios-row-bg:     #1C1C1E;
-    --ios-row-press:  rgba(255, 255, 255, 0.10);
+  [data-theme='dark'] {
+    --ios-label: #ffffff;
+    --ios-label-2: rgba(235, 235, 245, 0.78); /* ~#C7C7CC, WCAG AA on #1C1C1E */
+    --ios-label-3: rgba(235, 235, 245, 0.5); /* ~#7F7F85, OK for tertiary */
+    --ios-label-4: rgba(235, 235, 245, 0.3); /* quaternary / dividers */
+    --ios-separator: rgba(84, 84, 88, 0.65);
+    --ios-bg-elevated: #1c1c1e;
+    --ios-row-bg: #1c1c1e;
+    --ios-row-press: rgba(255, 255, 255, 0.1);
   }
 
   /* iOS large title (34px, 700 weight, 0.37px letter-spacing) */
@@ -122,7 +124,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    color: var(--ios-label-3, #8E8E93);
+    color: var(--ios-label-3, #8e8e93);
     margin: 24px 0 8px;
     display: flex;
     align-items: center;
@@ -131,7 +133,7 @@
   .ios-section-h .link {
     text-transform: none;
     letter-spacing: 0;
-    color: var(--ios-blue, #007AFF);
+    color: var(--ios-blue, #007aff);
     font-weight: 400;
     font-size: 15px;
   }
@@ -141,7 +143,9 @@
     @apply bg-base-100;
     border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 0 0 0.5px rgba(0, 0, 0, 0.04);
   }
 
   /* iOS list row — 44px+ min, separator between, 12-16px padding */
@@ -167,7 +171,9 @@
     height: 0.5px;
     background: var(--ios-separator, rgba(60, 60, 67, 0.12));
   }
-  .ios-row:first-child::before { display: none; }
+  .ios-row:first-child::before {
+    display: none;
+  }
 
   .ios-row .body {
     flex: 1;
@@ -185,9 +191,9 @@
     margin-top: 1px;
   }
   .ios-row.done .title {
-    color: var(--ios-label-3, #8E8E93);
+    color: var(--ios-label-3, #8e8e93);
     text-decoration: line-through;
-    text-decoration-color: var(--ios-label-4, #C7C7CC);
+    text-decoration-color: var(--ios-label-4, #c7c7cc);
   }
 
   /* iOS colored icon square (28px, 7px radius) */
@@ -205,17 +211,39 @@
     height: 16px;
     color: white;
   }
-  .ios-icon.blue { background: var(--ios-blue, #007AFF); }
-  .ios-icon.green { background: var(--ios-green, #34C759); }
-  .ios-icon.orange { background: var(--ios-orange, #FF9500); }
-  .ios-icon.purple { background: var(--ios-purple, #AF52DE); }
-  .ios-icon.indigo { background: var(--ios-indigo, #5856D6); }
-  .ios-icon.teal { background: var(--ios-teal, #5AC8FA); }
-  .ios-icon.pink { background: #FF2D55; } /* iOS systemPink, used for Family worship */
-  .ios-icon.red { background: #FF3B30; } /* iOS systemRed */
-  .ios-icon.yellow { background: #FFCC00; }
-  .ios-icon.jw-blue { background: linear-gradient(135deg, #2D5F8B, #1E4060); }
-  .ios-icon.jw-gold { background: linear-gradient(135deg, #B8893A, #8F6A2C); }
+  .ios-icon.blue {
+    background: var(--ios-blue, #007aff);
+  }
+  .ios-icon.green {
+    background: var(--ios-green, #34c759);
+  }
+  .ios-icon.orange {
+    background: var(--ios-orange, #ff9500);
+  }
+  .ios-icon.purple {
+    background: var(--ios-purple, #af52de);
+  }
+  .ios-icon.indigo {
+    background: var(--ios-indigo, #5856d6);
+  }
+  .ios-icon.teal {
+    background: var(--ios-teal, #5ac8fa);
+  }
+  .ios-icon.pink {
+    background: #ff2d55;
+  } /* iOS systemPink, used for Family worship */
+  .ios-icon.red {
+    background: #ff3b30;
+  } /* iOS systemRed */
+  .ios-icon.yellow {
+    background: #ffcc00;
+  }
+  .ios-icon.jw-blue {
+    background: linear-gradient(135deg, #2d5f8b, #1e4060);
+  }
+  .ios-icon.jw-gold {
+    background: linear-gradient(135deg, #b8893a, #8f6a2c);
+  }
 
   /* In dark mode the saturated iOS system colors read as candy
      stickers on a near-black card. Override each with a
@@ -223,26 +251,50 @@
      with the surface rather than punching through it. The
      glyph color also drops to 80% white so it doesn't compete
      with the row title. */
-  [data-theme="dark"] .ios-icon {
+  [data-theme='dark'] .ios-icon {
     border-radius: 8px;
   }
-  [data-theme="dark"] .ios-icon svg { color: rgba(255, 255, 255, 0.85); }
-  [data-theme="dark"] .ios-icon.blue   { background: rgba(10, 132, 255, 0.28); }
-  [data-theme="dark"] .ios-icon.purple { background: rgba(175, 82, 222, 0.28); }
-  [data-theme="dark"] .ios-icon.green  { background: rgba(52, 199, 89, 0.28); }
-  [data-theme="dark"] .ios-icon.pink   { background: rgba(255, 45, 85, 0.28); }
-  [data-theme="dark"] .ios-icon.orange { background: rgba(255, 149, 0, 0.28); }
-  [data-theme="dark"] .ios-icon.red    { background: rgba(255, 59, 48, 0.28); }
-  [data-theme="dark"] .ios-icon.indigo { background: rgba(88, 86, 214, 0.28); }
-  [data-theme="dark"] .ios-icon.teal   { background: rgba(90, 200, 250, 0.28); }
-  [data-theme="dark"] .ios-icon.yellow { background: rgba(255, 204, 0, 0.28); }
-  [data-theme="dark"] .ios-icon.jw-blue { background: linear-gradient(135deg, rgba(45, 95, 139, 0.45), rgba(30, 64, 96, 0.45)); }
-  [data-theme="dark"] .ios-icon.jw-gold { background: linear-gradient(135deg, rgba(184, 137, 58, 0.45), rgba(143, 106, 44, 0.45)); }
+  [data-theme='dark'] .ios-icon svg {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  [data-theme='dark'] .ios-icon.blue {
+    background: rgba(10, 132, 255, 0.28);
+  }
+  [data-theme='dark'] .ios-icon.purple {
+    background: rgba(175, 82, 222, 0.28);
+  }
+  [data-theme='dark'] .ios-icon.green {
+    background: rgba(52, 199, 89, 0.28);
+  }
+  [data-theme='dark'] .ios-icon.pink {
+    background: rgba(255, 45, 85, 0.28);
+  }
+  [data-theme='dark'] .ios-icon.orange {
+    background: rgba(255, 149, 0, 0.28);
+  }
+  [data-theme='dark'] .ios-icon.red {
+    background: rgba(255, 59, 48, 0.28);
+  }
+  [data-theme='dark'] .ios-icon.indigo {
+    background: rgba(88, 86, 214, 0.28);
+  }
+  [data-theme='dark'] .ios-icon.teal {
+    background: rgba(90, 200, 250, 0.28);
+  }
+  [data-theme='dark'] .ios-icon.yellow {
+    background: rgba(255, 204, 0, 0.28);
+  }
+  [data-theme='dark'] .ios-icon.jw-blue {
+    background: linear-gradient(135deg, rgba(45, 95, 139, 0.45), rgba(30, 64, 96, 0.45));
+  }
+  [data-theme='dark'] .ios-icon.jw-gold {
+    background: linear-gradient(135deg, rgba(184, 137, 58, 0.45), rgba(143, 106, 44, 0.45));
+  }
 
   /* In dark mode the footer disclaimer at 0.50 alpha is too
      dim — bump to 0.60 so the third-party ToS line reads but
      doesn't compete with the row titles. */
-  [data-theme="dark"] {
+  [data-theme='dark'] {
     --ios-label-3: rgba(235, 235, 245, 0.62);
   }
 
@@ -251,7 +303,7 @@
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    border: 1.5px solid var(--ios-checkbox-border, var(--ios-label-4, #C7C7CC));
+    border: 1.5px solid var(--ios-checkbox-border, var(--ios-label-4, #c7c7cc));
     flex-shrink: 0;
     transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     display: flex;
@@ -266,61 +318,67 @@
    against the fill, which is intentional (the visual cue
    is the *green fill*, not the white check — Reminders,
    Notes, Mail all use the same pattern). */
-.ios-checkbox {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem; /* 28px — matches iOS Reminders checkbox */
-  height: 1.75rem;
-  border-radius: 0.375rem;
-  border-width: 2px;
-  border-style: solid;
-  transition-property: background-color, border-color;
-  transition-duration: 150ms;
-}
-.ios-checkbox.empty {
-  background: transparent;
-  border-color: rgba(60, 60, 67, 0.30); /* iOS separator */
-}
-.ios-checkbox.done {
-  background: var(--ios-green, #34C759);
-  border-color: var(--ios-green, #34C759);
-}
-.ios-checkbox.done svg {
-  color: #fff;
-  width: 1rem; /* 16px */
-  height: 1rem;
-  stroke-width: 3;
-}
+  .ios-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem; /* 28px — matches iOS Reminders checkbox */
+    height: 1.75rem;
+    border-radius: 0.375rem;
+    border-width: 2px;
+    border-style: solid;
+    transition-property: background-color, border-color;
+    transition-duration: 150ms;
+  }
+  .ios-checkbox.empty {
+    background: transparent;
+    border-color: rgba(60, 60, 67, 0.3); /* iOS separator */
+  }
+  .ios-checkbox.done {
+    background: var(--ios-green, #34c759);
+    border-color: var(--ios-green, #34c759);
+  }
+  .ios-checkbox.done svg {
+    color: #fff;
+    width: 1rem; /* 16px */
+    height: 1rem;
+    stroke-width: 3;
+  }
 
-/* Pop animation: brief scale-up on toggle. Triggered by
+  /* Pop animation: brief scale-up on toggle. Triggered by
    adding .ios-checkbox-pop to the span; auto-cleared after
    220ms by the React side. iOS Reminders uses a similar
    "checkmark bounce" — small, not celebratory. Respects
    prefers-reduced-motion (disabled below). */
-.ios-checkbox-pop {
-  animation: ios-checkbox-pop 200ms ease-out;
-}
-@keyframes ios-checkbox-pop {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.18); }
-  100% { transform: scale(1); }
-}
-@media (prefers-reduced-motion: reduce) {
   .ios-checkbox-pop {
-    animation: none;
+    animation: ios-checkbox-pop 200ms ease-out;
   }
-}
+  @keyframes ios-checkbox-pop {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ios-checkbox-pop {
+      animation: none;
+    }
+  }
 
-/* Dark mode: empty checkbox border needs more contrast
+  /* Dark mode: empty checkbox border needs more contrast
    against the near-black card. */
-[data-theme="dark"] .ios-checkbox.empty {
-  border-color: rgba(235, 235, 245, 0.30);
-}
+  [data-theme='dark'] .ios-checkbox.empty {
+    border-color: rgba(235, 235, 245, 0.3);
+  }
 
   /* iOS chevron (right-side disclosure indicator) */
   .ios-chev {
-    color: var(--ios-label-4, #C7C7CC);
+    color: var(--ios-label-4, #c7c7cc);
     flex-shrink: 0;
     width: 20px;
     height: 20px;
@@ -330,63 +388,69 @@
   .ios-footer {
     text-align: center;
     font-size: 11px;
-    color: var(--ios-label-3, #8E8E93);
+    color: var(--ios-label-3, #8e8e93);
     padding: 20px 16px 32px;
     line-height: 1.4;
   }
   .ios-footer a {
-    color: var(--ios-blue, #007AFF);
+    color: var(--ios-blue, #007aff);
     text-decoration: none;
   }
-  .ios-footer a:hover { text-decoration: underline; }
+  .ios-footer a:hover {
+    text-decoration: underline;
+  }
 
-  .ios-tab-label { font-size: 11px; font-weight: 500; line-height: 1; }
+  .ios-tab-label {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+  }
 }
 
 /* iOS system colors as CSS vars (overridable for dark mode) */
 :root {
-  --ios-blue: #007AFF;
-  --ios-green: #34C759;
-  --ios-orange: #FF9500;
-  --ios-purple: #AF52DE;
-  --ios-indigo: #5856D6;
-  --ios-teal: #5AC8FA;
+  --ios-blue: #007aff;
+  --ios-green: #34c759;
+  --ios-orange: #ff9500;
+  --ios-purple: #af52de;
+  --ios-indigo: #5856d6;
+  --ios-teal: #5ac8fa;
   --ios-label: #000000;
-  --ios-label-2: #3C3C43;
+  --ios-label-2: #3c3c43;
   /* Bumped from #8E8E93 to #6E6E73 for WCAG AA contrast on white backgrounds.
      iOS HIG uses #8E8E93 for large text and 17pt+ but Lighthouse requires
      4.5:1 for body text (under 18pt). #6E6E73 = 5.07:1 on white. */
-  --ios-label-3: #6E6E73;
-  --ios-label-4: #C7C7CC;
-  --ios-checkbox-border: #C7C7CC;
+  --ios-label-3: #6e6e73;
+  --ios-label-4: #c7c7cc;
+  --ios-checkbox-border: #c7c7cc;
   --ios-separator: rgba(60, 60, 67, 0.12);
-  --ios-separator-opaque: #C6C6C8;
-  --ios-bg: #F2F2F7;
-  --ios-bg-elevated: #FFFFFF;
-  --ios-row-bg: #FFFFFF;
+  --ios-separator-opaque: #c6c6c8;
+  --ios-bg: #f2f2f7;
+  --ios-bg-elevated: #ffffff;
+  --ios-row-bg: #ffffff;
   --ios-row-press: rgba(0, 0, 0, 0.05);
 }
 
-[data-theme="dark"] {
-  --ios-label: #FFFFFF;
-  --ios-label-2: #EBEBF5;
-  --ios-label-3: #8E8E93;
-  --ios-label-4: #48484A;
+[data-theme='dark'] {
+  --ios-label: #ffffff;
+  --ios-label-2: #ebebf5;
+  --ios-label-3: #8e8e93;
+  --ios-label-4: #48484a;
   --ios-checkbox-border: #636366;
   --ios-separator: rgba(84, 84, 88, 0.34);
-  --ios-separator-opaque: #38383A;
+  --ios-separator-opaque: #38383a;
   --ios-bg: #000000;
-  --ios-bg-elevated: #1C1C1E;
-  --ios-row-bg: #1C1C1E;
+  --ios-bg-elevated: #1c1c1e;
+  --ios-row-bg: #1c1c1e;
   --ios-row-press: rgba(255, 255, 255, 0.08);
 }
 
 /* Base styles */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
@@ -551,7 +615,8 @@ html {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -561,7 +626,8 @@ html {
 
 /* Swipe gesture hint */
 @keyframes swipeHint {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
   50% {
@@ -583,12 +649,12 @@ html {
 }
 
 /* Better range input for mobile */
-input[type="range"] {
+input[type='range'] {
   @apply h-2 cursor-pointer;
   -webkit-appearance: none;
 }
 
-input[type="range"]::-webkit-slider-thumb {
+input[type='range']::-webkit-slider-thumb {
   @apply w-5 h-5 rounded-full bg-current shadow-md;
   -webkit-appearance: none;
   margin-top: -6px;
@@ -618,7 +684,9 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* Bottom nav: replaced by .ios-tab-bar (Phase 1.5) — kept for backwards compat
    but unused in current routes. Safe to delete in a later cleanup. */
-.btm-nav { display: none; }
+.btm-nav {
+  display: none;
+}
 
 /* Loading skeleton shimmer */
 .animate-shimmer {
@@ -672,7 +740,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 @keyframes wiggle {
-  0%, 100% {
+  0%,
+  100% {
     transform: rotate(-5deg);
   }
   50% {
@@ -685,7 +754,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 @keyframes bounce-subtle {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -749,7 +819,8 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* Streak fire animation */
 @keyframes flame {
-  0%, 100% {
+  0%,
+  100% {
     transform: scaleY(1) translateY(0);
     filter: brightness(1);
   }
@@ -781,7 +852,8 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* Gentle breathing pulse for hero icons */
 @keyframes gentlePulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
@@ -818,7 +890,9 @@ input[type="range"]::-webkit-slider-thumb {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
   /* Smaller min touch target for tight settings rows. The
      overall segmented control is still >44px tall total. */
   min-height: 28px;
@@ -827,12 +901,14 @@ input[type="range"]::-webkit-slider-thumb {
   background: var(--ios-bg-elevated, #fff);
   color: var(--ios-label, #000);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.12),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04);
 }
-[data-theme="dark"] .ios-segmented {
+[data-theme='dark'] .ios-segmented {
   background: rgba(120, 120, 128, 0.24);
 }
-[data-theme="dark"] .ios-segmented__btn--active {
+[data-theme='dark'] .ios-segmented__btn--active {
   background: rgba(58, 58, 60, 0.96);
   color: #fff;
 }
@@ -855,7 +931,7 @@ input[type="range"]::-webkit-slider-thumb {
 .ios-settings-toggle:hover {
   background: rgba(120, 120, 128, 0.08);
 }
-[data-theme="dark"] .ios-settings-toggle:hover {
+[data-theme='dark'] .ios-settings-toggle:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 .ios-settings-panel {
@@ -903,23 +979,27 @@ input[type="range"]::-webkit-slider-thumb {
   height: 22px;
   border-radius: 11px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04);
   position: absolute;
   top: 2px;
   left: 2px;
-  transition: transform 150ms ease, background-color 150ms ease;
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease;
 }
 .ios-switch input:checked + .ios-switch__track {
-  background: var(--ios-green, #34C759);
+  background: var(--ios-green, #34c759);
 }
 .ios-switch input:checked + .ios-switch__track .ios-switch__thumb {
   transform: translateX(18px);
 }
 .ios-switch input:focus-visible + .ios-switch__track {
-  outline: 2px solid var(--ios-blue, #007AFF);
+  outline: 2px solid var(--ios-blue, #007aff);
   outline-offset: 2px;
 }
-[data-theme="dark"] .ios-switch__track {
+[data-theme='dark'] .ios-switch__track {
   background: rgba(120, 120, 128, 0.32);
 }
 
@@ -951,7 +1031,7 @@ input[type="range"]::-webkit-slider-thumb {
   margin: 0;
 }
 .ios-timepicker input:focus {
-  outline: 2px solid var(--ios-blue, #007AFF);
+  outline: 2px solid var(--ios-blue, #007aff);
   outline-offset: 1px;
 }
 .ios-timepicker__sep {
@@ -959,10 +1039,10 @@ input[type="range"]::-webkit-slider-thumb {
   color: var(--ios-label, #000);
   padding: 0 2px;
 }
-[data-theme="dark"] .ios-timepicker {
+[data-theme='dark'] .ios-timepicker {
   background: rgba(120, 120, 128, 0.24);
 }
-[data-theme="dark"] .ios-timepicker input {
+[data-theme='dark'] .ios-timepicker input {
   background: rgba(58, 58, 60, 0.96);
   color: #fff;
 }
@@ -974,7 +1054,7 @@ input[type="range"]::-webkit-slider-thumb {
   padding: 6px 12px;
   border-radius: 8px;
   background: transparent;
-  color: var(--ios-blue, #007AFF);
+  color: var(--ios-blue, #007aff);
   font-size: 13px;
   font-weight: 500;
   border: none;
@@ -987,7 +1067,7 @@ input[type="range"]::-webkit-slider-thumb {
 .ios-btn-secondary:active {
   background: rgba(0, 122, 255, 0.16);
 }
-[data-theme="dark"] .ios-btn-secondary:hover {
+[data-theme='dark'] .ios-btn-secondary:hover {
   background: rgba(10, 132, 255, 0.16);
 }
 

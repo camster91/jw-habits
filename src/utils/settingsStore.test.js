@@ -72,14 +72,17 @@ describe('settingsStore', () => {
   });
 
   it('drops unknown fields', () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      schemaVersion: 1,
-      midweekDay: 2,
-      weekendDay: 0,
-      reminderTime: null,
-      quietHours: null,
-      hackerField: 'evil',
-    }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        midweekDay: 2,
+        weekendDay: 0,
+        reminderTime: null,
+        quietHours: null,
+        hackerField: 'evil',
+      })
+    );
     const s = loadSettings();
     expect(s).not.toHaveProperty('hackerField');
   });

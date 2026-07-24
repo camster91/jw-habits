@@ -21,6 +21,8 @@
     "sundayWatchtowerSub": "Étude dominicale de La Tour de Garde — {{weekOf}}",
     "sundayWatchtowerWeeks": "{{count}} semaine suivie",
     "sundayWatchtowerWeeks_plural": "{{count}} semaines suivies",
+    "openInJwLibrary": "Ouvrir dans JW Library",
+    "openInJwLibraryAria": "Ouvrir l'article de La Tour de Garde de cette semaine dans JW Library",
     "memorial": "Commémoration",
     "memorialSeeDate": "Consultez jw.org pour la date",
     "treasures": "Trésors de la Parole de Dieu",

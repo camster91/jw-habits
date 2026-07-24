@@ -19,10 +19,18 @@ i18n.use(initReactI18next).init({
 const localStorageStore = new Map();
 const localStorageMock = {
   getItem: (key) => (localStorageStore.has(key) ? localStorageStore.get(key) : null),
-  setItem: (key, value) => { localStorageStore.set(key, String(value)); },
-  removeItem: (key) => { localStorageStore.delete(key); },
-  clear: () => { localStorageStore.clear(); },
-  get length() { return localStorageStore.size; },
+  setItem: (key, value) => {
+    localStorageStore.set(key, String(value));
+  },
+  removeItem: (key) => {
+    localStorageStore.delete(key);
+  },
+  clear: () => {
+    localStorageStore.clear();
+  },
+  get length() {
+    return localStorageStore.size;
+  },
   key: (i) => Array.from(localStorageStore.keys())[i] ?? null,
 };
 global.localStorage = localStorageMock;

@@ -31,9 +31,6 @@
       "smallIcon": "ic_stat_icon_config_sample",
       "iconColor": "#4A6FA4",
       "sound": "beep.wav"
-    },
-    "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "alert"]
     }
   },
   "ios": {
