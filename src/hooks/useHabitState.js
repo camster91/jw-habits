@@ -17,6 +17,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { safeSetItem } from '../utils/safeStorage';
 
 const STATE_KEY = 'jw-daily-habits-state';
 const FIRST_DONE_KEY = 'jw-habits-first-done';
@@ -65,11 +66,9 @@ function loadInitialState() {
 export { loadInitialState };
 
 function persist(state) {
-  try {
-    localStorage.setItem(STATE_KEY, JSON.stringify(state));
-  } catch {
-    // ignore quota / private-mode errors
-  }
+  // Returns false on hard quota failure after eviction retry;
+  // safeSetItem dispatches `jw-storage-full` so Home can warn.
+  safeSetItem(STATE_KEY, JSON.stringify(state));
 }
 
 /**
@@ -85,11 +84,7 @@ export function readBestStreak() {
 }
 
 export function writeBestStreak(value) {
-  try {
-    localStorage.setItem(BEST_STREAK_KEY, String(value));
-  } catch {
-    // ignore
-  }
+  safeSetItem(BEST_STREAK_KEY, String(value));
 }
 
 /**
@@ -97,11 +92,7 @@ export function writeBestStreak(value) {
  * once (used to hide the first-launch hint).
  */
 export function markInteracted() {
-  try {
-    localStorage.setItem(FIRST_DONE_KEY, '1');
-  } catch {
-    // ignore
-  }
+  safeSetItem(FIRST_DONE_KEY, '1');
 }
 
 /**
@@ -123,11 +114,11 @@ export function hasInteracted() {
  *   - `[2]` `isFirstSession` true when no prior interaction recorded
  */
 export function useHabitState() {
-  // Exposed so external code (e.g. the visibility handler in Home.jsx)
-  // can do a full state replacement without going through the partial-merge
-  // setter below. setStateInternal is React's setter for the array
-  // destructure above and is stable across renders.
-  const [state, setStateInternal, setStateFull] = useState(() => {
+  // React's useState only returns [state, setState]. The previous
+  // 3-tuple destructure left `setStateFull === undefined`, so
+  // midnight / cross-tab `replaceState` threw TypeError in an
+  // event handler (outside ErrorBoundary).
+  const [state, setStateInternal] = useState(() => {
     const loaded = loadInitialState();
     // If the loaded state has a non-empty `done` map (e.g., from
     // yesterday's seed, or from a previous day) and we just did
@@ -148,27 +139,21 @@ export function useHabitState() {
   });
   const [isFirstSession] = useState(() => !hasInteracted());
 
-  // useCallback deps are intentionally [] — setStateInternal and
-  // setStateFull are React's useState setters, which are stable
-  // across renders. Adding them as deps would cause unnecessary
-  // callback recreation.
+  // useCallback deps are intentionally [] — setStateInternal is
+  // React's useState setter and is stable across renders.
   const updateState = useCallback((patch) => {
     setStateInternal((prev) => {
       const next = typeof patch === 'function' ? patch(prev) : { ...prev, ...patch };
       persist(next);
       return next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Expose a "replace" setter for the rare cases where callers
-  // need to throw away the previous state entirely (e.g. on
-  // visibility change after midnight). Goes directly through
-  // React's setState without the partial-merge semantics.
+  // Full replace for midnight rollover / cross-tab sync — no
+  // partial-merge semantics.
   const replaceState = useCallback((next) => {
-    setStateFull(next);
+    setStateInternal(next);
     persist(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return [state, updateState, isFirstSession, replaceState];

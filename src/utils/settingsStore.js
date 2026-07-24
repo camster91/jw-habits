@@ -14,6 +14,8 @@
  *     affecting the day's habit progress, and vice versa.
  */
 
+import { safeSetItem } from './safeStorage';
+
 const STORAGE_KEY = 'jw-user-settings';
 
 // Bump this when the schema changes incompatibly.
@@ -105,11 +107,8 @@ export function loadSettings() {
  */
 export function saveSettings(settings) {
   if (typeof localStorage === 'undefined') return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch {
-    // ignore — storage might be full or disabled (Safari private)
-  }
+  // Evicts non-essential keys + signals UI on hard quota failure.
+  safeSetItem(STORAGE_KEY, JSON.stringify(settings));
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Settings as SettingsIcon, Bell } from 'lucide-react';
 import { loadSettings, saveSettings, DEFAULTS } from '../utils/settingsStore';
@@ -8,6 +8,10 @@ import {
   startReminder,
   cancelReminder,
   showReminderNotification,
+  scheduleSaturdayWindowOpen,
+  cancelSaturdayWindowOpen,
+  scheduleSundayEveningCheck,
+  cancelSundayEveningCheck,
   NOTIFICATION_PERMISSION,
 } from '../utils/notificationScheduler';
 
@@ -114,16 +118,32 @@ export default function SettingsAccordion() {
     permSupported ? getPermissionState() : NOTIFICATION_PERMISSION.UNSUPPORTED
   );
   const [testFired, setTestFired] = useState(false);
+  const testTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (testTimerRef.current != null) clearTimeout(testTimerRef.current);
+    };
+  }, []);
 
   // True when reminders are effectively enabled (toggle + valid
   // reminderTime + permission granted).
   const remindersOn = !!settings.reminderTime && perm === NOTIFICATION_PERMISSION.GRANTED;
 
   // Whenever settings.permission or .reminderTime changes,
-  // re-sync the scheduler. Cancel first to clear the old timer.
+  // re-sync the schedulers. Cancel first to clear old timers.
+  // Weekly Sunday Watchtower nudges share the same permission
+  // gate as the daily reminder (feature was previously dead —
+  // only exported/tested, never started from UI).
   useEffect(() => {
     cancelReminder();
-    if (remindersOn) startReminder();
+    cancelSaturdayWindowOpen();
+    cancelSundayEveningCheck();
+    if (remindersOn) {
+      startReminder();
+      scheduleSaturdayWindowOpen();
+      scheduleSundayEveningCheck();
+    }
   }, [remindersOn, settings.reminderTime, settings.quietHours?.start, settings.quietHours?.end]);
 
   // If storage changes from another tab, sync. Matches the
@@ -164,34 +184,41 @@ export default function SettingsAccordion() {
   };
 
   // Toggle handler. Off → request permission, then turn on.
-  // On → turn off + cancel scheduler.
+  // On → turn off + cancel schedulers.
   const handleToggleReminders = async (next) => {
-    if (next) {
-      if (
-        perm === NOTIFICATION_PERMISSION.DEFAULT ||
-        perm === NOTIFICATION_PERMISSION.UNSUPPORTED
-      ) {
-        const result = await requestNotificationPermission();
-        setPerm(result);
-        if (result !== NOTIFICATION_PERMISSION.GRANTED) {
-          // User dismissed or denied — don't enable the toggle.
-          return;
+    try {
+      if (next) {
+        if (
+          perm === NOTIFICATION_PERMISSION.DEFAULT ||
+          perm === NOTIFICATION_PERMISSION.UNSUPPORTED
+        ) {
+          const result = await requestNotificationPermission();
+          setPerm(result);
+          if (result !== NOTIFICATION_PERMISSION.GRANTED) {
+            // User dismissed or denied — don't enable the toggle.
+            return;
+          }
         }
+        update({ reminderTime: settings.reminderTime || '21:00' });
+      } else {
+        cancelReminder();
+        cancelSaturdayWindowOpen();
+        cancelSundayEveningCheck();
+        update({ reminderTime: null });
       }
-      update({ reminderTime: settings.reminderTime || '21:00' });
-    } else {
-      cancelReminder();
-      update({ reminderTime: null });
+    } catch {
+      // Permission prompt / storage failures — leave UI unchanged.
     }
   };
 
-  const handleTestNotification = async () => {
+  const handleTestNotification = () => {
     setTestFired(true);
-    await showReminderNotification({
+    void showReminderNotification({
       title: 'JW Habits',
       body: 'Time to check your daily habits.',
-    });
-    setTimeout(() => setTestFired(false), 2000);
+    }).catch(() => {});
+    if (testTimerRef.current != null) clearTimeout(testTimerRef.current);
+    testTimerRef.current = setTimeout(() => setTestFired(false), 2000);
   };
 
   return (

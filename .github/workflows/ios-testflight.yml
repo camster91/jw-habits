@@ -10,10 +10,11 @@ name: iOS TestFlight
 #   - workflow_dispatch: manual trigger via gh workflow run
 #   - push to a v*-tag: tagged releases get auto-uploaded
 #
-# Secrets required:
-#   - ASC_API_KEY_PATH     : path to App Store Connect API key .p8
-#                            file checked into repo (or use
-#                            workflow's own key as secret)
+# Secrets required (NEVER commit .p8 key material — *.p8 is gitignored):
+#   - ASC_API_KEY_PATH     : runner path where the workflow writes the
+#                            App Store Connect API key from a GitHub
+#                            Actions secret (base64/contents), not a
+#                            committed file
 #   - ASC_KEY_ID           : App Store Connect API Key id
 #   - ASC_ISSUER_ID        : App Store Connect API Issuer id
 #   - MATCH_PASSWORD       : Apple developer team password
