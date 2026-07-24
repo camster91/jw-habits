@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   BookOpen,
@@ -45,7 +45,7 @@ import {
   readBestStreak,
   writeBestStreak,
   loadInitialState,
-  hasInteracted as hasUserInteracted,
+  hasInteracted,
   pruneHistory,
   todayKey,
 } from '../hooks/useHabitState';
@@ -103,6 +103,9 @@ function Home() {
   // for today so the localStorage key always reflects the
   // current day (yesterday's per-day state never carries over).
   const [state, setState, , replaceState] = useHabitState();
+  // Cache first-interaction flag in React state so render doesn't
+  // re-hit localStorage on every paint (was called 3× per render).
+  const [userInteracted, setUserInteracted] = useState(() => hasInteracted());
 
   // Surface hard localStorage quota failures (after eviction retry).
   const [storageFull, setStorageFull] = useState(false);
@@ -240,6 +243,7 @@ function Home() {
       // First-ever interaction: hide the hint forever (delegated
       // to the hook layer).
       markInteracted();
+      setUserInteracted(true);
       // Update best-streak whenever history changes. Monotonic —
       // we only write if the computed value is higher than what
       // is already persisted.
@@ -656,12 +660,11 @@ function Home() {
   // strip is local-time Mon..Sun (jw.org uses Mon..Sun
   // week boundaries too — they coincide).
   //
-  // Layout: 7 equally-spaced columns. Each column shows the
-  // 3-letter weekday + the day-of-month number. The "today"
-  // column has a small accent background + bold weight so
-  // it pops without being noisy.
-  const weekStrip = (() => {
-    const today = new Date();
+  // Memoized on today's ISO date so we don't rebuild 7 Date
+  // objects on every checkbox toggle / note keystroke.
+  const weekStrip = useMemo(() => {
+    // Anchor to habit-state date so midnight replaceState rebuilds the strip.
+    const today = state.date ? new Date(`${state.date}T12:00:00`) : new Date();
     const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     // weekday 0=Sun..6=Sat; we want Mon..Sun so the offset
     // from Mon is (weekday + 6) % 7.
@@ -687,7 +690,7 @@ function Home() {
       });
     }
     return days;
-  })();
+  }, [state.date]);
 
   return (
     <div className="min-h-screen bg-base-200 pb-16">
@@ -803,7 +806,7 @@ function Home() {
             jw.org content. Matches the iOS Reminders /
             Apple Fitness style: small grey meta line under
             a visualization. */}
-        {hasUserInteracted() && (streak > 0 || tp.done > 0 || best > 0) && (
+        {userInteracted && (streak > 0 || tp.done > 0 || best > 0) && (
           <div
             className="flex items-center justify-center gap-3 mb-4 text-xs text-base-content/70 select-none flex-wrap"
             aria-label="Streak and today's progress"
@@ -846,7 +849,7 @@ function Home() {
             text-base-content/80 (instead of /70) so it stays
             readable in dark mode where /70 sits too close to
             the card surface. */}
-        {!hasUserInteracted() && (
+        {!userInteracted && (
           <p className="text-sm text-base-content/80 mt-1 mb-4 px-1" role="note">
             {t('home.firstRunHint', 'Tap a row to open jw.org. Tap the checkbox when done.')}
           </p>
@@ -1076,9 +1079,9 @@ function Home() {
                     chars, and auto-save 300ms after the user
                     stops typing. Empty + closed by default.
                     Hidden entirely on first-launch (before
-                    hasUserInteracted) so the home stays minimal for
+                    userInteracted) so the home stays minimal for
                     fresh users. */}
-                {hasUserInteracted() && (
+                {userInteracted && (
                   <div className="ml-12 mr-12 -mt-1 mb-2">
                     <button
                       type="button"

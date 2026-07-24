@@ -4,11 +4,11 @@
  */
 
 import { WifiOff, Wifi } from 'lucide-react';
-import { usePWA } from '../hooks/usePWA';
+import { usePWAContext } from '../hooks/usePWAContext';
 import { useState, useEffect, useRef } from 'react';
 
 function OfflineIndicator() {
-  const { isOnline } = usePWA();
+  const { isOnline } = usePWAContext();
   const [showReconnected, setShowReconnected] = useState(false);
   const wasOfflineRef = useRef(!isOnline);
 

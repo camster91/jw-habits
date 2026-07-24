@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Download, X, Smartphone } from 'lucide-react';
-import { usePWA } from '../hooks/usePWA';
+import { usePWAContext } from '../hooks/usePWAContext';
 import { haptics } from '../utils/native';
 import { safeGetItem, safeSetItem } from '../utils/safeStorage';
 
@@ -22,7 +22,7 @@ function isDismissedInitially() {
 }
 
 function InstallPrompt() {
-  const { canInstall, promptInstall, isAppInstalled } = usePWA();
+  const { canInstall, promptInstall, isAppInstalled } = usePWAContext();
   const [dismissed, setDismissed] = useState(isDismissedInitially);
   const [showBanner, setShowBanner] = useState(false);
 

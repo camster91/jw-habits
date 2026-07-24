@@ -1,5 +1,14 @@
 apply plugin: 'com.android.application'
 
+// Release signing: prefer android/keystore.properties (gitignored)
+// or KEYSTORE_* env vars. Never commit passwords. See
+// docs/keystore-rotation-2026-07.md.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.ashbi.jwnews"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -25,10 +34,15 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('/Users/biancabienaime/keys/jw-habits-release.keystore')
-            storePassword System.getenv('KEYSTORE_PASSWORD')
-            keyAlias 'jwhabits'
-            keyPassword System.getenv('KEY_PASSWORD')
+            // Local path via keystore.properties, or KEYSTORE_FILE env.
+            // Do not hardcode developer machine paths in the repo.
+            def storePath = keystoreProperties['storeFile'] ?: System.getenv('KEYSTORE_FILE')
+            if (storePath) {
+                storeFile file(storePath)
+            }
+            storePassword keystoreProperties['storePassword'] ?: System.getenv('KEYSTORE_PASSWORD')
+            keyAlias keystoreProperties['keyAlias'] ?: System.getenv('KEY_ALIAS') ?: 'jwnews'
+            keyPassword keystoreProperties['keyPassword'] ?: System.getenv('KEY_PASSWORD')
         }
     }
     buildTypes {

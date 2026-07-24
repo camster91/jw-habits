@@ -12,14 +12,14 @@
 
 import { RefreshCw, X } from 'lucide-react';
 import { useState } from 'react';
-import { usePWA } from '../hooks/usePWA';
+import { usePWAContext } from '../hooks/usePWAContext';
 import { haptics } from '../utils/native';
 import { safeSessionGetItem, safeSessionSetItem } from '../utils/safeStorage';
 
 const DISMISS_KEY = 'jw-update-prompt-dismissed';
 
 function UpdatePrompt() {
-  const { updateAvailable, applyUpdate } = usePWA();
+  const { updateAvailable, applyUpdate } = usePWAContext();
   // Read once on mount; if the user dismissed this session, don't
   // show it again. We don't persist across sessions — on next reload
   // we'll re-evaluate. sessionStorage can throw in private mode.

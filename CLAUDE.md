@@ -158,11 +158,14 @@ src/
 
 ## Known tech debt (not blockers)
 
-- `src/pages/Home.jsx` is still ~1079 lines — `useHabitState.js` extracted; further split candidates: `WeekStrip.jsx` + `HabitRow.jsx`
+- `src/pages/Home.jsx` is still ~1100 lines — `useHabitState.js` extracted; further split candidates: `WeekStrip.jsx` + `HabitRow.jsx`
 - `src/utils/jwLibraryLinks.js` split into domain modules (#148); barrel remains
 - No component tests for `Share.jsx` / `SettingsAccordion.jsx` (`Home.test.jsx` added in #148)
 - vite-plugin-pwa v1.3 SW build emits `inlineDynamicImports is deprecated` warning — fixed in vite-plugin-pwa >1.3; defer to dependabot
 - Dockerfile base images (`node:22-alpine`, `nginx:1.27-alpine`) pinned by digest; refresh digests on every bump
+- `react-router` 7.12–8.2 advisory GHSA-qwww-vcr4-c8h2 (RSC CSRF). App uses client-only `BrowserRouter` (no RSC / server actions) — not exploitable. Clean fix needs `react-router` 8.3+; `react-router-dom` has no 8.x yet. Defer until RR8 migration.
+- Edge HSTS is owned by Traefik (`jwhabits-hsts` middleware in `ops/traefik-guard.py`); nginx container is `:80` only
+- Android keystore passwords remain in **git history** until Cam completes Play upload-key rotation + history purge (`docs/keystore-rotation-2026-07.md`)
 
 ## Recent material changes (last 10 PRs)
 
