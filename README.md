@@ -121,7 +121,8 @@ src/
 ├── sw.js                 # Workbox service worker (precache + SPA fallback)
 ├── index.css             # Tailwind 4 + iOS tokens + dark-mode overrides
 ├── pages/
-│   ├── Home.jsx          # The only user-facing page (~1149 lines — split candidate)
+│   ├── Home.jsx          # The only user-facing page (~1079 lines; state in useHabitState)
+│   ├── Home.test.jsx     # Component smoke tests
 │   └── Share.jsx         # PWA share_target landing
 ├── components/
 │   ├── ErrorBoundary.jsx
@@ -130,6 +131,7 @@ src/
 │   ├── SettingsAccordion.jsx
 │   └── UpdatePrompt.jsx
 ├── hooks/
+│   ├── useHabitState.js  # Per-day habit done/history state
 │   └── usePWA.js
 ├── locales/
 │   ├── en.json
@@ -143,7 +145,11 @@ src/
     ├── dailyBibleReading.js   # 366-entry schedule → jwlibrary:// deep link
     ├── doneState.js           # NEW shape helpers + legacy compat
     ├── habitProgress.js
-    ├── jwLibraryLinks.js      # All jw.org / jwlibrary:// URL builders
+    ├── jwLibraryLinks.js      # Barrel re-exports + shared helpers
+    ├── jwLibraryLinks.dailyContent.js
+    ├── jwLibraryLinks.meetingWorkbook.js
+    ├── jwLibraryLinks.publications.js
+    ├── jwLibraryLinks.weeklyObservances.js
     ├── native.js              # Capacitor wrappers: haptics, statusBar, keyboard, splash
     ├── notificationScheduler.js # Web Notification API + weekly reminders
     ├── pwa.js
@@ -166,11 +172,11 @@ A Caddy vhost on the host serves the container at `https://jwhabits.ashbi.ca` vi
 ### Unit tests (Vitest)
 
 ```bash
-npm test                # 266 tests across 16 files
+npm test                # unit + component tests (Vitest)
 npm run test:coverage   # with coverage report (v8)
 ```
 
-Tests cover the `src/utils/*` pure-function helpers — `streak`, `doneState`, `habitProgress`, `bibleReadingTracker`, `sundayWatchtowerTracker`, `jwLibraryLinks`, etc. Component tests for `Home`, `Share`, `SettingsAccordion` are a known gap (issue #136).
+Tests cover the `src/utils/*` pure-function helpers — `streak`, `doneState`, `habitProgress`, `bibleReadingTracker`, `sundayWatchtowerTracker`, `jwLibraryLinks`, etc. — plus `Home` smoke tests. Component tests for `Share` / `SettingsAccordion` remain a known gap.
 
 ### Smoke suite (Playwright)
 
