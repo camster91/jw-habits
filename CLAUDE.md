@@ -69,7 +69,6 @@ src/
     ├── pwa.js
     ├── relativeDate.js
     ├── settingsStore.js       # localStorage wrapper (NOT Zustand; "settingsStore" name predates that)
-    ├── storageErrorHandler.js # LRU eviction for localStorage quota (used only by deleted code path; consider removing)
     ├── streak.js              # currentStreak, bestStreakFromHistory, todayProgress
     └── sundayWatchtowerTracker.js # Weekly Sunday Watchtower attendance counter
 ```
@@ -155,10 +154,9 @@ src/
 
 - `src/pages/Home.jsx` is 1061 lines — split candidate (`useHabitState.js` hook + `WeekStrip.jsx` + `HabitRow.jsx`)
 - `src/utils/jwLibraryLinks.js` is 871 lines — split candidate (`memorial.js`, `isoWeek.js`, `parseReading.js`)
-- `src/utils/storageErrorHandler.js` is dead code from a deleted feature — consider removing
 - No component tests for `Home.jsx` / `Share.jsx` / `SettingsAccordion.jsx` (only utils have unit tests)
 - vite-plugin-pwa v1.3 SW build emits `inlineDynamicImports is deprecated` warning — fixed in vite-plugin-pwa >1.3; defer to dependabot
-- Dockerfile base images (`node:22-alpine`, `nginx:1.27-alpine`) are not pinned by digest — pin when next bumped
+- Dockerfile base images (`node:22-alpine`, `nginx:1.27-alpine`) pinned by digest as of 2026-07-23 (issue #144). Update digest on every bump.
 
 ## Recent material changes (last 10 PRs)
 

@@ -1,0 +1,15 @@
+# gitleaks config for jw-habits
+#
+# Inherits all default rules from gitleaks/gitleaks-action@v2.
+# This file is here so the rule set is pinned for the project rather
+# than depending on whatever gitleaks binary version CI happens to use.
+#
+# Add project-specific allowlist entries below if a false positive emerges.
+# Reference: https://github.com/gitleaks/gitleaks#configuration
+
+title = "jw-habits gitleaks config"
+
+# Use the default rule set (AWS, GitHub, Stripe, OpenAI, etc.)
+# Override nothing — keeping the wide net.
+[extend]
+useDefault = true
