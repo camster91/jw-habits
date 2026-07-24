@@ -22,6 +22,8 @@
  * quota even with the longest possible date strings.
  */
 
+import { safeSetItem } from './safeStorage';
+
 const KEY = 'jw-bible-reading-days';
 const MAX_ENTRIES = 730;
 
@@ -42,14 +44,10 @@ function load() {
 }
 
 function save(set) {
-  try {
-    const arr = Array.from(set).sort();
-    // Keep the most recent MAX_ENTRIES (drop the oldest).
-    const trimmed = arr.length > MAX_ENTRIES ? arr.slice(-MAX_ENTRIES) : arr;
-    localStorage.setItem(KEY, JSON.stringify(trimmed));
-  } catch {
-    /* swallow */
-  }
+  const arr = Array.from(set).sort();
+  // Keep the most recent MAX_ENTRIES (drop the oldest).
+  const trimmed = arr.length > MAX_ENTRIES ? arr.slice(-MAX_ENTRIES) : arr;
+  safeSetItem(KEY, JSON.stringify(trimmed));
 }
 
 /**

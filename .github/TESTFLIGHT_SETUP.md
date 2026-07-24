@@ -47,12 +47,16 @@ You only need the Team ID, not the membership password. Apple's `xcodebuild -all
 Run from your terminal:
 
 ```bash
-gh secret set ASC_API_KEY_PATH     --repo camster91/jw-habits < ~/path/to/jw-habits-asc-key.p8
+# Pass the raw PKCS8 .p8 file contents (NOT a filesystem path).
+# The upload action expects api-private-key = key body.
+gh secret set ASC_API_PRIVATE_KEY  --repo camster91/jw-habits < ~/path/to/AuthKey_XXXXXX.p8
 gh secret set ASC_KEY_ID           --repo camster91/jw-habits "ABC1234567"
 gh secret set ASC_ISSUER_ID        --repo camster91/jw-habits "12345678-aaaa-bbbb-cccc-1234567890ab"
 ```
 
-GitHub encrypts these at rest and only makes them available to workflow runs on this repo. (`ASC_API_KEY_PATH` accepts a multi-line .p8 blob.)
+GitHub encrypts these at rest and only makes them available to workflow runs on this repo. Never commit the `.p8` file (it is gitignored).
+
+> **Migration note:** older docs referred to `ASC_API_KEY_PATH`. Rename/recreate the secret as `ASC_API_PRIVATE_KEY` with the key file contents — the action does not accept a path input.
 
 ## How to run
 
@@ -114,7 +118,7 @@ If you hit a "no signing identity found" error, that's almost always a stale cer
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| "Missing API Key" error | `ASC_API_KEY_PATH` secret not set or path typo | `gh secret list` to confirm |
+| "Missing API Key" error | `ASC_API_PRIVATE_KEY` / Key ID / Issuer ID secret missing or wrong | `gh secret list`; recreate `ASC_API_PRIVATE_KEY` with raw `.p8` contents |
 | "App Store Connect operation failed: 401" | Wrong Key ID or Issuer ID | Re-check the values from the API keys page |
 | Build fails "Could not find developer disk image" | Xcode version mismatch with the project's `IPHONEOS_DEPLOYMENT_TARGET` | The workflow pins macos-latest (Xcode 16+); bump Xcode or lower deployment target |
 | Upload succeeds but build appears 5 min later | Apple's processing pipeline — wait | Re-check the build status in App Store Connect |
