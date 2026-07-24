@@ -54,7 +54,8 @@
     "streakDay": "días seguidos",
     "streakDays": "días seguidos",
     "streakBest": "mejor",
-    "streakToday": "hoy"
+    "streakToday": "hoy",
+    "storageFull": "Este dispositivo no tiene espacio de almacenamiento. Es posible que las marcas de hábitos no se guarden hasta que liberes espacio."
   },
   "settings": {
     "title": "Ajustes",

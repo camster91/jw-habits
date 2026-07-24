@@ -54,7 +54,8 @@
     "streakDay": "jours d'affilée",
     "streakDays": "jours d'affilée",
     "streakBest": "meilleur",
-    "streakToday": "aujourd'hui"
+    "streakToday": "aujourd'hui",
+    "storageFull": "Cet appareil n'a plus d'espace de stockage. Les coches d'habitudes peuvent ne pas être enregistrées tant que vous n'aurez pas libéré de l'espace."
   },
   "settings": {
     "title": "Paramètres",

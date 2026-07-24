@@ -104,6 +104,14 @@ function Home() {
   // current day (yesterday's per-day state never carries over).
   const [state, setState, , replaceState] = useHabitState();
 
+  // Surface hard localStorage quota failures (after eviction retry).
+  const [storageFull, setStorageFull] = useState(false);
+  useEffect(() => {
+    const onFull = () => setStorageFull(true);
+    window.addEventListener('jw-storage-full', onFull);
+    return () => window.removeEventListener('jw-storage-full', onFull);
+  }, []);
+
   // Best-effort share-invite helper. Uses the system share sheet
   // (`navigator.share`) when available — the user picks their
   // recipient (Messages, WhatsApp, Email, copy, etc.). Falls back
@@ -686,6 +694,17 @@ function Home() {
       </header>
 
       <main className="container mx-auto px-4 max-w-2xl">
+        {storageFull && (
+          <div
+            role="alert"
+            className="mt-3 mb-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-base-content"
+          >
+            {t(
+              'home.storageFull',
+              'This device is out of storage space. Habit checkmarks may not save until you free some space.'
+            )}
+          </div>
+        )}
         <h1 className="ios-large-title">
           {greetingText}.<span className="sub">{formattedDate}</span>
         </h1>

@@ -83,11 +83,30 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
+        # PRs build but do not push — skip registry login on PRs.
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve publish tags
+        id: tags
+        run: |
+          IMAGE="${{ steps.meta.outputs.image }}"
+          TAG="${{ steps.meta.outputs.tag }}"
+          SHA="${{ steps.meta.outputs.sha }}"
+          TAGS="${IMAGE}:${TAG},${IMAGE}:${TAG}-${SHA}"
+          # Never retag :latest from a PR — that overwrites the
+          # production-facing floating tag with unreviewed code.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            if [[ "${{ github.ref }}" == refs/heads/main || "${{ github.ref }}" == refs/heads/master || "${{ github.ref }}" == refs/tags/* ]]; then
+              TAGS="${TAGS},${IMAGE}:latest"
+            fi
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "push=$([ "${{ github.event_name }}" = "pull_request" ] && echo false || echo true)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Docker layers
         uses: actions/cache@v6
@@ -104,11 +123,9 @@ jobs:
           context: .
           file: ${{ inputs.dockerfile || 'Dockerfile' }}
           platforms: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
-          push: true
-          tags: |
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}-${{ steps.meta.outputs.sha }}
-            ${{ steps.meta.outputs.image }}:latest
+          # PRs: build-only verification. Main/tags: push immutable + latest.
+          push: ${{ steps.tags.outputs.push }}
+          tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           provenance: true

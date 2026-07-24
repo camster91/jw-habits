@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Share2, ExternalLink, Home, Link as LinkIcon, FileText, ArrowLeft } from 'lucide-react';
 import { haptics } from '../utils/native';
+import { isSafeHttpUrl } from '../utils/safeUrls';
 
 function SharePage() {
   const [searchParams] = useSearchParams();
@@ -9,6 +10,7 @@ function SharePage() {
   const title = searchParams.get('title') || '';
   const text = searchParams.get('text') || '';
   const url = searchParams.get('url') || '';
+  const canOpenUrl = isSafeHttpUrl(url);
 
   const hasContent = title || text || url;
 
@@ -18,14 +20,10 @@ function SharePage() {
   };
 
   const handleOpenLink = () => {
-    if (url) {
-      haptics.light();
-      // Prevent XSS: only allow http/https URLs
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        return;
-      }
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+    if (!canOpenUrl) return;
+    haptics.light();
+    // Parsed + protocol-checked — rejects javascript:/data:/credentials
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -83,8 +81,8 @@ function SharePage() {
                   </div>
                 )}
 
-                {/* Open Link Button */}
-                {url && (
+                {/* Open Link Button — only for validated http(s) URLs */}
+                {canOpenUrl && (
                   <div className="pt-2">
                     <button onClick={handleOpenLink} className="btn btn-primary btn-block gap-2">
                       <ExternalLink className="w-4 h-4" />

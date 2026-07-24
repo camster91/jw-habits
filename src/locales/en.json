@@ -54,7 +54,8 @@
     "streakDay": "day streak",
     "streakDays": "day streak",
     "streakBest": "best",
-    "streakToday": "today"
+    "streakToday": "today",
+    "storageFull": "This device is out of storage space. Habit checkmarks may not save until you free some space."
   },
   "settings": {
     "title": "Settings",

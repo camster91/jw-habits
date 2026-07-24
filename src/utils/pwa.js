@@ -72,10 +72,26 @@ export async function checkForUpdates() {
  * reloads the page so the new SW takes over. */
 export function forceUpdate() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.getRegistration().then((reg) => {
-    if (reg && reg.waiting) {
-      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-    if (reg) reg.update();
-  });
+  navigator.serviceWorker
+    .getRegistration()
+    .then((reg) => {
+      if (!reg) return;
+      const reloadOnce = () => {
+        navigator.serviceWorker.removeEventListener('controllerchange', reloadOnce);
+        window.location.reload();
+      };
+      navigator.serviceWorker.addEventListener('controllerchange', reloadOnce);
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      } else {
+        // No waiting worker yet — nudge an update check. If nothing
+        // arrives shortly, drop the reload listener to avoid a
+        // surprise reload on a later update.
+        reg.update().catch(() => {});
+        setTimeout(() => {
+          navigator.serviceWorker.removeEventListener('controllerchange', reloadOnce);
+        }, 10_000);
+      }
+    })
+    .catch(() => {});
 }
