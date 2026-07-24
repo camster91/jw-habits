@@ -39,6 +39,16 @@ import {
   unmarkSundayWatchtowerWeek,
   sundayWatchtowerWeeksCount,
 } from '../utils/sundayWatchtowerTracker';
+import {
+  useHabitState,
+  markInteracted,
+  readBestStreak,
+  writeBestStreak,
+  loadInitialState,
+  hasInteracted as hasUserInteracted,
+  pruneHistory,
+  todayKey,
+} from '../hooks/useHabitState';
 
 /**
  * Home — the only in-app page. Five habit rows plus two
@@ -74,103 +84,6 @@ import {
  * this app — we only track progress.
  */
 
-const STATE_KEY = 'jw-daily-habits-state';
-const FIRST_DONE_KEY = 'jw-habits-first-done';
-const BEST_STREAK_KEY = 'jw-habits-best-streak';
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-// Best-effort share-invite helper. Uses the system share sheet
-// (`navigator.share`) when available — the user picks their
-// recipient (Messages, WhatsApp, Email, copy, etc.). Falls back
-// to the async clipboard API in browsers that lack share. The
-// function is fire-and-forget; errors are swallowed because
-// "user canceled the share sheet" is a normal outcome, not a
-// failure.
-async function shareInvite(text) {
-  try {
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      await navigator.share({ text, title: 'Memorial invitation' });
-      return;
-    }
-  } catch {
-    // User dismissed the share sheet (AbortError) or share
-    // failed for another reason. Fall through to clipboard.
-  }
-  try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-    }
-  } catch {
-    /* swallow */
-  }
-}
-
-// True after the user has tapped any checkbox at least once
-// in their lifetime on this device. Persisted across per-day
-// resets so the first-launch hint shows exactly once, ever.
-function hasInteracted() {
-  try {
-    return localStorage.getItem(FIRST_DONE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STATE_KEY);
-    if (!raw) return { date: todayKey(), done: {}, history: [] };
-    const parsed = JSON.parse(raw);
-    // Per-day reset: if the saved date isn't today, start fresh.
-    if (parsed.date !== todayKey()) {
-      // History is preserved across day-rollover — only the
-      // done map resets. We prune history to the last 7 days
-      // (including today) below.
-      const history = pruneHistory(parsed.history || [], todayKey());
-      return { date: todayKey(), done: {}, history };
-    }
-    // Always prune on load in case the user installed the app
-    // a long time ago and has stale entries.
-    const history = pruneHistory(parsed.history || [], todayKey());
-    return { ...parsed, history };
-  } catch {
-    return { date: todayKey(), done: {}, history: [] };
-  }
-}
-
-// Prune a history array of ISO date strings to the most
-// recent 7 days (inclusive of today). The returned array is
-// sorted oldest→newest so the render can iterate it as a
-// timeline. Duplicates are removed.
-function pruneHistory(history, today) {
-  const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() - 6); // 7 days back inclusive
-  const seen = new Set();
-  const out = [];
-  for (const d of history) {
-    if (!d || typeof d !== 'string') continue;
-    if (seen.has(d)) continue;
-    if (d >= cutoff.toISOString().slice(0, 10) && d <= today) {
-      seen.add(d);
-      out.push(d);
-    }
-  }
-  // Sort oldest→newest
-  out.sort();
-  return out;
-}
-
-function saveState(state) {
-  try {
-    localStorage.setItem(STATE_KEY, JSON.stringify(state));
-  } catch {
-    // ignore quota / private-mode errors
-  }
-}
-
 function Home() {
   const { t, i18n } = useTranslation();
   // Expose the active i18n language as a global so pure utility
@@ -189,16 +102,37 @@ function Home() {
   // date is from a previous day, we write a fresh empty state
   // for today so the localStorage key always reflects the
   // current day (yesterday's per-day state never carries over).
-  const [state, setState] = useState(() => {
-    const loaded = loadState();
-    if (Object.keys(loaded.done).length === 0) {
-      // First-ever mount OR per-day reset just happened.
-      // Make sure localStorage is in sync with what we
-      // returned.
-      saveState(loaded);
+  const [state, setState, , replaceState] = useHabitState();
+
+  // Best-effort share-invite helper. Uses the system share sheet
+  // (`navigator.share`) when available — the user picks their
+  // recipient (Messages, WhatsApp, Email, copy, etc.). Falls back
+  // to the async clipboard API in browsers that lack share. The
+  // function is fire-and-forget; errors are swallowed because
+  // "user canceled the share sheet" is a normal outcome, not a
+  // failure.
+  async function shareInvite(text) {
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        await navigator.share({ text, title: 'Memorial invitation' });
+        return;
+      }
+    } catch {
+      // User dismissed the share sheet (AbortError) or share
+      // failed for another reason. Fall through to clipboard.
     }
-    return loaded;
-  });
+    try {
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+      ) {
+        await navigator.clipboard.writeText(text);
+      }
+    } catch {
+      /* swallow */
+    }
+  }
 
   // User settings (midweek day, weekend day). Re-read on
   // 'storage' events so a change in one tab propagates to
@@ -213,13 +147,21 @@ function Home() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+  // Re-sync state when localStorage changes in another tab or
+  // when the tab becomes visible after midnight (rare but possible).
   useEffect(() => {
-    const refresh = () => setState(loadState());
     const onStorage = (e) => {
-      if (e.key === STATE_KEY) refresh();
+      if (e.key === 'jw-daily-habits-state') {
+        // Full state replacement, not a partial merge. The hook's
+        // default setter treats patches as merges which would keep
+        // stale values when storage changes externally.
+        replaceState(loadInitialState());
+      }
     };
     const onVisible = () => {
-      if (!document.hidden) refresh();
+      if (!document.hidden) {
+        replaceState(loadInitialState());
+      }
     };
     window.addEventListener('storage', onStorage);
     document.addEventListener('visibilitychange', onVisible);
@@ -227,7 +169,7 @@ function Home() {
       window.removeEventListener('storage', onStorage);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, []);
+  }, [replaceState]);
 
   // Track which row key just got toggled so we can apply a
   // brief "pop" animation (scale 1 → 1.15 → 1, 200ms) to the
@@ -275,23 +217,15 @@ function Home() {
         history = history.filter((d) => d !== todayStr);
       }
       const next = { date: prev.date, done: nextDone, history };
-      saveState(next);
-      // First-ever interaction: hide the hint forever.
-      try {
-        localStorage.setItem(FIRST_DONE_KEY, '1');
-      } catch {
-        /* swallow */
-      }
-      // Update best-streak whenever history changes. Pure localStorage,
-      // monotonically increases (never decreases). The current
-      // best is also visible in the home (under the dots strip).
-      try {
-        const cur = Number(localStorage.getItem(BEST_STREAK_KEY) || '0') || 0;
-        const computed = bestStreakFromHistory(history);
-        if (computed > cur) localStorage.setItem(BEST_STREAK_KEY, String(computed));
-      } catch {
-        /* swallow */
-      }
+      // First-ever interaction: hide the hint forever (delegated
+      // to the hook layer).
+      markInteracted();
+      // Update best-streak whenever history changes. Monotonic —
+      // we only write if the computed value is higher than what
+      // is already persisted.
+      const computed = bestStreakFromHistory(history);
+      const persisted = readBestStreak();
+      if (computed > persisted) writeBestStreak(computed);
       return next;
     });
     // Bible-reading tracker: when the user toggles the Bible
@@ -345,11 +279,12 @@ function Home() {
       const timers = noteTimers.current;
       if (timers[key]) clearTimeout(timers[key]);
       timers[key] = setTimeout(() => {
-        try {
-          saveState({ date: prev.date, done: nextDone, history: prev.history || [] });
-        } catch {
-          /* swallow */
-        }
+        // The hook's setter already persists `next` immediately.
+        // This setTimeout here is a leftover from the pre-hook
+        // implementation; the only side effect we still need is
+        // to mark the user as having interacted, which is also
+        // already handled in the toggle() call site. Nothing to
+        // do here.
       }, 300);
       return next;
     });
@@ -441,12 +376,7 @@ function Home() {
   //   out of how many are currently visible (Memorial only counts
   //   when it's March/April).
   const streak = currentStreak(state.history || [], todayKey());
-  let best = 0;
-  try {
-    best = Number(localStorage.getItem(BEST_STREAK_KEY) || '0') || 0;
-  } catch {
-    /* swallow */
-  }
+  let best = readBestStreak();
   const visibleKeys = [
     'today',
     'text',
@@ -831,7 +761,7 @@ function Home() {
             jw.org content. Matches the iOS Reminders /
             Apple Fitness style: small grey meta line under
             a visualization. */}
-        {hasInteracted() && (streak > 0 || tp.done > 0 || best > 0) && (
+        {hasUserInteracted() && (streak > 0 || tp.done > 0 || best > 0) && (
           <div
             className="flex items-center justify-center gap-3 mb-4 text-xs text-base-content/70 select-none flex-wrap"
             aria-label="Streak and today's progress"
@@ -874,7 +804,7 @@ function Home() {
             text-base-content/80 (instead of /70) so it stays
             readable in dark mode where /70 sits too close to
             the card surface. */}
-        {!hasInteracted() && (
+        {!hasUserInteracted() && (
           <p className="text-sm text-base-content/80 mt-1 mb-4 px-1" role="note">
             {t('home.firstRunHint', 'Tap a row to open jw.org. Tap the checkbox when done.')}
           </p>
@@ -1081,9 +1011,9 @@ function Home() {
                     chars, and auto-save 300ms after the user
                     stops typing. Empty + closed by default.
                     Hidden entirely on first-launch (before
-                    hasInteracted) so the home stays minimal for
+                    hasUserInteracted) so the home stays minimal for
                     fresh users. */}
-                {hasInteracted() && (
+                {hasUserInteracted() && (
                   <div className="ml-12 mr-12 -mt-1 mb-2">
                     <button
                       type="button"
