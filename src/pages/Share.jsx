@@ -1,7 +1,7 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Share2, ExternalLink, Home, Link as LinkIcon, FileText, ArrowLeft } from 'lucide-react';
 import { haptics } from '../utils/native';
-import { isSafeHttpUrl } from '../utils/safeUrls';
+import { isAllowedShareUrl } from '../utils/safeUrls';
 
 function SharePage() {
   const [searchParams] = useSearchParams();
@@ -10,7 +10,9 @@ function SharePage() {
   const title = searchParams.get('title') || '';
   const text = searchParams.get('text') || '';
   const url = searchParams.get('url') || '';
-  const canOpenUrl = isSafeHttpUrl(url);
+  // Only open jw.org / wol.jw.org — share_target must not become a
+  // phishing trampoline for arbitrary https URLs.
+  const canOpenUrl = isAllowedShareUrl(url);
 
   const hasContent = title || text || url;
 

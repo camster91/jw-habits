@@ -106,10 +106,22 @@ function Home() {
 
   // Surface hard localStorage quota failures (after eviction retry).
   const [storageFull, setStorageFull] = useState(false);
+  const [offlineOpenHint, setOfflineOpenHint] = useState(false);
   useEffect(() => {
+    let offlineHintTimer = 0;
     const onFull = () => setStorageFull(true);
+    const onOfflineOpen = () => {
+      setOfflineOpenHint(true);
+      window.clearTimeout(offlineHintTimer);
+      offlineHintTimer = window.setTimeout(() => setOfflineOpenHint(false), 3500);
+    };
     window.addEventListener('jw-storage-full', onFull);
-    return () => window.removeEventListener('jw-storage-full', onFull);
+    window.addEventListener('jw-offline-open', onOfflineOpen);
+    return () => {
+      window.removeEventListener('jw-storage-full', onFull);
+      window.removeEventListener('jw-offline-open', onOfflineOpen);
+      window.clearTimeout(offlineHintTimer);
+    };
   }, []);
 
   // Best-effort share-invite helper. Uses the system share sheet
@@ -705,6 +717,17 @@ function Home() {
             )}
           </div>
         )}
+        {offlineOpenHint && (
+          <div
+            role="status"
+            className="mt-3 mb-2 rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-sm text-base-content"
+          >
+            {t(
+              'home.offlineOpen',
+              'You are offline. Connect to open jw.org links — JW Library deep links still work.'
+            )}
+          </div>
+        )}
         <h1 className="ios-large-title">
           {greetingText}.<span className="sub">{formattedDate}</span>
         </h1>
@@ -852,13 +875,27 @@ function Home() {
                   // open jw.org.
                   style={isDone ? { opacity: 0.55 } : undefined}
                 >
-                  {/* Left: link to jw.org */}
+                  {/* Left: link to jw.org — block when offline so the
+                      browser doesn't dump the user on a failed tab.
+                      jwlibrary:// deep links still work offline (OS
+                      hands off to the JW Library app). */}
                   <a
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     aria-label={`${title} — opens jw.org in a new tab`}
+                    onClick={(e) => {
+                      const isJwLibrary = typeof href === 'string' && href.startsWith('jwlibrary:');
+                      if (
+                        !isJwLibrary &&
+                        typeof navigator !== 'undefined' &&
+                        navigator.onLine === false
+                      ) {
+                        e.preventDefault();
+                        window.dispatchEvent(new CustomEvent('jw-offline-open'));
+                      }
+                    }}
                   >
                     <div className={`ios-icon ${color}`}>
                       <RowIcon className="w-4 h-4" />
@@ -909,6 +946,15 @@ function Home() {
                                 if (act.onClick) return act.onClick(e);
                                 if (act.kind === 'share') return shareInvite(act.text);
                                 if (act.kind === 'link' && act.url) {
+                                  const isJwLibrary = act.url.startsWith('jwlibrary:');
+                                  if (
+                                    !isJwLibrary &&
+                                    typeof navigator !== 'undefined' &&
+                                    navigator.onLine === false
+                                  ) {
+                                    window.dispatchEvent(new CustomEvent('jw-offline-open'));
+                                    return;
+                                  }
                                   window.open(act.url, '_blank', 'noopener,noreferrer');
                                   return;
                                 }

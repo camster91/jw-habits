@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeHttpUrl, toSameOriginPath } from './safeUrls';
+import { isSafeHttpUrl, isAllowedShareUrl, toSameOriginPath } from './safeUrls';
 
 describe('isSafeHttpUrl', () => {
   it('accepts http and https', () => {
@@ -17,6 +17,25 @@ describe('isSafeHttpUrl', () => {
     expect(isSafeHttpUrl('')).toBe(false);
     expect(isSafeHttpUrl('not a url')).toBe(false);
     expect(isSafeHttpUrl(null)).toBe(false);
+  });
+});
+
+describe('isAllowedShareUrl', () => {
+  it('allows jw.org and wol.jw.org https', () => {
+    expect(isAllowedShareUrl('https://www.jw.org/en/library/')).toBe(true);
+    expect(isAllowedShareUrl('https://jw.org/en/')).toBe(true);
+    expect(isAllowedShareUrl('https://wol.jw.org/en/wol/d/r1/lp-e/2026402')).toBe(true);
+  });
+
+  it('rejects other https hosts (phishing trampoline)', () => {
+    expect(isAllowedShareUrl('https://evil.example/phish')).toBe(false);
+    expect(isAllowedShareUrl('https://eviljw.org/')).toBe(false);
+    expect(isAllowedShareUrl('https://not-jw.org.evil.com/')).toBe(false);
+  });
+
+  it('still rejects non-http schemes', () => {
+    expect(isAllowedShareUrl('javascript:alert(1)')).toBe(false);
+    expect(isAllowedShareUrl('jwlibrary:///finder?docid=1')).toBe(false);
   });
 });
 

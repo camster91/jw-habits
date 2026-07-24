@@ -254,9 +254,10 @@ export const initializeNative = async () => {
       await StatusBar.setBackgroundColor({ color: '#4A6FA4' });
     }
 
-    // Hide splash screen after a short delay
-    setTimeout(async () => {
-      await SplashScreen.hide();
+    // Hide splash screen after a short delay. Outer try/catch has
+    // already exited — use splash.hide() which catches plugin errors.
+    setTimeout(() => {
+      void splash.hide();
     }, 500);
   } catch (e) {
     console.warn('Failed to initialize native features:', e);

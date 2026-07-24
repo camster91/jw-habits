@@ -55,7 +55,8 @@
     "streakDays": "días seguidos",
     "streakBest": "mejor",
     "streakToday": "hoy",
-    "storageFull": "Este dispositivo no tiene espacio de almacenamiento. Es posible que las marcas de hábitos no se guarden hasta que liberes espacio."
+    "storageFull": "Este dispositivo no tiene espacio de almacenamiento. Es posible que las marcas de hábitos no se guarden hasta que liberes espacio.",
+    "offlineOpen": "Estás sin conexión. Conéctate para abrir enlaces de jw.org — los enlaces de JW Library siguen funcionando."
   },
   "settings": {
     "title": "Ajustes",
