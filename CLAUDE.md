@@ -14,7 +14,7 @@ A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **habit tra
 - **Live URL:** `https://jwhabits.ashbi.ca/`
 - **Node:** >= 18.0.0
 
-## Stack (verified against `package.json` 2026-07-22)
+## Stack (verified against `package.json` 2026-07-24)
 
 | Layer | Technology | Version |
 |---|---|---|
@@ -27,12 +27,12 @@ A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **habit tra
 | Dates | date-fns | `^4.4.0` |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x` |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, custom `src/sw.js`) | |
-| Testing | Vitest 4 + Testing Library + Playwright | 287 tests, 17 files |
+| Testing | Vitest 4 + Testing Library + Playwright | 273 tests, 17 files |
 | Linting | ESLint 9 + Prettier 3 | |
 
 **Removed:** `@capacitor/push-notifications` (declared + configured, never registered — soft App Store policy violation; notifications fire via web Notification API + `serviceWorker.showNotification` instead). `zustand` (declared but never imported).
 
-## Source tree (verified 2026-07-22)
+## Source tree (verified 2026-07-24)
 
 ```
 src/
@@ -166,14 +166,17 @@ src/
 
 ## Recent material changes (last 10 PRs)
 
+- #150 chore(cleanup): land remaining #147 follow-ups onto main (`508199b`)
+- #148 feat: drain remaining 2026-07-22 review kanban items (`84d5862`)
+- #130 chore(security+cleanup): 2026-07-22 repo review fixes (`d5d93f6`)
 - #129 feat(sunday-watchtower): "Open in JW Library" sub-action (`83ceaf9`)
 - #127 ci(ios): TestFlight workflow + bump to 4.2.0 (build 421) (`c1c1442`)
 - #126 feat(jw-library): docid-based publication deep-link helpers (`e8e7991`)
 - #124 feat(notifications): Saturday/Sunday Watchtower weekly reminders (`a5ea29d`)
 - #123 feat: Sunday Watchtower Study as a 6th habit row (`5357d9b`)
 - #122 chore(deps): migrate to vite 8 + tailwindcss 4 + plugin-react 6 (`b0b46aa`)
-- #121 (and earlier) test(jw-habits): fixture patches for new done-shape + Conventions row
 
 ## Review history
 
+- **2026-07-24** — #148 drained remaining kanban items; #150 landed leftover #147 cleanup (dead `storageErrorHandler` removal, digest-pinned Dockerfile, README rewrite, real weekly-notification assertions, `@vitest/coverage-v8`). Conflicting #147 closed as superseded.
 - **2026-07-22** — Full audit by Hermes (4 parallel subagents). 6 P0, ~13 P1, ~15 P2, ~7 P3 findings. Local follow-up PR fixed P0-1 through P0-6, P1-2 (prettier), P1-3 (zustand uninstall), P1-5 (Dockerfile pin + USER + HEALTHCHECK), P1-9 (npm overrides + sharp bump → 0 vulnerabilities). Findings doc: `REVIEW-2026-07-22.md`.
