@@ -21,6 +21,8 @@
  * and way more history than the user needs.
  */
 
+import { safeSetItem } from './safeStorage';
+
 const KEY = 'jw-sunday-watchtower-weeks';
 const MAX_ENTRIES = 104;
 
@@ -60,13 +62,9 @@ function load() {
 }
 
 function save(set) {
-  try {
-    const arr = Array.from(set).sort();
-    const trimmed = arr.length > MAX_ENTRIES ? arr.slice(-MAX_ENTRIES) : arr;
-    localStorage.setItem(KEY, JSON.stringify(trimmed));
-  } catch {
-    /* swallow */
-  }
+  const arr = Array.from(set).sort();
+  const trimmed = arr.length > MAX_ENTRIES ? arr.slice(-MAX_ENTRIES) : arr;
+  safeSetItem(KEY, JSON.stringify(trimmed));
 }
 
 /**

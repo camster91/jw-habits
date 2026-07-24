@@ -11,10 +11,8 @@ name: iOS TestFlight
 #   - push to a v*-tag: tagged releases get auto-uploaded
 #
 # Secrets required (NEVER commit .p8 key material — *.p8 is gitignored):
-#   - ASC_API_KEY_PATH     : runner path where the workflow writes the
-#                            App Store Connect API key from a GitHub
-#                            Actions secret (base64/contents), not a
-#                            committed file
+#   - ASC_API_PRIVATE_KEY  : full PKCS8 contents of the App Store
+#                            Connect API .p8 key (GitHub Actions secret)
 #   - ASC_KEY_ID           : App Store Connect API Key id
 #   - ASC_ISSUER_ID        : App Store Connect API Issuer id
 #   - MATCH_PASSWORD       : Apple developer team password
@@ -165,18 +163,19 @@ jobs:
       # Upload to TestFlight. Skip when the input flag is set
       # (useful for validating the build works without
       # polluting TestFlight queues).
+      # Action inputs must match apple-actions/upload-testflight-build
+      # (app-path / issuer-id / api-key-id / api-private-key) —
+      # the previous app-store-connect-* / build-path names were
+      # silently ignored and uploads could never succeed.
       - name: Upload to TestFlight
         if: env.SKIP_UPLOAD != 'true'
-        uses: apple-actions/upload-testflight-build@v3
+        uses: apple-actions/upload-testflight-build@v5.2.1
         with:
-          app-store-connect-api-key-path: ${{ secrets.ASC_API_KEY_PATH }}
-          app-store-connect-api-key-id: ${{ secrets.ASC_KEY_ID }}
-          app-store-connect-api-issuer-id: ${{ secrets.ASC_ISSUER_ID }}
-          build-path: ${{ steps.ipa.outputs.ipa_path }}
-        # Async polling is enabled by default in
-        # upload-testflight-build@v3 — the step waits for
-        # the build to finish processing (~2-5 min) so we
-        # see the success state before exiting.
+          app-path: ${{ steps.ipa.outputs.ipa_path }}
+          app-type: ios
+          issuer-id: ${{ secrets.ASC_ISSUER_ID }}
+          api-key-id: ${{ secrets.ASC_KEY_ID }}
+          api-private-key: ${{ secrets.ASC_API_PRIVATE_KEY }}
 
       - name: Summary
         if: success()
