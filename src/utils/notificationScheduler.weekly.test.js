@@ -79,30 +79,48 @@ describe('Sunday Watchtower weekly notifications', () => {
 
   it('scheduleSaturdayWindowOpen fires after the weekly target', () => {
     // Pin "now" to Wed Jul 22 2026 12:00. Saturday 8 AM is
-    // +4 days 20 hours = 4*24*60 - 4*60 - 12*60 + 8*60... easier
-    // to assert via the delay.
+    // 2 days 20 hours away. (Jul 22 Wed noon → Jul 25 Sat 8 AM =
+    // 3 * 24 hours - 4 hours = 68 hours.)
     vi.setSystemTime(new Date(2026, 6, 22, 12, 0));
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
     scheduleSaturdayWindowOpen();
-    // If we advance to Saturday 8 AM, the timer fires.
-    vi.advanceTimersByTime(4 * 24 * 3600 * 1000 - 4 * 3600 * 1000 + 1);
-    // We don't introspect the actual Notification (network/SW
-    // mocked) — just confirm the timer was scheduled and
-    // did not throw.
-    expect(true).toBe(true);
+    // Assert: at least one setTimeout was scheduled
+    expect(setTimeoutSpy).toHaveBeenCalled();
+    // Assert: the delay corresponds to Saturday 8 AM = 2d 20h from Wed noon
+    // (Jul 22 12:00 → Jul 25 08:00 = 68 hours)
+    const [, delay] = setTimeoutSpy.mock.calls[0];
+    expect(delay).toBe(68 * 3600 * 1000);
+    setTimeoutSpy.mockRestore();
   });
 
   it('cancelSaturdayWindowOpen clears the pending timer', () => {
     vi.setSystemTime(new Date(2026, 6, 22, 12, 0));
+    // Spy on setTimeout BEFORE scheduleSaturdayWindowOpen so we capture
+    // the scheduled timer id, then spy on clearTimeout to verify cancel
+    // uses the same id.
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
     scheduleSaturdayWindowOpen();
+    // setTimeoutSpy.mock.calls[0] = [callback, delay]; the third arg
+    // (if present) is what setTimeout returns when called with more
+    // args. The id from vi.useFakeTimers() is whatever the spy's return
+    // value is. Capture via setTimeoutSpy.mock.results[0].value.
+    const scheduledId = setTimeoutSpy.mock.results[0].value;
     cancelSaturdayWindowOpen();
-    // No observable side effects — but the timer must be
-    // nulled so a re-schedule starts fresh.
-    expect(true).toBe(true);
+    // Assert: clearTimeout was called with the same id that was scheduled
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(scheduledId);
+    setTimeoutSpy.mockRestore();
+    clearTimeoutSpy.mockRestore();
   });
 
-  it('scheduleSundayEveningCheck uses Sunday 18:00 local as the target', () => {
-    vi.setSystemTime(new Date(2026, 6, 22, 12, 0)); // Wed
+  it('scheduleSundayEveningCheck targets Sunday 18:00 local', () => {
+    // Wed Jul 22 2026 12:00 → Sun Jul 26 18:00 = 4 days 6 hours
+    vi.setSystemTime(new Date(2026, 6, 22, 12, 0));
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
     scheduleSundayEveningCheck();
-    expect(true).toBe(true);
+    expect(setTimeoutSpy).toHaveBeenCalled();
+    const [, delay] = setTimeoutSpy.mock.calls[0];
+    expect(delay).toBe(4 * 24 * 3600 * 1000 + 6 * 3600 * 1000);
+    setTimeoutSpy.mockRestore();
   });
 });

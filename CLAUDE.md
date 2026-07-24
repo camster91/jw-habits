@@ -1,6 +1,6 @@
 # CLAUDE.md — JW Habits
 
-**Last audited against source: 2026-07-22** (full review in `REVIEW-2026-07-22.md`).
+**Last audited against source: 2026-07-24** (full review in `REVIEW-2026-07-22.md`; post-merge cleanup in PR #147).
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -14,7 +14,7 @@ A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **habit tra
 - **Live URL:** `https://jwhabits.ashbi.ca/`
 - **Node:** >= 18.0.0
 
-## Stack (verified against `package.json` 2026-07-22)
+## Stack (verified against `package.json` 2026-07-24)
 
 | Layer | Technology | Version |
 |---|---|---|
@@ -27,12 +27,12 @@ A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **habit tra
 | Dates | date-fns | `^4.4.0` |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x` |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, custom `src/sw.js`) | |
-| Testing | Vitest 4 + Testing Library + Playwright | 287 tests, 17 files |
+| Testing | Vitest 4 + Testing Library + Playwright | 273 tests, 17 files |
 | Linting | ESLint 9 + Prettier 3 | |
 
 **Removed:** `@capacitor/push-notifications` (declared + configured, never registered — soft App Store policy violation; notifications fire via web Notification API + `serviceWorker.showNotification` instead). `zustand` (declared but never imported).
 
-## Source tree (verified 2026-07-22)
+## Source tree (verified 2026-07-24)
 
 ```
 src/
@@ -41,7 +41,8 @@ src/
 ├── sw.js                 # Workbox service worker (precache + SPA navigation fallback)
 ├── index.css             # Tailwind 4 + iOS tokens + dark-mode overrides
 ├── pages/
-│   ├── Home.jsx          # The only user-facing page (~1061 lines — TODO split)
+│   ├── Home.jsx          # The only user-facing page (~1079 lines — further split candidate)
+│   ├── Home.test.jsx     # Component tests for Home
 │   └── Share.jsx         # PWA share_target landing (OS-level entry point)
 ├── components/
 │   ├── ErrorBoundary.jsx
@@ -50,6 +51,7 @@ src/
 │   ├── SettingsAccordion.jsx   # ⚠ CLAUDE.md previously said "deleted"; it is LIVE.
 │   └── UpdatePrompt.jsx
 ├── hooks/
+│   ├── useHabitState.js  # Habit done-state + streak persistence (extracted from Home)
 │   └── usePWA.js
 ├── locales/
 │   ├── en.json           # 50+ active keys
@@ -63,13 +65,16 @@ src/
     ├── dailyBibleReading.js   # 366-entry schedule → jwlibrary:// deep link
     ├── doneState.js           # NEW shape: { key: { done: boolean, note: string } } + legacy compat
     ├── habitProgress.js
-    ├── jwLibraryLinks.js      # All jw.org / jwlibrary:// URL builders
+    ├── jwLibraryLinks.js      # Barrel re-export of jw.org / jwlibrary:// URL builders
+    ├── jwLibraryLinks.dailyContent.js
+    ├── jwLibraryLinks.meetingWorkbook.js
+    ├── jwLibraryLinks.publications.js
+    ├── jwLibraryLinks.weeklyObservances.js
     ├── native.js              # Capacitor wrappers: haptics, statusBar, keyboard, splash
     ├── notificationScheduler.js # Web Notification API + weekly reminders
     ├── pwa.js
     ├── relativeDate.js
     ├── settingsStore.js       # localStorage wrapper (NOT Zustand; "settingsStore" name predates that)
-    ├── storageErrorHandler.js # LRU eviction for localStorage quota (used only by deleted code path; consider removing)
     ├── streak.js              # currentStreak, bestStreakFromHistory, todayProgress
     └── sundayWatchtowerTracker.js # Weekly Sunday Watchtower attendance counter
 ```
@@ -153,23 +158,25 @@ src/
 
 ## Known tech debt (not blockers)
 
-- `src/pages/Home.jsx` is 1061 lines — split candidate (`useHabitState.js` hook + `WeekStrip.jsx` + `HabitRow.jsx`)
-- `src/utils/jwLibraryLinks.js` is 871 lines — split candidate (`memorial.js`, `isoWeek.js`, `parseReading.js`)
-- `src/utils/storageErrorHandler.js` is dead code from a deleted feature — consider removing
-- No component tests for `Home.jsx` / `Share.jsx` / `SettingsAccordion.jsx` (only utils have unit tests)
+- `src/pages/Home.jsx` is ~1079 lines — `useHabitState.js` extracted; further split candidates: `WeekStrip.jsx` + `HabitRow.jsx`
+- `src/utils/jwLibraryLinks.js` was split into domain modules (#148); barrel still the public import surface
+- No component tests for `Share.jsx` / `SettingsAccordion.jsx` (`Home.jsx` now has `Home.test.jsx`)
 - vite-plugin-pwa v1.3 SW build emits `inlineDynamicImports is deprecated` warning — fixed in vite-plugin-pwa >1.3; defer to dependabot
-- Dockerfile base images (`node:22-alpine`, `nginx:1.27-alpine`) are not pinned by digest — pin when next bumped
+- Dockerfile base images (`node:22-alpine`, `nginx:1.27-alpine`) pinned by digest as of 2026-07-23. Update digest on every bump.
+- `npm audit` reports a react-router RSC CSRF advisory (`GHSA-qwww-vcr4-c8h2`); app uses client `BrowserRouter` only — no clean 7.x patch yet (8.x has no `react-router-dom` publish)
 
 ## Recent material changes (last 10 PRs)
 
+- #148 feat: drain remaining 2026-07-22 review kanban items (`84d5862`)
+- #130 chore(security+cleanup): 2026-07-22 repo review fixes (`d5d93f6`)
 - #129 feat(sunday-watchtower): "Open in JW Library" sub-action (`83ceaf9`)
 - #127 ci(ios): TestFlight workflow + bump to 4.2.0 (build 421) (`c1c1442`)
 - #126 feat(jw-library): docid-based publication deep-link helpers (`e8e7991`)
 - #124 feat(notifications): Saturday/Sunday Watchtower weekly reminders (`a5ea29d`)
 - #123 feat: Sunday Watchtower Study as a 6th habit row (`5357d9b`)
 - #122 chore(deps): migrate to vite 8 + tailwindcss 4 + plugin-react 6 (`b0b46aa`)
-- #121 (and earlier) test(jw-habits): fixture patches for new done-shape + Conventions row
 
 ## Review history
 
+- **2026-07-24** — Merged leftover cleanup from PR #147 onto main after #148 (dead `storageErrorHandler` removal, digest-pinned Dockerfile, README rewrite, real weekly-notification assertions, `@vitest/coverage-v8`).
 - **2026-07-22** — Full audit by Hermes (4 parallel subagents). 6 P0, ~13 P1, ~15 P2, ~7 P3 findings. Local follow-up PR fixed P0-1 through P0-6, P1-2 (prettier), P1-3 (zustand uninstall), P1-5 (Dockerfile pin + USER + HEALTHCHECK), P1-9 (npm overrides + sharp bump → 0 vulnerabilities). Findings doc: `REVIEW-2026-07-22.md`.

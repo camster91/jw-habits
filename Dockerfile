@@ -1,7 +1,9 @@
 # Multi-stage build for JW Habits
 # Stage 1: Build the React SPA
-# Pin by digest to avoid silent alpine drift. Update with `docker pull --quiet`.
-FROM node:22-alpine AS builder
+# Pin by digest to avoid silent alpine drift. Update with:
+#   curl -sI -H "Authorization: Bearer $(curl -s 'https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/REPO:pull' | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"token\"])')" -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" "https://registry-1.docker.io/v2/library/REPO/manifests/TAG" | grep -i docker-content-digest
+# Digests pinned 2026-07-23.
+FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -9,7 +11,8 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Serve with nginx
-FROM nginx:1.27-alpine
+# Digest pinned 2026-07-23 (see update command above).
+FROM nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
 # Use the canonical nginx.conf from the repo (not an inline echo).
 # The standalone config has gzip, security headers, PWA SW no-cache,
 # and the manifest MIME type — all missing from the previous inline version.
