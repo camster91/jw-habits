@@ -117,9 +117,21 @@ async function runSmoke(browser) {
   // ---- S1: Per-day reset (state from yesterday doesn't carry over) ----
   {
     const { page } = await freshContext(browser);
+    const debugLog = [];
+    page.on('console', m => debugLog.push(m.text()));
     await page.goto(BASE_URL);
-    // Seed yesterday's state with a checked habit
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    // Seed yesterday's state with a checked habit.
+    // Compute yesterday as a calendar date, not Date.now()-86400000 —
+    // around midnight UTC the millisecond math can land on today's
+    // date and the per-day reset never triggers.
+    const todayDate = new Date();
+    const yesterdayDate = new Date(todayDate.getTime() - 24 * 60 * 60 * 1000);
+    // If the subtraction crossed midnight in UTC, step back another day
+    // to be safe (defensive — the math above is usually correct).
+    if (yesterdayDate.toISOString().slice(0, 10) === todayDate.toISOString().slice(0, 10)) {
+      yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+    }
+    const yesterday = yesterdayDate.toISOString().slice(0, 10);
     await page.evaluate((yesterday) => {
       localStorage.setItem(
         'jw-daily-habits-state',
@@ -130,7 +142,14 @@ async function runSmoke(browser) {
         }),
       );
     }, yesterday);
+    const stateBeforeReload = await page.evaluate(() => {
+      const raw = localStorage.getItem('jw-daily-habits-state');
+      return raw ? JSON.parse(raw) : null;
+    });
     await page.reload();
+    // Wait a beat for React mount + visibility listener + any
+    // other async microtask that might mutate localStorage.
+    await page.waitForTimeout(800);
     // After reload, today's date is different so done should be wiped.
     // history is pruned to last 7 days, so yesterday's entry survives there.
     const state = await page.evaluate(() => {
@@ -145,7 +164,9 @@ async function runSmoke(browser) {
     record(
       'S1: Per-day reset wipes yesterday\'s done state',
       todayReset,
-      todayReset ? '' : `state: ${JSON.stringify(state).slice(0, 200)}`,
+      todayReset
+        ? ''
+        : `beforeReload=${JSON.stringify(stateBeforeReload).slice(0, 100)} | afterReload=${JSON.stringify(state).slice(0, 200)}`,
     );
     await page.context().close();
   }
