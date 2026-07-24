@@ -166,7 +166,7 @@ A Caddy vhost on the host serves the container at `https://jwhabits.ashbi.ca` vi
 ### Unit tests (Vitest)
 
 ```bash
-npm test                # 266 tests across 16 files
+npm test                # 273 tests across 17 files
 npm run test:coverage   # with coverage report (v8)
 ```
 
