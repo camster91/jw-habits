@@ -1,21 +1,26 @@
 # Android Keystore Rotation — Runbook (2026-07-22)
 
+> **STATUS (2026-07-24 production audit): STILL OPEN — CRITICAL.**  
+> Current tree is redacted (passwords via env; absolute username path removed).  
+> **History still contains recoverable credentials** (`jwnews2024secure`, `JWHabits2026!`).  
+> Until Play Console upload-key reset + history purge complete, treat the Play signing key as compromised.
+
 **Why this exists:** The production Android keystore credentials for `com.ashbi.jwnews` were committed to git history on 2026-03-02 in commit `cb976d5` and partially redacted on 2026-06-30 in `3dbb112`. Anyone with read access to the repo (current or future mirror/backup) can extract these credentials and sign malicious updates that Google Play will accept as legitimate.
 
 **This is an external coordination task** — it requires Cam to action items in Google Play Console and (optionally) GitHub. Items that can be done from a terminal are done by automation; the rest are checklist items for Cam.
 
 ## Credentials that were exposed
 
-The following values were leaked and are still recoverable via `git log -p --all | grep -E "jwnews-2024-prefix"` (substitute the actual leaked prefix). Full values are in 1Password under `JW Habits / Android Signing (2026 rotation)` — never in source.
+The following values were leaked and are still recoverable via `git log -p --all -S 'jwnews2024secure'` / `-S 'JWHabits2026!'`. Full values are in 1Password under `JW Habits / Android Signing (2026 rotation)` — never in source.
 
 | Variable | Was at | Currently in HEAD? |
 |---|---|---|
-| `KEYSTORE_PASSWORD` | `scripts/generate-android-keystore.sh:11` | No (redacted to `[REDACTED]`) |
-| `KEY_PASSWORD` | `scripts/generate-android-keystore.sh:12` | No (redacted to `[REDACTED]`) |
-| `storePassword` (gradle) | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
-| `keyPassword` (gradle) | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
+| `KEYSTORE_PASSWORD` | `scripts/generate-android-keystore.sh:11` | No (redacted / env-prompt) |
+| `KEY_PASSWORD` | `scripts/generate-android-keystore.sh:12` | No (redacted / env-prompt) |
+| `storePassword` (gradle) | `android/app/build.gradle` (historical) | No — `System.getenv('KEYSTORE_PASSWORD')` |
+| `keyPassword` (gradle) | `android/app/build.gradle` (historical) | No — `System.getenv('KEY_PASSWORD')` |
 
-The values are still recoverable via `git log -p --all | grep -E "jwnews-2024-prefix"` — that's why this is a P0.
+The values are still recoverable from git history — that's why this remains a P0.
 
 ## Action checklist (Cam)
 

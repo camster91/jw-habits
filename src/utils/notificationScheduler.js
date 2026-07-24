@@ -273,9 +273,11 @@ export function startReminder() {
   const delay = Math.max(0, fireAt.getTime() - Date.now());
 
   timerId = setTimeout(() => {
-    showReminderNotification({
+    void showReminderNotification({
       title: 'JW Habits',
       body: 'Time to check your daily habits.',
+    }).catch(() => {
+      /* permission revoked / Notification constructor failure */
     });
     // Reschedule for the next day. Use a fresh Date so the
     // "today vs tomorrow" computation in nextFireTime is
@@ -324,10 +326,12 @@ export function scheduleSaturdayWindowOpen() {
   if (!target) return;
   const delay = Math.max(0, target.getTime() - Date.now());
   saturdayTimer = setTimeout(() => {
-    showReminderNotification({
+    void showReminderNotification({
       title: 'Sunday Watchtower Study',
       body: "This week's article is ready. Tap to study.",
       tag: 'jw-saturday-window',
+    }).catch(() => {
+      /* ignore */
     });
     // Reschedule for next Saturday.
     scheduleSaturdayWindowOpen();
@@ -349,10 +353,12 @@ export function scheduleSundayEveningCheck() {
   if (!target) return;
   const delay = Math.max(0, target.getTime() - Date.now());
   sundayTimer = setTimeout(() => {
-    showReminderNotification({
+    void showReminderNotification({
       title: 'Sunday Watchtower Study',
       body: "Did you study this week's article? Tap to mark done.",
       tag: 'jw-sunday-check',
+    }).catch(() => {
+      /* ignore */
     });
     scheduleSundayEveningCheck();
   }, delay);

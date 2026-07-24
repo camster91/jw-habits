@@ -7,6 +7,10 @@ import {
   requestNotificationPermission,
   startReminder,
   cancelReminder,
+  scheduleSaturdayWindowOpen,
+  cancelSaturdayWindowOpen,
+  scheduleSundayEveningCheck,
+  cancelSundayEveningCheck,
   showReminderNotification,
   NOTIFICATION_PERMISSION,
 } from '../utils/notificationScheduler';
@@ -121,9 +125,22 @@ export default function SettingsAccordion() {
 
   // Whenever settings.permission or .reminderTime changes,
   // re-sync the scheduler. Cancel first to clear the old timer.
+  // Also arm (or disarm) the weekly Sunday Watchtower nudges —
+  // they share the same permission gate as the daily reminder.
   useEffect(() => {
     cancelReminder();
-    if (remindersOn) startReminder();
+    cancelSaturdayWindowOpen();
+    cancelSundayEveningCheck();
+    if (remindersOn) {
+      startReminder();
+      scheduleSaturdayWindowOpen();
+      scheduleSundayEveningCheck();
+    }
+    return () => {
+      cancelReminder();
+      cancelSaturdayWindowOpen();
+      cancelSundayEveningCheck();
+    };
   }, [remindersOn, settings.reminderTime, settings.quietHours?.start, settings.quietHours?.end]);
 
   // If storage changes from another tab, sync. Matches the
@@ -181,17 +198,23 @@ export default function SettingsAccordion() {
       update({ reminderTime: settings.reminderTime || '21:00' });
     } else {
       cancelReminder();
+      cancelSaturdayWindowOpen();
+      cancelSundayEveningCheck();
       update({ reminderTime: null });
     }
   };
 
   const handleTestNotification = async () => {
-    setTestFired(true);
-    await showReminderNotification({
-      title: 'JW Habits',
-      body: 'Time to check your daily habits.',
-    });
-    setTimeout(() => setTestFired(false), 2000);
+    try {
+      await showReminderNotification({
+        title: 'JW Habits',
+        body: 'Time to check your daily habits.',
+      });
+      setTestFired(true);
+      setTimeout(() => setTestFired(false), 2000);
+    } catch {
+      setTestFired(false);
+    }
   };
 
   return (

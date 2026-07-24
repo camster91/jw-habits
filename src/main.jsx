@@ -44,7 +44,14 @@ function logGlobalError(type, message, source, error) {
     source: source || 'unknown',
     stack: error?.stack || '',
     userAgent: navigator.userAgent,
-    url: window.location.href,
+    url: (() => {
+      try {
+        // Strip query/hash — share_target may put untrusted URLs in ?url=
+        return `${window.location.origin}${window.location.pathname}`;
+      } catch {
+        return '';
+      }
+    })(),
   };
 
   try {

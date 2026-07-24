@@ -6,6 +6,12 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig({
   build: {
+    modulePreload: {
+      // Don't preload the Share landing chunk on every Home visit —
+      // it is only needed for the OS share_target route.
+      resolveDependencies: (_filename, deps) =>
+        deps.filter((dep) => !dep.includes('page-Share')),
+    },
     rollupOptions: {
       output: {
         // Per-page code splitting. We rely on React.lazy() in App.jsx

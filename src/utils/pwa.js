@@ -1,11 +1,5 @@
 /**
- * PWA utility — install prompt, connectivity, service worker
- * updates. Notifications are NOT included; the launchpad
- * version of jw-habits does not schedule local notifications.
- *
- * Previously also re-exported `isNotificationSupported` etc.
- * for the settings notification panel; that panel was removed
- * during the home-strip-down so those symbols are gone too.
+ * PWA utility — install prompt, connectivity, service worker updates.
  */
 
 /** PWA capability detection — true if the browser supports
@@ -40,9 +34,15 @@ export function isInstalled() {
  * resolving to `{ outcome: 'accepted' | 'dismissed' }`. */
 export async function triggerInstallPrompt() {
   if (!deferredPrompt) return { outcome: 'no-prompt' };
-  deferredPrompt.prompt();
-  const choice = await deferredPrompt.userChoice;
-  return choice;
+  try {
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    return choice;
+  } catch {
+    deferredPrompt = null;
+    return { outcome: 'dismissed' };
+  }
 }
 
 export function isOnline() {
@@ -64,18 +64,37 @@ export function registerConnectivityListeners(onOnline, onOffline) {
 /** Trigger a service worker update check by re-registering. */
 export async function checkForUpdates() {
   if (!('serviceWorker' in navigator)) return;
-  const reg = await navigator.serviceWorker.getRegistration();
-  if (reg) await reg.update();
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update();
+  } catch {
+    // ignore — offline / SW unavailable
+  }
 }
 
-/** Apply a pending service worker update. Skips waiting and
- * reloads the page so the new SW takes over. */
+/** Apply a pending service worker update. Posts SKIP_WAITING to the
+ * waiting worker, then reloads once the new controller activates. */
 export function forceUpdate() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.getRegistration().then((reg) => {
-    if (reg && reg.waiting) {
-      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-    if (reg) reg.update();
-  });
+
+  const reloadOnce = () => {
+    navigator.serviceWorker.removeEventListener('controllerchange', reloadOnce);
+    window.location.reload();
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', reloadOnce);
+
+  navigator.serviceWorker
+    .getRegistration()
+    .then((reg) => {
+      if (reg && reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        return;
+      }
+      // No waiting worker — drop the reload listener and try an update check.
+      navigator.serviceWorker.removeEventListener('controllerchange', reloadOnce);
+      if (reg) return reg.update();
+    })
+    .catch(() => {
+      navigator.serviceWorker.removeEventListener('controllerchange', reloadOnce);
+    });
 }

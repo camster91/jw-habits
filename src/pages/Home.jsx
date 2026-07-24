@@ -267,27 +267,28 @@ function Home() {
   // Personal-note setter. Saves the typed note for one row, in
   // the current day's state. Persists via the same `done` map
   // (shape: { key: { done: bool, note: string } }). Debounced
-  // 300ms so quick typing doesn't thrash localStorage.
+  // 300ms so quick typing doesn't thrash localStorage / re-render
+  // the whole Home list. The textarea is uncontrolled (defaultValue),
+  // so the UI stays responsive while we batch writes.
   const noteTimers = useRef({});
+  useEffect(() => {
+    return () => {
+      for (const id of Object.values(noteTimers.current)) {
+        clearTimeout(id);
+      }
+      noteTimers.current = {};
+    };
+  }, []);
   const setRowNote = (key, note) => {
-    setState((prev) => {
-      const nextDone = setDone(prev.done, key, { note });
-      const next = { ...prev, done: nextDone };
-      // Debounce the localStorage write by row key. Each row
-      // gets its own timer so editing two rows in quick
-      // succession doesn't cross-fire.
-      const timers = noteTimers.current;
-      if (timers[key]) clearTimeout(timers[key]);
-      timers[key] = setTimeout(() => {
-        // The hook's setter already persists `next` immediately.
-        // This setTimeout here is a leftover from the pre-hook
-        // implementation; the only side effect we still need is
-        // to mark the user as having interacted, which is also
-        // already handled in the toggle() call site. Nothing to
-        // do here.
-      }, 300);
-      return next;
-    });
+    const timers = noteTimers.current;
+    if (timers[key]) clearTimeout(timers[key]);
+    timers[key] = setTimeout(() => {
+      setState((prev) => {
+        const nextDone = setDone(prev.done, key, { note });
+        return { ...prev, done: nextDone };
+      });
+      delete timers[key];
+    }, 300);
   };
 
   // Bible-reading progress count. Re-reads on every render via

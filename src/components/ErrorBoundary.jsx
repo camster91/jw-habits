@@ -39,7 +39,13 @@ class ErrorBoundary extends Component {
       stack: error?.stack || '',
       componentStack: errorInfo?.componentStack || '',
       userAgent: navigator.userAgent,
-      url: window.location.href,
+      url: (() => {
+        try {
+          return `${window.location.origin}${window.location.pathname}`;
+        } catch {
+          return '';
+        }
+      })(),
     };
 
     try {

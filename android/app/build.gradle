@@ -25,9 +25,12 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('/Users/biancabienaime/keys/jw-habits-release.keystore')
+            // Prefer KEYSTORE_FILE env; fall back to a local path outside the repo.
+            // Never hardcode machine-specific absolute paths in source.
+            def keystorePath = System.getenv('KEYSTORE_FILE') ?: "${System.getProperty('user.home')}/keys/jw-habits-release.keystore"
+            storeFile file(keystorePath)
             storePassword System.getenv('KEYSTORE_PASSWORD')
-            keyAlias 'jwhabits'
+            keyAlias System.getenv('KEY_ALIAS') ?: 'jwhabits'
             keyPassword System.getenv('KEY_PASSWORD')
         }
     }

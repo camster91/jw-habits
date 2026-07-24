@@ -70,11 +70,30 @@ jobs:
           else
             TAG="${REF#refs/heads/}"
           fi
-          SHA_SHORT="${{ github.event.pull_request.head.sha || github.sha }}" | head -c 7
           SHA_SHORT=$(echo "${{ github.sha }}" | head -c 7)
-          echo "image=ghcr.io/camster91/${REPO_NAME}" >> $GITHUB_OUTPUT
+          IMAGE="ghcr.io/camster91/${REPO_NAME}"
+          echo "image=${IMAGE}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "sha=${SHA_SHORT}" >> $GITHUB_OUTPUT
+          # Never move :latest from pull_request builds (supply-chain risk).
+          {
+            echo "tags<<EOF"
+            echo "${IMAGE}:${TAG}"
+            echo "${IMAGE}:${TAG}-${SHA_SHORT}"
+            if [ "${{ github.event_name }}" != "pull_request" ]; then
+              echo "${IMAGE}:latest"
+            fi
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+          # PRs build only (no push). Pushes/tags publish.
+          # Multi-arch requires push (or a registry cache); PR builds use amd64 only.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "push=false" >> $GITHUB_OUTPUT
+            echo "platforms=linux/amd64" >> $GITHUB_OUTPUT
+          else
+            echo "push=true" >> $GITHUB_OUTPUT
+            echo "platforms=${{ inputs.platforms || 'linux/amd64,linux/arm64' }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -103,12 +122,9 @@ jobs:
         with:
           context: .
           file: ${{ inputs.dockerfile || 'Dockerfile' }}
-          platforms: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
-          push: true
-          tags: |
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}-${{ steps.meta.outputs.sha }}
-            ${{ steps.meta.outputs.image }}:latest
+          platforms: ${{ steps.meta.outputs.platforms }}
+          push: ${{ steps.meta.outputs.push == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           provenance: true

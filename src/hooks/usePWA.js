@@ -1,12 +1,10 @@
 /**
  * usePWA Hook
  * Manages PWA state: install prompt, install status, connectivity,
- * service worker updates. Does NOT handle notifications; the
- * launchpad version of the app does not schedule local
- * notifications.
+ * service worker updates.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   isPWACapable,
   isInstalled,
@@ -24,6 +22,7 @@ export function usePWA() {
   const [isAppInstalled, setIsAppInstalled] = useState(isInstalled());
   const [isOnline, setIsOnline] = useState(checkOnline());
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const updateListenersRef = useRef([]);
 
   // Handle beforeinstallprompt event
   useEffect(() => {
@@ -57,36 +56,58 @@ export function usePWA() {
     return registerConnectivityListeners(handleOnline, handleOffline);
   }, []);
 
-  // Listen for service worker updates
+  // Listen for service worker updates (single registration path)
   useEffect(() => {
-    if (!isPWACapable()) return;
+    if (!('serviceWorker' in navigator)) return;
 
-    const handleControllerChange = () => {
-      setUpdateAvailable(true);
-    };
+    let cancelled = false;
+    const cleanups = [];
 
-    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        if (cancelled) return;
 
-    // Check for waiting service worker
-    navigator.serviceWorker.ready.then((registration) => {
-      if (registration.waiting) {
-        setUpdateAvailable(true);
-      }
+        if (registration.waiting) {
+          setUpdateAvailable(true);
+        }
 
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
+        const onUpdateFound = () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+          const onStateChange = () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               setUpdateAvailable(true);
             }
-          });
-        }
+          };
+          newWorker.addEventListener('statechange', onStateChange);
+          cleanups.push(() => newWorker.removeEventListener('statechange', onStateChange));
+        };
+
+        registration.addEventListener('updatefound', onUpdateFound);
+        cleanups.push(() => registration.removeEventListener('updatefound', onUpdateFound));
+        updateListenersRef.current = cleanups;
+      })
+      .catch(() => {
+        // SW unavailable (private mode / blocked)
       });
-    });
 
     return () => {
-      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+      cancelled = true;
+      for (const fn of updateListenersRef.current) {
+        try {
+          fn();
+        } catch {
+          /* ignore */
+        }
+      }
+      updateListenersRef.current = [];
+      for (const fn of cleanups) {
+        try {
+          fn();
+        } catch {
+          /* ignore */
+        }
+      }
     };
   }, []);
 
@@ -96,14 +117,16 @@ export function usePWA() {
       return { success: false, reason: 'no-prompt' };
     }
 
-    const result = await triggerInstallPrompt();
-
-    if (result.outcome === 'accepted') {
-      setCanInstall(false);
-      return { success: true };
+    try {
+      const result = await triggerInstallPrompt();
+      if (result.outcome === 'accepted') {
+        setCanInstall(false);
+        return { success: true };
+      }
+      return { success: false, reason: result.outcome };
+    } catch {
+      return { success: false, reason: 'error' };
     }
-
-    return { success: false, reason: result.outcome };
   }, []);
 
   // Apply pending update

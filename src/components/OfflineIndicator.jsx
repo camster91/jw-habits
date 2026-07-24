@@ -4,11 +4,9 @@
  */
 
 import { WifiOff, Wifi } from 'lucide-react';
-import { usePWA } from '../hooks/usePWA';
 import { useState, useEffect, useRef } from 'react';
 
-function OfflineIndicator() {
-  const { isOnline } = usePWA();
+function OfflineIndicator({ isOnline }) {
   const [showReconnected, setShowReconnected] = useState(false);
   const wasOfflineRef = useRef(!isOnline);
 
@@ -16,7 +14,6 @@ function OfflineIndicator() {
     if (!isOnline) {
       wasOfflineRef.current = true;
     } else if (wasOfflineRef.current) {
-      // Show "reconnected" message briefly - defer setState to avoid sync call in effect
       const showTimer = setTimeout(() => {
         setShowReconnected(true);
       }, 0);

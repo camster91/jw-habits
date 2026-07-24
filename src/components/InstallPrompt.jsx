@@ -6,22 +6,24 @@
 
 import { useState, useEffect } from 'react';
 import { Download, X, Smartphone } from 'lucide-react';
-import { usePWA } from '../hooks/usePWA';
 import { haptics } from '../utils/native';
 
 function isDismissedInitially() {
-  const dismissedUntil = localStorage.getItem('installPromptDismissed');
-  if (dismissedUntil) {
-    const dismissedDate = new Date(dismissedUntil);
-    if (dismissedDate > new Date()) {
-      return true;
+  try {
+    const dismissedUntil = localStorage.getItem('installPromptDismissed');
+    if (dismissedUntil) {
+      const dismissedDate = new Date(dismissedUntil);
+      if (dismissedDate > new Date()) {
+        return true;
+      }
     }
+  } catch {
+    // private browsing / locked storage
   }
   return false;
 }
 
-function InstallPrompt() {
-  const { canInstall, promptInstall, isAppInstalled } = usePWA();
+function InstallPrompt({ canInstall, promptInstall, isAppInstalled }) {
   const [dismissed, setDismissed] = useState(isDismissedInitially);
   const [showBanner, setShowBanner] = useState(false);
 
@@ -34,9 +36,13 @@ function InstallPrompt() {
 
   const handleInstall = async () => {
     haptics.medium();
-    const result = await promptInstall();
-    if (result.success) {
-      setShowBanner(false);
+    try {
+      const result = await promptInstall();
+      if (result?.success) {
+        setShowBanner(false);
+      }
+    } catch {
+      // Install prompt unavailable — leave banner for dismiss.
     }
   };
 
@@ -44,10 +50,13 @@ function InstallPrompt() {
     haptics.light();
     setShowBanner(false);
     setDismissed(true);
-    // Don't show again for 7 days
-    const dismissUntil = new Date();
-    dismissUntil.setDate(dismissUntil.getDate() + 7);
-    localStorage.setItem('installPromptDismissed', dismissUntil.toISOString());
+    try {
+      const dismissUntil = new Date();
+      dismissUntil.setDate(dismissUntil.getDate() + 7);
+      localStorage.setItem('installPromptDismissed', dismissUntil.toISOString());
+    } catch {
+      // ignore storage errors
+    }
   };
 
   useEffect(() => {

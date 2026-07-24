@@ -2,27 +2,24 @@
  * UpdatePrompt Component
  * Shows a dismissible pill banner at the top of the screen when a
  * new version of the app is available.
- *
- * Design notes:
- * - Subtle (neutral background, not a loud brand color)
- * - Rounded pill that matches the rest of the iOS design language
- * - Dismissable so the user can defer the update
- * - Auto-reappears on the next reload if the SW still hasn't activated
  */
 
 import { RefreshCw, X } from 'lucide-react';
 import { useState } from 'react';
-import { usePWA } from '../hooks/usePWA';
 import { haptics } from '../utils/native';
 
 const DISMISS_KEY = 'jw-update-prompt-dismissed';
 
-function UpdatePrompt() {
-  const { updateAvailable, applyUpdate } = usePWA();
-  // Read once on mount; if the user dismissed this session, don't
-  // show it again. We don't persist across sessions — on next reload
-  // we'll re-evaluate.
-  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem(DISMISS_KEY) === '1');
+function readDismissed() {
+  try {
+    return sessionStorage.getItem(DISMISS_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function UpdatePrompt({ updateAvailable, applyUpdate }) {
+  const [dismissed, setDismissed] = useState(readDismissed);
 
   if (!updateAvailable || dismissed) {
     return null;
@@ -35,7 +32,11 @@ function UpdatePrompt() {
 
   const handleDismiss = () => {
     haptics.light();
-    sessionStorage.setItem(DISMISS_KEY, '1');
+    try {
+      sessionStorage.setItem(DISMISS_KEY, '1');
+    } catch {
+      // ignore
+    }
     setDismissed(true);
   };
 

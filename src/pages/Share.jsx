@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Share2, ExternalLink, Home, Link as LinkIcon, FileText, ArrowLeft } from 'lucide-react';
 import { haptics } from '../utils/native';
+import { sanitizeShareUrl } from '../utils/shareUrl';
 
 function SharePage() {
   const [searchParams] = useSearchParams();
@@ -9,6 +10,7 @@ function SharePage() {
   const title = searchParams.get('title') || '';
   const text = searchParams.get('text') || '';
   const url = searchParams.get('url') || '';
+  const safeUrl = sanitizeShareUrl(url);
 
   const hasContent = title || text || url;
 
@@ -18,13 +20,12 @@ function SharePage() {
   };
 
   const handleOpenLink = () => {
-    if (url) {
-      haptics.light();
-      // Prevent XSS: only allow http/https URLs
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        return;
-      }
-      window.open(url, '_blank', 'noopener,noreferrer');
+    if (!safeUrl) return;
+    haptics.light();
+    const opened = window.open(safeUrl, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      // Popup blocked — navigate same-tab as last resort for allowlisted hosts.
+      window.location.assign(safeUrl);
     }
   };
 
@@ -79,12 +80,17 @@ function SharePage() {
                         URL
                       </p>
                       <p className="text-primary mt-0.5 break-all text-sm">{url}</p>
+                      {!safeUrl && (
+                        <p className="text-xs text-warning mt-1">
+                          This link is blocked — only jw.org / wol.jw.org links can be opened.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Open Link Button */}
-                {url && (
+                {safeUrl && (
                   <div className="pt-2">
                     <button onClick={handleOpenLink} className="btn btn-primary btn-block gap-2">
                       <ExternalLink className="w-4 h-4" />

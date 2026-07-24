@@ -255,8 +255,10 @@ export const initializeNative = async () => {
     }
 
     // Hide splash screen after a short delay
-    setTimeout(async () => {
-      await SplashScreen.hide();
+    setTimeout(() => {
+      SplashScreen.hide().catch(() => {
+        /* splash already hidden / plugin unavailable */
+      });
     }, 500);
   } catch (e) {
     console.warn('Failed to initialize native features:', e);

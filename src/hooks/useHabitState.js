@@ -11,7 +11,7 @@
  *   - Compute best-streak monotonic (used by the streak line)
  *
  * The hook returns the same API Home.jsx was using inline:
- *   const [state, setState, isFirstSession] = useHabitState();
+ *   const [state, setState, isFirstSession, replaceState] = useHabitState();
  * where `setState` is a callback-style setter that updates
  * both local state and localStorage in one call.
  */
@@ -117,58 +117,55 @@ export function hasInteracted() {
 }
 
 /**
- * @returns {[{date, done, history}, (next: any | ((prev: any) => any)) => void, boolean]}
+ * @returns {[{date, done, history}, (next: any | ((prev: any) => any)) => void, boolean, (next: any) => void]}
  *   - `[0]` current habit state
  *   - `[1]` setter: pass a partial or a function to merge
  *   - `[2]` `isFirstSession` true when no prior interaction recorded
+ *   - `[3]` `replaceState` full replacement (visibility / cross-tab sync)
  */
 export function useHabitState() {
-  // Exposed so external code (e.g. the visibility handler in Home.jsx)
-  // can do a full state replacement without going through the partial-merge
-  // setter below. setStateInternal is React's setter for the array
-  // destructure above and is stable across renders.
-  const [state, setStateInternal, setStateFull] = useState(() => {
+  const [state, setStateInternal] = useState(() => {
     const loaded = loadInitialState();
     // If the loaded state has a non-empty `done` map (e.g., from
     // yesterday's seed, or from a previous day) and we just did
     // a per-day reset to `done: {}`, persist that reset so the
     // next reload sees the wiped state. Mirrors the behavior of
     // the inline useState initializer in Home.jsx pre-#140.
-    const raw = localStorage.getItem(STATE_KEY);
-    let stored;
+    // Keep getItem inside try — private browsing / locked storage
+    // can throw SecurityError on access, not only on JSON.parse.
     try {
-      stored = raw ? JSON.parse(raw) : null;
+      const raw = localStorage.getItem(STATE_KEY);
+      let stored = null;
+      try {
+        stored = raw ? JSON.parse(raw) : null;
+      } catch {
+        stored = null;
+      }
+      if (!stored || Object.keys(stored.done || {}).length > 0) {
+        persist(loaded);
+      }
     } catch {
-      stored = null;
-    }
-    if (!stored || Object.keys(stored.done || {}).length > 0) {
-      persist(loaded);
+      // Storage unavailable — keep in-memory state only.
     }
     return loaded;
   });
   const [isFirstSession] = useState(() => !hasInteracted());
 
-  // useCallback deps are intentionally [] — setStateInternal and
-  // setStateFull are React's useState setters, which are stable
-  // across renders. Adding them as deps would cause unnecessary
-  // callback recreation.
+  // useCallback deps are intentionally [] — setStateInternal is
+  // React's useState setter, which is stable across renders.
   const updateState = useCallback((patch) => {
     setStateInternal((prev) => {
       const next = typeof patch === 'function' ? patch(prev) : { ...prev, ...patch };
       persist(next);
       return next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Expose a "replace" setter for the rare cases where callers
-  // need to throw away the previous state entirely (e.g. on
-  // visibility change after midnight). Goes directly through
-  // React's setState without the partial-merge semantics.
+  // Full replacement for visibility/midnight and cross-tab sync.
+  // Must use setStateInternal — useState only returns [state, setState].
   const replaceState = useCallback((next) => {
-    setStateFull(next);
+    setStateInternal(next);
     persist(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return [state, updateState, isFirstSession, replaceState];
