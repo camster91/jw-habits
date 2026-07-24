@@ -22,7 +22,13 @@ function UpdatePrompt() {
   // Read once on mount; if the user dismissed this session, don't
   // show it again. We don't persist across sessions — on next reload
   // we'll re-evaluate.
-  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem(DISMISS_KEY) === '1');
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return sessionStorage.getItem(DISMISS_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
 
   if (!updateAvailable || dismissed) {
     return null;
@@ -30,12 +36,20 @@ function UpdatePrompt() {
 
   const handleUpdate = () => {
     haptics.medium();
-    applyUpdate();
+    try {
+      applyUpdate();
+    } catch {
+      // SW update failures should not break the banner click handler.
+    }
   };
 
   const handleDismiss = () => {
     haptics.light();
-    sessionStorage.setItem(DISMISS_KEY, '1');
+    try {
+      sessionStorage.setItem(DISMISS_KEY, '1');
+    } catch {
+      // ignore
+    }
     setDismissed(true);
   };
 

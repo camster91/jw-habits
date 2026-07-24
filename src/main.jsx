@@ -141,12 +141,27 @@ root.render(
 // in-progress state. See src/components/UpdatePrompt.jsx for the
 // banner and src/utils/native.js for the applyUpdate flow.
 if ('serviceWorker' in navigator) {
-  // Handle notification clicks — focus app window
+  // Handle notification clicks — focus app window. Only allow
+  // same-origin relative paths (defense-in-depth; SW already
+  // sanitizes, but this listener must not assign external URLs).
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type === 'NOTIFICATION_CLICK') {
-      const url = event.data.url || '/';
+      const raw = event.data.url || '/';
+      let path = '/';
+      if (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) {
+        path = raw;
+      } else {
+        try {
+          const parsed = new URL(String(raw), window.location.origin);
+          if (parsed.origin === window.location.origin) {
+            path = `${parsed.pathname}${parsed.search}${parsed.hash}` || '/';
+          }
+        } catch {
+          path = '/';
+        }
+      }
       window.focus();
-      window.location.href = url;
+      window.location.href = path;
     }
   });
 }

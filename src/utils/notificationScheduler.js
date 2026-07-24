@@ -238,14 +238,23 @@ export async function showReminderNotification({ title, body, tag: explicitTag }
   }
   // Dev / no-SW fallback.
   if ('Notification' in window && Notification.permission === 'granted') {
-    return new Notification(finalTitle, {
-      body: finalBody,
-      tag,
-      data,
-      icon: '/pwa-192x192.png',
-    });
+    try {
+      return new Notification(finalTitle, {
+        body: finalBody,
+        tag,
+        data,
+        icon: '/pwa-192x192.png',
+      });
+    } catch {
+      return null;
+    }
   }
   return null;
+}
+
+/** Fire-and-forget wrapper so setTimeout sites never leave a rejection unhandled. */
+function fireReminderNotification(opts) {
+  void showReminderNotification(opts).catch(() => {});
 }
 
 /**
@@ -273,7 +282,7 @@ export function startReminder() {
   const delay = Math.max(0, fireAt.getTime() - Date.now());
 
   timerId = setTimeout(() => {
-    showReminderNotification({
+    fireReminderNotification({
       title: 'JW Habits',
       body: 'Time to check your daily habits.',
     });
@@ -324,7 +333,7 @@ export function scheduleSaturdayWindowOpen() {
   if (!target) return;
   const delay = Math.max(0, target.getTime() - Date.now());
   saturdayTimer = setTimeout(() => {
-    showReminderNotification({
+    fireReminderNotification({
       title: 'Sunday Watchtower Study',
       body: "This week's article is ready. Tap to study.",
       tag: 'jw-saturday-window',
@@ -349,7 +358,7 @@ export function scheduleSundayEveningCheck() {
   if (!target) return;
   const delay = Math.max(0, target.getTime() - Date.now());
   sundayTimer = setTimeout(() => {
-    showReminderNotification({
+    fireReminderNotification({
       title: 'Sunday Watchtower Study',
       body: "Did you study this week's article? Tap to mark done.",
       tag: 'jw-sunday-check',

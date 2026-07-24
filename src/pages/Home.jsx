@@ -102,7 +102,7 @@ function Home() {
   // date is from a previous day, we write a fresh empty state
   // for today so the localStorage key always reflects the
   // current day (yesterday's per-day state never carries over).
-  const [state, setState, , replaceState] = useHabitState();
+  const [state, setState, , replaceState, persistCurrent] = useHabitState();
 
   // Best-effort share-invite helper. Uses the system share sheet
   // (`navigator.share`) when available — the user picks their
@@ -264,30 +264,30 @@ function Home() {
     }
   };
 
-  // Personal-note setter. Saves the typed note for one row, in
-  // the current day's state. Persists via the same `done` map
-  // (shape: { key: { done: bool, note: string } }). Debounced
-  // 300ms so quick typing doesn't thrash localStorage.
+  // Personal-note setter. Updates React state immediately so the
+  // textarea stays responsive, but debounces localStorage writes
+  // (300ms) so quick typing doesn't thrash storage + sync events.
   const noteTimers = useRef({});
+  useEffect(() => {
+    return () => {
+      Object.values(noteTimers.current).forEach((id) => clearTimeout(id));
+      noteTimers.current = {};
+    };
+  }, []);
   const setRowNote = (key, note) => {
-    setState((prev) => {
-      const nextDone = setDone(prev.done, key, { note });
-      const next = { ...prev, done: nextDone };
-      // Debounce the localStorage write by row key. Each row
-      // gets its own timer so editing two rows in quick
-      // succession doesn't cross-fire.
-      const timers = noteTimers.current;
-      if (timers[key]) clearTimeout(timers[key]);
-      timers[key] = setTimeout(() => {
-        // The hook's setter already persists `next` immediately.
-        // This setTimeout here is a leftover from the pre-hook
-        // implementation; the only side effect we still need is
-        // to mark the user as having interacted, which is also
-        // already handled in the toggle() call site. Nothing to
-        // do here.
-      }, 300);
-      return next;
-    });
+    setState(
+      (prev) => {
+        const nextDone = setDone(prev.done, key, { note });
+        return { ...prev, done: nextDone };
+      },
+      { persist: false }
+    );
+    const timers = noteTimers.current;
+    if (timers[key]) clearTimeout(timers[key]);
+    timers[key] = setTimeout(() => {
+      persistCurrent();
+      delete timers[key];
+    }, 300);
   };
 
   // Bible-reading progress count. Re-reads on every render via

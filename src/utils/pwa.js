@@ -37,12 +37,18 @@ export function isInstalled() {
 }
 
 /** Trigger the browser's native install prompt. Returns a promise
- * resolving to `{ outcome: 'accepted' | 'dismissed' }`. */
+ * resolving to `{ outcome: 'accepted' | 'dismissed' | 'no-prompt' | 'error' }`. */
 export async function triggerInstallPrompt() {
   if (!deferredPrompt) return { outcome: 'no-prompt' };
-  deferredPrompt.prompt();
-  const choice = await deferredPrompt.userChoice;
-  return choice;
+  try {
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    return choice;
+  } catch {
+    deferredPrompt = null;
+    return { outcome: 'error' };
+  }
 }
 
 export function isOnline() {
@@ -64,18 +70,25 @@ export function registerConnectivityListeners(onOnline, onOffline) {
 /** Trigger a service worker update check by re-registering. */
 export async function checkForUpdates() {
   if (!('serviceWorker' in navigator)) return;
-  const reg = await navigator.serviceWorker.getRegistration();
-  if (reg) await reg.update();
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update();
+  } catch {
+    // ignore — offline / no registration
+  }
 }
 
 /** Apply a pending service worker update. Skips waiting and
  * reloads the page so the new SW takes over. */
 export function forceUpdate() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.getRegistration().then((reg) => {
-    if (reg && reg.waiting) {
-      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-    if (reg) reg.update();
-  });
+  navigator.serviceWorker
+    .getRegistration()
+    .then((reg) => {
+      if (reg && reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+      if (reg) return reg.update();
+    })
+    .catch(() => {});
 }

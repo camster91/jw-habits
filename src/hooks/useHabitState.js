@@ -16,7 +16,7 @@
  * both local state and localStorage in one call.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 const STATE_KEY = 'jw-daily-habits-state';
 const FIRST_DONE_KEY = 'jw-habits-first-done';
@@ -117,24 +117,34 @@ export function hasInteracted() {
 }
 
 /**
- * @returns {[{date, done, history}, (next: any | ((prev: any) => any)) => void, boolean]}
+ * @returns {[
+ *   {date, done, history},
+ *   (patch: any | ((prev: any) => any), opts?: { persist?: boolean }) => void,
+ *   boolean,
+ *   (next: any) => void,
+ *   () => void
+ * ]}
  *   - `[0]` current habit state
  *   - `[1]` setter: pass a partial or a function to merge
+ *           (`opts.persist: false` updates React only — for debounced notes)
  *   - `[2]` `isFirstSession` true when no prior interaction recorded
+ *   - `[3]` `replaceState` full replacement (midnight / cross-tab sync)
+ *   - `[4]` `persistCurrent` flush latest state to localStorage
  */
 export function useHabitState() {
-  // Exposed so external code (e.g. the visibility handler in Home.jsx)
-  // can do a full state replacement without going through the partial-merge
-  // setter below. setStateInternal is React's setter for the array
-  // destructure above and is stable across renders.
-  const [state, setStateInternal, setStateFull] = useState(() => {
+  const [state, setStateInternal] = useState(() => {
     const loaded = loadInitialState();
     // If the loaded state has a non-empty `done` map (e.g., from
     // yesterday's seed, or from a previous day) and we just did
     // a per-day reset to `done: {}`, persist that reset so the
     // next reload sees the wiped state. Mirrors the behavior of
     // the inline useState initializer in Home.jsx pre-#140.
-    const raw = localStorage.getItem(STATE_KEY);
+    let raw = null;
+    try {
+      raw = localStorage.getItem(STATE_KEY);
+    } catch {
+      raw = null;
+    }
     let stored;
     try {
       stored = raw ? JSON.parse(raw) : null;
@@ -148,30 +158,39 @@ export function useHabitState() {
   });
   const [isFirstSession] = useState(() => !hasInteracted());
 
-  // useCallback deps are intentionally [] — setStateInternal and
-  // setStateFull are React's useState setters, which are stable
-  // across renders. Adding them as deps would cause unnecessary
-  // callback recreation.
-  const updateState = useCallback((patch) => {
+  // Keep a ref of the latest state so debounced persist can flush
+  // without reading a stale closure.
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  // useCallback deps are intentionally [] — setStateInternal is
+  // React's useState setter, which is stable across renders.
+  const updateState = useCallback((patch, opts = {}) => {
+    const shouldPersist = opts.persist !== false;
     setStateInternal((prev) => {
       const next = typeof patch === 'function' ? patch(prev) : { ...prev, ...patch };
-      persist(next);
+      stateRef.current = next;
+      if (shouldPersist) persist(next);
       return next;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Expose a "replace" setter for the rare cases where callers
-  // need to throw away the previous state entirely (e.g. on
-  // visibility change after midnight). Goes directly through
-  // React's setState without the partial-merge semantics.
+  // Full replace for visibility/midnight/cross-tab sync. Must use
+  // setStateInternal (useState only returns [state, setState] —
+  // a third destructure is always undefined and used to throw).
   const replaceState = useCallback((next) => {
-    setStateFull(next);
+    stateRef.current = next;
+    setStateInternal(next);
     persist(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return [state, updateState, isFirstSession, replaceState];
+  const persistCurrent = useCallback(() => {
+    persist(stateRef.current);
+  }, []);
+
+  return [state, updateState, isFirstSession, replaceState, persistCurrent];
 }
 
 // Re-export constants for tests that need to verify the storage keys.

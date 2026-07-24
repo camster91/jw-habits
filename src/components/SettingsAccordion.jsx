@@ -166,32 +166,40 @@ export default function SettingsAccordion() {
   // Toggle handler. Off → request permission, then turn on.
   // On → turn off + cancel scheduler.
   const handleToggleReminders = async (next) => {
-    if (next) {
-      if (
-        perm === NOTIFICATION_PERMISSION.DEFAULT ||
-        perm === NOTIFICATION_PERMISSION.UNSUPPORTED
-      ) {
-        const result = await requestNotificationPermission();
-        setPerm(result);
-        if (result !== NOTIFICATION_PERMISSION.GRANTED) {
-          // User dismissed or denied — don't enable the toggle.
-          return;
+    try {
+      if (next) {
+        if (
+          perm === NOTIFICATION_PERMISSION.DEFAULT ||
+          perm === NOTIFICATION_PERMISSION.UNSUPPORTED
+        ) {
+          const result = await requestNotificationPermission();
+          setPerm(result);
+          if (result !== NOTIFICATION_PERMISSION.GRANTED) {
+            // User dismissed or denied — don't enable the toggle.
+            return;
+          }
         }
+        update({ reminderTime: settings.reminderTime || '21:00' });
+      } else {
+        cancelReminder();
+        update({ reminderTime: null });
       }
-      update({ reminderTime: settings.reminderTime || '21:00' });
-    } else {
-      cancelReminder();
-      update({ reminderTime: null });
+    } catch {
+      // Permission prompt / storage failures must not crash the settings UI.
     }
   };
 
   const handleTestNotification = async () => {
-    setTestFired(true);
-    await showReminderNotification({
-      title: 'JW Habits',
-      body: 'Time to check your daily habits.',
-    });
-    setTimeout(() => setTestFired(false), 2000);
+    try {
+      await showReminderNotification({
+        title: 'JW Habits',
+        body: 'Time to check your daily habits.',
+      });
+      setTestFired(true);
+      setTimeout(() => setTestFired(false), 2000);
+    } catch {
+      setTestFired(false);
+    }
   };
 
   return (

@@ -75,6 +75,18 @@ jobs:
           echo "image=ghcr.io/camster91/${REPO_NAME}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "sha=${SHA_SHORT}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "tags<<EOF" >> $GITHUB_OUTPUT
+            echo "ghcr.io/camster91/${REPO_NAME}:${TAG}" >> $GITHUB_OUTPUT
+            echo "ghcr.io/camster91/${REPO_NAME}:${TAG}-${SHA_SHORT}" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "tags<<EOF" >> $GITHUB_OUTPUT
+            echo "ghcr.io/camster91/${REPO_NAME}:${TAG}" >> $GITHUB_OUTPUT
+            echo "ghcr.io/camster91/${REPO_NAME}:${TAG}-${SHA_SHORT}" >> $GITHUB_OUTPUT
+            echo "ghcr.io/camster91/${REPO_NAME}:latest" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -104,11 +116,9 @@ jobs:
           context: .
           file: ${{ inputs.dockerfile || 'Dockerfile' }}
           platforms: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
-          push: true
-          tags: |
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}-${{ steps.meta.outputs.sha }}
-            ${{ steps.meta.outputs.image }}:latest
+          # Never publish PR builds (or overwrite :latest from a PR).
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           provenance: true

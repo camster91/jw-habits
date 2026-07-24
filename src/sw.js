@@ -1,6 +1,10 @@
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import {
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+} from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
@@ -20,133 +24,93 @@ cleanupOutdatedCaches();
 // the activation flow.
 
 // ── Navigation fallback for SPA routes ───────────────────────
-// Without this, deep links like /study, /service, /settings return
-// 404 (or the browser offline error page) when offline, because the
-// precache holds /index.html but no navigation route serves it.
-// This handler matches any navigation request and serves the
-// precached /index.html so React Router can take over.
+// Network-first so live deploys work; fall back to the Workbox
+// precache entry for /index.html when offline. Using
+// createHandlerBoundToURL (not caches.match('/index.html')) is
+// required — injectManifest revisioned URLs often won't match a
+// bare pathname, and `caches.match(...) || fetch(...)` is wrong
+// because caches.match returns a Promise (always truthy).
+const offlineIndexHandler = createHandlerBoundToURL('/index.html');
 registerRoute(
   new NavigationRoute(
-    async ({ event }) => {
-      // Try the network first so live deploys work, then fall back
-      // to the precached index.html when offline.
+    async (options) => {
       try {
-        return await fetch(event.request);
+        const response = await fetch(options.event.request);
+        if (response && response.ok) return response;
       } catch {
-        // Last resort: serve the precached /index.html so React Router
-        // can take over. The Workbox manifest is injected at build time
-        // at the self.__WB_MANIFEST token above; we use the static URL
-        // here to avoid matching the injectManifest regex twice.
-        return caches.match('/index.html') || fetch('/index.html');
+        // Offline or network error — fall through to precache.
       }
+      return offlineIndexHandler(options);
     },
     {
-      // Don't intercept the SW itself, the manifest, or the API proxy
-      denylist: [/^\/api\//, /^\/sw\.js$/, /^\/manifest\.webmanifest$/],
+      // Don't intercept the SW itself or the manifest
+      denylist: [/^\/sw\.js$/, /^\/manifest\.webmanifest$/],
     }
   )
 );
+
+/**
+ * Only allow same-origin relative paths from notification data.
+ * Prevents a future buggy/malicious notification payload from
+ * navigating the client to an external phishing URL.
+ */
+function sanitizeNotificationUrl(raw) {
+  const fallback = '/';
+  if (raw == null || raw === '') return fallback;
+  const value = String(raw).trim();
+  if (!value) return fallback;
+  if (value.startsWith('/') && !value.startsWith('//')) {
+    if (value.includes('\\') || value.includes('\0')) return fallback;
+    return value;
+  }
+  try {
+    const parsed = new URL(value, self.location.origin);
+    if (parsed.origin !== self.location.origin) return fallback;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}` || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 // ── Notification click handler ────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/';
+  const urlToOpen = sanitizeNotificationUrl(event.notification.data?.url);
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       // If a window is already open, focus it and navigate
       for (const client of clientList) {
-        if (client.url === self.location.origin && 'focus' in client) {
-          client.navigate(urlToOpen);
+        if ('focus' in client) {
+          if ('navigate' in client) {
+            client.navigate(urlToOpen);
+          }
           return client.focus();
         }
       }
-      // Otherwise open a new window
+      // Otherwise open a new window (same-origin path only)
       return self.clients.openWindow(urlToOpen);
     })
   );
 });
 
 // ── Runtime caching strategies ───────────────────────────────────
+// Intentionally minimal: the app is a link-out habit tracker and
+// does not render jw.org HTML in-page. Caching third-party origins
+// (www.jw.org, wol.jw.org, fonts.*, api.*) burned quota and could
+// serve stale opaque responses — removed in the 2026-07-24 audit.
 
-// JW.org pages — NetworkFirst
+// Same-origin images (icons, PWA assets) — CacheFirst
 registerRoute(
-  ({ url }) => url.hostname === 'www.jw.org',
-  new NetworkFirst({
-    cacheName: 'jw-org-cache',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-    ],
-  })
-);
-
-// Watchtower Online Library — NetworkFirst
-registerRoute(
-  ({ url }) => url.hostname === 'wol.jw.org',
-  new NetworkFirst({
-    cacheName: 'wol-cache',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 7 * 24 * 60 * 60 }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-    ],
-  })
-);
-
-// Images — CacheFirst
-registerRoute(
-  ({ url }) => /\.(?:png|jpg|jpeg|svg|gif|webp)$/.test(url.pathname),
+  ({ url, request }) =>
+    url.origin === self.location.origin &&
+    (request.destination === 'image' || /\.(?:png|jpg|jpeg|svg|gif|webp)$/.test(url.pathname)),
   new CacheFirst({
     cacheName: 'images-cache',
     plugins: [
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-    ],
-  })
-);
-
-// Fonts — CacheFirst
-registerRoute(
-  ({ url }) => /\.(?:woff|woff2|ttf|otf|eot)$/.test(url.pathname),
-  new CacheFirst({
-    cacheName: 'fonts-cache',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-    ],
-  })
-);
-
-// Google Fonts stylesheets — StaleWhileRevalidate
-registerRoute(
-  ({ url }) => url.hostname === 'fonts.googleapis.com',
-  new StaleWhileRevalidate({
-    cacheName: 'google-fonts-stylesheets',
-    plugins: [new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 365 * 24 * 60 * 60 })],
-  })
-);
-
-// Google Fonts webfonts — CacheFirst
-registerRoute(
-  ({ url }) => url.hostname === 'fonts.gstatic.com',
-  new CacheFirst({
-    cacheName: 'google-fonts-webfonts',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 365 * 24 * 60 * 60 }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-    ],
-  })
-);
-
-// API — StaleWhileRevalidate
-registerRoute(
-  ({ url }) => url.hostname.startsWith('api.'),
-  new StaleWhileRevalidate({
-    cacheName: 'api-cache',
-    plugins: [
-      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+      new CacheableResponsePlugin({ statuses: [200] }),
     ],
   })
 );

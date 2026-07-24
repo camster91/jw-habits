@@ -68,22 +68,24 @@ export function usePWA() {
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
 
     // Check for waiting service worker
-    navigator.serviceWorker.ready.then((registration) => {
-      if (registration.waiting) {
-        setUpdateAvailable(true);
-      }
-
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              setUpdateAvailable(true);
-            }
-          });
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        if (registration.waiting) {
+          setUpdateAvailable(true);
         }
-      });
-    });
+
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                setUpdateAvailable(true);
+              }
+            });
+          }
+        });
+      })
+      .catch(() => {});
 
     return () => {
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
