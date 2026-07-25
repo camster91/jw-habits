@@ -83,7 +83,7 @@ jobs:
       # Added 2026-07-22 after the keystore-password P0 leak review.
       # Public repo config; for private repos, switch to the GitHub App.
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
