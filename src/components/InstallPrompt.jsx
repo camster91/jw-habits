@@ -6,11 +6,12 @@
 
 import { useState, useEffect } from 'react';
 import { Download, X, Smartphone } from 'lucide-react';
-import { usePWA } from '../hooks/usePWA';
+import { usePWAContext } from '../hooks/usePWAContext';
 import { haptics } from '../utils/native';
+import { safeGetItem, safeSetItem } from '../utils/safeStorage';
 
 function isDismissedInitially() {
-  const dismissedUntil = localStorage.getItem('installPromptDismissed');
+  const dismissedUntil = safeGetItem('installPromptDismissed');
   if (dismissedUntil) {
     const dismissedDate = new Date(dismissedUntil);
     if (dismissedDate > new Date()) {
@@ -21,7 +22,7 @@ function isDismissedInitially() {
 }
 
 function InstallPrompt() {
-  const { canInstall, promptInstall, isAppInstalled } = usePWA();
+  const { canInstall, promptInstall, isAppInstalled } = usePWAContext();
   const [dismissed, setDismissed] = useState(isDismissedInitially);
   const [showBanner, setShowBanner] = useState(false);
 
@@ -47,7 +48,7 @@ function InstallPrompt() {
     // Don't show again for 7 days
     const dismissUntil = new Date();
     dismissUntil.setDate(dismissUntil.getDate() + 7);
-    localStorage.setItem('installPromptDismissed', dismissUntil.toISOString());
+    safeSetItem('installPromptDismissed', dismissUntil.toISOString());
   };
 
   useEffect(() => {

@@ -55,7 +55,8 @@
     "streakDays": "day streak",
     "streakBest": "best",
     "streakToday": "today",
-    "storageFull": "This device is out of storage space. Habit checkmarks may not save until you free some space."
+    "storageFull": "This device is out of storage space. Habit checkmarks may not save until you free some space.",
+    "offlineOpen": "You are offline. Connect to open jw.org links — JW Library deep links still work."
   },
   "settings": {
     "title": "Settings",

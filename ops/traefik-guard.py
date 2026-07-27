@@ -54,8 +54,19 @@ ROUTER_BLOCK = (
     f"      rule: \"Host(`{JW_HOST}`)\"\n"
     f"      entryPoints: [websecure]\n"
     f"      service: jwhabits\n"
+    f"      middlewares: [jwhabits-hsts]\n"
     f"      tls:\n"
     f"        certResolver: letsencrypt\n"
+)
+# HSTS at the TLS edge (nginx container is :80 only).
+# max-age=1 year; includeSubDomains for the apex host.
+MIDDLEWARE_BLOCK = (
+    f"    jwhabits-hsts:\n"
+    f"      headers:\n"
+    f"        stsSeconds: 31536000\n"
+    f"        stsIncludeSubdomains: true\n"
+    f"        stsPreload: false\n"
+    f"        forceSTSHeader: true\n"
 )
 SERVICE_BLOCK = (
     f"    jwhabits:\n"
@@ -70,28 +81,75 @@ CERT_BLOCK = (
 
 
 def append_routers():
-    """Add the jw-habits router + service to routers.yml if missing.
+    """Add the jw-habits router + HSTS middleware + service if missing.
 
     The file looks like:
       http:
+        middlewares:
+          <existing>
         routers:
           <existing router blocks>
         services:
           <existing service blocks>
 
-    We insert the router just before "  services:" and the
-    service at the end of the services block.
+    We insert the middleware (if absent), the router just before
+    "  services:", and the service at the end of the services block.
     """
     text = open(ROUTERS).read()
-    if "  jwhabits:" in text:
+    changed = False
+
+    if "jwhabits-hsts:" not in text:
+        # Prefer inserting under an existing middlewares: section;
+        # otherwise create one before routers:.
+        if "\n  middlewares:\n" in text:
+            text = text.replace(
+                "\n  middlewares:\n",
+                "\n  middlewares:\n" + MIDDLEWARE_BLOCK,
+                1,
+            )
+        elif "\n  routers:\n" in text:
+            text = text.replace(
+                "\n  routers:\n",
+                "\n  middlewares:\n" + MIDDLEWARE_BLOCK + "  routers:\n",
+                1,
+            )
+        else:
+            log(f"WARNING: '{ROUTERS}' has no middlewares/routers marker; cannot insert HSTS")
+            return False
+        changed = True
+
+    if "  jwhabits:" not in text:
+        if "\n  services:\n" not in text:
+            log(f"WARNING: '{ROUTERS}' has no 'services:' marker; cannot insert router")
+            return False
+        text = text.replace("\n  services:\n", "\n" + ROUTER_BLOCK + "  services:\n", 1)
+        if not text.endswith("\n"):
+            text += "\n"
+        text += SERVICE_BLOCK
+        changed = True
+    elif "middlewares: [jwhabits-hsts]" not in text and "jwhabits:" in text:
+        # Router exists from an older guard run — attach HSTS middleware.
+        old = (
+            "    jwhabits:\n"
+            "      rule: \"Host(`jwhabits.ashbi.ca`)\"\n"
+            "      entryPoints: [websecure]\n"
+            "      service: jwhabits\n"
+            "      tls:\n"
+        )
+        new = (
+            "    jwhabits:\n"
+            "      rule: \"Host(`jwhabits.ashbi.ca`)\"\n"
+            "      entryPoints: [websecure]\n"
+            "      service: jwhabits\n"
+            "      middlewares: [jwhabits-hsts]\n"
+            "      tls:\n"
+        )
+        if old in text:
+            text = text.replace(old, new, 1)
+            changed = True
+
+    if not changed:
         return False
-    if "\n  services:\n" not in text:
-        log(f"WARNING: '{ROUTERS}' has no 'services:' marker; cannot insert router")
-        return False
-    text = text.replace("\n  services:\n", "\n" + ROUTER_BLOCK + "  services:\n", 1)
-    if not text.endswith("\n"):
-        text += "\n"
-    text += SERVICE_BLOCK
     with open(ROUTERS, "w") as f:
         f.write(text)
     return True

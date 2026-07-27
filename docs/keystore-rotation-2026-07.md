@@ -47,31 +47,19 @@ Save the keystore file + both passwords in 1Password under `JW Habits / Android 
 
 ### Step 3 — Update Gradle to use the new keystore
 
-Once Google has the new upload key enrolled, update `android/app/build.gradle`:
+**Done in-repo (2026-07-24):** `android/app/build.gradle` now reads
+`android/keystore.properties` (gitignored) or `KEYSTORE_*` /
+`KEY_ALIAS` / `KEYSTORE_FILE` env vars. The hardcoded
+`/Users/biancabienaime/keys/...` path is gone.
 
-```groovy
-// OLD (rotated out, do NOT use)
-storePassword 'REDACTED'
-keyPassword 'REDACTED'
+After you generate the new keystore (Step 1), copy the example and fill in:
 
-// NEW — read from environment, never commit
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('keystore.properties')
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-}
-
-signingConfigs {
-    release {
-        storeFile file(keystoreProperties['storeFile'] ?: System.getenv('KEYSTORE_FILE'))
-        storePassword keystoreProperties['storePassword'] ?: System.getenv('KEYSTORE_PASSWORD')
-        keyAlias keystoreProperties['keyAlias'] ?: System.getenv('KEY_ALIAS')
-        keyPassword keystoreProperties['keyPassword'] ?: System.getenv('KEY_PASSWORD')
-    }
-}
+```bash
+cp android/keystore.properties.example android/keystore.properties
+# edit storeFile / passwords / keyAlias — never commit this file
 ```
 
-And `android/keystore.properties` (gitignored, see `.gitignore` additions):
+Example contents:
 
 ```properties
 storeFile=/absolute/path/to/jwnews-release-2026.keystore
@@ -84,37 +72,41 @@ keyPassword=...
 
 **Only do this AFTER Step 2 (Google has the new key)** — once rotated, the leaked credentials are inert.
 
-```bash
-# From a fresh clone
-cd ~/Code/jw-habits
-git filter-repo --invert-paths \
-  --path-glob 'scripts/generate-android-keystore.sh' \
-  --path-glob 'android/app/build.gradle' \
-  --blob-callback 'cb: if b.decode(errors="ignore").find(b"jwnews-2024-prefix") != -1: skip()'
-
-# Force-push (this is destructive — coordinate with team first)
-git remote add origin https://github.com/camster91/jw-habits.git
-git push origin --force --all
-git push origin --force --tags
-
-# Have all team members re-clone.
-```
-
-**Alternative:** Use `bfg` (BFG Repo-Cleaner):
+Preferred: **BFG Repo-Cleaner** with a replacements file (do **not** commit
+`passwords.txt` — keep it outside the repo):
 
 ```bash
-bfg --replace-text passwords.txt  # file with one password per line
+# passwords.txt (outside the clone) — one leaked secret per line:
+#   jwnews2024secure
+#   jwnews2024release
+#   JWHabits2026!
+#   <any other recovered values from 1Password / git log>
+
+cd /tmp
+git clone --mirror https://github.com/camster91/jw-habits.git
+cd jw-habits.git
+bfg --replace-text ~/secure/jw-habits-passwords.txt
 git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 git push --force
 ```
 
-### Step 5 — Add ongoing protection (already done by automation in this PR)
+Alternative with `git filter-repo` (rewrites all history; all clones must re-clone):
 
-- [x] `.gitignore` hardened: `*.keystore`, `*.jks`, `keystore.properties`, `android/keystore.properties`, `android/app/keystore.properties` explicitly added (they were already partly present)
-- [x] `ci.yml` runs `gitleaks/gitleaks-action@v2` on every push + PR — fails the build if any new secret is committed
-- [x] `scripts/generate-android-keystore.sh` rewrites with hardcoded `***` placeholders + a comment telling the user to use env vars
-- [x] Pre-commit hook recommended below
+```bash
+git filter-repo --replace-text ~/secure/jw-habits-passwords.txt
+git remote add origin https://github.com/camster91/jw-habits.git
+git push origin --force --all
+git push origin --force --tags
+```
+
+### Step 5 — Add ongoing protection (already done)
+
+- [x] `.gitignore` hardened: `*.keystore`, `*.jks`, `keystore.properties`, `android/keystore.properties`, `android/app/keystore.properties`
+- [x] `ci.yml` runs `gitleaks/gitleaks-action@v2` on every push + PR
+- [x] `scripts/generate-android-keystore.sh` — env/prompt only; **never echoes passwords**
+- [x] `android/app/build.gradle` — `keystore.properties` / env only (no machine path)
+- [x] `android/keystore.properties.example` committed as a template
 
 ### Step 6 (recommended) — Pre-commit hook for local devs
 
@@ -138,10 +130,10 @@ Make it executable: `chmod +x .git/hooks/pre-commit`.
 - [x] Runbook written
 - [x] `gitleaks` added to CI
 - [x] `.gitignore` hardened
-- [x] `scripts/generate-android-keystore.sh` redacted with `***` + warning comment
-- [ ] **Step 1 (new keystore) — Cam**
-- [ ] **Step 2 (Google Play coordination) — Cam**
-- [ ] **Step 3 (gradle config update) — pending Step 1**
-- [ ] **Step 4 (history purge) — pending Step 2**
+- [x] Keystore generator never prints passwords
+- [x] Gradle reads `keystore.properties` / env (Step 3 in-repo)
+- [ ] **Step 1 (new keystore) — Cam** (requires local keytool + 1Password)
+- [ ] **Step 2 (Google Play upload-key reset) — Cam** (Play Console only)
+- [ ] **Step 4 (history purge) — Cam** (after Step 2; force-push)
 
-Until Step 1–2 are done, the credentials remain hot. Do not delay.
+Until Step 1–2 are done, historical passwords remain hot. Do not delay.

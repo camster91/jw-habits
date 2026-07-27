@@ -4,6 +4,9 @@
  * `javascript:`, `data:`, and credentialed URLs are rejected.
  */
 
+/** Hosts the share-target "Open Link" button may navigate to. */
+const SHARE_ALLOWED_HOSTS = new Set(['jw.org', 'www.jw.org', 'wol.jw.org']);
+
 /**
  * True when `raw` is an absolute http(s) URL without embedded credentials.
  * @param {string} raw
@@ -16,6 +19,24 @@ export function isSafeHttpUrl(raw) {
     if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
     if (url.username || url.password) return false;
     return Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Share-target open: safe http(s) AND hostname is a JW.org surface.
+ * Blocks phishing assists via OS share → arbitrary external site.
+ * @param {string} raw
+ * @returns {boolean}
+ */
+export function isAllowedShareUrl(raw) {
+  if (!isSafeHttpUrl(raw)) return false;
+  try {
+    const host = new URL(raw.trim()).hostname.toLowerCase();
+    if (SHARE_ALLOWED_HOSTS.has(host)) return true;
+    // Future-proof subdomains like apps.jw.org — never bare "eviljw.org"
+    return host.endsWith('.jw.org');
   } catch {
     return false;
   }

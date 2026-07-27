@@ -4,6 +4,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import InstallPrompt from './components/InstallPrompt';
 import UpdatePrompt from './components/UpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
+import { PWAProvider } from './components/PWAProvider';
 import Share from './pages/Share';
 
 // The app is one page. Settings, Ideas, About, the side
@@ -52,15 +53,15 @@ function App() {
 // (offline indicator + update prompt + install banner). The
 // install prompt is a small bottom banner that auto-dismisses
 // — it's not a settings menu, just a one-time browser
-// affordance.
+// affordance. PWAProvider ensures SW/install listeners mount once.
 function HomeWithChrome() {
   return (
-    <>
+    <PWAProvider>
       <OfflineIndicator />
       <UpdatePrompt />
       <Home />
       <InstallPrompt />
-    </>
+    </PWAProvider>
   );
 }
 

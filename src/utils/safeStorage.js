@@ -65,3 +65,45 @@ export function safeRemoveItem(key) {
     return false;
   }
 }
+
+/**
+ * @param {string} key
+ * @returns {string|null}
+ */
+export function safeGetItem(key) {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * sessionStorage variants for ephemeral UI dismissals (update banner).
+ * @param {string} key
+ * @returns {string|null}
+ */
+export function safeSessionGetItem(key) {
+  if (typeof sessionStorage === 'undefined') return null;
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} key
+ * @param {string} value
+ * @returns {boolean}
+ */
+export function safeSessionSetItem(key, value) {
+  if (typeof sessionStorage === 'undefined') return false;
+  try {
+    sessionStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
