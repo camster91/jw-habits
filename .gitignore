@@ -61,6 +61,8 @@ capacitor.config.ts
 coverage/
 dev-dist/
 dist/
+node_modules/
+.codegraph/
 gitleaks-report.*
 history.json
 index.cjs
