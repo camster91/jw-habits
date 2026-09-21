@@ -37,7 +37,7 @@ is on-device; no backend, no auth, no server.
 | Dates | date-fns | `^4.4.0` |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x` |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, custom `src/sw.js`) | |
-| Testing | Vitest 4 + Testing Library | 195 tests, 15 files |
+| Testing | Vitest 4 + Testing Library + Playwright | 199 tests / 15 files, plus 7 smoke + 6 journey checks |
 | Linting | ESLint 9 + Prettier 3 | |
 
 **Node:** >= 18.0.0
@@ -188,7 +188,7 @@ Both base images are digest-pinned.
 ### Unit tests (Vitest)
 
 ```bash
-npm test                # 195 tests across 15 files
+npm test                # 199 tests across 15 files
 npm run test:coverage   # with coverage report (v8)
 ```
 
