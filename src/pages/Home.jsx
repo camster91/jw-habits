@@ -10,7 +10,6 @@ import {
   ArrowUpRight,
   ChevronDown,
   StickyNote,
-  Share2,
   ExternalLink,
 } from 'lucide-react';
 import { getThisWeekMeetingUrl, getTodayRow } from '../utils/weekContext';
@@ -107,35 +106,6 @@ function Home() {
   }, []);
 
   // Best-effort share-invite helper. Uses the system share sheet
-  // (`navigator.share`) when available — the user picks their
-  // recipient (Messages, WhatsApp, Email, copy, etc.). Falls back
-  // to the async clipboard API in browsers that lack share. The
-  // function is fire-and-forget; errors are swallowed because
-  // "user canceled the share sheet" is a normal outcome, not a
-  // failure.
-  async function shareInvite(text) {
-    try {
-      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-        await navigator.share({ text, title: 'Memorial invitation' });
-        return;
-      }
-    } catch {
-      // User dismissed the share sheet (AbortError) or share
-      // failed for another reason. Fall through to clipboard.
-    }
-    try {
-      if (
-        typeof navigator !== 'undefined' &&
-        navigator.clipboard &&
-        navigator.clipboard.writeText
-      ) {
-        await navigator.clipboard.writeText(text);
-      }
-    } catch {
-      /* swallow */
-    }
-  }
-
   // User settings (midweek day, weekend day). Re-read on
   // 'storage' events so a change in one tab propagates to
   // another. Settings are sticky (not per-day-reset), so we
@@ -645,7 +615,7 @@ function Home() {
             checkbox. No toast, no animation, no "complete" card. */}
         <div className="ios-grouped">
           {ROWS.map((row) => {
-            const { key, title, sub, color, href, progress, subRows, metaChip, shareText } = row;
+            const { key, title, sub, color, href, progress, subRows, metaChip } = row;
             const RowIcon = row.Icon;
             const rowState = getDone(state.done, key);
             const isDone = !!rowState.done;
@@ -693,74 +663,6 @@ function Home() {
                         >
                           {metaChip}
                         </div>
-                      )}
-                      {/* Share-invite button. Only rendered on rows
-                          that carry a `shareText`. Tapping calls
-                          navigator.share() with the pre-filled text.
-                          Falls back to clipboard.copy() if the system
-                          share sheet isn't available. */}
-                      {/* Sub-actions. Each row can expose 0..N
-                          chip-style inline buttons under its
-                          sub-text. Current consumers:
-                            - shareText: opens the system share
-                              sheet (Memorial row).
-                            - url: an inline link to an external
-                              destination.
-                          All sub-actions render with the same
-                          chip styling; only the click handler
-                          and target differ. Tapping any
-                          sub-action stops propagation so the
-                          parent <a> doesn't also navigate. */}
-                      {Array.isArray(row.subActions) && row.subActions.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {row.subActions.map((act) => (
-                            <button
-                              key={act.key}
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                if (act.onClick) return act.onClick(e);
-                                if (act.kind === 'share') return shareInvite(act.text);
-                                if (act.kind === 'link' && act.url) {
-                                  if (
-                                    typeof navigator !== 'undefined' &&
-                                    navigator.onLine === false
-                                  ) {
-                                    window.dispatchEvent(new CustomEvent('jw-offline-open'));
-                                    return;
-                                  }
-                                  window.open(act.url, '_blank', 'noopener,noreferrer');
-                                  return;
-                                }
-                              }}
-                              className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-sm px-1 -ml-1"
-                              aria-label={act.ariaLabel || act.label}
-                            >
-                              {act.icon && <act.icon className="w-3 h-3" aria-hidden="true" />}
-                              <span>{act.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {/* Legacy shareText prop — kept so the
-                          Memorial row still works without
-                          translation. New rows should use the
-                          subActions array above instead. */}
-                      {shareText && !Array.isArray(row.subActions) && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            shareInvite(shareText);
-                          }}
-                          className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-sm px-1 -ml-1"
-                          aria-label={t('habit.shareInvite', 'Share invitation')}
-                        >
-                          <Share2 className="w-3 h-3" aria-hidden="true" />
-                          <span>{t('habit.shareInvite', 'Share invite')}</span>
-                        </button>
                       )}
                       {/* Progress bar — only for rows that have a
                           progress object (Daily text, Bible reading).
