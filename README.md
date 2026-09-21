@@ -98,7 +98,7 @@ There is no settings route, no about route, no ideas route. Settings is rendered
 |---|---|---|---|
 | Today | `today` | primary link | Label only; changes with your meeting-day settings |
 | Daily reading | `text` | primary link | Shows a day-of-month progress label |
-| Bible reading | `bible` | primary link | Shows today's reading from the bundled 366-day schedule |
+| Bible reading | `bible` | primary link | Shows today's entry from the bundled 366-entry reading schedule |
 | Meeting prep | `meeting` | primary link | Three generic sub-section labels |
 | Family worship | `family` | primary link | Three timing suggestions |
 | This week | `thisWeek` | primary link | Shows the current Monday–Sunday date range |

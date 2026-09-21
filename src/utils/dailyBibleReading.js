@@ -1,10 +1,13 @@
 /**
- * Daily Bible reading helper. Returns today's entry from a
- * 366-day Bible reading schedule, with a deep link to the
- * passage label for the day.
+ * Reading-schedule helper. Returns today's entry from a bundled
+ * 366-entry reading schedule.
+ *
+ * Scope note: the schedule covers 45 books and ends at Romans. It is a
+ * repeating daily reading list, NOT a claim to cover the whole canon.
+ * The UI label says "day N of 366" for that reason.
  *
  * The schedule is bundled as a JS const so the lookup is
- * synchronous and works offline / in any Traefik state.
+ * synchronous and works offline, with no network call.
  *
  * The schedule uses day-of-year (1-366). We wrap to 1..length
  * so the schedule loops year-over-year, so a user who started
