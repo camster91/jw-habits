@@ -66,7 +66,7 @@ describe('Home — first-launch hint', () => {
     seedState(null);
     renderHome();
     // The hint text is in locales/en.json as home.firstRunHint
-    expect(screen.getByText(/tap a row to open jw\.org/i)).toBeTruthy();
+    expect(screen.getByText(/tap a row to open its link/i)).toBeTruthy();
   });
 
   it('hides the first-launch hint after the user marks anything', () => {
@@ -83,7 +83,7 @@ describe('Home — first-launch hint', () => {
     // Re-mount to pick up the change.
     cleanup();
     renderHome();
-    expect(screen.queryByText(/tap a row to open jw\.org/i)).toBeNull();
+    expect(screen.queryByText(/tap a row to open its link/i)).toBeNull();
   });
 });
 

@@ -21,8 +21,8 @@ import {
   getSundayWatchtowerRow,
   getThisWeekMeetingUrl,
   getTodayRow,
-  JW_ORG_SECTIONS,
 } from '../utils/jwLibraryLinks';
+import { userLinksFrom } from '../utils/userLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 import { bibleReadingProgress, dailyTextProgress } from '../utils/habitProgress';
 import { currentStreak, bestStreakFromHistory, todayProgress } from '../utils/streak';
@@ -162,6 +162,9 @@ function Home() {
   // another. Settings are sticky (not per-day-reset), so we
   // don't need a visibilitychange handler.
   const [settings, setSettings] = useState(() => loadSettings());
+  // User-owned destination links. Empty by default: the app ships no
+  // third-party URLs, and each row's href is whatever the user saved.
+  const links = userLinksFrom(settings);
   useEffect(() => {
     const onStorage = (e) => {
       if (e.key === 'jw-user-settings') setSettings(loadSettings());
@@ -346,7 +349,7 @@ function Home() {
   // Resolve the daily Bible reading target for today. The
   // util is sync (no fetch) so this returns instantly.
   const dailyReading = getDailyReading(new Date());
-  const bibleHref = dailyReading && dailyReading.url ? dailyReading.url : JW_ORG_SECTIONS.bibles;
+  const bibleHref = (dailyReading && dailyReading.url) || links.primary;
 
   // "This week" — the current meeting-week URL, computed
   // once per render. Used for the This-week row's href and
@@ -499,7 +502,7 @@ function Home() {
       ],
       Icon: Users,
       color: 'green',
-      href: JW_ORG_SECTIONS.meetingWorkbooks,
+      href: links.primary,
     },
     {
       // Family worship — 3 timing suggestions as sub-row
@@ -516,7 +519,7 @@ function Home() {
       ],
       Icon: UsersRound,
       color: 'pink',
-      href: JW_ORG_SECTIONS.marriageAndFamily,
+      href: links.primary,
     },
     {
       // "This week" — replaces the old Prayer row. The href
@@ -544,7 +547,7 @@ function Home() {
       sub: t('habit.conventionsSub', 'Find a regional convention on jw.org'),
       Icon: Users,
       color: 'orange',
-      href: JW_ORG_SECTIONS.findConvention,
+      href: links.secondary,
     },
     // Memorial — a 6th row that ONLY appears within the
     // 30-day window before the annual Memorial. Hidden
