@@ -39,7 +39,8 @@
         "ios:build": "npm run build && npx cap sync ios",
         "smoke": "node scripts/verify/smoke.cjs",
         "smoke:spawn": "SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs",
-        "verify:persona": "node scripts/verify/habit-tracker.cjs"
+        "verify:persona": "node scripts/verify/habit-tracker.cjs",
+        "journeys": "node scripts/verify/journeys.cjs"
     },
     "dependencies": {
         "@capacitor/android": "^8.3.0",

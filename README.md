@@ -67,6 +67,7 @@ The whole app is one page at `/`. Open `http://localhost:5173` in your browser.
 | `npm audit` | Check for vulnerable dependencies |
 | `npm run smoke` | Run Playwright smoke suite (assumes `preview` running) |
 | `npm run smoke:spawn` | Smoke suite, auto-spawns `vite preview` |
+| `npm run journeys` | End-to-end UI journeys (needs `npm run preview` running) |
 
 ## Routes
 
@@ -199,6 +200,17 @@ Tests cover the `src/utils/*` pure-function helpers and the key hooks/components
 ```bash
 npm run smoke:spawn    # auto-spawns vite preview, then runs tests
 ```
+
+### End-to-end journeys (Playwright)
+
+```bash
+npm run build && npm run preview &
+npm run journeys
+```
+
+Drives the real UI: open Settings, save a link, confirm the rows pick it up, enter an
+invalid link and check the notice appears, tap a checkbox, reload, and confirm the state
+survived. Exits non-zero on any failure.
 
 ## Mobile development
 
