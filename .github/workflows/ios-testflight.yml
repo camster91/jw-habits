@@ -169,7 +169,7 @@ jobs:
       # silently ignored and uploads could never succeed.
       - name: Upload to TestFlight
         if: env.SKIP_UPLOAD != 'true'
-        uses: apple-actions/upload-testflight-build@v5.3.0
+        uses: apple-actions/upload-testflight-build@v5.4.0
         with:
           app-path: ${{ steps.ipa.outputs.ipa_path }}
           app-type: ios
