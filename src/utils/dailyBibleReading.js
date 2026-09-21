@@ -404,7 +404,7 @@ function dayOfYear(d) {
 }
 
 /**
- * Synchronous lookup. Returns `{ day, label, url }` for today.
+ * Synchronous lookup. Returns `{ day, label }` for today.
  * Cache is per-day. No async, no fetch — works in any network
  * state.
  */
