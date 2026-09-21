@@ -298,7 +298,9 @@ function Home() {
   //   when it's March/April).
   const streak = currentStreak(state.history || [], todayKey());
   let best = readBestStreak();
-  const visibleKeys = ['today', 'text', 'bible', 'meeting', 'family', 'thisWeek'];
+  // Must list exactly the keys that render in ROWS below, or the
+  // "X of N today" counter under-reports. 'conventions' renders too.
+  const visibleKeys = ['today', 'text', 'bible', 'meeting', 'family', 'thisWeek', 'conventions'];
   const tp = todayProgress(state.done, visibleKeys);
 
   // The 5 habit rows, in the order Cam listed them. Each

@@ -34,8 +34,12 @@ function todayKey() {
 export { todayKey };
 
 export function pruneHistory(history, today) {
+  // Retain far more than the 7-day week strip needs: the streak counters
+  // read this list, so pruning to a week made every streak cap at 7 and
+  // made "best" meaningless. A rolling year keeps the maths honest while
+  // staying bounded.
   const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() - 6); // 7 days back inclusive
+  cutoff.setDate(cutoff.getDate() - 364); // ~1 year back inclusive
   const seen = new Set();
   const out = [];
   for (const d of history) {
