@@ -18,8 +18,8 @@
 // Run from repo root:
 //   node scripts/verify/smoke.cjs                    # uses default port 4173
 //   PORT=4173 node scripts/verify/smoke.cjs         # override port
-//   SMOKE_BASE_URL=https://jwhabits.ashbi.ca node scripts/verify/smoke.cjs
-//                                                    # hit prod instead of local
+//   SMOKE_BASE_URL=https://example.com node scripts/verify/smoke.cjs
+//                                                    # hit a deployed copy
 //
 // Pre-reqs:
 //   1. `npm install` (Playwright is a devDependency)
@@ -201,8 +201,6 @@ async function runSmoke(browser) {
       family: { done: false, note: '' },
       today: { done: false, note: '' },
       thisWeek: { done: false, note: '' },
-      yearText: { done: false, note: '' },
-      sundayWatchtower: { done: false, note: '' },
       conventions: { done: false, note: '' },
     });
     await page.reload();
@@ -237,8 +235,6 @@ async function runSmoke(browser) {
       family: false,
       today: false,
       thisWeek: false,
-      yearText: false,
-      sundayWatchtower: false,
       conventions: false,
     });
     await page.reload();
@@ -290,7 +286,7 @@ async function runSmoke(browser) {
     await page.goto(BASE_URL);
     await page.waitForTimeout(300);
     const hintBefore = await page
-      .getByText(/tap a row to open jw\.org/i)
+      .getByText(/tap a row to open its link/i)
       .first()
       .isVisible()
       .catch(() => false);
@@ -301,7 +297,7 @@ async function runSmoke(browser) {
       await page.waitForTimeout(200);
     }
     const hintAfter = await page
-      .getByText(/tap a row to open jw\.org/i)
+      .getByText(/tap a row to open its link/i)
       .first()
       .isVisible()
       .catch(() => false);
