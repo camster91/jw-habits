@@ -18,6 +18,11 @@ on:
 
 permissions:
   contents: read
+  # gitleaks-action reads the PR's commit list via the API. Without this the
+  # job dies with 403 "Resource not accessible by integration" before the
+  # scan runs, failing the whole workflow on a permissions error rather than
+  # a finding. See PR #219.
+  pull-requests: read
 
 # Dependabot PRs don't have access to repo secrets by default. Explicitly
 # allow them to trigger this workflow (which uses no secrets).
