@@ -15,7 +15,6 @@
 
 import { isoWeekOfDate } from './sundayWatchtowerTracker.js';
 import { jwlibraryPublicationUrl, getPublicationFinderUrl } from './jwLibraryLinks.publications.js';
-import { getThisWeekMeetingUrl } from './jwLibraryLinks.meetingWorkbook.js';
 
 /**
  * Sunday Watchtower publication docid lookup.
@@ -350,8 +349,6 @@ export function getMemorialRow(today = new Date(), year = today.getFullYear(), t
  */
 export function getTodayRow(today = new Date(), settings = {}, t = (k) => k) {
   if (isNaN(today.getTime())) return null;
-  const thisWeek = getThisWeekMeetingUrl(today, t);
-  const meetingHref = thisWeek.url;
   // Coerce settings into the documented range; fall back
   // to defaults on any malformed input.
   const clampDay = (n, fallback) => (Number.isInteger(n) && n >= 0 && n <= 6 ? n : fallback);
@@ -360,49 +357,37 @@ export function getTodayRow(today = new Date(), settings = {}, t = (k) => k) {
 
   const dow = today.getDay(); // 0=Sun..6=Sat
 
-  // Saturday (6) — fixed Field Service copy regardless of
-  // settings. Saturday is culturally the field-service day
-  // for JWs, not configurable.
-  if (dow === 6) {
-    return {
-      key: 'today',
-      title: t('habit.today'),
-      sub: t('habit.subFieldService'),
-      // jw.org landing page that lists meeting/field
-      // service finders. Verified 200 (2026-06-17).
-      href: 'https://www.jw.org/en/jehovahs-witnesses/meetings/',
-    };
-  }
-
-  // Weekend meeting day (default Sunday) — "Today — Public Meeting"
+  // The row carries no destination of its own — Home points it at the
+  // user's primary link. Only the neutral label changes by day.
   if (dow === weekendDay) {
     return {
       key: 'today',
       title: t('habit.today'),
       sub: t('habit.subPublicMeeting'),
-      href: meetingHref,
     };
   }
 
-  // Midweek meeting day (default Tuesday) — "Tonight — Midweek Meeting"
   if (dow === midweekDay) {
     return {
       key: 'today',
       title: t('habit.tonight'),
       sub: t('habit.subMidweekMeeting'),
-      href: meetingHref,
     };
   }
 
-  // Otherwise (Mon, Wed, Thu, Fri) — "Today — Midweek Meeting Prep"
-  // These are the days of the week surrounding the midweek
-  // meeting; the user is either preparing for this week's
-  // meeting (Mon) or reviewing for next week's (Wed-Fri).
-  // All point at this week's MWB schedule.
+  if (dow === 6) {
+    return {
+      key: 'today',
+      title: t('habit.today'),
+      sub: t('habit.subFieldService'),
+    };
+  }
+
+  // Otherwise (Mon, Wed, Thu, Fri) — the days surrounding the midweek
+  // meeting.
   return {
     key: 'today',
     title: t('habit.today'),
     sub: t('habit.subMidweekMeetingPrep'),
-    href: meetingHref,
   };
 }

@@ -523,29 +523,21 @@ describe('jwLibraryLinks', () => {
       const r = getTodayRow(new Date(2026, 5, 20), {}, tEn);
       expect(r.title).toBe('Today');
       expect(r.sub).toBe('Field service');
-      expect(r.href).toContain('/en/jehovahs-witnesses/meetings/');
     });
 
-    it('always points to a public jw.org URL (no jwlibrary://)', () => {
+    it('carries no destination of its own', () => {
+      // The row is labels only; Home points it at the user's own link,
+      // so the app never ships a third-party URL.
       for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
         const date = new Date(2026, 5, 15 + dayOffset); // Mon 15 through Sun 21
         const r = getTodayRow(date, {}, tEn);
-        expect(r.href).toMatch(/^https:\/\/www\.jw\.org\//);
+        expect(r.href).toBeUndefined();
       }
     });
 
     it('returns null for an invalid date', () => {
       const r = getTodayRow(new Date('not-a-date'), {}, tEn);
       expect(r).toBeNull();
-    });
-
-    it("points to this week's MWB schedule on meeting-related days", () => {
-      const monday = getTodayRow(new Date(2026, 5, 15), {}, tEn);
-      const tuesday = getTodayRow(new Date(2026, 5, 16), {}, tEn);
-      const wednesday = getTodayRow(new Date(2026, 5, 17), {}, tEn);
-      expect(monday.href).toBe(tuesday.href);
-      expect(tuesday.href).toBe(wednesday.href);
-      expect(monday.href).toContain('Life-and-Ministry-Meeting-Schedule-for-June-15-21-2026');
     });
 
     it('honors a custom midweekDay setting', () => {
@@ -563,14 +555,10 @@ describe('jwLibraryLinks', () => {
     });
 
     it('honors a custom weekendDay setting', () => {
-      // Move the weekend meeting to Saturday. But the function
-      // treats Saturday (dow=6) as a fixed "Field service" day
-      // regardless of the user's weekendDay — Saturday is
-      // culturally the JW field-service day, not configurable.
-      // So setting weekendDay=6 leaves the Saturday copy as
-      // "Field service".
+      // The user's configured weekend day wins over the default Saturday
+      // label, so a Saturday meeting reads as the weekend meeting.
       const saturday = getTodayRow(new Date(2026, 5, 20), { weekendDay: 6 }, tEn);
-      expect(saturday.sub).toBe('Field service');
+      expect(saturday.sub).toBe('Public meeting');
 
       // Move it to Friday instead — uncommon but valid. Now
       // Friday is the weekend meeting day, and the day before
