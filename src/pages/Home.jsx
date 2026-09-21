@@ -491,7 +491,7 @@ function Home() {
       >
         <div className="container mx-auto px-4 max-w-2xl flex items-center justify-center h-12">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-base-content/80">
-            {t('appName', 'JW Habits')}
+            {t('appName', 'Habit Tracker')}
           </span>
         </div>
       </header>

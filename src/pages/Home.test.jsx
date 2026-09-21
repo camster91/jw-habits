@@ -49,7 +49,7 @@ function seedState(state) {
 
 beforeEach(() => {
   // jsdom uses the host's clock; freeze to a known date so the
-  // date-window logic (Memorial, Sunday Watchtower, Today row)
+  // date-window logic (the Today row)
   // is deterministic.
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-07-22T12:00:00'));

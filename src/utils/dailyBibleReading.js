@@ -1,7 +1,7 @@
 /**
  * Daily Bible reading helper. Returns today's entry from a
  * 366-day Bible reading schedule, with a deep link to the
- * passage on JW Library.
+ * passage label for the day.
  *
  * The schedule is bundled as a JS const so the lookup is
  * synchronous and works offline / in any Traefik state.
@@ -403,98 +403,6 @@ function dayOfYear(d) {
   return Math.floor((d.getTime() - start) / 86400000);
 }
 
-// Compute the wol.jw.org deep link for a reading label like
-// "Genesis 1-3". Pure function, no imports.
-function readingToLink(reading) {
-  // Use the same Bible-book-name-to-number map that the
-  // public bibles util exposes. We inline the minimum needed
-  // here to avoid a module import. The maps below mirror
-  // src/utils/bibleBooks.ts.
-  const BOOKS = {
-    genesis: 1,
-    exodus: 2,
-    leviticus: 3,
-    numbers: 4,
-    deuteronomy: 5,
-    joshua: 6,
-    judges: 7,
-    ruth: 8,
-    '1 samuel': 9,
-    '2 samuel': 10,
-    '1 kings': 11,
-    '2 kings': 12,
-    '1 chronicles': 13,
-    '2 chronicles': 14,
-    ezra: 15,
-    nehemiah: 16,
-    esther: 17,
-    job: 18,
-    psalms: 19,
-    psalm: 19,
-    proverbs: 20,
-    ecclesiastes: 21,
-    'song of solomon': 22,
-    isaiah: 23,
-    jeremiah: 24,
-    lamentations: 25,
-    ezekiel: 26,
-    daniel: 27,
-    hosea: 28,
-    joel: 29,
-    amos: 30,
-    obadiah: 31,
-    jonah: 32,
-    micah: 33,
-    nahum: 34,
-    habakkuk: 35,
-    zephaniah: 36,
-    haggai: 37,
-    zechariah: 38,
-    malachi: 39,
-    matthew: 40,
-    mark: 41,
-    luke: 42,
-    john: 43,
-    acts: 44,
-    romans: 45,
-    '1 corinthians': 46,
-    '2 corinthians': 47,
-    galatians: 48,
-    ephesians: 49,
-    philippians: 50,
-    colossians: 51,
-    '1 thessalonians': 52,
-    '2 thessalonians': 53,
-    '1 timothy': 54,
-    '2 timothy': 55,
-    titus: 56,
-    philemon: 57,
-    hebrews: 58,
-    james: 59,
-    '1 peter': 60,
-    '2 peter': 61,
-    '1 john': 62,
-    '2 john': 63,
-    '3 john': 64,
-    jude: 65,
-    revelation: 66,
-  };
-
-  // "Song of Solomon 1-4" or "1 Samuel 3-5" or "Psalm 119"
-  // Book name: optional leading number, then words. "Song of
-  // Solomon" is 3 words, so we allow multiple (?: [a-z]+)*
-  // chunks after the first.
-  const match = reading.match(/^(\d?\s?[a-z]+(?:\s+[a-z]+)*)\s+(\d+)(?:\s*-\s*(\d+))?$/i);
-  if (!match) return null;
-  const bookName = match[1].toLowerCase().trim();
-  const startChapter = parseInt(match[2], 10);
-  const endChapter = match[3] ? parseInt(match[3], 10) : startChapter;
-  const bookNum = BOOKS[bookName];
-  if (!bookNum) return null;
-  const fmt = (n, w) => String(n).padStart(w, '0');
-  return `jwlibrary:///finder?wtlocale=E&bible=${fmt(bookNum, 2)}${fmt(startChapter, 3)}001-${fmt(bookNum, 2)}${fmt(endChapter, 3)}999`;
-}
-
 /**
  * Synchronous lookup. Returns `{ day, label, url }` for today.
  * Cache is per-day. No async, no fetch — works in any network
@@ -508,10 +416,10 @@ export function getDailyReading(date = new Date()) {
   }
   const wrapped = ((today - 1) % SCHEDULE.length) + 1;
   const entry = SCHEDULE.find((e) => e.day === wrapped) || SCHEDULE[0];
+  // No link is generated: the row opens the user's own saved link.
   const reading = {
     day: entry.day,
     label: entry.reading,
-    url: readingToLink(entry.reading) || 'https://www.jw.org/en/library/bible/',
   };
   cache = { date: dateKey, reading };
   return reading;

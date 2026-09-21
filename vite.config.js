@@ -52,9 +52,9 @@ export default defineConfig({
       filename: 'sw.js',
       manifest: {
     id: '/',
-        name: 'JW Habits',
-        short_name: 'JW Habits',
-        description: 'Build daily spiritual habits: daily text, Bible reading, meeting prep, and more',
+        name: 'Habit Tracker',
+        short_name: 'Habit Tracker',
+        description: 'Track daily habits and routines on your own device.',
         theme_color: '#4A6FA4',
         background_color: '#ffffff',
         display: 'standalone',
@@ -113,7 +113,7 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             form_factor: 'narrow',
-            label: 'JW Habits Home Screen'
+            label: 'Habit Tracker Home Screen'
           }
         ],
       },

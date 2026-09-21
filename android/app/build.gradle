@@ -41,7 +41,7 @@ android {
                 storeFile file(storePath)
             }
             storePassword keystoreProperties['storePassword'] ?: System.getenv('KEYSTORE_PASSWORD')
-            keyAlias keystoreProperties['keyAlias'] ?: System.getenv('KEY_ALIAS') ?: 'jwnews'
+            keyAlias keystoreProperties['keyAlias'] ?: System.getenv('KEY_ALIAS') ?: 'habittracker'
             keyPassword keystoreProperties['keyPassword'] ?: System.getenv('KEY_PASSWORD')
         }
     }

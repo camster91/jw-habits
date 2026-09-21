@@ -1,9 +1,9 @@
 #!/bin/bash
-# Android Release Keystore Generator for JW Habits
+# Android Release Keystore Generator for Habit Tracker
 # Run this script to create a proper release keystore
 
-KEYSTORE_FILE="jwnews-release.keystore"  # legacy filename from JW News era
-KEY_ALIAS="jwnews"                        # legacy alias (Google Play treats this as immutable once uploaded)
+KEYSTORE_FILE="habittracker-release.keystore"
+KEY_ALIAS="habittracker"
 # SECURITY: passwords must be supplied via env vars or interactive prompt.
 # Never commit real credentials to this file. See docs/keystore-rotation-2026-07.md
 # for the rotation runbook (this script was the source of a P0 leak in 2026-07).
@@ -19,7 +19,7 @@ fi
 VALIDITY_DAYS=10000
 
 echo "=================================="
-echo "JW Habits Android Keystore Generator"
+echo "Habit Tracker Android Keystore Generator"
 echo "=================================="
 echo ""
 echo "This will create a release keystore for Google Play submission."

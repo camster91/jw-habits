@@ -33,7 +33,7 @@ const DEFAULTS = Object.freeze({
   // Default 2 = Tuesday (the global convention).
   midweekDay: 2,
   // Weekend meeting day. The "Today" row uses this to show
-  // "Today — Public Meeting + Watchtower Study" on this day
+  // the weekend-meeting label on this day
   // and "Tomorrow" the night before.
   // Default 0 = Sunday.
   weekendDay: 0,

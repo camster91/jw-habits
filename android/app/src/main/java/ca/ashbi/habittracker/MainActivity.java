@@ -1,4 +1,4 @@
-package com.ashbi.jwnews;
+package ca.ashbi.habittracker;
 
 import com.getcapacitor.BridgeActivity;
 

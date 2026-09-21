@@ -9,10 +9,6 @@ import {
   startReminder,
   cancelReminder,
   showReminderNotification,
-  scheduleSaturdayWindowOpen,
-  cancelSaturdayWindowOpen,
-  scheduleSundayEveningCheck,
-  cancelSundayEveningCheck,
   NOTIFICATION_PERMISSION,
 } from '../utils/notificationScheduler';
 
@@ -138,19 +134,12 @@ export default function SettingsAccordion() {
     (!!rawLinks.primary?.trim() && !resolveUserLink(rawLinks.primary)) ||
     (!!rawLinks.secondary?.trim() && !resolveUserLink(rawLinks.secondary));
 
-  // Whenever settings.permission or .reminderTime changes,
-  // re-sync the schedulers. Cancel first to clear old timers.
-  // Weekly Sunday Watchtower nudges share the same permission
-  // gate as the daily reminder (feature was previously dead —
-  // only exported/tested, never started from UI).
+  // Whenever reminders are on/off or their time changes, re-sync the
+  // scheduler. Cancel first to clear any stale timer.
   useEffect(() => {
     cancelReminder();
-    cancelSaturdayWindowOpen();
-    cancelSundayEveningCheck();
     if (remindersOn) {
       startReminder();
-      scheduleSaturdayWindowOpen();
-      scheduleSundayEveningCheck();
     }
   }, [remindersOn, settings.reminderTime, settings.quietHours?.start, settings.quietHours?.end]);
 
@@ -209,8 +198,6 @@ export default function SettingsAccordion() {
         update({ reminderTime: settings.reminderTime || '21:00' });
       } else {
         cancelReminder();
-        cancelSaturdayWindowOpen();
-        cancelSundayEveningCheck();
         update({ reminderTime: null });
       }
     } catch {

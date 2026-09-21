@@ -1,10 +1,10 @@
 # Keystore setup for Android release builds
 
-The release keystore lives **outside the repo** at `~/keys/jw-habits-release.keystore` (absolute path in `app/build.gradle`). The build reads passwords from environment variables, never from the repo.
+The release keystore lives **outside the repo** at `~/keys/habittracker-release.keystore` (absolute path in `app/build.gradle`). The build reads passwords from environment variables, never from the repo.
 
 ## First time on a new machine
 
-1. Copy the keystore to `~/keys/jw-habits-release.keystore` from your password manager / secure backup.
+1. Copy the keystore to `~/keys/habittracker-release.keystore` from your password manager / secure backup.
 2. Add to your shell profile (`~/.zshrc` or `~/.bashrc`):
 
    ```bash

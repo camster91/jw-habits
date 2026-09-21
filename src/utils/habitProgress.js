@@ -4,7 +4,7 @@
  * Each helper returns `{ label, current, total, pct }` where
  * label is human-readable, current/total are integers, and pct
  * is 0..1. All values are computed from a Date — no fetch, no
- * jw.org content, no user state. Just calendar arithmetic.
+ * external content, no user state. Just calendar arithmetic.
  */
 
 /**
@@ -36,12 +36,12 @@ export function bibleReadingProgress(date = new Date(), totalDays = 366) {
 
 /**
  * Daily text progress (calendar-month based).
- * jw.org publishes a daily text per calendar day, so the
+ * The reading is a per-calendar-day concept, so the
  * natural progress unit is "day X of N" within the current
  * month. We don't know the count of texts published in any
  * given month, but we know the month length — so we use the
  * honest calendar-day counter instead. The metadata is
- * calendar-only; no jw.org content is implied.
+ * calendar-only; no external content is implied.
  */
 export function dailyTextProgress(date = new Date()) {
   // Use local-calendar day + last-day-of-month (UTC-safe

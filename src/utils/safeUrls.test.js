@@ -3,7 +3,7 @@ import { isSafeHttpUrl, isAllowedShareUrl, toSameOriginPath } from './safeUrls';
 
 describe('isSafeHttpUrl', () => {
   it('accepts http and https', () => {
-    expect(isSafeHttpUrl('https://www.jw.org/en/')).toBe(true);
+    expect(isSafeHttpUrl('https://example.com/en/')).toBe(true);
     expect(isSafeHttpUrl('http://example.com/path')).toBe(true);
   });
 
@@ -21,21 +21,30 @@ describe('isSafeHttpUrl', () => {
 });
 
 describe('isAllowedShareUrl', () => {
-  it('allows jw.org and wol.jw.org https', () => {
-    expect(isAllowedShareUrl('https://www.jw.org/en/library/')).toBe(true);
-    expect(isAllowedShareUrl('https://jw.org/en/')).toBe(true);
-    expect(isAllowedShareUrl('https://wol.jw.org/en/wol/d/r1/lp-e/2026402')).toBe(true);
+  it('allows nothing by default', () => {
+    // The app ships no allowlisted third party.
+    expect(isAllowedShareUrl('https://example.com/x')).toBe(false);
+    expect(isAllowedShareUrl('https://www.example.org/en/')).toBe(false);
   });
 
-  it('rejects other https hosts (phishing trampoline)', () => {
-    expect(isAllowedShareUrl('https://evil.example/phish')).toBe(false);
-    expect(isAllowedShareUrl('https://eviljw.org/')).toBe(false);
-    expect(isAllowedShareUrl('https://not-jw.org.evil.com/')).toBe(false);
+  it('allows a host the caller explicitly permits', () => {
+    expect(isAllowedShareUrl('https://example.com/x', ['example.com'])).toBe(true);
+    expect(isAllowedShareUrl('https://www.example.com/x', ['example.com'])).toBe(true);
+  });
+
+  it('rejects subdomain tricks against an allowed host', () => {
+    // "evilexample.com" and "example.com.evil.net" must not pass.
+    expect(isAllowedShareUrl('https://evilexample.com/', ['example.com'])).toBe(false);
+    expect(isAllowedShareUrl('https://example.com.evil.net/', ['example.com'])).toBe(false);
+  });
+
+  it('rejects other hosts (phishing trampoline)', () => {
+    expect(isAllowedShareUrl('https://evil.example/phish', ['example.com'])).toBe(false);
   });
 
   it('still rejects non-http schemes', () => {
-    expect(isAllowedShareUrl('javascript:alert(1)')).toBe(false);
-    expect(isAllowedShareUrl('jwlibrary:///finder?docid=1')).toBe(false);
+    expect(isAllowedShareUrl('javascript:alert(1)', ['example.com'])).toBe(false);
+    expect(isAllowedShareUrl('custom-scheme:///finder?docid=1', ['example.com'])).toBe(false);
   });
 });
 

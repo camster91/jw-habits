@@ -11,7 +11,7 @@ import Share from './pages/Share';
 // drawer, the toast provider, and the per-user settings store
 // have all been removed. The only persisted state is the
 // per-day habit state in jw-daily-habits-state. The home page
-// does everything: 5 rows, each with a link to a jw.org surface
+// does everything: the habit rows, each opening the user’s saved link
 // and a checkbox to mark "done." The /share route exists
 // because the PWA manifest declares a share_target pointing
 // at /share — the OS sends shared URLs here when the user

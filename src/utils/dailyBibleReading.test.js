@@ -11,7 +11,6 @@ describe('getDailyReading', () => {
     const reading = getDailyReading(jan1);
     expect(reading.day).toBe(1);
     expect(reading.label).toBe('Genesis 1-3');
-    expect(reading.url).toMatch(/^jwlibrary:\/\/\/finder\?/);
   });
 
   it('returns the right reading for mid-year (June 15 = day 166)', () => {
@@ -48,12 +47,10 @@ describe('getDailyReading', () => {
     expect(a.label).not.toBe(b.label);
   });
 
-  it('URL field is always populated (jwlibrary:// or jw.org fallback)', () => {
-    const reading = getDailyReading(new Date('2026-06-15T12:00:00Z'));
-    expect(reading.url).toBeTruthy();
-    expect(
-      reading.url.startsWith('jwlibrary://') || reading.url.startsWith('https://www.jw.org/')
-    ).toBe(true);
+  it('carries no link of its own', () => {
+    // The row opens the user's saved link; the app generates none.
+    const reading = getDailyReading(new Date(2026, 5, 15));
+    expect(reading.url).toBeUndefined();
   });
 });
 
@@ -96,7 +93,6 @@ describe('schedule coverage', () => {
       expect(r.label, `day ${d} should have a label`).toBeTruthy();
       expect(typeof r.label).toBe('string');
       expect(r.label.length).toBeGreaterThan(0);
-      expect(r.url, `day ${d} (${r.label}) should have a URL`).toBeTruthy();
     }
   });
 
@@ -124,59 +120,6 @@ describe('schedule coverage', () => {
     expect(r2026.day).toBe(1);
     expect(r2027.day).toBe(1);
     expect(r2026.label).toBe(r2027.label);
-  });
-});
-
-describe('URL format (jwlibrary:// deep links)', () => {
-  it('Genesis 1-3 produces bible=01001001-01003999', () => {
-    // Book 1 (Genesis), chapter 1-3, verses 001-999 each.
-    // jwlibrary format: bible={2-digit-book}{3-digit-chapter}{3-digit-verse}-...
-    // → 01 001 001 - 01 003 999
-    const r = getDailyReading(new Date(2026, 0, 1));
-    expect(r.url).toBe('jwlibrary:///finder?wtlocale=E&bible=01001001-01003999');
-  });
-
-  it('Obadiah 1 (single-chapter book) uses the same chapter for both endpoints', () => {
-    // Obadiah = book 31. Single-chapter books use 001 as both
-    // the start and end chapter.
-    // Schedule day 294 = Obadiah 1
-    const r = getDailyReading(dayOf(2028, 294));
-    expect(r.label).toBe('Obadiah 1');
-    expect(r.url).toBe('jwlibrary:///finder?wtlocale=E&bible=31001001-31001999');
-  });
-
-  it('numbered books (1 Samuel = 09, 2 Kings = 12) format correctly', () => {
-    // Schedule day 87 = 1 Samuel 8-12
-    // 1 Samuel = book 9, ch 8 → 09 008 001
-    // 1 Samuel = book 9, ch 12 → 09 012 999
-    const r = getDailyReading(dayOf(2028, 87));
-    expect(r.label).toBe('1 Samuel 8-12');
-    expect(r.url).toBe('jwlibrary:///finder?wtlocale=E&bible=09008001-09012999');
-  });
-
-  it('chapters are zero-padded to 3 digits', () => {
-    // 2 Samuel 21-23 = book 10, ch 21-23
-    // 2 Samuel = book 10, ch 21 → 10 021 001
-    // 2 Samuel = book 10, ch 23 → 10 023 999
-    // Schedule day 100
-    const r = getDailyReading(dayOf(2028, 100));
-    expect(r.label).toBe('2 Samuel 21-23');
-    expect(r.url).toBe('jwlibrary:///finder?wtlocale=E&bible=10021001-10023999');
-  });
-
-  it('multi-word books (Song of Solomon) are recognized', () => {
-    // Song of Solomon = book 22
-    // Day 223 = Song of Solomon 1-4
-    const r = getDailyReading(dayOf(2028, 223));
-    expect(r.label).toBe('Song of Solomon 1-4');
-    expect(r.url).toBe('jwlibrary:///finder?wtlocale=E&bible=22001001-22004999');
-  });
-
-  it('all URLs include the wtlocale=E parameter', () => {
-    for (let d = 1; d <= 366; d++) {
-      const r = getDailyReading(dayOf(2028, d));
-      expect(r.url, `day ${d} URL should include wtlocale=E`).toContain('wtlocale=E');
-    }
   });
 });
 

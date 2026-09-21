@@ -1,4 +1,4 @@
-# Multi-stage build for JW Habits
+# Multi-stage build for Habit Tracker
 # Stage 1: Build the React SPA
 # Pin by digest to avoid silent alpine drift. Update with:
 #   curl -sI -H "Authorization: Bearer $(curl -s 'https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/REPO:pull' | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"token\"])')" -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" "https://registry-1.docker.io/v2/library/REPO/manifests/TAG" | grep -i docker-content-digest

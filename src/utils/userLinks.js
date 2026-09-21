@@ -1,7 +1,7 @@
 /**
  * User-editable destination links.
  *
- * This module replaces the previous hard-coded map of jw.org URLs.
+ * This module replaces the previous hard-coded map of external URLs.
  * The app ships with **no** organisation URLs baked in: every row's
  * destination comes from the user's own settings, and an unset slot
  * simply opens nothing.

@@ -5,9 +5,9 @@
  * anything about any organisation, and neither builds a URL — every
  * row's destination comes from the user's own link slots.
  *
- * This replaces the previous jwLibraryLinks.* module family, which
- * generated organisation deep links and publication URLs. That surface
- * was removed as part of making this a general habit tracker.
+ * This replaces an earlier family of modules that generated deep links
+ * and publication URLs for a specific organisation. That surface was
+ * removed as part of making this a general habit tracker.
  */
 
 /**
