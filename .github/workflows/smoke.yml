@@ -1,6 +1,6 @@
 name: Smoke
 
-# Automated smoke test for jw-habits. Runs the Playwright smoke suite at
+# Automated smoke + journey tests. Runs the Playwright suites at
 # scripts/verify/smoke.cjs against the production build served by vite
 # preview. Complements ci.yml (lint + unit tests + build + format + gitleaks).
 #
@@ -62,5 +62,12 @@ jobs:
 
       - name: Run smoke
         run: SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs
+        env:
+          CI: true
+
+      # Journeys drive the real UI (Settings -> saved link -> row -> reload)
+      # rather than seeding localStorage directly. Exits non-zero on failure.
+      - name: Run journeys
+        run: node scripts/verify/journeys.cjs
         env:
           CI: true
