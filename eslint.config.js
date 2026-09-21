@@ -27,9 +27,22 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
-  // Removed 2026-07-22: api-server.js block was a dead reference (both
-  // api-server.js and simple-api-server.js were deleted 2026-06-30).
-  // ESLint silently ignored the glob; the block served no purpose.
+  // Node-run build/verify scripts. They execute under Node, not in the
+  // browser, so they need the node globals (process, Buffer, __dirname…).
+  {
+    files: ['scripts/**/*.{js,cjs}', '*.config.js'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      // Playwright scripts pass functions to page.evaluate(), which run in
+      // the browser context, so both global sets are legitimately needed.
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^_' }],
+    },
+  },
   {
     files: ['**/*.test.{js,jsx}', '**/test/**/*.{js,jsx}'],
     extends: [js.configs.recommended],

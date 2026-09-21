@@ -107,15 +107,10 @@ export default defineConfig({
             url: 'url'
           }
         },
-        screenshots: [
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            form_factor: 'narrow',
-            label: 'Habit Tracker Home Screen'
-          }
-        ],
+        // No `screenshots` entry: the previous one pointed at the app icon
+        // and labelled it a Home screenshot. A 512x512 square icon is not a
+        // valid narrow-form-factor screenshot, and shipping a wrong one is
+        // worse than shipping none. Add real captures here when available.
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],
