@@ -1,9 +1,9 @@
 {
-    "name": "jw-habits",
+    "name": "habit-tracker",
     "private": true,
     "version": "4.2.0",
     "type": "module",
-    "description": "Build daily spiritual habits: daily text, Bible reading, meeting prep, and more",
+    "description": "Track daily habits and routines. Add your own habits, set reminders, and keep a simple streak.",
     "overrides": {
         "ws": ">=8.20.1",
         "shell-quote": "^1.8.4",

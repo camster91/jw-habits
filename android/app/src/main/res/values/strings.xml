@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">JW Habits</string>
-    <string name="title_activity_main">JW Habits</string>
-    <string name="package_name">com.ashbi.jwnews</string>
-    <string name="custom_url_scheme">com.ashbi.jwnews</string>
+    <string name="app_name">Habit Tracker</string>
+    <string name="title_activity_main">Habit Tracker</string>
+    <string name="package_name">ca.ashbi.habittracker</string>
+    <string name="custom_url_scheme">ca.ashbi.habittracker</string>
 </resources>

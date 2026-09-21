@@ -5,7 +5,7 @@
 JW Habits is a mobile-first progressive web application for Jehovah's Witnesses. It helps users build and maintain daily spiritual habits. Built with React 19 and Capacitor, it offers a native app experience across iOS, Android, and web platforms.
 
 **Live:** https://jwhabits.ashbi.ca
-**Package:** `com.ashbi.jwnews` (App Store + Google Play)
+**Package:** `ca.ashbi.habittracker` (App Store + Google Play)
 **Version:** 4.2.0 (iOS build 421)
 **Platforms:** iOS · Android · Web (PWA)
 
