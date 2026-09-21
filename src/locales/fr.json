@@ -83,6 +83,11 @@
     "quietHoursLabel": "Heures silencieuses",
     "quietStartLabel": "Début des heures silencieuses",
     "quietEndLabel": "Fin des heures silencieuses",
-    "permissionDenied": "Notifications bloquées. Autorisez-les dans les paramètres du navigateur pour les activer."
+    "permissionDenied": "Notifications bloquées. Autorisez-les dans les paramètres du navigateur pour les activer.",
+    "links": "Liens de destination",
+    "linksHelp": "Facultatif. Ajoutez vos propres liens pour chaque destination. L'application n'en contient aucun.",
+    "linkPrimary": "Lien principal",
+    "linkSecondary": "Lien secondaire",
+    "linkInvalid": "Cela ne ressemble pas a un lien http(s) valide ; il sera ignore."
   }
 }

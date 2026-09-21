@@ -83,6 +83,11 @@
     "quietHoursLabel": "Quiet hours",
     "quietStartLabel": "Quiet hours start",
     "quietEndLabel": "Quiet hours end",
-    "permissionDenied": "Notifications blocked. Allow them in your browser's site settings to enable."
+    "permissionDenied": "Notifications blocked. Allow them in your browser's site settings to enable.",
+    "links": "Destination links",
+    "linksHelp": "Optional. Add your own links for each destination. The app ships with none.",
+    "linkPrimary": "Primary link",
+    "linkSecondary": "Second link",
+    "linkInvalid": "That does not look like a valid http(s) link, so it will be treated as empty."
   }
 }

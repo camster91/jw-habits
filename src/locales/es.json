@@ -83,6 +83,11 @@
     "quietHoursLabel": "Horas de silencio",
     "quietStartLabel": "Inicio de horas de silencio",
     "quietEndLabel": "Fin de horas de silencio",
-    "permissionDenied": "Notificaciones bloqueadas. Permítelas en la configuración del navegador para activarlas."
+    "permissionDenied": "Notificaciones bloqueadas. Permítelas en la configuración del navegador para activarlas.",
+    "links": "Enlaces de destino",
+    "linksHelp": "Opcional. Anade tus propios enlaces para cada destino. La aplicacion no incluye ninguno.",
+    "linkPrimary": "Enlace principal",
+    "linkSecondary": "Segundo enlace",
+    "linkInvalid": "No parece un enlace http(s) valido, asi que se ignorara."
   }
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Settings as SettingsIcon, Bell } from 'lucide-react';
 import { loadSettings, saveSettings, DEFAULTS } from '../utils/settingsStore';
+import { resolveUserLink } from '../utils/userLinks';
 import {
   getPermissionState,
   requestNotificationPermission,
@@ -130,6 +131,13 @@ export default function SettingsAccordion() {
   // reminderTime + permission granted).
   const remindersOn = !!settings.reminderTime && perm === NOTIFICATION_PERMISSION.GRANTED;
 
+  // True when a link slot holds text that is not a usable http(s) URL, so
+  // the settings panel can say the row will render as informational.
+  const rawLinks = settings.links || {};
+  const linksInvalid =
+    (!!rawLinks.primary?.trim() && !resolveUserLink(rawLinks.primary)) ||
+    (!!rawLinks.secondary?.trim() && !resolveUserLink(rawLinks.secondary));
+
   // Whenever settings.permission or .reminderTime changes,
   // re-sync the schedulers. Cancel first to clear old timers.
   // Weekly Sunday Watchtower nudges share the same permission
@@ -166,8 +174,7 @@ export default function SettingsAccordion() {
   const update = (patch) => {
     const next = { ...settings, ...patch };
     setSettings(next);
-    saveSettings(next);
-    // Manual event so listeners in this same tab (Home page)
+    saveSettings(next); // Manual event so listeners in this same tab (Home page)
     // re-read settings and update their derived state. Other
     // tabs get the same event via the browser automatically.
     try {
@@ -214,7 +221,7 @@ export default function SettingsAccordion() {
   const handleTestNotification = () => {
     setTestFired(true);
     void showReminderNotification({
-      title: 'JW Habits',
+      title: 'Habit Tracker',
       body: 'Time to check your daily habits.',
     }).catch(() => {});
     if (testTimerRef.current != null) clearTimeout(testTimerRef.current);
@@ -396,6 +403,49 @@ export default function SettingsAccordion() {
               </div>
             </>
           )}
+
+          {/* ── Destination links ─────────────────────────── */}
+          <h2 className="ios-section-h mt-6">{t('settings.links')}</h2>
+          <div className="ios-row flex-col items-stretch">
+            <div className="sub mb-2 px-1">{t('settings.linksHelp')}</div>
+            <label className="text-sm text-base-content/80 mb-1" htmlFor="link-primary">
+              {t('settings.linkPrimary')}
+            </label>
+            <input
+              id="link-primary"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              className="ios-text-input"
+              placeholder="https://"
+              value={settings.links?.primary || ''}
+              onChange={(e) =>
+                update({ links: { ...(settings.links || {}), primary: e.target.value } })
+              }
+            />
+            <label className="text-sm text-base-content/80 mb-1 mt-3" htmlFor="link-secondary">
+              {t('settings.linkSecondary')}
+            </label>
+            <input
+              id="link-secondary"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              className="ios-text-input"
+              placeholder="https://"
+              value={settings.links?.secondary || ''}
+              onChange={(e) =>
+                update({ links: { ...(settings.links || {}), secondary: e.target.value } })
+              }
+            />
+            {linksInvalid && (
+              <div className="text-xs text-base-content/60 mt-2 px-1">
+                {t('settings.linkInvalid')}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>
