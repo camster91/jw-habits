@@ -1,3 +1,8 @@
+> **HISTORICAL — superseded 2026-09-21.** This document describes the app before the
+> generic-habit-tracker refactor. Organisation-specific rows, the link library it
+> references, and the bundle id it names no longer exist. Kept for the record only;
+> do not treat it as current. See [CLAUDE.md](./CLAUDE.md).
+
 # JW Habits — Feature Roadmap & PRD
 **Date:** 2026-07-01
 **Source of ideas:** jw.org research + existing app surface + ToS compliance lens (per CLAUDE.md: link-out only, no JW content hosted, all data on-device).

@@ -1,185 +1,140 @@
-# CLAUDE.md — JW Habits
+# CLAUDE.md — Habit Tracker
 
-**Last audited against source: 2026-07-24** (full review in `REVIEW-2026-07-22.md`; follow-ups in `REVIEW-2026-07-23-POST-MERGE.md`).
+**Last audited against source: 2026-09-21.**
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
 
-A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **habit tracker with quick links to jw.org surfaces** — the app opens jw.org pages in a new tab and remembers which ones you already did today. The actual study/prayer/reading happens on jw.org itself.
+A Capacitor (React + Vite) mobile/PWA **habit tracker**. The home page is a list of habit
+rows; each row opens a link the user saved themselves, and remembers whether it was done
+today. All state is on-device.
 
-**One user-facing page.** The home is an iOS-style list of habit rows. Tap a row → open jw.org. Tap the checkbox → mark the habit done for today. Per-day state resets at midnight (localStorage-keyed). All state is on-device; no backend, no auth, no server.
+**One user-facing page.** Settings is an inline accordion on Home, not a route.
 
-- **App ID:** `com.ashbi.jwnews` (legacy name from the JW News era; alias `jwnews` is Google Play-locked)
-- **Version:** 4.2.0 (iOS build 421)
-- **Live URL:** `https://jwhabits.ashbi.ca/`
+- **App ID:** `ca.ashbi.habittracker`
+- **Version:** 4.2.0
 - **Node:** >= 18.0.0
 
-## Stack (verified against `package.json` 2026-07-24)
+### The app ships no destination links
+
+This is the central design constraint. There is no bundled catalogue, no built-in content,
+and **no third-party URL anywhere in the shipped code**. Row destinations come from the
+user's own `links.primary` / `links.secondary` settings, validated at render time by
+`resolveUserLink`. An unset slot means the row opens nothing.
+
+Do not reintroduce hard-coded external URLs. If a feature seems to need one, it needs a
+user-editable slot instead.
+
+## Stack (verified against `package.json` 2026-09-21)
 
 | Layer | Technology | Version |
 |---|---|---|
 | Frontend | React 19 + Vite 8 | `react: ^19.2.0`, `vite: ^8.1.5` |
 | Routing | React Router DOM 7 | 1 page (`/`) + `/share` + `*` catch-all → home |
-| State | localStorage only (per-day key + per-feature keys) | no Zustand, no React Context, no Redux |
+| State | localStorage only | no Zustand, no Context, no Redux |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
-| Icons | lucide-react | `1.16.0` (latest is 1.25.0; dep is verified legit, just pinned old) |
-| i18n | i18next + react-i18next + i18next-browser-languagedetector | en/es/fr |
-| Dates | date-fns | `^4.4.0` |
+| Icons | lucide-react | `1.16.0` |
+| i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x` |
-| PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, custom `src/sw.js`) | |
-| Testing | Vitest 4 + Testing Library + Playwright | 273 tests, 17 files |
+| PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | |
+| Testing | Vitest 4 + Testing Library + Playwright | 195 tests / 15 files, 7 smoke, 6 journeys |
 | Linting | ESLint 9 + Prettier 3 | |
 
-**Removed:** `@capacitor/push-notifications` (declared + configured, never registered — soft App Store policy violation; notifications fire via web Notification API + `serviceWorker.showNotification` instead). `zustand` (declared but never imported).
+## Commands
 
-## Source tree (verified 2026-07-24)
+| Command | What it does |
+|---|---|
+| `npm run dev` | Vite dev server |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Serve `dist/` on :4173 |
+| `npm test` | Unit tests (Vitest) |
+| `npm run lint` | ESLint |
+| `npm run format:check` | Prettier check (`format` to write) |
+| `npm run smoke:spawn` | Playwright smoke suite, spawns preview |
+| `npm run journeys` | End-to-end UI journeys (needs preview running) |
+
+## Source tree
 
 ```
 src/
-├── main.jsx              # Entry: error logging, back button, SW updates, theme at startup, i18n init
-├── App.jsx               # Router (Home + /share + catch-all) + PWA chrome
-├── sw.js                 # Workbox service worker (precache + SPA navigation fallback)
-├── index.css             # Tailwind 4 + iOS tokens + dark-mode overrides
+├── main.jsx                        # Entry: error logging, back button, SW updates, theme, i18n
+├── App.jsx                         # Router + PWA chrome
+├── sw.js                           # Workbox service worker
 ├── pages/
-│   ├── Home.jsx               # The only user-facing page (~1079 lines — WeekStrip/HabitRow still inline)
-│   ├── Home.test.jsx          # Component tests for Home
-│   └── Share.jsx              # PWA share_target landing (OS-level entry point)
+│   ├── Home.jsx                    # The only user-facing page
+│   └── Share.jsx                   # PWA share_target landing
 ├── components/
 │   ├── ErrorBoundary.jsx
 │   ├── InstallPrompt.jsx
 │   ├── OfflineIndicator.jsx
-│   ├── SettingsAccordion.jsx  # Collapsed settings section inside Home
+│   ├── SettingsAccordion.jsx       # Meeting days, reminders, and the link slots
 │   └── UpdatePrompt.jsx
 ├── hooks/
-│   ├── useHabitState.js       # Extracted from Home (#148)
+│   ├── useHabitState.js            # Per-day state, first-done flag, best streak
 │   └── usePWA.js
-├── locales/
-│   ├── en.json                # 50+ active keys
-│   ├── es.json
-│   └── fr.json
-├── test/
-│   └── setup.js               # Vitest setup: i18n init, localStorage/Notification/SW mocks
 └── utils/
-    ├── bibleBooks.ts          # 66-book name → number map
-    ├── bibleReadingTracker.js # Bible-reading daily tracker (separate from streak)
-    ├── dailyBibleReading.js   # 366-entry schedule → jwlibrary:// deep link
-    ├── doneState.js           # NEW shape: { key: { done: boolean, note: string } } + legacy compat
-    ├── habitProgress.js
-    ├── jwLibraryLinks.js      # Barrel re-exports (split in #148)
-    ├── jwLibraryLinks.dailyContent.js
-    ├── jwLibraryLinks.meetingWorkbook.js
-    ├── jwLibraryLinks.publications.js
-    ├── jwLibraryLinks.weeklyObservances.js
-    ├── native.js              # Capacitor wrappers: haptics, statusBar, keyboard, splash
-    ├── notificationScheduler.js # Web Notification API + weekly reminders
+    ├── bibleBooks.ts               # 66-book name → number map
+    ├── bibleReadingTracker.js      # Bible-reading daily tracker
+    ├── dailyBibleReading.js        # 366-entry reading schedule (labels only)
+    ├── doneState.js                # {done, note} shape helpers + legacy compat
+    ├── habitProgress.js            # Calendar-based progress labels
+    ├── native.js                   # Capacitor wrappers
+    ├── notificationScheduler.js    # Web Notification API reminder
     ├── pwa.js
     ├── relativeDate.js
-    ├── settingsStore.js       # localStorage wrapper (NOT Zustand; "settingsStore" name predates that)
-    ├── streak.js              # currentStreak, bestStreakFromHistory, todayProgress
-    └── sundayWatchtowerTracker.js # Weekly Sunday Watchtower attendance counter
+    ├── safeUrls.js                 # URL allowlisting
+    ├── settingsStore.js            # Versioned settings store
+    ├── streak.js                   # Streak + progress maths
+    ├── userLinks.js                # resolveUserLink / userLinksFrom
+    └── weekContext.js              # Week label + neutral Today-row label
 ```
 
-## Routes
+## The rows
 
-| Path | Page | Notes |
-|---|---|---|
-| `/` | Home | The only user-facing page |
-| `/share` | Share | OS-level entry point; receives URLs shared from other apps |
-| `*` (catch-all) | Home | `/ideas`, `/about`, `/settings`, anything else all render the home |
+| Row | Key | Destination | Notes |
+|---|---|---|---|
+| Today | `today` | primary | Label from `getTodayRow`, driven by meeting-day settings |
+| Daily reading | `text` | primary | Day-of-month progress label |
+| Bible reading | `bible` | primary | Reading label from the bundled schedule |
+| Meeting prep | `meeting` | primary | Three generic sub-section labels |
+| Family worship | `family` | primary | Three timing suggestions |
+| This week | `thisWeek` | primary | Monday–Sunday range |
+| Events | `conventions` | secondary | Optional |
 
-**No settings page route, no about page route, no ideas page route.** Settings is rendered as a `<SettingsAccordion>` collapsed section inside Home.
+`visibleKeys` in `Home.jsx` is the source of truth for what `todayProgress` counts.
 
-## Home page shape (top to bottom)
+## State model
 
-1. **Greeting** — time-of-day (`greeting.morning|afternoon|evening|night`)
-2. **Date subtitle** — `Tuesday, July 22`
-3. **Week strip** — Mon..Sun, today highlighted (7 cells, `aria-label="This week"`)
-4. **Weekly dots strip** — 7 small dots; filled = a habit was checked that day
-5. **Streak + today-progress line** — `🔥 N day streak · best X · today Y/Z` (hidden until first interaction)
-6. **First-launch hint** — `home.firstRunHint`; hidden after first checkbox tap
-7. **Today row** — date-aware. Sun: "Today — Public Meeting + Watchtower Study". Mon/Wed/Thu/Fri: "Today — Midweek Meeting Prep". Tue: "Tonight — Midweek Meeting". Sat: "Today — Field Service".
-8. **Daily text** — `jwlibrary:///showDailyText?...` (opens in JW Library app)
-9. **Daily Bible reading** — `jwlibrary:///finder?wtlocale=E&bible=BBCCCVVV-BCCCVVV`
-10. **Year text** — opens current year's scripture on jw.org
-11. **Meeting prep** — generic `jw.org/en/library/jw-meeting-workbook/` landing
-12. **Family worship** — `jw.org/en/bible-teachings/family/`
-13. **This week** — date-aware MWB schedule
-14. **Sunday Watchtower Study** — date-aware; Saturday 8 AM → Sunday end-of-day; links to current ISO-week's WOL index or (when seeded) `jwlibrary:///finder?...&docid=...` deep link
-15. **Conventions** — find a regional convention on jw.org
-16. **Memorial row** — only visible March/April (30 days before to day-of)
-17. **Settings accordion** — collapsed by default; meeting day picker, daily reminder time, quiet hours, test notification
-18. **Footer disclaimer** — "Unofficial third-party tool. Not affiliated with jw.org."
-
-**Row visibility is conditional** based on date and settings — `todayProgress()` only counts rows the user actually sees.
-
-## State model (localStorage only)
+All state is on-device. **The `jw-` prefixes are frozen persistence keys, not branding** —
+they ship in real installs, so renaming them silently discards user history.
 
 | Key | Shape | Purpose |
 |---|---|---|
-| `jw-daily-habits-state` | `{ date, done, history }` | Per-day habit state. `date` is ISO YYYY-MM-DD; if it doesn't match today on load, `done` is wiped. `done` keys: `today`, `text`, `bible`, `meeting`, `family`, `thisWeek`, `memorial`, `yearText`, `sundayWatchtower`, `conventions`, plus any per-row `note` |
-| `jw-daily-habits-state.done[k]` | `{ done: boolean, note: string }` or legacy `boolean` | Per-row check state + optional note (≤200 chars) |
-| `jw-daily-habits-state.history` | `string[]` of ISO YYYY-MM-DD | Dates where any habit was checked; pruned to last 7 days on every load |
+| `jw-daily-habits-state` | `{ date, done, history }` | Per-day habit state |
+| `jw-daily-habits-state.done[k]` | `{ done, note }` or legacy `boolean` | Per-row check + note (≤200 chars) |
+| `jw-daily-habits-state.history` | `string[]` ISO dates | Dates with any check; pruned to 7 days |
 | `jw-habits-first-done` | `'1'` | First-launch hint dismissed |
-| `jw-habits-best-streak` | ISO numeric string | All-time best streak (monotonic) |
-| `jw-user-settings` | `{ meetingDays, midweekDay, weekendDay, reminderTime, quietHours, ... }` | SettingsAccordion state |
-| `jw-progress-settings` | `{ state: { theme: 'light'\|'dark' } }` | Legacy theme persistence (read at startup) |
-| `jw-sunday-watchtower-weeks` | `string[]` of ISO YYYY-MM-DD | Sundays with attendance checked |
-| `jw-bible-reading-days` | `string[]` of ISO YYYY-MM-DD | Bible-reading tracker |
-| `jw-error-logs` | `ErrorLog[]` (last 20) | Global error capture (dev only) |
-| `i18nextLng` | `string` | i18next cached locale |
+| `jw-habits-best-streak` | numeric string | All-time best streak |
+| `jw-user-settings` | `{ midweekDay, weekendDay, reminderTime, quietHours, links }` | Settings |
+| `jw-bible-reading-days` | `string[]` ISO dates | Bible-reading tracker |
+| `jw-error-logs` | `ErrorLog[]` (last 20) | Dev error capture |
 
-**Single source of truth for shape changes: `src/utils/doneState.js`** (`getDone`/`setDone`/`isDone`/`getNote` helpers). All readers should go through these helpers for backward compat with the legacy boolean shape.
+Readers must go through `doneState.js` (`getDone`, `setDone`, `getNote`) for backward
+compatibility with the legacy boolean shape.
 
-## What the app does NOT do (and shouldn't)
+## Known issues
 
-- No auth, no login, no account, no sync between devices
-- No server-side state, no backend, no API calls beyond jw.org links the user clicks
-- No analytics, no telemetry, no crash reporting
-- No Bible text, no prayer content, no JW Library content cached (all link-out)
-- No streak/level/XP/gamification on its own merits — the `streak` is just a UX nicety derived from history
-- No "reset today" button — `date` mismatch on load wipes `done`
-- No toast, no modal, no drawer, no hamburger, no settings menu (chrome)
+- **Deploy is down.** `deploy-ashbi.yml` has failed every run since 2026-07-24 and the host
+  serves 502. The app builds and runs locally.
+- **Hosted CI does not execute.** Workflows queue but never allocate a runner, so the
+  hosted gate has never actually run the suite. Local `npm test` + `npm run smoke:spawn` +
+  `npm run journeys` are the working validation path.
 
-## File hygiene rules
+## Rules for changes
 
-- **`src/`** — app code. TypeScript allowed in isolated modules but most code is `.jsx`. `bibleBooks.ts` is the only `.ts` file.
-- **`scripts/`** — host ops + marketing assets. Executable, run manually or via deploy hooks.
-- **`ops/`** — `traefik-guard.py` cron script that defends the jwhabits Traefik dynamic-file block.
-- **Repo root cjs files** — `_verify-2026-06-12.cjs` (Playwright persona suite), `feature-graphic.cjs` (Play Store 1024×500 graphic generator), `screenshot-store-assets.cjs` (App Store/Play Store screenshot generator). These should ideally live in `scripts/` but are tracked at root.
-
-## Conventions
-
-- **i18n:** All user-visible strings go through `t()`. Locale files must match `en.json` shape — `es`/`fr` fall back to `en` for missing keys. Don't hardcode English in JSX.
-- **State writes:** Always through `doneState.js` helpers, not direct `localStorage.setItem`. The shape migration is non-trivial.
-- **Links:** Use the URL builders in `jwLibraryLinks.js`. Don't hardcode `https://www.jw.org/...` strings in JSX.
-- **Capacitor:** Don't import `@capacitor/*` plugins outside of `utils/native.js`. Web-only paths need to keep working for the PWA.
-- **Tests:** Unit tests for utils; component tests use Testing Library. No snapshot tests (they rotted once already).
-- **Style:** Prettier 3, ESLint 9 flat config. Run `npm run format` before committing; CI runs `npm run format:check`.
-
-## Known tech debt (not blockers)
-
-- `src/pages/Home.jsx` is still ~1100 lines — `useHabitState.js` extracted; further split candidates: `WeekStrip.jsx` + `HabitRow.jsx`
-- `src/utils/jwLibraryLinks.js` split into domain modules (#148); barrel remains
-- No component tests for `Share.jsx` / `SettingsAccordion.jsx` (`Home.test.jsx` added in #148)
-- vite-plugin-pwa v1.3 SW build emits `inlineDynamicImports is deprecated` warning — fixed in vite-plugin-pwa >1.3; defer to dependabot
-- Dockerfile base images (`node:22-alpine`, `nginx:1.27-alpine`) pinned by digest; refresh digests on every bump
-- `react-router` 7.12–8.2 advisory GHSA-qwww-vcr4-c8h2 (RSC CSRF). App uses client-only `BrowserRouter` (no RSC / server actions) — not exploitable. Clean fix needs `react-router` 8.3+; `react-router-dom` has no 8.x yet. Defer until RR8 migration.
-- Edge HSTS is owned by Traefik (`jwhabits-hsts` middleware in `ops/traefik-guard.py`); nginx container is `:80` only
-- Android keystore passwords remain in **git history** until Cam completes Play upload-key rotation + history purge (`docs/keystore-rotation-2026-07.md`)
-
-## Recent material changes (last 10 PRs)
-
-- #150 chore(cleanup): land remaining #147 follow-ups onto main (`508199b`)
-- #148 feat: drain remaining 2026-07-22 review kanban items (`84d5862`)
-- #130 chore(security+cleanup): 2026-07-22 repo review fixes (`d5d93f6`)
-- #129 feat(sunday-watchtower): "Open in JW Library" sub-action (`83ceaf9`)
-- #127 ci(ios): TestFlight workflow + bump to 4.2.0 (build 421) (`c1c1442`)
-- #126 feat(jw-library): docid-based publication deep-link helpers (`e8e7991`)
-- #124 feat(notifications): Saturday/Sunday Watchtower weekly reminders (`a5ea29d`)
-- #123 feat: Sunday Watchtower Study as a 6th habit row (`5357d9b`)
-- #122 chore(deps): migrate to vite 8 + tailwindcss 4 + plugin-react 6 (`b0b46aa`)
-
-## Review history
-
-- **2026-07-24** — #148 drained remaining kanban items; #150 landed leftover #147 cleanup (dead `storageErrorHandler` removal, digest-pinned Dockerfile, README rewrite, real weekly-notification assertions, `@vitest/coverage-v8`). Conflicting #147 closed as superseded.
-- **2026-07-22** — Full audit by Hermes (4 parallel subagents). 6 P0, ~13 P1, ~15 P2, ~7 P3 findings. Local follow-up PR fixed P0-1 through P0-6, P1-2 (prettier), P1-3 (zustand uninstall), P1-5 (Dockerfile pin + USER + HEALTHCHECK), P1-9 (npm overrides + sharp bump → 0 vulnerabilities). Findings doc: `REVIEW-2026-07-22.md`.
+- **No new external URLs in shipped code.** User-editable slots only.
+- **Do not rename `jw-` storage keys** or the `jw-storage-full` / `jw-offline-open` events.
+- **Keep the smoke + journey suites green.** Both exit non-zero on failure; do not let a
+  suite print FAIL and still return 0.
+- **`deploy-ashbi.yml` keeps its `jw-habits` identifiers** — they name a real container and
+  a ghcr.io image. Renaming them breaks the deploy path.

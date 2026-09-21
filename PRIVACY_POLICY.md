@@ -1,20 +1,20 @@
-# Privacy Policy — JW News
+# Privacy Policy — Habit Tracker
 
-**Effective Date:** March 17, 2026
-**App:** JW News
+**Effective Date:** March 17, 2026 (identifiers updated 2026-09-21)
+**App:** Habit Tracker (`ca.ashbi.habittracker`)
 **Developer:** Ashbi Design (cameron@ashbi.ca)
 
 ---
 
 ## Summary
 
-JW News is a simple, private app. **We collect no personal data. Everything stays on your device.**
+Habit Tracker is a simple, private app. **We collect no personal data. Everything stays on your device.**
 
 ---
 
 ## Data Collection
 
-JW News does **not** collect, transmit, or share any personal information. Specifically:
+Habit Tracker does **not** collect, transmit, or share any personal information. Specifically:
 
 - ❌ No account required
 - ❌ No analytics or tracking
@@ -36,7 +36,7 @@ All app data (your progress, settings, habits, notes) is stored **locally on you
 
 ## Permissions
 
-JW News may request the following device permissions:
+Habit Tracker may request the following device permissions:
 
 | Permission | Purpose |
 |------------|---------|
@@ -47,7 +47,7 @@ JW News may request the following device permissions:
 
 ## Children's Privacy
 
-JW News does not collect any data from anyone, including children under 13. The app is safe for all ages.
+Habit Tracker does not collect any data from anyone, including children under 13. The app is safe for all ages.
 
 ---
 
