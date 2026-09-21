@@ -13,7 +13,7 @@ import {
   Share2,
   ExternalLink,
 } from 'lucide-react';
-import { getThisWeekMeetingUrl, getTodayRow } from '../utils/jwLibraryLinks';
+import { getThisWeekMeetingUrl, getTodayRow } from '../utils/weekContext';
 import { userLinksFrom } from '../utils/userLinks';
 import { getDailyReading } from '../utils/dailyBibleReading';
 import { bibleReadingProgress, dailyTextProgress } from '../utils/habitProgress';
@@ -38,46 +38,38 @@ import {
 } from '../hooks/useHabitState';
 
 /**
- * Home — the only in-app page. Five habit rows plus two
- * special-date rows:
- *   1. Daily text         → opens jw.org
- *   2. Bible reading     → opens today's reading on jw.org
- *   3. Prayer            → links to a quiet reflection page
- *   4. Family worship     → links to family resources
- *   5. Meeting prep      → links to this week's workbook
- *   6. Sunday Watchtower Study  → visible Sat 8 AM - Sun EOD
+ * Home — the only in-app page.
  *
- * Special-date rows (Memorial + Sunday Watchtower) render
- * only on the relevant dates; see `getMemorialRow` and
- * `getSundayWatchtowerRow` in jwLibraryLinks.js. Outside their
- * windows the rows are omitted entirely (null-safe).
+ * Six habit rows:
+ *   1. Today         -> a neutral label for the kind of day it is
+ *   2. Daily reading -> opens the user's primary link
+ *   3. Bible reading -> opens the user's primary link
+ *   4. Meeting prep  -> three generic sub-section labels
+ *   5. Family worship
+ *   6. This week     -> shows the current Monday-Sunday range
+ *   7. Events        -> opens the user's second link
+ *
+ * Every destination is a link the user saved in Settings; the app ships
+ * none of its own. A row with no saved link simply opens nothing.
  *
  * Each row has two tap targets:
- *   - the title / icon / link arrow: open the jw.org surface
+ *   - the title / icon / link arrow: open the saved link
  *   - the checkbox on the right: mark "done" (persisted in
  *     localStorage; no toast, no animation, no "complete" card)
  *
  * State: a single localStorage key per day,
- *   jw-daily-habits-state = { date: 'YYYY-MM-DD', done: { today, text, bible, thisWeek, family, meeting, memorial? } }  // memorial is conditional
+ *   jw-daily-habits-state = { date: 'YYYY-MM-DD', done: { today, text, bible, thisWeek, family, meeting } }
  *
  * When the user opens the app on a new day, the per-day state
  * resets automatically. Yesterday's checks don't carry over.
- *
- * The page is intentionally minimal. No streak, no XP, no
- * timer, no "see you tomorrow" celebration, no toasts, no
- * settings menu, no hamburger. Just five rows, each with a
- * link to do the actual habit on jw.org and a checkbox to
- * mark it done. The actual content lives on jw.org, not in
- * this app — we only track progress.
  */
 
 function Home() {
   const { t, i18n } = useTranslation();
-  // Expose the active i18n language as a global so pure utility
-  // functions in jwLibraryLinks (which can't import i18next
-  // without a circular dep) can pick up the locale for date
-  // formatting. Updated on every render so language changes
-  // are reflected immediately.
+  // Expose the active i18n language as a global so the pure date
+  // helpers (which can't import i18next without a circular dep) can pick
+  // up the locale for formatting. Updated each render so language
+  // changes are reflected immediately.
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.__jw_lang = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
@@ -315,7 +307,7 @@ function Home() {
   const thisWeek = getThisWeekMeetingUrl(new Date());
 
   // Progress metadata for rows that show a thin progress bar.
-  // Both are calendar-based — no fetch, no jw.org content.
+  // Both are calendar-based — no fetch, no network.
   const bibleProgress = bibleReadingProgress(new Date());
   const textProgress = dailyTextProgress(new Date());
 
@@ -343,7 +335,7 @@ function Home() {
   // row has: a key (used for the done map), an icon
   // component, a color (used for the ios-icon background), a
   // title, an optional sub-text shown beneath the title, and
-  // a href to the jw.org surface where the actual habit
+  // a href to the user's saved link for that row
   // happens.
   const ROWS = [
     // "Today" — a day-of-week-aware context row. Shows a neutral
@@ -453,8 +445,7 @@ function Home() {
   // The week strip — a compact Mon..Sun row at the top of
   // the home that gives the user a "where am I in the week"
   // visual signal. Today is bold + tinted; other days are
-  // muted. Pure date math, no content from jw.org. The
-  // strip is local-time Mon..Sun (jw.org uses Mon..Sun
+  // muted. Pure date maths. The strip is local-time Mon..Sun,
   // week boundaries too — they coincide).
   //
   // Memoized on today's ISO date so we don't rebuild 7 Date
@@ -522,10 +513,7 @@ function Home() {
             role="status"
             className="mt-3 mb-2 rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-sm text-base-content"
           >
-            {t(
-              'home.offlineOpen',
-              'You are offline. Connect to open jw.org links — JW Library deep links still work.'
-            )}
+            {t('home.offlineOpen', 'You are offline. Connect to open your saved links.')}
           </div>
         )}
         <h1 className="ios-large-title">
@@ -567,7 +555,7 @@ function Home() {
             least one habit. Filled = checked that day, hollow
             = missed. Pure local state
             (jw-daily-habits-state.history). No content from
-            jw.org. The dots are aligned under the week-strip
+            The dots are aligned under the week-strip
             columns so the user can see "I checked Tuesday
             (col 1) and Thursday (col 3)" at a glance. */}
         <div className="grid grid-cols-7 gap-1 mb-4 select-none" aria-label="This week checked">
@@ -600,7 +588,7 @@ function Home() {
             confronted with "0 day streak — start today!").
 
             All values are pure localStorage / derived. No
-            jw.org content. Matches the iOS Reminders /
+            Matches the iOS Reminders /
             Apple Fitness style: small grey meta line under
             a visualization. */}
         {userInteracted && (streak > 0 || tp.done > 0 || best > 0) && (
@@ -648,12 +636,12 @@ function Home() {
             the card surface. */}
         {!userInteracted && (
           <p className="text-sm text-base-content/80 mt-1 mb-4 px-1" role="note">
-            {t('home.firstRunHint', 'Tap a row to open jw.org. Tap the checkbox when done.')}
+            {t('home.firstRunHint', 'Tap a row to open its link. Tap the checkbox when done.')}
           </p>
         )}
 
         {/* The five habit rows. Each row is its own card; the
-            left side opens jw.org, the right side is a
+            left side opens the saved link, the right side is a
             checkbox. No toast, no animation, no "complete" card. */}
         <div className="ios-grouped">
           {ROWS.map((row) => {
@@ -672,26 +660,19 @@ function Home() {
                   // when the habit is marked done. Same iOS Reminders
                   // pattern — no animation, no toast, just a quiet
                   // visual signal. The row is still tappable to
-                  // open jw.org.
+                  // open the saved link.
                   style={isDone ? { opacity: 0.55 } : undefined}
                 >
-                  {/* Left: link to jw.org — block when offline so the
-                      browser doesn't dump the user on a failed tab.
-                      jwlibrary:// deep links still work offline (OS
-                      hands off to the JW Library app). */}
+                  {/* Left: the saved link — blocked when offline so the
+                      browser doesn't dump the user on a failed tab. */}
                   <a
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 flex-1 min-w-0 text-left"
-                    aria-label={`${title} — opens jw.org in a new tab`}
+                    aria-label={`${title} — opens in a new tab`}
                     onClick={(e) => {
-                      const isJwLibrary = typeof href === 'string' && href.startsWith('jwlibrary:');
-                      if (
-                        !isJwLibrary &&
-                        typeof navigator !== 'undefined' &&
-                        navigator.onLine === false
-                      ) {
+                      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
                         e.preventDefault();
                         window.dispatchEvent(new CustomEvent('jw-offline-open'));
                       }
@@ -713,22 +694,18 @@ function Home() {
                           {metaChip}
                         </div>
                       )}
-                      {/* Share-invite button. Only rendered on
-                          rows that carry a `shareText` (today:
-                          the Memorial row). Tapping calls
-                          navigator.share() with the pre-filled
-                          text. Falls back to clipboard.copy() if
-                          the system share sheet isn't available
-                          (older browsers, no HTTPS context). */}
+                      {/* Share-invite button. Only rendered on rows
+                          that carry a `shareText`. Tapping calls
+                          navigator.share() with the pre-filled text.
+                          Falls back to clipboard.copy() if the system
+                          share sheet isn't available. */}
                       {/* Sub-actions. Each row can expose 0..N
                           chip-style inline buttons under its
                           sub-text. Current consumers:
                             - shareText: opens the system share
                               sheet (Memorial row).
-                            - jwlibraryUrl: inline link to open
-                              the publication in the JW Library
-                              app via jwlibrary:// URL scheme
-                              (Sunday Watchtower row).
+                            - url: an inline link to an external
+                              destination.
                           All sub-actions render with the same
                           chip styling; only the click handler
                           and target differ. Tapping any
@@ -746,9 +723,7 @@ function Home() {
                                 if (act.onClick) return act.onClick(e);
                                 if (act.kind === 'share') return shareInvite(act.text);
                                 if (act.kind === 'link' && act.url) {
-                                  const isJwLibrary = act.url.startsWith('jwlibrary:');
                                   if (
-                                    !isJwLibrary &&
                                     typeof navigator !== 'undefined' &&
                                     navigator.onLine === false
                                   ) {
@@ -791,7 +766,7 @@ function Home() {
                           progress object (Daily text, Bible reading).
                           Thin, faded track + primary fill. 100% width
                           of the title area, so it visually anchors
-                          below the sub-text. Pure metadata, no jw.org
+                          below the sub-text. Pure metadata, no network
                           content implied. */}
                       {progress && (
                         <div
@@ -844,7 +819,7 @@ function Home() {
                     (Treasures / Ministry / Living) and 3 timing
                     options for Family worship. These are
                     informational labels — they do NOT have separate
-                    links (jw.org doesn't expose section-anchored
+                    links (the destination page doesn't expose section-anchored
                     URLs that work, and timing doesn't change the
                     destination). They sit visually nested under
                     their parent row. */}
@@ -924,7 +899,7 @@ function Home() {
         </div>
 
         <footer className="ios-footer">
-          Unofficial third-party tool. Not affiliated with jw.org.
+          A private habit tracker. Your data stays on this device.
         </footer>
 
         {/* Settings — inline accordion at the bottom of the
