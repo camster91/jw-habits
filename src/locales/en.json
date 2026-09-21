@@ -73,6 +73,7 @@
     "linksHelp": "Optional. Add your own links for each destination. The app ships with none.",
     "linkPrimary": "Primary link",
     "linkSecondary": "Second link",
-    "linkInvalid": "That does not look like a valid http(s) link, so it will be treated as empty."
+    "linkInvalid": "That does not look like a valid http(s) link, so it will be treated as empty.",
+    "testFailed": "Could not send the test notification."
   }
 }

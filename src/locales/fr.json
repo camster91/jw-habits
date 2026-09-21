@@ -73,6 +73,7 @@
     "linksHelp": "Facultatif. Ajoutez vos propres liens pour chaque destination. L'application n'en contient aucun.",
     "linkPrimary": "Lien principal",
     "linkSecondary": "Lien secondaire",
-    "linkInvalid": "Cela ne ressemble pas a un lien http(s) valide ; il sera ignore."
+    "linkInvalid": "Cela ne ressemble pas a un lien http(s) valide ; il sera ignore.",
+    "testFailed": "Impossible d'envoyer la notification de test."
   }
 }

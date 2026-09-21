@@ -73,6 +73,7 @@
     "linksHelp": "Opcional. Anade tus propios enlaces para cada destino. La aplicacion no incluye ninguno.",
     "linkPrimary": "Enlace principal",
     "linkSecondary": "Segundo enlace",
-    "linkInvalid": "No parece un enlace http(s) valido, asi que se ignorara."
+    "linkInvalid": "No parece un enlace http(s) valido, asi que se ignorara.",
+    "testFailed": "No se pudo enviar la notificacion de prueba."
   }
 }

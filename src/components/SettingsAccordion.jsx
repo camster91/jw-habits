@@ -114,7 +114,8 @@ export default function SettingsAccordion() {
   const [perm, setPerm] = useState(() =>
     permSupported ? getPermissionState() : NOTIFICATION_PERMISSION.UNSUPPORTED
   );
-  const [testFired, setTestFired] = useState(false);
+  // null = no result yet, 'sent' | 'failed' once the promise settles.
+  const [testResult, setTestResult] = useState(null);
   const testTimerRef = useRef(null);
 
   useEffect(() => {
@@ -205,14 +206,20 @@ export default function SettingsAccordion() {
     }
   };
 
-  const handleTestNotification = () => {
-    setTestFired(true);
-    void showReminderNotification({
-      title: 'Habit Tracker',
-      body: 'Time to check your daily habits.',
-    }).catch(() => {});
+  const handleTestNotification = async () => {
+    // Report the real outcome: the previous version set the success flag
+    // before awaiting, so a failed delivery still showed "sent".
+    try {
+      await showReminderNotification({
+        title: 'Habit Tracker',
+        body: 'Time to check your daily habits.',
+      });
+      setTestResult('sent');
+    } catch {
+      setTestResult('failed');
+    }
     if (testTimerRef.current != null) clearTimeout(testTimerRef.current);
-    testTimerRef.current = setTimeout(() => setTestFired(false), 2000);
+    testTimerRef.current = setTimeout(() => setTestResult(null), 3000);
   };
 
   return (
@@ -308,7 +315,7 @@ export default function SettingsAccordion() {
                 </div>
 
                 {perm === NOTIFICATION_PERMISSION.DENIED && (
-                  <div className="text-xs text-base-content/60 mt-2 px-1">
+                  <div role="alert" className="text-xs text-base-content/70 mt-2 px-1">
                     {t('settings.permissionDenied')}
                   </div>
                 )}
@@ -384,8 +391,18 @@ export default function SettingsAccordion() {
                     )}
                   </>
                 )}
-                {testFired && (
-                  <div className="text-xs text-success mt-2 px-1">{t('settings.testFired')}</div>
+                {testResult && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className={`text-xs mt-2 px-1 ${
+                      testResult === 'sent' ? 'text-success' : 'text-error'
+                    }`}
+                  >
+                    {testResult === 'sent'
+                      ? t('settings.testFired')
+                      : t('settings.testFailed', 'Could not send the test notification.')}
+                  </div>
                 )}
               </div>
             </>
@@ -428,7 +445,11 @@ export default function SettingsAccordion() {
               }
             />
             {linksInvalid && (
-              <div className="text-xs text-base-content/60 mt-2 px-1">
+              <div
+                role="status"
+                aria-live="polite"
+                className="text-xs text-base-content/70 mt-2 px-1"
+              >
                 {t('settings.linkInvalid')}
               </div>
             )}
