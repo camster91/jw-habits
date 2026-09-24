@@ -16,7 +16,8 @@ concurrency:
 jobs:
   deploy-ashbi:
     name: Deploy jw-habits (ashbi)
-    uses: camster91/ashbi-deploy/.github/workflows/deploy.yml@main
+    permissions: {}
+    uses: camster91/ashbi-deploy/.github/workflows/deploy.yml@8038ff977ab8b1d19d810a441e0a5987bf1eb413
     with:
       project_name: jw-habits
       port: "18080"

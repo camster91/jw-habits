@@ -76,11 +76,8 @@ Preferred: **BFG Repo-Cleaner** with a replacements file (do **not** commit
 `passwords.txt` — keep it outside the repo):
 
 ```bash
-# passwords.txt (outside the clone) — one leaked secret per line:
-#   jwnews2024secure
-#   jwnews2024release
-#   JWHabits2026!
-#   <any other recovered values from 1Password / git log>
+# passwords.txt is sensitive material and must stay outside the repository.
+# Put recovered values in the local file only; never paste them into docs, commands, prompts, or logs.
 
 cd /tmp
 git clone --mirror https://github.com/camster91/jw-habits.git
@@ -103,7 +100,7 @@ git push origin --force --tags
 ### Step 5 — Add ongoing protection (already done)
 
 - [x] `.gitignore` hardened: `*.keystore`, `*.jks`, `keystore.properties`, `android/keystore.properties`, `android/app/keystore.properties`
-- [x] `ci.yml` runs `gitleaks/gitleaks-action@v2` on every push + PR
+- [x] `ci.yml` runs `gitleaks/gitleaks-action@v3` on every push + PR
 - [x] `scripts/generate-android-keystore.sh` — env/prompt only; **never echoes passwords**
 - [x] `android/app/build.gradle` — `keystore.properties` / env only (no machine path)
 - [x] `android/keystore.properties.example` committed as a template

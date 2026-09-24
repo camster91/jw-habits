@@ -70,12 +70,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -169,7 +171,7 @@ jobs:
       # silently ignored and uploads could never succeed.
       - name: Upload to TestFlight
         if: env.SKIP_UPLOAD != 'true'
-        uses: apple-actions/upload-testflight-build@v5.3.0
+        uses: apple-actions/upload-testflight-build@1fc69ca369a60b813eaaa2d936eda22794b52e17 # v5.4.0
         with:
           app-path: ${{ steps.ipa.outputs.ipa_path }}
           app-type: ios
