@@ -10,8 +10,8 @@ The following values were leaked and are still recoverable via `git log -p --all
 
 | Variable | Was at | Currently in HEAD? |
 |---|---|---|
-| `KEYSTORE_PASSWORD` | `scripts/generate-android-keystore.sh:11` | No (redacted to `[REDACTED]`) |
-| `KEY_PASSWORD` | `scripts/generate-android-keystore.sh:12` | No (redacted to `[REDACTED]`) |
+| `KEYSTORE_PASSWORD` | `scripts/generate-android-keystore.sh:11` | No (redacted to `<REDACTED>`) |
+| `KEY_PASSWORD` | `scripts/generate-android-keystore.sh:12` | No (redacted to `<REDACTED>`) |
 | `storePassword` (gradle) | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
 | `keyPassword` (gradle) | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
 
