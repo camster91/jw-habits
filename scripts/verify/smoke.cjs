@@ -316,6 +316,10 @@ async function maybeSpawnPreview() {
   const child = spawn('npm', ['run', 'preview'], {
     cwd: path.resolve(__dirname, '..', '..'),
     stdio: ['ignore', 'pipe', 'pipe'],
+    // Own process group, so the cleanup below can stop vite as well as
+    // the npm wrapper. Killing only npm left vite holding the pipes and
+    // the script never exited.
+    detached: true,
   });
   // Wait for the server to be ready (preview prints a "Local:" line)
   return new Promise((resolve, reject) => {
@@ -327,8 +331,12 @@ async function maybeSpawnPreview() {
       const s = chunk.toString();
       process.stdout.write(`[preview] ${s}`);
       // Match "Local:   http://localhost:NNNN" — vite preview may pick
-      // a different port if the requested one is in use.
-      const m = s.match(/Local:\s+https?:\/\/localhost:(\d+)/i);
+      // a different port if the requested one is in use. Strip ANSI
+      // colour codes first: with CI=true vite colours the line and
+      // splits it ("Local\x1b[22m:", "localhost:\x1b[1m4173").
+      // eslint-disable-next-line no-control-regex
+      const plain = s.replace(/\x1b\[[0-9;]*m/g, '');
+      const m = plain.match(/Local:\s+https?:\/\/localhost:(\d+)/i);
       if (!resolved && m) {
         ACTIVE_PORT = Number(m[1]);
         resolved = true;
@@ -366,7 +374,11 @@ async function maybeSpawnPreview() {
   } finally {
     await browser.close();
     if (previewProcess) {
-      previewProcess.kill('SIGTERM');
+      try {
+        process.kill(-previewProcess.pid, 'SIGTERM');
+      } catch {
+        previewProcess.kill('SIGTERM');
+      }
     }
   }
 
@@ -376,6 +388,7 @@ async function maybeSpawnPreview() {
     results.filter((r) => !r.ok).forEach((r) => console.log(`  - ${r.name}: ${r.detail}`));
     process.exit(1);
   }
+  process.exit(0);
 })().catch((e) => {
   console.error('[smoke] Fatal:', e);
   process.exit(1);
