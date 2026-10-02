@@ -3,7 +3,11 @@
 # Pin by digest to avoid silent alpine drift. Update with:
 #   curl -sI -H "Authorization: Bearer $(curl -s 'https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/REPO:pull' | python3 -c 'import json,sys; print(json.load(sys.stdin)[\"token\"])')" -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" "https://registry-1.docker.io/v2/library/REPO/manifests/TAG" | grep -i docker-content-digest
 # Digests pinned 2026-07-23.
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS builder
+# --platform=$BUILDPLATFORM: dist/ is static files, identical for every
+# architecture, so build it once on the runner's native platform. Running
+# `npm ci` for arm64 under QEMU crashed with "Illegal instruction" and hung
+# the multi-arch build until timeout. Only the nginx stage is per-arch.
+FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci

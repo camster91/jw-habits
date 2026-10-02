@@ -128,7 +128,7 @@ compatibility with the legacy boolean shape.
   serves 502. The app builds and runs locally.
 - **Hosted CI runs again** (re-enabled 2026-10-02 after being disabled since 2026-09-22).
   `ci.yml` runs install, `npm audit --audit-level=high`, lint, tests, build, format check
-  and gitleaks. Smoke, CodeQL and deploy workflows are still disabled.
+  and gitleaks. Playwright smoke + journeys (`smoke.yml`) and the image build also run on PRs.
 - **npm 10 crashes** (`edgesOut`) re-resolving the lockfile. Use
   `npx npm@11 install --package-lock-only`.
 
