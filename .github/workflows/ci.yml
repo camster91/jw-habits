@@ -48,6 +48,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Hard fail on high/critical advisories. The overrides block in
+      # package.json pins fixed floors, but those go stale as soon as a
+      # newer advisory lands (js-yaml 4.3.1 vs 4.3.2, Oct 2026). Without
+      # this step nothing noticed.
+      - name: Security audit
+        run: npm audit --audit-level=high
+
       # Hard fail on lint errors. The June 2026 versions of this file
       # had `continue-on-error: true` here, which is exactly the
       # configuration that let broken dependabot PRs merge silently.
