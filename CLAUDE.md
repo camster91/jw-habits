@@ -1,6 +1,6 @@
 # CLAUDE.md — Habit Tracker
 
-**Last audited against source: 2026-09-21.**
+**Last audited against source: 2026-10-02.**
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -29,7 +29,7 @@ user-editable slot instead.
 
 | Layer | Technology | Version |
 |---|---|---|
-| Frontend | React 19 + Vite 8 | `react: ^19.2.0`, `vite: ^8.1.5` |
+| Frontend | React 19 + Vite 8 | `react: 19.2.8` (exact, with `react-dom`), `vite: ^8.1.5` |
 | Routing | React Router DOM 7 | 1 page (`/`) + `/share` + `*` catch-all → home |
 | State | localStorage only | no Zustand, no Context, no Redux |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
@@ -37,7 +37,7 @@ user-editable slot instead.
 | i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x` |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | |
-| Testing | Vitest 4 + Testing Library + Playwright | 195 tests / 15 files, 7 smoke, 6 journeys |
+| Testing | Vitest 4 + Testing Library + Playwright | 199 tests / 15 files, 7 smoke, 6 journeys |
 | Linting | ESLint 9 + Prettier 3 | |
 
 ## Commands
@@ -126,9 +126,11 @@ compatibility with the legacy boolean shape.
 
 - **Deploy is down.** `deploy-ashbi.yml` has failed every run since 2026-07-24 and the host
   serves 502. The app builds and runs locally.
-- **Hosted CI does not execute.** Workflows queue but never allocate a runner, so the
-  hosted gate has never actually run the suite. Local `npm test` + `npm run smoke:spawn` +
-  `npm run journeys` are the working validation path.
+- **Hosted CI runs again** (re-enabled 2026-10-02 after being disabled since 2026-09-22).
+  `ci.yml` runs install, `npm audit --audit-level=high`, lint, tests, build, format check
+  and gitleaks. Smoke, CodeQL and deploy workflows are still disabled.
+- **npm 10 crashes** (`edgesOut`) re-resolving the lockfile. Use
+  `npx npm@11 install --package-lock-only`.
 
 ## Rules for changes
 
