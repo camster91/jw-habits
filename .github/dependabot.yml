@@ -7,6 +7,16 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - 'dependencies'
+    # React refuses mismatched react / react-dom versions at runtime, and
+    # package.json pins both exactly. Update them together so a bump of one
+    # never lands without the other.
+    groups:
+      react:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
