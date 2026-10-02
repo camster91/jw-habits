@@ -1,6 +1,6 @@
 # CLAUDE.md — JW Habits
 
-**Last audited against source: 2026-07-24** (full review in `REVIEW-2026-07-22.md`; follow-ups in `REVIEW-2026-07-23-POST-MERGE.md`).
+**Last audited against source: 2026-10-02** (full review in `REVIEW-2026-07-22.md`; follow-ups in `REVIEW-2026-07-23-POST-MERGE.md`).
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -18,7 +18,7 @@ A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **habit tra
 
 | Layer | Technology | Version |
 |---|---|---|
-| Frontend | React 19 + Vite 8 | `react: ^19.2.0`, `vite: ^8.1.5` |
+| Frontend | React 19 + Vite 8 | `react: ^19.2.8`, `vite: ^8.1.5` |
 | Routing | React Router DOM 7 | 1 page (`/`) + `/share` + `*` catch-all → home |
 | State | localStorage only (per-day key + per-feature keys) | no Zustand, no React Context, no Redux |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
@@ -27,7 +27,7 @@ A Capacitor (React + Vite) mobile/PWA app for Jehovah's Witnesses. A **habit tra
 | Dates | date-fns | `^4.4.0` |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x` |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, custom `src/sw.js`) | |
-| Testing | Vitest 4 + Testing Library + Playwright | 273 tests, 17 files |
+| Testing | Vitest 4 + Testing Library + Playwright | 292 tests, 20 files |
 | Linting | ESLint 9 + Prettier 3 | |
 
 **Removed:** `@capacitor/push-notifications` (declared + configured, never registered — soft App Store policy violation; notifications fire via web Notification API + `serviceWorker.showNotification` instead). `zustand` (declared but never imported).
@@ -181,5 +181,6 @@ src/
 
 ## Review history
 
+- **2026-10-02** — `npm audit` had drifted to 11 advisories (7 high) despite the overrides block. Raised floors (`js-yaml ^4.3.2`, `fast-uri ^3.1.8`, `sharp ^0.35.4`, `vitest`/`@vitest/coverage-v8 ^4.1.11`), refreshed transitive deps (undici, browserslist, brace-expansion, @xmldom/xmldom) → 0 vulnerabilities. Matched `react-dom` to `react` 19.2.8 (mismatch broke 2 test files on main). CI now runs `npm audit --audit-level=high`. Note: npm 10 crashes (`edgesOut`) re-resolving this lockfile; use `npx npm@11 install --package-lock-only`.
 - **2026-07-24** — #148 drained remaining kanban items; #150 landed leftover #147 cleanup (dead `storageErrorHandler` removal, digest-pinned Dockerfile, README rewrite, real weekly-notification assertions, `@vitest/coverage-v8`). Conflicting #147 closed as superseded.
 - **2026-07-22** — Full audit by Hermes (4 parallel subagents). 6 P0, ~13 P1, ~15 P2, ~7 P3 findings. Local follow-up PR fixed P0-1 through P0-6, P1-2 (prettier), P1-3 (zustand uninstall), P1-5 (Dockerfile pin + USER + HEALTHCHECK), P1-9 (npm overrides + sharp bump → 0 vulnerabilities). Findings doc: `REVIEW-2026-07-22.md`.
