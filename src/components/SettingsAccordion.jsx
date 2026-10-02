@@ -2,16 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Settings as SettingsIcon, Bell } from 'lucide-react';
 import { loadSettings, saveSettings, DEFAULTS } from '../utils/settingsStore';
+import { resolveUserLink } from '../utils/userLinks';
 import {
   getPermissionState,
   requestNotificationPermission,
   startReminder,
   cancelReminder,
   showReminderNotification,
-  scheduleSaturdayWindowOpen,
-  cancelSaturdayWindowOpen,
-  scheduleSundayEveningCheck,
-  cancelSundayEveningCheck,
   NOTIFICATION_PERMISSION,
 } from '../utils/notificationScheduler';
 
@@ -117,7 +114,8 @@ export default function SettingsAccordion() {
   const [perm, setPerm] = useState(() =>
     permSupported ? getPermissionState() : NOTIFICATION_PERMISSION.UNSUPPORTED
   );
-  const [testFired, setTestFired] = useState(false);
+  // null = no result yet, 'sent' | 'failed' once the promise settles.
+  const [testResult, setTestResult] = useState(null);
   const testTimerRef = useRef(null);
 
   useEffect(() => {
@@ -130,19 +128,19 @@ export default function SettingsAccordion() {
   // reminderTime + permission granted).
   const remindersOn = !!settings.reminderTime && perm === NOTIFICATION_PERMISSION.GRANTED;
 
-  // Whenever settings.permission or .reminderTime changes,
-  // re-sync the schedulers. Cancel first to clear old timers.
-  // Weekly Sunday Watchtower nudges share the same permission
-  // gate as the daily reminder (feature was previously dead —
-  // only exported/tested, never started from UI).
+  // True when a link slot holds text that is not a usable http(s) URL, so
+  // the settings panel can say the row will render as informational.
+  const rawLinks = settings.links || {};
+  const linksInvalid =
+    (!!rawLinks.primary?.trim() && !resolveUserLink(rawLinks.primary)) ||
+    (!!rawLinks.secondary?.trim() && !resolveUserLink(rawLinks.secondary));
+
+  // Whenever reminders are on/off or their time changes, re-sync the
+  // scheduler. Cancel first to clear any stale timer.
   useEffect(() => {
     cancelReminder();
-    cancelSaturdayWindowOpen();
-    cancelSundayEveningCheck();
     if (remindersOn) {
       startReminder();
-      scheduleSaturdayWindowOpen();
-      scheduleSundayEveningCheck();
     }
   }, [remindersOn, settings.reminderTime, settings.quietHours?.start, settings.quietHours?.end]);
 
@@ -166,8 +164,7 @@ export default function SettingsAccordion() {
   const update = (patch) => {
     const next = { ...settings, ...patch };
     setSettings(next);
-    saveSettings(next);
-    // Manual event so listeners in this same tab (Home page)
+    saveSettings(next); // Manual event so listeners in this same tab (Home page)
     // re-read settings and update their derived state. Other
     // tabs get the same event via the browser automatically.
     try {
@@ -202,8 +199,6 @@ export default function SettingsAccordion() {
         update({ reminderTime: settings.reminderTime || '21:00' });
       } else {
         cancelReminder();
-        cancelSaturdayWindowOpen();
-        cancelSundayEveningCheck();
         update({ reminderTime: null });
       }
     } catch {
@@ -211,14 +206,20 @@ export default function SettingsAccordion() {
     }
   };
 
-  const handleTestNotification = () => {
-    setTestFired(true);
-    void showReminderNotification({
-      title: 'JW Habits',
-      body: 'Time to check your daily habits.',
-    }).catch(() => {});
+  const handleTestNotification = async () => {
+    // Report the real outcome: the previous version set the success flag
+    // before awaiting, so a failed delivery still showed "sent".
+    try {
+      await showReminderNotification({
+        title: 'Habit Tracker',
+        body: 'Time to check your daily habits.',
+      });
+      setTestResult('sent');
+    } catch {
+      setTestResult('failed');
+    }
     if (testTimerRef.current != null) clearTimeout(testTimerRef.current);
-    testTimerRef.current = setTimeout(() => setTestFired(false), 2000);
+    testTimerRef.current = setTimeout(() => setTestResult(null), 3000);
   };
 
   return (
@@ -314,7 +315,7 @@ export default function SettingsAccordion() {
                 </div>
 
                 {perm === NOTIFICATION_PERMISSION.DENIED && (
-                  <div className="text-xs text-base-content/60 mt-2 px-1">
+                  <div role="alert" className="text-xs text-base-content/70 mt-2 px-1">
                     {t('settings.permissionDenied')}
                   </div>
                 )}
@@ -390,12 +391,69 @@ export default function SettingsAccordion() {
                     )}
                   </>
                 )}
-                {testFired && (
-                  <div className="text-xs text-success mt-2 px-1">{t('settings.testFired')}</div>
+                {testResult && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className={`text-xs mt-2 px-1 ${
+                      testResult === 'sent' ? 'text-success' : 'text-error'
+                    }`}
+                  >
+                    {testResult === 'sent'
+                      ? t('settings.testFired')
+                      : t('settings.testFailed', 'Could not send the test notification.')}
+                  </div>
                 )}
               </div>
             </>
           )}
+
+          {/* ── Destination links ─────────────────────────── */}
+          <h2 className="ios-section-h mt-6">{t('settings.links')}</h2>
+          <div className="ios-row flex-col items-stretch">
+            <div className="sub mb-2 px-1">{t('settings.linksHelp')}</div>
+            <label className="text-sm text-base-content/80 mb-1" htmlFor="link-primary">
+              {t('settings.linkPrimary')}
+            </label>
+            <input
+              id="link-primary"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              className="ios-text-input"
+              placeholder="https://"
+              value={settings.links?.primary || ''}
+              onChange={(e) =>
+                update({ links: { ...(settings.links || {}), primary: e.target.value } })
+              }
+            />
+            <label className="text-sm text-base-content/80 mb-1 mt-3" htmlFor="link-secondary">
+              {t('settings.linkSecondary')}
+            </label>
+            <input
+              id="link-secondary"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              className="ios-text-input"
+              placeholder="https://"
+              value={settings.links?.secondary || ''}
+              onChange={(e) =>
+                update({ links: { ...(settings.links || {}), secondary: e.target.value } })
+              }
+            />
+            {linksInvalid && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="text-xs text-base-content/70 mt-2 px-1"
+              >
+                {t('settings.linkInvalid')}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>

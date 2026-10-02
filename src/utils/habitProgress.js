@@ -4,20 +4,23 @@
  * Each helper returns `{ label, current, total, pct }` where
  * label is human-readable, current/total are integers, and pct
  * is 0..1. All values are computed from a Date — no fetch, no
- * jw.org content, no user state. Just calendar arithmetic.
+ * external content, no user state. Just calendar arithmetic.
  */
 
 /**
- * Bible reading progress.
- * Returns the user's position in the 366-day schedule.
- * The schedule wraps year-over-year (day 367 → day 1), so pct
- * is the position within the current calendar year, not the
- * lifetime schedule.
+ * Reading-schedule position.
  *
- * Uses UTC throughout to avoid DST off-by-one errors (Jan 1
- * is in EST, Jun 30 is in EDT — a 24h-based day count
- * computes 180 days instead of 181 across the spring-forward
- * boundary).
+ * Returns the day's position within the bundled reading schedule. The
+ * schedule wraps year-over-year (day N+1 → day 1), so this is a position
+ * within the current calendar year, not a claim that the schedule covers
+ * a complete canon.
+ *
+ * The label deliberately says "day N of M", not "day N of M read" — it
+ * describes position in a repeating list, which is what it actually is.
+ *
+ * Uses UTC throughout to avoid DST off-by-one errors (Jan 1 is in EST,
+ * Jun 30 is in EDT — a 24h-based day count computes 180 days instead of
+ * 181 across the spring-forward boundary).
  */
 export function bibleReadingProgress(date = new Date(), totalDays = 366) {
   const year = date.getUTCFullYear();
@@ -36,12 +39,12 @@ export function bibleReadingProgress(date = new Date(), totalDays = 366) {
 
 /**
  * Daily text progress (calendar-month based).
- * jw.org publishes a daily text per calendar day, so the
+ * The reading is a per-calendar-day concept, so the
  * natural progress unit is "day X of N" within the current
  * month. We don't know the count of texts published in any
  * given month, but we know the month length — so we use the
  * honest calendar-day counter instead. The metadata is
- * calendar-only; no jw.org content is implied.
+ * calendar-only; no external content is implied.
  */
 export function dailyTextProgress(date = new Date()) {
   // Use local-calendar day + last-day-of-month (UTC-safe

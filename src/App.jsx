@@ -10,8 +10,8 @@ import Share from './pages/Share';
 // The app is one page. Settings, Ideas, About, the side
 // drawer, the toast provider, and the per-user settings store
 // have all been removed. The only persisted state is the
-// per-day habit state in jw-daily-habits-state. The home page
-// does everything: 5 rows, each with a link to a jw.org surface
+// per-day habit state (see useHabitState). The home page
+// does everything: the habit rows, each opening the user’s saved link
 // and a checkbox to mark "done." The /share route exists
 // because the PWA manifest declares a share_target pointing
 // at /share — the OS sends shared URLs here when the user
@@ -19,7 +19,7 @@ import Share from './pages/Share';
 
 function App() {
   // Use Vite's base URL as React Router basename — works for both
-  // Coolify (/) and GH Pages (/jw-habits/) without code changes
+  // Coolify (/) and a subpath deploy without code changes
   const routerBasename = (() => {
     try {
       const base = import.meta.env.BASE_URL;

@@ -33,7 +33,7 @@ const DEFAULTS = Object.freeze({
   // Default 2 = Tuesday (the global convention).
   midweekDay: 2,
   // Weekend meeting day. The "Today" row uses this to show
-  // "Today — Public Meeting + Watchtower Study" on this day
+  // the weekend-meeting label on this day
   // and "Tomorrow" the night before.
   // Default 0 = Sunday.
   weekendDay: 0,
@@ -44,6 +44,10 @@ const DEFAULTS = Object.freeze({
   // { start: "22:00", end: "07:00" } means no notifications
   // 10pm-7am. null = no quiet hours.
   quietHours: null,
+  // User-owned destination links for the habit rows. Ships empty:
+  // the app contains no third-party URLs by default, and each slot
+  // is whatever the user pasted in Settings.
+  links: { primary: '', secondary: '' },
 });
 
 // Merge a stored record over the defaults. Unknown fields
@@ -78,6 +82,14 @@ function mergeWithDefaults(raw) {
       } else {
         out[key] = def;
       }
+    } else if (key === 'links') {
+      // Keep only the known slots, and only string values. The URLs
+      // themselves are validated at render time by resolveUserLink.
+      const src = value && typeof value === 'object' ? value : {};
+      out[key] = {
+        primary: typeof src.primary === 'string' ? src.primary : def.primary,
+        secondary: typeof src.secondary === 'string' ? src.secondary : def.secondary,
+      };
     } else {
       out[key] = value;
     }

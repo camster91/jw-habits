@@ -52,9 +52,9 @@ export default defineConfig({
       filename: 'sw.js',
       manifest: {
     id: '/',
-        name: 'JW Habits',
-        short_name: 'JW Habits',
-        description: 'Build daily spiritual habits: daily text, Bible reading, meeting prep, and more',
+        name: 'Habit Tracker',
+        short_name: 'Habit Tracker',
+        description: 'Track daily habits and routines on your own device.',
         theme_color: '#4A6FA4',
         background_color: '#ffffff',
         display: 'standalone',
@@ -107,15 +107,10 @@ export default defineConfig({
             url: 'url'
           }
         },
-        screenshots: [
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            form_factor: 'narrow',
-            label: 'JW Habits Home Screen'
-          }
-        ],
+        // No `screenshots` entry: the previous one pointed at the app icon
+        // and labelled it a Home screenshot. A 512x512 square icon is not a
+        // valid narrow-form-factor screenshot, and shipping a wrong one is
+        // worse than shipping none. Add real captures here when available.
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],

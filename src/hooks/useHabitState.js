@@ -5,6 +5,10 @@
  *
  * Responsibilities:
  *   - Read jw-daily-habits-state on mount; auto-reset on day rollover
+ *
+ * NOTE: the `jw-` prefixes below are persistence keys, not branding. They
+ * ship in real installs' localStorage, so renaming them would silently
+ * discard every existing user's history. They are intentionally frozen.
  *   - Prune history to the last 7 days
  *   - Expose a setter that writes through to localStorage
  *   - Track the first-done marker (for the first-launch hint)
@@ -30,8 +34,12 @@ function todayKey() {
 export { todayKey };
 
 export function pruneHistory(history, today) {
+  // Retain far more than the 7-day week strip needs: the streak counters
+  // read this list, so pruning to a week made every streak cap at 7 and
+  // made "best" meaningless. A rolling year keeps the maths honest while
+  // staying bounded.
   const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() - 6); // 7 days back inclusive
+  cutoff.setDate(cutoff.getDate() - 364); // ~1 year back inclusive
   const seen = new Set();
   const out = [];
   for (const d of history) {

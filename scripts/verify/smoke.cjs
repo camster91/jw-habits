@@ -18,8 +18,8 @@
 // Run from repo root:
 //   node scripts/verify/smoke.cjs                    # uses default port 4173
 //   PORT=4173 node scripts/verify/smoke.cjs         # override port
-//   SMOKE_BASE_URL=https://jwhabits.ashbi.ca node scripts/verify/smoke.cjs
-//                                                    # hit prod instead of local
+//   SMOKE_BASE_URL=https://example.com node scripts/verify/smoke.cjs
+//                                                    # hit a deployed copy
 //
 // Pre-reqs:
 //   1. `npm install` (Playwright is a devDependency)
@@ -201,8 +201,6 @@ async function runSmoke(browser) {
       family: { done: false, note: '' },
       today: { done: false, note: '' },
       thisWeek: { done: false, note: '' },
-      yearText: { done: false, note: '' },
-      sundayWatchtower: { done: false, note: '' },
       conventions: { done: false, note: '' },
     });
     await page.reload();
@@ -237,8 +235,6 @@ async function runSmoke(browser) {
       family: false,
       today: false,
       thisWeek: false,
-      yearText: false,
-      sundayWatchtower: false,
       conventions: false,
     });
     await page.reload();
@@ -290,7 +286,7 @@ async function runSmoke(browser) {
     await page.goto(BASE_URL);
     await page.waitForTimeout(300);
     const hintBefore = await page
-      .getByText(/tap a row to open jw\.org/i)
+      .getByText(/tap a row to open its link/i)
       .first()
       .isVisible()
       .catch(() => false);
@@ -301,7 +297,7 @@ async function runSmoke(browser) {
       await page.waitForTimeout(200);
     }
     const hintAfter = await page
-      .getByText(/tap a row to open jw\.org/i)
+      .getByText(/tap a row to open its link/i)
       .first()
       .isVisible()
       .catch(() => false);
@@ -320,6 +316,10 @@ async function maybeSpawnPreview() {
   const child = spawn('npm', ['run', 'preview'], {
     cwd: path.resolve(__dirname, '..', '..'),
     stdio: ['ignore', 'pipe', 'pipe'],
+    // Own process group, so the cleanup below can stop vite as well as
+    // the npm wrapper. Killing only npm left vite holding the pipes and
+    // the script never exited.
+    detached: true,
   });
   // Wait for the server to be ready (preview prints a "Local:" line)
   return new Promise((resolve, reject) => {
@@ -331,8 +331,12 @@ async function maybeSpawnPreview() {
       const s = chunk.toString();
       process.stdout.write(`[preview] ${s}`);
       // Match "Local:   http://localhost:NNNN" — vite preview may pick
-      // a different port if the requested one is in use.
-      const m = s.match(/Local:\s+https?:\/\/localhost:(\d+)/i);
+      // a different port if the requested one is in use. Strip ANSI
+      // colour codes first: with CI=true vite colours the line and
+      // splits it ("Local\x1b[22m:", "localhost:\x1b[1m4173").
+      // eslint-disable-next-line no-control-regex
+      const plain = s.replace(/\x1b\[[0-9;]*m/g, '');
+      const m = plain.match(/Local:\s+https?:\/\/localhost:(\d+)/i);
       if (!resolved && m) {
         ACTIVE_PORT = Number(m[1]);
         resolved = true;
@@ -370,7 +374,11 @@ async function maybeSpawnPreview() {
   } finally {
     await browser.close();
     if (previewProcess) {
-      previewProcess.kill('SIGTERM');
+      try {
+        process.kill(-previewProcess.pid, 'SIGTERM');
+      } catch {
+        previewProcess.kill('SIGTERM');
+      }
     }
   }
 
@@ -380,6 +388,7 @@ async function maybeSpawnPreview() {
     results.filter((r) => !r.ok).forEach((r) => console.log(`  - ${r.name}: ${r.detail}`));
     process.exit(1);
   }
+  process.exit(0);
 })().catch((e) => {
   console.error('[smoke] Fatal:', e);
   process.exit(1);

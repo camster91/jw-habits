@@ -10,11 +10,11 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.ashbi.jwnews"
+    namespace = "ca.ashbi.habittracker"
     compileSdk = rootProject.ext.compileSdkVersion
     buildToolsVersion = "36.1.0"
     defaultConfig {
-        applicationId "com.ashbi.jwnews"
+        applicationId "ca.ashbi.habittracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 411
@@ -41,7 +41,7 @@ android {
                 storeFile file(storePath)
             }
             storePassword keystoreProperties['storePassword'] ?: System.getenv('KEYSTORE_PASSWORD')
-            keyAlias keystoreProperties['keyAlias'] ?: System.getenv('KEY_ALIAS') ?: 'jwnews'
+            keyAlias keystoreProperties['keyAlias'] ?: System.getenv('KEY_ALIAS') ?: 'habittracker'
             keyPassword keystoreProperties['keyPassword'] ?: System.getenv('KEY_PASSWORD')
         }
     }

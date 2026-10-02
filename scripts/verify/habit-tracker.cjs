@@ -384,7 +384,9 @@ async function gotoHome(page) {
       try {
         // @ts-ignore
         await navigator.permissions?.update?.({ name: 'notifications' });
-      } catch {}
+      } catch {
+        /* permission API is optional; ignore */
+      }
     });
     // Click via dispatchEvent (avoid focus-chain quirks)
     await switchEl.dispatchEvent('click');
@@ -427,7 +429,7 @@ async function gotoHome(page) {
         try {
           const r = await fetch(path, { method: 'HEAD' });
           results[path] = r.status;
-        } catch (e) {
+        } catch {
           results[path] = 'ERR';
         }
       }

@@ -5,7 +5,7 @@
  * localStorage field — any habit checked that day).
  *
  * Used by Home to render the "🔥 N day streak" line under the
- * week strip. No external state, no jw.org content, no fetch.
+ * week strip. No external state, no network, no fetch.
  */
 
 import { isDone } from './doneState.js';

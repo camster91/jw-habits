@@ -180,3 +180,26 @@ describe('todayProgress', () => {
     ).toEqual({ done: 2, total: 3 });
   });
 });
+
+describe('streak window regression (issue #186)', () => {
+  it('counts a streak longer than 7 days when history allows it', () => {
+    // 14 consecutive days ending today must yield 14, not 7.
+    const history = [];
+    for (let i = 0; i < 14; i++) {
+      const d = new Date('2026-09-21T00:00:00');
+      d.setDate(d.getDate() - i);
+      history.push(d.toISOString().slice(0, 10));
+    }
+    expect(currentStreak(history, '2026-09-21')).toBe(14);
+  });
+
+  it('reports a best streak longer than 7 days', () => {
+    const history = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date('2026-09-21T00:00:00');
+      d.setDate(d.getDate() - i);
+      history.push(d.toISOString().slice(0, 10));
+    }
+    expect(bestStreakFromHistory(history)).toBe(30);
+  });
+});

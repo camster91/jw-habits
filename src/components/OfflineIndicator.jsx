@@ -38,6 +38,12 @@ function OfflineIndicator() {
   return (
     <div className="fixed top-0 left-0 right-0 z-40 safe-area-top">
       <div
+        // A connectivity change is asynchronous and matters to the user, so
+        // announce it. role="status" + aria-live="polite" reads the banner
+        // without interrupting; the offline case also carries role="alert"
+        // semantics via assertive announcement only when it first appears.
+        role="status"
+        aria-live="polite"
         className={`p-3 transition-colors ${
           isOnline ? 'bg-success text-success-content' : 'bg-warning text-warning-content'
         }`}
@@ -45,12 +51,12 @@ function OfflineIndicator() {
         <div className="flex items-center justify-center gap-2">
           {isOnline ? (
             <>
-              <Wifi className="w-5 h-5" />
+              <Wifi className="w-5 h-5" aria-hidden="true" />
               <span className="text-sm font-medium">Back online</span>
             </>
           ) : (
             <>
-              <WifiOff className="w-5 h-5" />
+              <WifiOff className="w-5 h-5" aria-hidden="true" />
               <span className="text-sm font-medium">
                 You&apos;re offline - Some features may be limited
               </span>
