@@ -1,6 +1,6 @@
 # CLAUDE.md — Habit Tracker
 
-**Last audited against source: 2026-10-02.**
+**Last audited against source: 2026-10-04.**
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -124,8 +124,13 @@ compatibility with the legacy boolean shape.
 
 ## Known issues
 
-- **Deploy is down.** `deploy-ashbi.yml` has failed every run since 2026-07-24 and the host
-  serves 502. The app builds and runs locally.
+- **Deploy was down from 2026-07-24.** `deploy-ashbi.yml` called a reusable workflow in the
+  private, archived `camster91/ashbi-deploy` repo, so every run failed at startup. It is now
+  self-contained: it runs after a successful `Build and Push Image` on `main` and deploys the
+  immutable `ghcr.io/camster91/jw-habits:main-<sha7>` image over SSH. Can also be run by hand
+  (`workflow_dispatch`, optional `sha`).
+- **The live site serves a self-signed TLS certificate** (seen 2026-10-04). That is the edge
+  proxy on the VPS, not the app; the deploy only warns about it.
 - **Hosted CI runs again** (re-enabled 2026-10-02 after being disabled since 2026-09-22).
   `ci.yml` runs install, `npm audit --audit-level=high`, lint, tests, build, format check
   and gitleaks. Playwright smoke + journeys (`smoke.yml`) and the image build also run on PRs.
