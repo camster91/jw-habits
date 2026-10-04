@@ -39,7 +39,7 @@
 
 | Fix | Verification | Result |
 |---|---|---|
-| P0-1 runbook | `grep -rE "jwnews2024*" . --exclude-dir=.git` → empty | ✅ no literal leaks |
+| P0-1 runbook | `grep -rE "<leaked-password-pattern>" . --exclude-dir=.git` → empty | ✅ no literal leaks (was wrong: `docs/keystore-rotation-2026-07.md` still listed them until 2026-10-04) |
 | P0-2 Dockerfile nginx | `COPY nginx.conf`, `USER nginx`, `HEALTHCHECK`, `nginx:1.27-alpine` | ✅ all present |
 | P0-3 deploy workflows | `git ls-files .github/workflows/` shows only the 6 expected | ✅ 4 deleted, 1 added (smoke.yml) |
 | P0-4 streak.js fix | `if (isDone(done, k)) count++` at line 112 | ✅ |
@@ -55,7 +55,7 @@
 | New: smoke suite | scripts/verify/smoke.cjs has 7 tests S1-S7 | ✅ |
 | New: smoke workflow | .github/workflows/smoke.yml runs on push + PR | ✅ |
 | New: gitleaks | `gitleaks/gitleaks-action@v2` step in ci.yml | ✅ |
-| Literal redaction | `grep -rE "jwnews2024(securerelease|secure|release)" . --exclude-dir=.git` → empty | ✅ |
+| Literal redaction | `grep -rE "<leaked-password-pattern>" . --exclude-dir=.git` → empty | ✅ |
 
 ---
 
