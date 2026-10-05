@@ -17,6 +17,15 @@ mount. This guard writes to the correct path.
 Idempotent: skips work that's already done. Detects the
 jw-habits block by its unique router id.
 
+TLS: the router asks Traefik's `letsencrypt` resolver for its
+certificate. This guard used to also pin a hand-copied cert file
+(/etc/traefik/certs/jwhabits.ashbi.ca.{crt,key}) in tls.yml. A
+static cert that matches the host wins over ACME, so when that file
+was replaced by a self-signed placeholder (2026-07-20) the site
+served it and browsers refused the page. The guard now removes that
+pinned entry instead of adding it, so Let's Encrypt issues and renews
+the real certificate.
+
 Cron entry (every minute):
   * * * * * root /root/jw-habits/ops/traefik-guard.py >> /var/log/jwhabits-traefik-guard.log 2>&1
 """
@@ -26,7 +35,6 @@ import sys
 
 ROUTERS = "/opt/traefik/dynamic/routers.yml"
 TLS = "/opt/traefik/dynamic/tls.yml"
-CERTS_DIR = "/etc/traefik/certs"
 JW_HOST = "jwhabits.ashbi.ca"
 
 # Use `date` for the timestamp — no datetime import, no
@@ -73,10 +81,6 @@ SERVICE_BLOCK = (
     f"      loadBalancer:\n"
     f"        servers:\n"
     f"          - url: \"http://127.0.0.1:18080\"\n"
-)
-CERT_BLOCK = (
-    f"    - certFile: {CERTS_DIR}/{JW_HOST}.crt\n"
-    f"      keyFile: {CERTS_DIR}/{JW_HOST}.key\n"
 )
 
 
@@ -155,15 +159,42 @@ def append_routers():
     return True
 
 
-def append_tls():
-    text = open(TLS).read()
-    if JW_HOST + ".crt" in text:
+def remove_pinned_cert():
+    """Drop the hand-pinned jwhabits cert entry from tls.yml, if present.
+
+    Removes the whole `- certFile: .../jwhabits.ashbi.ca.crt` list item
+    (and its keyFile/stores lines). Other certificates are untouched.
+    Returns True when the file changed.
+    """
+    if not os.path.exists(TLS):
         return False
-    if not text.endswith("\n"):
-        text += "\n"
-    text += CERT_BLOCK
+    lines = open(TLS).read().splitlines(keepends=True)
+    out = []
+    removed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.lstrip(" ")
+        if stripped.startswith("- ") and f"{JW_HOST}." in line:
+            # Skip this list item and its continuation lines, which are
+            # indented deeper than the "- " marker.
+            dash_col = len(line) - len(stripped)
+            i += 1
+            while i < len(lines):
+                nxt = lines[i]
+                body = nxt.lstrip(" ")
+                indent = len(nxt) - len(body)
+                if body.strip() and indent <= dash_col:
+                    break
+                i += 1
+            removed = True
+            continue
+        out.append(line)
+        i += 1
+    if not removed:
+        return False
     with open(TLS, "w") as f:
-        f.write(text)
+        f.write("".join(out))
     return True
 
 
@@ -172,16 +203,13 @@ def main():
     if not os.path.exists(ROUTERS):
         log(f"ABORT: {ROUTERS} does not exist; cannot guard")
         return 1
-    if not os.path.exists(TLS):
-        log(f"ABORT: {TLS} does not exist; cannot guard")
-        return 1
 
     changed = False
     if append_routers():
         log(f"appended jwhabits router to {ROUTERS}")
         changed = True
-    if append_tls():
-        log(f"appended jwhabits cert to {TLS}")
+    if remove_pinned_cert():
+        log(f"removed pinned jwhabits cert from {TLS}; letsencrypt resolver takes over")
         changed = True
 
     if changed:
@@ -189,14 +217,6 @@ def main():
     else:
         log("traefik dynamic files are correct; no action")
 
-    # Sanity: cert files should exist
-    cert = f"{CERTS_DIR}/{JW_HOST}.crt"
-    key = f"{CERTS_DIR}/{JW_HOST}.key"
-    if not (os.path.exists(cert) and os.path.exists(key)):
-        log(f"WARNING: cert files missing at {cert} and {key}")
-        log("the certs are LE-issued and live in Caddy's cache at")
-        log(f"  /root/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/{JW_HOST}/")
-        log(f"copy with: cp <cache_dir>/{JW_HOST}.{ '{' }crt,key{ '}' } {CERTS_DIR}/")
     return rc
 
 
