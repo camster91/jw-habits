@@ -1,6 +1,6 @@
 # CLAUDE.md — Habit Tracker
 
-**Last audited against source: 2026-10-04.**
+**Last audited against source: 2026-10-05.**
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -129,8 +129,11 @@ compatibility with the legacy boolean shape.
   self-contained: it runs after a successful `Build and Push Image` on `main` and deploys the
   immutable `ghcr.io/camster91/jw-habits:main-<sha7>` image over SSH. Can also be run by hand
   (`workflow_dispatch`, optional `sha`).
-- **The live site serves a self-signed TLS certificate** (seen 2026-10-04). That is the edge
-  proxy on the VPS, not the app; the deploy only warns about it.
+- **The live site serves a self-signed TLS certificate** (seen 2026-10-04). Cause: `tls.yml`
+  pinned a hand-copied cert file for `jwhabits.ashbi.ca`, which overrides the router's
+  `letsencrypt` resolver, and that file became a self-signed placeholder on 2026-07-20.
+  `ops/traefik-guard.py` now removes the pinned entry; the fix lands once the guard runs on the
+  VPS with this version. The deploy only warns about it.
 - **Hosted CI runs again** (re-enabled 2026-10-02 after being disabled since 2026-09-22).
   `ci.yml` runs install, `npm audit --audit-level=high`, lint, tests, build, format check
   and gitleaks. Playwright smoke + journeys (`smoke.yml`) and the image build also run on PRs.
