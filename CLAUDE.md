@@ -129,11 +129,16 @@ compatibility with the legacy boolean shape.
   self-contained: it runs after a successful `Build and Push Image` on `main` and deploys the
   immutable `ghcr.io/camster91/jw-habits:main-<sha7>` image over SSH. Can also be run by hand
   (`workflow_dispatch`, optional `sha`).
-- **The live site serves a self-signed TLS certificate** (seen 2026-10-04). Cause: `tls.yml`
-  pinned a hand-copied cert file for `jwhabits.ashbi.ca`, which overrides the router's
-  `letsencrypt` resolver, and that file became a self-signed placeholder on 2026-07-20.
-  `ops/traefik-guard.py` now removes the pinned entry; the fix lands once the guard runs on the
-  VPS with this version. The deploy only warns about it.
+- **The live site served a self-signed TLS certificate** (seen 2026-10-04, fixed 2026-10-05).
+  Cause: `tls.yml` pinned a hand-copied cert file for `jwhabits.ashbi.ca`, which overrides the
+  router's `letsencrypt` resolver, and that file became a self-signed placeholder on 2026-07-20.
+  `ops/traefik-guard.py` now removes the pinned entry. It stayed broken a day longer because the
+  VPS checkout (`/root/jw-habits`, run by cron every minute) was never pulled, so the old guard
+  kept re-pinning the cert. After merging a guard change, `git pull` on the VPS and check that
+  the `guard @ <sha>` in `/var/log/jwhabits-traefik-guard.log` matches.
+- **`ops/traefik-guard.py` edits files shared by every site on the VPS.** It writes them
+  atomically and refuses output that is not valid YAML. Run `python3 -m unittest
+  ops/test_traefik_guard.py` before changing it.
 - **Hosted CI runs again** (re-enabled 2026-10-02 after being disabled since 2026-09-22).
   `ci.yml` runs install, `npm audit --audit-level=high`, lint, tests, build, format check
   and gitleaks. Playwright smoke + journeys (`smoke.yml`) and the image build also run on PRs.
