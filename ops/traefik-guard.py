@@ -30,8 +30,15 @@ Cron entry (every minute):
   * * * * * root /root/jw-habits/ops/traefik-guard.py >> /var/log/jwhabits-traefik-guard.log 2>&1
 """
 import os
+import re
+import shutil
 import subprocess
 import sys
+
+try:
+    import yaml
+except ImportError:  # validation is skipped, the atomic write still applies
+    yaml = None
 
 ROUTERS = "/opt/traefik/dynamic/routers.yml"
 TLS = "/opt/traefik/dynamic/tls.yml"
@@ -46,6 +53,14 @@ LOG_PREFIX = subprocess.run(
 
 def log(msg):
     print(f"[{LOG_PREFIX}] {msg}", flush=True)
+
+
+def guard_revision():
+    here = os.path.dirname(os.path.realpath(__file__))
+    r = subprocess.run(
+        ["git", "-C", here, "rev-parse", "--short", "HEAD"], capture_output=True, text=True
+    )
+    return r.stdout.strip() or "unknown"
 
 
 def has_block(path, marker):
@@ -84,6 +99,85 @@ SERVICE_BLOCK = (
 )
 
 
+HSTS_NAME = "jwhabits-hsts"
+# A router rule for our host, whether or not the value is quoted. Other
+# deploys rewrite routers.yml through a YAML dumper, which drops the quotes.
+HOST_RULE = re.compile(
+    r"^ {6}rule: *(?P<q>[\"']?)Host\(`" + re.escape(JW_HOST) + r"`\)(?P=q) *$"
+)
+
+
+def router_blocks(lines):
+    """Yield (start, end) line ranges of the routers under "  routers:".
+
+    A router starts at a 4-space-indented key and runs until the next line
+    indented 4 spaces or less.
+    """
+    try:
+        i = lines.index("  routers:\n") + 1
+    except ValueError:
+        return
+    start = None
+    while i < len(lines):
+        line = lines[i]
+        body = line.lstrip(" ")
+        indent = len(line) - len(body)
+        if body.strip():
+            if indent <= 2:
+                break
+            if indent == 4:
+                if start is not None:
+                    yield start, i
+                start = i
+        i += 1
+    if start is not None:
+        yield start, i
+
+
+def jw_router_blocks(lines):
+    return [
+        (s, e)
+        for s, e in router_blocks(lines)
+        if any(HOST_RULE.match(l.rstrip("\n")) for l in lines[s + 1 : e])
+    ]
+
+
+def attach_hsts(lines):
+    """Add jwhabits-hsts to every router whose rule is our host.
+
+    Handles a router with no middlewares, an inline list
+    (`middlewares: [a]`) and a block list (`- a` lines). Returns True when
+    any router changed.
+    """
+    changed = False
+    # Work from the bottom so earlier line numbers stay valid.
+    for s, e in reversed(jw_router_blocks(lines)):
+        block = lines[s:e]
+        if any(HSTS_NAME in l for l in block):
+            continue
+        mw = next((k for k, l in enumerate(block) if l.startswith("      middlewares:")), None)
+        if mw is None:
+            # Put it after the rule line; key order does not matter to Traefik.
+            at = s + next(k for k, l in enumerate(block) if HOST_RULE.match(l.rstrip("\n")))
+            lines.insert(at + 1, f"      middlewares: [{HSTS_NAME}]\n")
+        else:
+            line = block[mw].rstrip("\n")
+            inline = re.match(r"^( {6}middlewares: *\[)(.*)\] *$", line)
+            if inline:
+                items = inline.group(2).strip()
+                lines[s + mw] = f"{inline.group(1)}{items + ', ' if items else ''}{HSTS_NAME}]\n"
+            elif line.strip() == "middlewares:":
+                # Block list: copy the indent of the first "- item".
+                item = block[mw + 1] if mw + 1 < len(block) else ""
+                dash = item[: len(item) - len(item.lstrip(" "))] if item.lstrip().startswith("- ") else "      "
+                lines.insert(s + mw + 1, f"{dash}- {HSTS_NAME}\n")
+            else:
+                log(f"WARNING: unrecognised middlewares line {line!r}; HSTS not attached")
+                continue
+        changed = True
+    return changed
+
+
 def append_routers():
     """Add the jw-habits router + HSTS middleware + service if missing.
 
@@ -98,11 +192,12 @@ def append_routers():
 
     We insert the middleware (if absent), the router just before
     "  services:", and the service at the end of the services block.
+    Every router for our host gets the HSTS middleware attached.
     """
     text = open(ROUTERS).read()
     changed = False
 
-    if "jwhabits-hsts:" not in text:
+    if f"{HSTS_NAME}:" not in text:
         # Prefer inserting under an existing middlewares: section;
         # otherwise create one before routers:.
         if "\n  middlewares:\n" in text:
@@ -122,7 +217,8 @@ def append_routers():
             return False
         changed = True
 
-    if "  jwhabits:" not in text:
+    lines = text.splitlines(keepends=True)
+    if not jw_router_blocks(lines):
         if "\n  services:\n" not in text:
             log(f"WARNING: '{ROUTERS}' has no 'services:' marker; cannot insert router")
             return False
@@ -130,32 +226,41 @@ def append_routers():
         if not text.endswith("\n"):
             text += "\n"
         text += SERVICE_BLOCK
+        lines = text.splitlines(keepends=True)
         changed = True
-    elif "middlewares: [jwhabits-hsts]" not in text and "jwhabits:" in text:
-        # Router exists from an older guard run — attach HSTS middleware.
-        old = (
-            "    jwhabits:\n"
-            "      rule: \"Host(`jwhabits.ashbi.ca`)\"\n"
-            "      entryPoints: [websecure]\n"
-            "      service: jwhabits\n"
-            "      tls:\n"
-        )
-        new = (
-            "    jwhabits:\n"
-            "      rule: \"Host(`jwhabits.ashbi.ca`)\"\n"
-            "      entryPoints: [websecure]\n"
-            "      service: jwhabits\n"
-            "      middlewares: [jwhabits-hsts]\n"
-            "      tls:\n"
-        )
-        if old in text:
-            text = text.replace(old, new, 1)
-            changed = True
+    if attach_hsts(lines):
+        changed = True
 
     if not changed:
         return False
-    with open(ROUTERS, "w") as f:
+    return write_checked(ROUTERS, "".join(lines))
+
+
+def write_checked(path, text):
+    """Replace `path` with `text` atomically, refusing output that won't parse.
+
+    routers.yml and tls.yml are shared by every site on the VPS, and Traefik
+    reloads them the moment they change, so a half-written or broken file
+    takes all of them down. Write a sibling temp file (its name does not end
+    in .yml, so the file provider ignores it), parse it, then rename it over
+    the original. Returns True when the file was replaced.
+    """
+    if yaml is not None:
+        try:
+            doc = yaml.safe_load(text)
+        except yaml.YAMLError as e:
+            log(f"ABORT: refusing to write {path}; result is not valid YAML: {e}")
+            return False
+        if not isinstance(doc, dict):
+            log(f"ABORT: refusing to write {path}; result is not a YAML mapping")
+            return False
+    tmp = os.path.join(os.path.dirname(path), f".{os.path.basename(path)}.guard-tmp")
+    with open(tmp, "w") as f:
         f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    shutil.copymode(path, tmp)
+    os.replace(tmp, path)
     return True
 
 
@@ -193,9 +298,7 @@ def remove_pinned_cert():
         i += 1
     if not removed:
         return False
-    with open(TLS, "w") as f:
-        f.write("".join(out))
-    return True
+    return write_checked(TLS, "".join(out))
 
 
 def main():
@@ -206,16 +309,19 @@ def main():
 
     changed = False
     if append_routers():
-        log(f"appended jwhabits router to {ROUTERS}")
+        log(f"updated jwhabits router/HSTS middleware in {ROUTERS}")
         changed = True
     if remove_pinned_cert():
         log(f"removed pinned jwhabits cert from {TLS}; letsencrypt resolver takes over")
         changed = True
 
+    # Name the commit in every run, so a checkout that was never pulled
+    # shows up in the log instead of passing as "correct".
+    rev = f"guard @ {guard_revision()}"
     if changed:
-        log("traefik dynamic files updated; jw-habits is live again")
+        log(f"traefik dynamic files updated; jw-habits is live again ({rev})")
     else:
-        log("traefik dynamic files are correct; no action")
+        log(f"traefik dynamic files are correct; no action ({rev})")
 
     return rc
 

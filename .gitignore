@@ -24,6 +24,7 @@
 *.log
 *.p8
 *.p12
+*.pyc
 *.swo
 *.swp
 *.tsbuildinfo
@@ -47,6 +48,7 @@ _audit-*.cjs.patch
 _gap-analysis-*.md
 _ui-visual.cjs
 _verify-*.cjs
+__pycache__/
 android/.gradle/
 android/app/build/
 android/app/debug.keystore
