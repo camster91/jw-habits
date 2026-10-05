@@ -147,6 +147,37 @@ class GuardTest(unittest.TestCase):
         self.assertEqual(out.count("Host(`jwhabits.ashbi.ca`)"), 2)  # no third router added
         self.assertEqual(out.count("middlewares: [jwhabits-hsts]"), 2)
 
+    def test_commented_rule_counts_as_our_router(self):
+        self.write(
+            guard.ROUTERS,
+            LIVE.replace(
+                "      rule: Host(`jwhabits.ashbi.ca`)",
+                "      rule: Host(`jwhabits.ashbi.ca`)  # managed",
+            ),
+        )
+        guard.append_routers()
+        out = self.read(guard.ROUTERS)
+        self.assertEqual(out.count("    jwhabits:\n"), 2)  # one router, one service
+        self.assertEqual(out.count("middlewares: [jwhabits-hsts]"), 2)
+
+    def test_never_duplicates_an_existing_jwhabits_key(self):
+        # A router we don't recognise as ours must still block the fallback,
+        # or routers.yml ends up with two `jwhabits:` keys.
+        self.write(
+            guard.ROUTERS,
+            LIVE.replace("Host(`jwhabits.ashbi.ca`)", "Host(`jwhabits.ashbi.ca`) || Path(`/x`)"),
+        )
+        before = self.read(guard.ROUTERS)
+        self.assertFalse(guard.append_routers())
+        self.assertEqual(self.read(guard.ROUTERS), before)
+
+    @unittest.skipIf(guard.yaml is None, "PyYAML not installed")
+    def test_refuses_to_write_duplicate_keys(self):
+        self.write(guard.TLS, TLS)
+        dup = "http:\n  routers:\n    a:\n      rule: x\n    a:\n      rule: y\n"
+        self.assertFalse(guard.write_checked(guard.TLS, dup))
+        self.assertEqual(self.read(guard.TLS), TLS)
+
     def test_adds_router_service_and_middleware_when_missing(self):
         self.write(
             guard.ROUTERS,

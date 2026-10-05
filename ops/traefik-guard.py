@@ -40,6 +40,26 @@ try:
 except ImportError:  # validation is skipped, the atomic write still applies
     yaml = None
 
+if yaml is not None:
+
+    class UniqueKeyLoader(yaml.SafeLoader):
+        """SafeLoader that rejects duplicate mapping keys.
+
+        PyYAML keeps the last of two equal keys without complaint, so a
+        second `jwhabits:` router would otherwise pass validation.
+        """
+
+        def construct_mapping(self, node, deep=False):
+            seen = set()
+            for key_node, _ in node.value:
+                key = self.construct_object(key_node, deep=deep)
+                if key in seen:
+                    raise yaml.constructor.ConstructorError(
+                        None, None, f"duplicate key {key!r}", key_node.start_mark
+                    )
+                seen.add(key)
+            return super().construct_mapping(node, deep)
+
 ROUTERS = "/opt/traefik/dynamic/routers.yml"
 TLS = "/opt/traefik/dynamic/tls.yml"
 JW_HOST = "jwhabits.ashbi.ca"
@@ -103,7 +123,7 @@ HSTS_NAME = "jwhabits-hsts"
 # A router rule for our host, whether or not the value is quoted. Other
 # deploys rewrite routers.yml through a YAML dumper, which drops the quotes.
 HOST_RULE = re.compile(
-    r"^ {6}rule: *(?P<q>[\"']?)Host\(`" + re.escape(JW_HOST) + r"`\)(?P=q) *$"
+    r"^ {6}rule: *(?P<q>[\"']?)Host\(`" + re.escape(JW_HOST) + r"`\)(?P=q) *(?:#.*)?$"
 )
 
 
@@ -218,7 +238,10 @@ def append_routers():
         changed = True
 
     lines = text.splitlines(keepends=True)
-    if not jw_router_blocks(lines):
+    # The fallback adds `jwhabits:` keys, so it must not run while any exist,
+    # even under a router whose rule we don't recognise as ours.
+    has_key = any(lines[s] == "    jwhabits:\n" for s, _ in router_blocks(lines))
+    if not has_key and not jw_router_blocks(lines):
         if "\n  services:\n" not in text:
             log(f"WARNING: '{ROUTERS}' has no 'services:' marker; cannot insert router")
             return False
@@ -247,7 +270,7 @@ def write_checked(path, text):
     """
     if yaml is not None:
         try:
-            doc = yaml.safe_load(text)
+            doc = yaml.load(text, Loader=UniqueKeyLoader)
         except yaml.YAMLError as e:
             log(f"ABORT: refusing to write {path}; result is not valid YAML: {e}")
             return False
