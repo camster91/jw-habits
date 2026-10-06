@@ -11,12 +11,12 @@ import { WARM_LINES } from '../domain/encouragement.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import Today from './Today.jsx';
 import { haptics } from '../utils/native.js';
-import { fetchFeedItems } from '../native/whatsNewClient.js';
+import { CapacitorHttp } from '@capacitor/core';
 
 vi.mock('../utils/native.js', () => ({ haptics: { success: vi.fn() } }));
-vi.mock('../native/whatsNewClient.js', () => ({
-  fetchFeedItems: vi.fn(async () => [{ guid: 'a' }, { guid: 'b' }]),
-  whatsNewPageUrl: (locale) => `https://www.jw.org/${locale}/whats-new/`,
+vi.mock('@capacitor/core', async (importOriginal) => ({
+  ...(await importOriginal()),
+  CapacitorHttp: { get: vi.fn() },
 }));
 
 // Tuesday 6 October 2026.
@@ -225,19 +225,25 @@ describe('Today: cards and lines', () => {
     expect(screen.queryByText('Set your meeting days')).toBeNull();
   });
 
-  it('shows the What’s New badge, which opens the page and marks all seen', async () => {
-    renderToday(makeStore({ whatsNew: { enabled: true, lastCheck: null, seen: [], newCount: 2 } }));
-    const badge = screen.getByRole('button', { name: '2 new on jw.org' });
-    await act(async () => fireEvent.click(badge));
+  it('shows the What’s New badge; a tap opens the page and zeroes the count, offline', () => {
+    const whatsNew = {
+      enabled: true,
+      lastCheck: '2026-10-05T00:00:00.000Z',
+      seen: ['a'],
+      newCount: 2,
+    };
+    window.fetch = vi.fn();
+    renderToday(makeStore({ whatsNew }));
+    fireEvent.click(screen.getByRole('button', { name: '2 new on jw.org' }));
     expect(window.open).toHaveBeenCalledWith(
       'https://www.jw.org/en/whats-new/',
       '_blank',
       'noopener'
     );
-    expect(fetchFeedItems).toHaveBeenCalled();
-    expect(current.whatsNew.newCount).toBe(0);
-    expect(current.whatsNew.seen).toEqual(['a', 'b']);
-    expect(screen.queryByText('2 new on jw.org')).toBeNull();
+    expect(current.whatsNew).toEqual({ ...whatsNew, newCount: 0 });
+    expect(CapacitorHttp.get).not.toHaveBeenCalled();
+    expect(window.fetch).not.toHaveBeenCalled();
+    expect(screen.queryByText(/new on jw\.org/)).toBeNull();
   });
 
   it('shows no badge when nothing is new', () => {
@@ -323,6 +329,19 @@ describe('Today: wrap-up', () => {
     renderToday({ ...store, log }, at(21));
     expect(screen.getByText('Everything is done for today. Well done.')).toBeInTheDocument();
     expect(haptics.success).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires the celebration haptic at most once per app day', () => {
+    const due = ['dailyText', 'bibleReading', 'meetingPrep', 'personalStudy'];
+    const log = due.map((routine) => ({ routine, day: '2026-10-06', value: true }));
+    log.push({ routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 0 } });
+    const first = renderToday(makeStore({ log }), at(21));
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+    first.unmount();
+    renderToday(makeStore({ log }), at(22));
+    expect(screen.getByText('Everything is done for today. Well done.')).toBeInTheDocument();
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem('fd-celebrated')).toBe('2026-10-06');
   });
 
   it('does not celebrate with the quiet tone', () => {

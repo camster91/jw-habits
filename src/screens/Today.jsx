@@ -8,7 +8,7 @@ import { scheduleOn } from '../domain/schedule.js';
 import { addCheckIn, labelFor, removeCheckIn } from '../domain/store.js';
 import { isWrapUpTime, wrapUp } from '../domain/wrapup.js';
 import { pickEncouragement } from '../domain/encouragement.js';
-import { markAllSeen } from '../domain/whatsNew.js';
+import { whatsNewPageUrl } from '../domain/whatsNew.js';
 import { linkLocale, routineLink } from '../domain/links.js';
 import {
   chaptersLabel,
@@ -22,7 +22,6 @@ import {
   studyProgress,
   todaysChapters,
 } from '../domain/today.js';
-import { fetchFeedItems, whatsNewPageUrl } from '../native/whatsNewClient.js';
 import { safeSessionGetItem, safeSessionSetItem } from '../utils/safeStorage.js';
 import RoutineRow from '../components/RoutineRow.jsx';
 import MinistryRow from '../components/MinistryRow.jsx';
@@ -104,13 +103,10 @@ export default function Today({ onOpenSettings = () => {} }) {
     update((s) => setMinistry(s, today, value));
   };
 
-  const openWhatsNew = async () => {
-    const locale = linkLocale(language);
-    window.open(whatsNewPageUrl(locale), '_blank', 'noopener');
+  // Opening the page zeroes the count; the checks already keep every guid seen.
+  const openWhatsNew = () => {
+    window.open(whatsNewPageUrl(linkLocale(language)), '_blank', 'noopener');
     update((s) => ({ ...s, whatsNew: { ...s.whatsNew, newCount: 0 } }));
-    // The badge counts guids that were never kept, so fetch them to mark them seen.
-    const items = await fetchFeedItems({ ...store.whatsNew, lastCheck: null }, new Date(), locale);
-    if (items) update((s) => ({ ...s, whatsNew: markAllSeen(s.whatsNew, items) }));
   };
 
   const dismiss = () => {
@@ -218,6 +214,7 @@ export default function Today({ onOpenSettings = () => {} }) {
 
         {wrapping && !dismissed && (
           <WrapUpCard
+            day={today}
             result={result}
             labelOf={label}
             tone={store.tone}

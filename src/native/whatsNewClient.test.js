@@ -163,21 +163,18 @@ describe('overlapping foreground checks', () => {
     expect(update).toHaveBeenCalledTimes(1);
   });
 
-  it('applies the result to the current state, keeping a mark-all-seen made meanwhile', async () => {
+  it('applies the result to the current state, keeping a badge tap made meanwhile', async () => {
     let release;
     http.get.mockReturnValue(new Promise((r) => (release = r)));
     registerWhatsNewCheck();
     const update = vi.fn();
-    const wn = { ...base, lastCheck: '2026-10-04T00:00:00.000Z', seen: ['old'], newCount: 3 };
+    const wn = { ...base, lastCheck: '2026-10-04T00:00:00.000Z', seen: ['ccc333'], newCount: 1 };
     const run = hooks.foreground({ store: storeWith(wn), update });
     release({ status: 200, data: FEED_XML });
     await run;
-    // Meanwhile the user marked everything seen (including the new guids).
-    const current = {
-      whatsNew: { ...wn, seen: ['aaa111', 'bbb222', 'ccc333', 'old'], newCount: 0 },
-    };
-    const merged = update.mock.calls[0][0](current);
-    expect(merged.whatsNew.newCount).toBe(0);
-    expect(merged.whatsNew.seen).toEqual(['aaa111', 'bbb222', 'ccc333', 'old']);
+    // Meanwhile the user tapped the badge, which zeroes the count.
+    const merged = update.mock.calls[0][0]({ whatsNew: { ...wn, newCount: 0 } });
+    expect(merged.whatsNew.newCount).toBe(2);
+    expect(merged.whatsNew.seen).toEqual(['aaa111', 'bbb222', 'ccc333']);
   });
 });

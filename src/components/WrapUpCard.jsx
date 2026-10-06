@@ -2,6 +2,9 @@ import { useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Moon, PartyPopper } from 'lucide-react';
 import { haptics } from '../utils/native.js';
+import { safeSessionGetItem, safeSessionSetItem } from '../utils/safeStorage.js';
+
+const CELEBRATED_KEY = 'fd-celebrated';
 
 /**
  * The evening "day in review" (spec §2.10), rendered from `wrapUp()`'s result.
@@ -9,6 +12,7 @@ import { haptics } from '../utils/native.js';
  * time" before 22:00, and a day with nothing done gets only the closing line.
  */
 export default function WrapUpCard({
+  day,
   result,
   labelOf,
   tone,
@@ -21,9 +25,12 @@ export default function WrapUpCard({
   const titleId = useId();
   const celebrate = result.state === 'allDone' && tone !== 'quiet';
 
+  // The haptic fires at most once per app day, however often the card mounts.
   useEffect(() => {
-    if (celebrate) haptics.success();
-  }, [celebrate]);
+    if (!celebrate || safeSessionGetItem(CELEBRATED_KEY) === day) return;
+    safeSessionSetItem(CELEBRATED_KEY, day);
+    haptics.success();
+  }, [celebrate, day]);
 
   const movedOf = (id) => result.moved.find((m) => m.id === id)?.text;
 

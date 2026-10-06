@@ -39,17 +39,22 @@ export function parseFeed(xml) {
   return items;
 }
 
-/** Record a completed check. The first ever check marks everything seen. */
+/** Feed guids first (newest first), then the earlier seen ones; deduped, capped at 100. */
+function mergeSeen(seen, items) {
+  return [...new Set([...items.map((i) => i.guid), ...seen])].slice(0, SEEN_CAP);
+}
+
+/**
+ * Record a completed check. Every fetched guid joins `seen`; the ones not
+ * seen before are ADDED to `newCount`, which only a badge tap resets. The
+ * first ever check just seeds `seen` with newCount 0.
+ */
 export function applyFeed(whatsNew, items, now) {
   const lastCheck = now.toISOString();
   if (items.length === 0) return { ...whatsNew, lastCheck };
-  if (whatsNew.lastCheck === null) return { ...markAllSeen(whatsNew, items), lastCheck };
-  const seen = new Set(whatsNew.seen);
-  return { ...whatsNew, lastCheck, newCount: items.filter((i) => !seen.has(i.guid)).length };
-}
-
-/** Mark every current item seen: newest first, capped at 100. */
-export function markAllSeen(whatsNew, items) {
-  const seen = [...new Set([...items.map((i) => i.guid), ...whatsNew.seen])].slice(0, SEEN_CAP);
-  return { ...whatsNew, seen, newCount: 0 };
+  const seen = mergeSeen(whatsNew.seen, items);
+  if (whatsNew.lastCheck === null) return { ...whatsNew, lastCheck, seen, newCount: 0 };
+  const known = new Set(whatsNew.seen);
+  const added = new Set(items.map((i) => i.guid).filter((g) => !known.has(g))).size;
+  return { ...whatsNew, lastCheck, seen, newCount: whatsNew.newCount + added };
 }

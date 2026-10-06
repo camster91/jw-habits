@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { feedUrl, whatsNewPageUrl, parseFeed, applyFeed, markAllSeen } from './whatsNew.js';
+import { feedUrl, whatsNewPageUrl, parseFeed, applyFeed } from './whatsNew.js';
 import {
   FEED_XML,
   EMPTY_FEED_XML,
@@ -63,12 +63,32 @@ describe('applyFeed', () => {
     expect(next.seen).toEqual(['aaa111', 'bbb222', 'ccc333']);
   });
 
-  it('counts unseen items', () => {
+  it('adds unseen items to newCount and merges every guid into seen', () => {
     const base = { ...fresh(), lastCheck: '2026-10-05T00:00:00.000Z', seen: ['ccc333'] };
     const next = applyFeed(base, items, NOW);
     expect(next.newCount).toBe(2);
     expect(next.lastCheck).toBe(NOW.toISOString());
-    expect(next.seen).toEqual(['ccc333']);
+    expect(next.seen).toEqual(['aaa111', 'bbb222', 'ccc333']);
+  });
+
+  it('accumulates across checks until a tap resets it', () => {
+    const item = (guid) => ({ guid, pubDate: '' });
+    const day = (d) => new Date(`2026-10-0${d}T12:00:00.000Z`);
+    // Check 1, the first ever: seeds seen, nothing new.
+    let wn = applyFeed(fresh(), [item('a')], day(1));
+    expect(wn.newCount).toBe(0);
+    // Check 2: two new items.
+    wn = applyFeed(wn, [item('c'), item('b'), item('a')], day(2));
+    expect(wn.newCount).toBe(2);
+    // Check 3 the next day: one more new, the earlier two still in the feed.
+    wn = applyFeed(wn, [item('d'), item('c'), item('b'), item('a')], day(3));
+    expect(wn.newCount).toBe(3);
+    expect(wn.seen).toEqual(['d', 'c', 'b', 'a']);
+    // Tap: the badge only zeroes the count.
+    wn = { ...wn, newCount: 0 };
+    // Check 4: nothing new.
+    wn = applyFeed(wn, [item('d'), item('c'), item('b'), item('a')], day(4));
+    expect(wn.newCount).toBe(0);
   });
 
   it('an empty item list keeps newCount but sets lastCheck', () => {
@@ -82,18 +102,25 @@ describe('applyFeed', () => {
   });
 });
 
-describe('markAllSeen', () => {
-  it('puts newest first, clears newCount, dedupes', () => {
-    const base = { ...fresh(), seen: ['old', 'bbb222'], newCount: 2 };
-    const next = markAllSeen(base, parseFeed(FEED_XML));
-    expect(next.newCount).toBe(0);
-    expect(next.seen).toEqual(['aaa111', 'bbb222', 'ccc333', 'old']);
-  });
-
-  it('caps seen at 100', () => {
+describe('seen', () => {
+  it('puts the feed first, dedupes and caps at 100', () => {
     const many = Array.from({ length: 150 }, (_, i) => ({ guid: `g${i}`, pubDate: '' }));
-    const next = markAllSeen(fresh(), many);
+    const base = { ...fresh(), lastCheck: '2026-10-05T00:00:00.000Z', seen: ['old', 'g1'] };
+    const next = applyFeed(base, many, NOW);
     expect(next.seen).toHaveLength(100);
     expect(next.seen[0]).toBe('g0');
+    expect(new Set(next.seen).size).toBe(100);
+    expect(next.newCount).toBe(149);
+  });
+
+  it('dedupes a guid repeated in one feed', () => {
+    const base = { ...fresh(), lastCheck: '2026-10-05T00:00:00.000Z' };
+    const twice = [
+      { guid: 'x', pubDate: '' },
+      { guid: 'x', pubDate: '' },
+    ];
+    const next = applyFeed(base, twice, NOW);
+    expect(next.newCount).toBe(1);
+    expect(next.seen).toEqual(['x']);
   });
 });
