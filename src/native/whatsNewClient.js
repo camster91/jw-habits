@@ -69,8 +69,13 @@ export function registerWhatsNewCheck() {
       const now = new Date();
       const locale = (i18n.language || 'en').split('-')[0];
       const items = await fetchFeedItems(store.whatsNew, now, locale);
-      // Apply to the state as it is now, not the snapshot taken before the request.
-      if (items) update((s) => ({ ...s, whatsNew: applyFeed(s.whatsNew, items, now) }));
+      // Apply to the state as it is now, not the snapshot taken before the
+      // request, and not at all if What's New was switched off meanwhile.
+      if (items) {
+        update((s) =>
+          s.whatsNew.enabled ? { ...s, whatsNew: applyFeed(s.whatsNew, items, now) } : s
+        );
+      }
     } finally {
       inFlight = false;
     }

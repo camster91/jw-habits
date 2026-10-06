@@ -284,6 +284,12 @@ describe('Today: cards and lines', () => {
     expect(screen.queryByText(/new on jw\.org/)).toBeNull();
   });
 
+  it('shows no badge once What’s New is switched off, even with a count left over', () => {
+    const whatsNew = { enabled: false, lastCheck: null, seen: ['a'], newCount: 2 };
+    renderToday(makeStore({ whatsNew }));
+    expect(screen.queryByRole('button', { name: '2 new on jw.org' })).toBeNull();
+  });
+
   it('shows no badge when nothing is new', () => {
     renderToday(makeStore());
     expect(screen.queryByText(/new on jw\.org/)).toBeNull();

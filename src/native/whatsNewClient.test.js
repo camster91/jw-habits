@@ -96,6 +96,16 @@ describe('registerWhatsNewCheck', () => {
     await i18n.changeLanguage('en');
   });
 
+  it('applies nothing if What’s New was switched off while the check ran', async () => {
+    http.get.mockResolvedValue({ status: 200, data: FEED_XML });
+    registerWhatsNewCheck();
+    const update = vi.fn();
+    const wn = { ...base, lastCheck: '2026-10-04T00:00:00.000Z', seen: ['ccc333'], newCount: 1 };
+    await hooks.foreground({ store: storeWith(wn), update });
+    const off = { other: 1, whatsNew: { ...wn, enabled: false } };
+    expect(update.mock.calls[0][0](off)).toBe(off);
+  });
+
   it('does not update when the check yields null', async () => {
     http.get.mockRejectedValue(new Error('x'));
     registerWhatsNewCheck();

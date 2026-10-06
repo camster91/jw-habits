@@ -190,7 +190,7 @@ export default function Today({ onOpenSettings = () => {} }) {
 
         {fresh && <p className="text-base-content/80">{t(`fd.today.${fresh}`)}</p>}
 
-        {store.whatsNew.newCount > 0 && (
+        {store.whatsNew.enabled && store.whatsNew.newCount > 0 && (
           <WhatsNewBadge count={store.whatsNew.newCount} onOpen={openWhatsNew} />
         )}
 
