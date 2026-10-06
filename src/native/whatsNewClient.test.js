@@ -106,6 +106,15 @@ describe('registerWhatsNewCheck', () => {
     expect(update.mock.calls[0][0](off)).toBe(off);
   });
 
+  it('reads the locale from an underscore-separated language too', async () => {
+    http.get.mockResolvedValue({ status: 200, data: FEED_XML });
+    await i18n.changeLanguage('es_MX');
+    registerWhatsNewCheck();
+    await hooks.foreground({ store: storeWith(base), update: vi.fn() });
+    expect(http.get.mock.calls[0][0].url).toContain('/es/lo-nuevo/');
+    await i18n.changeLanguage('en');
+  });
+
   it('does not update when the check yields null', async () => {
     http.get.mockRejectedValue(new Error('x'));
     registerWhatsNewCheck();

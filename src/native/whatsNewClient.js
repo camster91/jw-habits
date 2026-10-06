@@ -7,6 +7,7 @@
 import i18n from 'i18next';
 import { CapacitorHttp } from '@capacitor/core';
 import { applyFeed, feedUrl, parseFeed, whatsNewPageUrl } from '../domain/whatsNew.js';
+import { linkLocale } from '../domain/links.js';
 import { onForeground } from '../data/StoreProvider.jsx';
 import { isNative } from '../utils/native.js';
 
@@ -67,7 +68,7 @@ export function registerWhatsNewCheck() {
     inFlight = true;
     try {
       const now = new Date();
-      const locale = (i18n.language || 'en').split('-')[0];
+      const locale = linkLocale(i18n.language);
       const items = await fetchFeedItems(store.whatsNew, now, locale);
       // Apply to the state as it is now, not the snapshot taken before the
       // request, and not at all if What's New was switched off meanwhile.
