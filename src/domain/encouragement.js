@@ -38,9 +38,9 @@ export const REFERENCES = [
   [20, 18, 10],
   [21, 3, 1],
   [21, 4, 9],
-  [21, 12, 1],
+  [21, 9, 10],
   [23, 26, 3],
-  [23, 30, 15],
+  [23, 12, 2],
   [23, 40, 29],
   [23, 40, 31],
   [23, 41, 10],
@@ -85,9 +85,11 @@ export const REFERENCES = [
  */
 export function pickEncouragement(tone, seed, t) {
   if (tone !== 'warm' && tone !== 'scripture') return { text: null, ref: null };
-  const lines = t('fd.encourage.warm', { returnObjects: true });
+  const translated = t('fd.encourage.warm', { returnObjects: true });
+  const lines = Array.isArray(translated) && translated.length > 0 ? translated : WARM_LINES;
+  const n = Math.trunc(seed) || 0;
   const at = (n, length) => ((n % length) + length) % length;
-  const text = lines[at(seed, lines.length)];
-  const ref = tone === 'scripture' ? REFERENCES[at(seed, REFERENCES.length)] : null;
+  const text = lines[at(n, lines.length)];
+  const ref = tone === 'scripture' ? REFERENCES[at(n, REFERENCES.length)] : null;
   return { text, ref };
 }

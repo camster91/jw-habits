@@ -151,13 +151,32 @@ describe('wrapUp', () => {
       expect(r.moved).toEqual([{ id: 'familyWorship', text: 'Done this week' }]);
     });
 
-    it('reports meeting prep from recent meetings', () => {
+    it('reports meeting prep as one meeting when only one has closed', () => {
       const store = storeWith(['meetingPrep'], { log: [log('meetingPrep', '2026-10-06')] });
       store.schedule[0].meetingDays = [3]; // Wednesday
       const r = wrapUp(store, at(21), t);
       expect(r.done).toEqual(['meetingPrep']);
-      expect(r.moved).toHaveLength(1);
-      expect(r.moved[0].text).toMatch(/^\d+ of the last \d+ meetings$/);
+      expect(r.moved).toEqual([{ id: 'meetingPrep', text: '1 of the last meeting' }]);
+    });
+
+    it('reports meeting prep as done of the last meetings', () => {
+      // Meetings 09-16, 09-23, 09-30, 10-07; prepped for 09-16, 09-23, 10-07.
+      // 09-30 was missed but carried by grace: 3 done of 4 closed.
+      const store = storeWith(
+        ['meetingPrep'],
+        {
+          log: [
+            log('meetingPrep', '2026-09-15'),
+            log('meetingPrep', '2026-09-22'),
+            log('meetingPrep', '2026-10-06'),
+          ],
+        },
+        '2026-09-15'
+      );
+      store.schedule[0].meetingDays = [3];
+      expect(wrapUp(store, at(21), t).moved).toEqual([
+        { id: 'meetingPrep', text: '3 of the last 4 meetings' },
+      ]);
     });
   });
 
@@ -187,6 +206,28 @@ describe('wrapUp', () => {
         '2026-09-01'
       );
       expect(wrapUp(store, at(21), t).graceUsedToday).toBe(false);
+    });
+
+    it('is true on Monday when a weekly-target week closing Sunday was carried by grace', () => {
+      // Weeks from 09-07 met (3 check-ins each); week of 09-28 had none.
+      const study = ['2026-09-08', '2026-09-09', '2026-09-10', '2026-09-15', '2026-09-16']
+        .concat(['2026-09-17', '2026-09-22', '2026-09-23', '2026-09-24'])
+        .map((d) => log('personalStudy', d));
+      const store = storeWith(['personalStudy'], { log: study }, '2026-09-01');
+      expect(wrapUp(store, at(21, 0, 5), t).graceUsedToday).toBe(true); // Monday 10-05
+      expect(wrapUp(store, at(21, 0, 6), t).graceUsedToday).toBe(false); // Tuesday
+    });
+
+    it('is true on the 1st when a month closing yesterday was carried by grace', () => {
+      const store = storeWith(
+        ['ministry'],
+        { log: [log('ministry', '2026-08-15', { shared: true })] },
+        '2026-08-01'
+      );
+      const firstOfOctober = new Date(2026, 9, 1, 21, 0);
+      const secondOfOctober = new Date(2026, 9, 2, 21, 0);
+      expect(wrapUp(store, firstOfOctober, t).graceUsedToday).toBe(true);
+      expect(wrapUp(store, secondOfOctober, t).graceUsedToday).toBe(false);
     });
   });
 });

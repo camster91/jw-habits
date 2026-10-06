@@ -72,4 +72,17 @@ describe('pickEncouragement', () => {
   it('copes with a negative seed', () => {
     expect(WARM_LINES).toContain(pickEncouragement('warm', -1, t).text);
   });
+
+  it('falls back to the built-in lines when t does not return a non-empty array', () => {
+    expect(pickEncouragement('warm', 2, () => 'fd.encourage.warm').text).toBe(WARM_LINES[2]);
+    expect(pickEncouragement('warm', 2, () => []).text).toBe(WARM_LINES[2]);
+  });
+
+  it('truncates a fractional seed and treats NaN as 0', () => {
+    expect(pickEncouragement('warm', 4.9, t).text).toBe(WARM_LINES[4]);
+    expect(pickEncouragement('scripture', NaN, t)).toEqual({
+      text: WARM_LINES[0],
+      ref: REFERENCES[0],
+    });
+  });
 });

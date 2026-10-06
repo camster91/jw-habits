@@ -76,7 +76,7 @@ function movedText(store, id, day, t) {
     }
     case 'meetingPrep': {
       const { recentDone, recentTotal } = streak(store, id, day);
-      return t('fd.wrapUp.meetingMoved', { done: recentDone, total: recentTotal });
+      return t('fd.wrapUp.meetingMoved', { done: recentDone, count: recentTotal });
     }
     case 'personalStudy': {
       const count = countIn(checkInDays(store, id, day), weekStart(day), day);

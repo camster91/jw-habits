@@ -103,7 +103,8 @@
       "bibleMoved_one": "{{count}} chapter · {{books}} of 66 books",
       "bibleMoved_other": "{{count}} chapters · {{books}} of 66 books",
       "bibleBooks": "{{books}} of 66 books",
-      "meetingMoved": "{{done}} of the last {{total}} meetings",
+      "meetingMoved_one": "{{done}} of the last meeting",
+      "meetingMoved_other": "{{done}} of the last {{count}} meetings",
       "studyMoved": "{{count}} of {{target}} this week",
       "familyMoved": "Done this week"
     },
