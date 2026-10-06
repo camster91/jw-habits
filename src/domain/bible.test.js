@@ -73,24 +73,79 @@ describe('nextChapters', () => {
       { book: 19, chapter: 6 },
     ]);
   });
-  it('continues after the furthest chapter read, ignoring legacy true values', () => {
+  it('continues after the last chapter of the most recent reading, ignoring legacy true values', () => {
     const store = {
       reading: reading(),
       log: [
-        ...readLog(chapterIndex(1, 3), chapterIndex(1, 1)),
-        { routine: 'bibleReading', day: '2026-01-02', value: true },
-        { routine: 'other', day: '2026-01-02', value: { chapters: [900] } },
+        { routine: 'bibleReading', day: '2026-01-03', value: { chapters: [chapterIndex(1, 4)] } },
+        ...readLog(chapterIndex(1, 1), chapterIndex(1, 2), chapterIndex(1, 3)),
+        { routine: 'bibleReading', day: '2026-01-04', value: true },
+        { routine: 'bibleReading', day: '2026-01-05', value: { chapters: [] } },
+        { routine: 'other', day: '2026-01-06', value: { chapters: [900] } },
       ],
     };
     expect(nextChapters(store, 2)).toEqual([
+      { book: 1, chapter: 5 },
+      { book: 1, chapter: 6 },
+    ]);
+  });
+  it('follows a normal day-to-day sequence', () => {
+    let store = { reading: reading({ start: { book: 19, chapter: 1 } }), log: [] };
+    const days = ['2026-01-01', '2026-01-02', '2026-01-03'];
+    const seen = [];
+    for (const day of days) {
+      const next = nextChapters(store, 3);
+      seen.push(next.map((c) => c.chapter));
+      const chapters = next.map((c) => chapterIndex(c.book, c.chapter));
+      store = { ...store, log: [...store.log, { routine: 'bibleReading', day, value: { chapters } }] };
+    }
+    expect(seen).toEqual([
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+    ]);
+  });
+  it('starts again at a changed start, ignoring reading before the plan restarted', () => {
+    const store = {
+      reading: reading({ start: { book: 19, chapter: 1 }, startedOn: '2026-02-01' }),
+      log: Array.from({ length: 10 }, (_, i) => ({
+        routine: 'bibleReading',
+        day: `2026-01-${String(i + 1).padStart(2, '0')}`,
+        value: { chapters: [chapterIndex(1, i + 1)] },
+      })),
+    };
+    expect(nextChapters(store, 1)).toEqual([{ book: 19, chapter: 1 }]);
+    const later = {
+      ...store,
+      log: [...store.log, { routine: 'bibleReading', day: '2026-02-01', value: { chapters: [chapterIndex(19, 1)] } }],
+    };
+    expect(nextChapters(later, 1)).toEqual([{ book: 19, chapter: 2 }]);
+  });
+  it('carries on into a second reading after the whole Bible is logged', () => {
+    const all = Array.from({ length: 1189 }, (_, i) => i);
+    const log = [{ routine: 'bibleReading', day: '2026-12-31', value: { chapters: all } }];
+    const store = { reading: reading(), log };
+    expect(nextChapters(store, 3)).toEqual([
+      { book: 1, chapter: 1 },
+      { book: 1, chapter: 2 },
+      { book: 1, chapter: 3 },
+    ]);
+    const next = {
+      ...store,
+      log: [...log, { routine: 'bibleReading', day: '2027-01-01', value: { chapters: [0, 1, 2] } }],
+    };
+    expect(nextChapters(next, 2)).toEqual([
       { book: 1, chapter: 4 },
       { book: 1, chapter: 5 },
     ]);
   });
-  it('measures furthest in plan order from the start, wrapping', () => {
+  it('follows the reading across the wrap from Revelation into Genesis', () => {
     const store = {
       reading: reading({ start: { book: 66, chapter: 21 } }),
-      log: readLog(chapterIndex(1, 2), chapterIndex(66, 22)),
+      log: [
+        { routine: 'bibleReading', day: '2026-01-02', value: { chapters: [0, 1] } },
+        ...readLog(chapterIndex(66, 21), chapterIndex(66, 22)),
+      ],
     };
     expect(nextChapters(store, 2)).toEqual([
       { book: 1, chapter: 3 },

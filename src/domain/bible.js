@@ -116,14 +116,24 @@ function loggedChapters(log) {
   return read;
 }
 
+/**
+ * The next `count` chapters: straight after the last chapter of the most
+ * recent reading that names chapters, dated on or after `reading.startedOn`
+ * (so changing the start restarts there), else the start chapter. Wraps
+ * Revelation 22 to Genesis 1, so a finished Bible starts over.
+ */
 export function nextChapters(store, count) {
-  const { start } = store.reading;
-  const startIdx = chapterIndex(start.book, start.chapter);
-  const read = loggedChapters(store.log);
-  let furthest = -1; // offset along the plan sequence from the start
-  for (const c of read) furthest = Math.max(furthest, (c - startIdx + TOTAL) % TOTAL);
-  const first = furthest + 1;
-  return Array.from({ length: count }, (_, j) => chapterAt((startIdx + first + j) % TOTAL));
+  const { start, startedOn } = store.reading;
+  let latest = null;
+  for (const e of store.log ?? []) {
+    const chapters = e.routine === 'bibleReading' ? e.value?.chapters : undefined;
+    if (!Array.isArray(chapters) || chapters.length === 0 || e.day < startedOn) continue;
+    if (latest === null || e.day > latest.day) latest = e;
+  }
+  const first = latest
+    ? (latest.value.chapters[latest.value.chapters.length - 1] + 1) % TOTAL
+    : chapterIndex(start.book, start.chapter);
+  return Array.from({ length: count }, (_, j) => chapterAt((first + j) % TOTAL));
 }
 
 export function booksCompleted(store) {
