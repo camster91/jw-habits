@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChevronDown } from 'lucide-react';
 import Stepper from './Stepper.jsx';
 
 const EMPTY = { shared: false, studies: 0 };
@@ -9,11 +10,13 @@ const EMPTY = { shared: false, studies: 0 };
  * plus hours against the monthly goal in pioneer mode. `value` is the month's
  * entry value (or null); each change hands only the changed fields to
  * `onChange` (a patch; `hours: undefined` clears hours), so the caller can
- * merge it into the latest store.
+ * merge it into the latest store. With `collapsed` (shared on an earlier day
+ * this month) it opens as a one-line summary with an Edit control.
  */
-export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange }) {
+export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange, collapsed }) {
   const { t } = useTranslation();
   const hoursId = useId();
+  const [open, setOpen] = useState(!collapsed);
   const current = value ?? EMPTY;
   const [hoursText, setHoursText] = useState(
     current.hours === undefined ? '' : String(current.hours)
@@ -29,9 +32,44 @@ export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange
     if (Number.isFinite(hours) && hours >= 0) onChange({ hours });
   };
 
+  if (!open) {
+    return (
+      <li className="flex items-center justify-between gap-3 rounded-2xl bg-base-100 p-3 shadow-sm">
+        <div className="min-w-0">
+          <p className="font-medium">{label}</p>
+          <p className="text-sm text-base-content/70">
+            {t('fd.today.ministrySummary', { count: current.studies })}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm min-h-11"
+          aria-expanded="false"
+          onClick={() => setOpen(true)}
+        >
+          {t('fd.today.ministryEdit')}
+          <ChevronDown aria-hidden="true" className="h-4 w-4" />
+        </button>
+      </li>
+    );
+  }
+
   return (
     <li className="rounded-2xl bg-base-100 p-3 shadow-sm">
-      <p className="font-medium">{label}</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-medium">{label}</p>
+        {collapsed && (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm min-h-11"
+            aria-expanded="true"
+            onClick={() => setOpen(false)}
+          >
+            {t('fd.today.ministryEdit')}
+            <ChevronDown aria-hidden="true" className="h-4 w-4 rotate-180" />
+          </button>
+        )}
+      </div>
       <label className="mt-2 flex min-h-11 cursor-pointer items-center justify-between gap-3">
         <span className="text-sm">{t('fd.today.ministryShared')}</span>
         <input

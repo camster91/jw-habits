@@ -237,6 +237,36 @@ describe('Today: ministry', () => {
     ]);
   });
 
+  it('stays on Today for the rest of the month once shared, collapsed but editable', () => {
+    const shared = { routine: 'ministry', day: '2026-10-02', value: { shared: true, studies: 2 } };
+    renderToday(makeStore({ log: [shared] }));
+    expect(screen.getByText('Shared this month · 2 Bible studies')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Shared in the ministry this month' })
+    ).toBeNull();
+    const edit = screen.getByRole('button', { name: 'Edit' });
+    expect(edit).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(edit);
+    expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      screen.getByRole('checkbox', { name: 'Shared in the ministry this month' })
+    ).toBeChecked();
+    const studies = screen.getByRole('group', { name: 'Bible studies' });
+    fireEvent.click(within(studies).getByRole('button', { name: 'One more' }));
+    expect(current.log.filter((e) => e.routine === 'ministry')).toEqual([
+      { routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 3 } },
+    ]);
+  });
+
+  it('is not listed once shared when ministry is switched off', () => {
+    const shared = { routine: 'ministry', day: '2026-10-02', value: { shared: true, studies: 0 } };
+    const s = withScheduleChange(makeStore({ log: [shared] }), '2026-10-06', {
+      enabled: { ministry: false },
+    });
+    renderToday(s);
+    expect(screen.queryByText('Shared this month · 0 Bible studies')).toBeNull();
+  });
+
   it('shows hours only in pioneer mode', () => {
     renderToday(makeStore());
     expect(screen.queryByLabelText('Hours this month')).toBeNull();

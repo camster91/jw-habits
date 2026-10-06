@@ -133,16 +133,26 @@ export default function Today({ onOpenSettings = () => {} }) {
     return null;
   };
 
+  // Shared on an earlier day this month: no longer due, but kept (collapsed)
+  // all month so the studies count stays editable.
+  const month = ministryEntry(store, today);
+  const sharedEarlier = month?.value.shared === true && month.day < today;
+  const rows =
+    schedule.enabled.ministry && sharedEarlier && !due.includes('ministry')
+      ? [...due, 'ministry']
+      : due;
+
   const renderRow = (id) => {
     if (id === 'ministry') {
       return (
         <MinistryRow
           key={id}
           label={label(id)}
-          value={ministryEntry(store, today)?.value ?? null}
+          value={month?.value ?? null}
           pioneer={store.pioneer}
           hoursGoal={store.hoursGoal}
           onChange={patchMinistry}
+          collapsed={sharedEarlier && !store.pioneer}
         />
       );
     }
@@ -230,8 +240,8 @@ export default function Today({ onOpenSettings = () => {} }) {
 
         {showList && (
           <ul className="space-y-3">
-            {due.map(renderRow)}
-            {due.length === 0 && (
+            {rows.map(renderRow)}
+            {rows.length === 0 && (
               <li className="text-center text-base-content/70">{t('fd.today.allClear')}</li>
             )}
           </ul>
