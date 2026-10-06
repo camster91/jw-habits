@@ -218,7 +218,8 @@
       "reminders": {
         "toggle": "Reminders",
         "hint": "Gentle notes on this device about what's ready today.",
-        "perRoutine": "Remind me about"
+        "perRoutine": "Remind me about",
+        "permissionOff": "Notifications are turned off for Faithful Days. You can turn them on in your phone's Settings."
       },
       "quietHours": {
         "toggle": "Quiet hours",

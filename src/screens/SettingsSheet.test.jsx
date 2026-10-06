@@ -26,7 +26,7 @@ vi.mock('@capacitor/filesystem', () => ({
 }));
 vi.mock('@capacitor/share', () => ({ Share: { share: vi.fn(() => Promise.resolve({})) } }));
 vi.mock('@capacitor/local-notifications', () => ({
-  LocalNotifications: { requestPermissions: vi.fn() },
+  LocalNotifications: { checkPermissions: vi.fn(), requestPermissions: vi.fn() },
 }));
 
 const TODAY = '2026-10-06'; // a Tuesday
@@ -317,11 +317,112 @@ describe('SettingsSheet', () => {
     expect(consumeBack()).toBe(false);
   });
 
-  it('never asks for notification permission from Settings', () => {
-    platform.isNative = true;
-    renderSheet();
-    expect(screen.queryByRole('button', { name: 'Allow notifications' })).not.toBeInTheDocument();
-    expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
+  describe('notification permission', () => {
+    const HINT = /Notifications are turned off for Faithful Days/;
+    const perm = (display) => ({ display });
+    const off = () => ({ ...makeStore(), reminders: { enabled: false, off: [] } });
+    const settle = () => act(async () => {});
+    const toggleMaster = () =>
+      fireEvent.click(within(section('Reminders')).getByRole('switch', { name: 'Reminders' }));
+
+    beforeEach(() => {
+      LocalNotifications.checkPermissions.mockReset();
+      LocalNotifications.requestPermissions.mockReset();
+    });
+
+    it('never asks on the web, and shows no hint', async () => {
+      renderSheet(off());
+      toggleMaster();
+      await settle();
+      expect(LocalNotifications.checkPermissions).not.toHaveBeenCalled();
+      expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
+      expect(within(section('Reminders')).queryByRole('status')).toBeNull();
+      expect(screen.queryByText(HINT)).toBeNull();
+    });
+
+    it('never asks on mount, even with reminders on and permission undecided', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('prompt'));
+      renderSheet();
+      await settle();
+      expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
+      expect(screen.getByText(HINT)).toBeInTheDocument();
+    });
+
+    it('asks once when a migrated store turns reminders on, and still enables them', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('prompt'));
+      LocalNotifications.requestPermissions.mockResolvedValue(perm('granted'));
+      renderSheet(off());
+      await settle();
+      toggleMaster();
+      await settle();
+      expect(LocalNotifications.requestPermissions).toHaveBeenCalledTimes(1);
+      expect(current.reminders.enabled).toBe(true);
+      expect(screen.queryByText(HINT)).toBeNull();
+    });
+
+    it('does not ask when already granted, and shows no hint', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('granted'));
+      renderSheet(off());
+      await settle();
+      toggleMaster();
+      await settle();
+      expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
+      expect(current.reminders.enabled).toBe(true);
+      expect(screen.queryByText(HINT)).toBeNull();
+    });
+
+    it('shows the hint (role status) when the request is denied, and keeps the switch on', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('prompt'));
+      LocalNotifications.requestPermissions.mockResolvedValue(perm('denied'));
+      renderSheet(off());
+      await settle();
+      expect(screen.queryByText(HINT)).toBeNull(); // reminders are off: nothing to warn about
+      toggleMaster();
+      await settle();
+      expect(current.reminders.enabled).toBe(true);
+      expect(within(section('Reminders')).getByRole('status')).toHaveTextContent(HINT);
+    });
+
+    it('asks when a routine switch is turned on while the master is on', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('prompt'));
+      LocalNotifications.requestPermissions.mockResolvedValue(perm('denied'));
+      renderSheet({ ...makeStore(), reminders: { enabled: true, off: ['ministry'] } });
+      await settle();
+      fireEvent.click(within(section('Reminders')).getByRole('switch', { name: 'Ministry' }));
+      await settle();
+      expect(LocalNotifications.requestPermissions).toHaveBeenCalledTimes(1);
+      expect(current.reminders.off).toEqual([]);
+    });
+
+    it('never asks when a switch is turned off', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('prompt'));
+      renderSheet();
+      await settle();
+      fireEvent.click(within(section('Reminders')).getByRole('switch', { name: 'Ministry' }));
+      toggleMaster();
+      await settle();
+      expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
+      expect(screen.queryByText(HINT)).toBeNull(); // master off: no hint
+    });
+
+    it('catches plugin errors: the store change still lands, nothing throws', async () => {
+      platform.isNative = true;
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      LocalNotifications.checkPermissions.mockRejectedValue(new Error('no plugin'));
+      LocalNotifications.requestPermissions.mockRejectedValue(new Error('no plugin'));
+      renderSheet(off());
+      await settle();
+      toggleMaster();
+      await settle();
+      expect(current.reminders.enabled).toBe(true);
+      expect(warn).toHaveBeenCalled();
+    });
   });
 
   it('is a real dialog: focus moves in, is trapped, Escape closes and focus returns', () => {
