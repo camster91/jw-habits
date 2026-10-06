@@ -1,6 +1,6 @@
-/** Shape of the live jw.org What's New feed, trimmed to 3 items. Test-only. */
+/** Shape of the live jw.org What's New feed with invented text, 3 items. Test-only. */
 export const FIXTURE_TITLES = [
-  'BOOKS | God’s Word Is Truth—A Handbook to the Bible',
+  'BOOKS | Zzyzx Invented Title Alpha',
   'VIDEOS | A Fixture Video Title',
   'ARTICLES | A Fixture Article Title',
 ];

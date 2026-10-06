@@ -90,7 +90,7 @@ describe('registerWhatsNewCheck', () => {
     const update = vi.fn();
     await hooks.foreground({ store: storeWith(base), update });
     expect(http.get.mock.calls[0][0].url).toContain('/fr/nouveautes/');
-    const merged = update.mock.calls[0][0]({ other: 1 });
+    const merged = update.mock.calls[0][0]({ other: 1, whatsNew: base });
     expect(merged.other).toBe(1);
     expect(merged.whatsNew.seen).toEqual(['aaa111', 'bbb222', 'ccc333']);
     await i18n.changeLanguage('en');
@@ -108,5 +108,76 @@ describe('registerWhatsNewCheck', () => {
 describe('whatsNewPageUrl', () => {
   it('is re-exported for the Today badge', () => {
     expect(whatsNewPageUrl('fr')).toBe('https://www.jw.org/fr/nouveautes/');
+  });
+});
+
+describe('unusable responses and clocks', () => {
+  const html = '<html><body>Please sign in to the Wi-Fi</body></html>';
+
+  it('treats captive-portal HTML and an empty channel as failed checks', async () => {
+    http.get.mockResolvedValueOnce({ status: 200, data: html });
+    expect(await checkWhatsNew(storeWith(base), NOW, 'en')).toBeNull();
+    http.get.mockResolvedValueOnce({
+      status: 200,
+      data: '<rss version="2.0"><channel><title>x</title></channel></rss>',
+    });
+    expect(await checkWhatsNew(storeWith(base), NOW, 'en')).toBeNull();
+    registerWhatsNewCheck();
+    http.get.mockResolvedValueOnce({ status: 200, data: html });
+    const update = vi.fn();
+    await hooks.foreground({ store: storeWith(base), update });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('treats a lastCheck in the future as stale', async () => {
+    http.get.mockResolvedValue({ status: 200, data: FEED_XML });
+    const wn = { ...base, lastCheck: '2027-01-01T00:00:00.000Z', seen: ['x'] };
+    expect(await checkWhatsNew(storeWith(wn), NOW, 'en')).not.toBeNull();
+    expect(http.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives up after 15 s overall', async () => {
+    vi.useFakeTimers();
+    try {
+      http.get.mockReturnValue(new Promise(() => {}));
+      const pending = checkWhatsNew(storeWith(base), NOW, 'en');
+      await vi.advanceTimersByTimeAsync(15000);
+      expect(await pending).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('overlapping foreground checks', () => {
+  it('issues one HTTP call for two overlapping callbacks', async () => {
+    let release;
+    http.get.mockReturnValue(new Promise((r) => (release = r)));
+    registerWhatsNewCheck();
+    const update = vi.fn();
+    const a = hooks.foreground({ store: storeWith(base), update });
+    const b = hooks.foreground({ store: storeWith(base), update });
+    release({ status: 200, data: FEED_XML });
+    await Promise.all([a, b]);
+    expect(http.get).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies the result to the current state, keeping a mark-all-seen made meanwhile', async () => {
+    let release;
+    http.get.mockReturnValue(new Promise((r) => (release = r)));
+    registerWhatsNewCheck();
+    const update = vi.fn();
+    const wn = { ...base, lastCheck: '2026-10-04T00:00:00.000Z', seen: ['old'], newCount: 3 };
+    const run = hooks.foreground({ store: storeWith(wn), update });
+    release({ status: 200, data: FEED_XML });
+    await run;
+    // Meanwhile the user marked everything seen (including the new guids).
+    const current = {
+      whatsNew: { ...wn, seen: ['aaa111', 'bbb222', 'ccc333', 'old'], newCount: 0 },
+    };
+    const merged = update.mock.calls[0][0](current);
+    expect(merged.whatsNew.newCount).toBe(0);
+    expect(merged.whatsNew.seen).toEqual(['aaa111', 'bbb222', 'ccc333', 'old']);
   });
 });
