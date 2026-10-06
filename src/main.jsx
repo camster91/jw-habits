@@ -8,6 +8,7 @@ import en from './locales/en.json';
 import es from './locales/es.json';
 import fr from './locales/fr.json';
 import App from './App.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { safeGetItem, safeSetItemQuiet } from './utils/safeStorage.js';
 import { initializeNative, isNative, isWeb, appLifecycle } from './utils/native.js';
 import { StoreProvider } from './data/StoreProvider.jsx';
@@ -106,43 +107,17 @@ if (isNative) {
   });
 }
 
-// Apply theme at app startup (before React mounts). The
-// Settings page has been removed — there is no UI toggle. We
-// resolve the theme from one of two sources, in priority order:
-//  1. localStorage `jw-progress-settings.state.theme` — set
-//     programmatically (or by a previous version of the app
-//     before the Settings page was deleted). Preserved for
-//     users who explicitly chose dark mode before the strip-down.
-//  2. `prefers-color-scheme: dark` — the OS-level setting.
-//  3. light — the default.
-// Without this, a user on a dark OS would see a flash of
-// light mode before React mounted and the daisyUI theme took
-// over.
-try {
-  const persistedSettings = JSON.parse(safeGetItem('jw-progress-settings') || '{}');
-  const storedTheme = persistedSettings?.state?.theme;
-  let theme;
-  if (storedTheme === 'dark' || storedTheme === 'light') {
-    theme = storedTheme;
-  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    theme = 'dark';
-  } else {
-    theme = 'light';
-  }
-  document.documentElement.setAttribute('data-theme', theme);
-} catch {
-  // Ignore malformed localStorage; default theme is light.
-}
-
 // Create root and render
 const container = document.getElementById('root');
 const root = createRoot(container);
 
 root.render(
   <StrictMode>
-    <StoreProvider>
-      <App />
-    </StoreProvider>
+    <ErrorBoundary>
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    </ErrorBoundary>
   </StrictMode>
 );
 
@@ -154,7 +129,9 @@ root.render(
 if (isWeb && 'serviceWorker' in navigator) {
   // Register the service worker (the plugin's auto-injection is off, so the
   // native build never registers one).
-  import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }));
+  import('virtual:pwa-register')
+    .then(({ registerSW }) => registerSW({ immediate: true }))
+    .catch((error) => console.warn('Service worker registration failed:', error));
 
   // Handle notification clicks — focus app window. Only accept
   // messages from our controlling SW, and only same-origin paths.

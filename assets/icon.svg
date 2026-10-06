@@ -19,5 +19,5 @@
   <!-- land -->
   <path d="M0 600 Q512 560 1024 600 V1024 H0 Z" fill="#4A6FA4"/>
   <!-- open path running to the horizon -->
-  <path d="M492 590 Q532 590 532 590 Q640 800 740 1024 H200 Q420 800 492 590 Z" fill="#FCE3B8"/>
+  <path d="M492 590 L532 590 Q640 800 740 1024 H200 Q420 800 492 590 Z" fill="#FCE3B8"/>
 </svg>
