@@ -1,89 +1,267 @@
 #!/usr/bin/env node
 // scripts/verify/journeys.cjs
 //
-// End-to-end user journeys against a running build. Unlike smoke.cjs
-// (which seeds localStorage directly), this drives the real UI: open
-// Settings, type a link, watch the rows pick it up, tap a checkbox,
-// reload, and confirm the state survived.
+// End-to-end user journeys against a running build of Faithful Days. They
+// drive the real UI (no seeded storage) with the page clock pinned, so the
+// day, the 03:00 rollover and the evening wrap-up are deterministic.
+//
+//   J1  onboarding, full path (every step, with edits)
+//   J2  onboarding, skip path (defaults)
+//   J3  hold to check, reload, undo
+//   J4  switch a routine off in Settings
+//   J5  rename a routine
+//   J6  the ministry toggle
+//   J7  the wrap-up card at 21:00
+//   J8  no console errors or third-party requests across all of the above
 //
 // Run:
 //   npm run build && npm run preview &
-//   node scripts/verify/journeys.cjs
+//   node scripts/verify/journeys.cjs        # PORT or JOURNEYS_BASE_URL to override
 //
 // Exits 1 if any journey fails.
 
 const { chromium } = require('playwright');
-const BASE = 'http://localhost:4173';
+const { openPage, go, hold, storeWhere, onboardSkip, routineButton } = require('./lib.cjs');
+
+const BASE = process.env.JOURNEYS_BASE_URL || `http://localhost:${process.env.PORT || 4173}`;
+const MORNING = new Date(2026, 9, 6, 10, 0); // Tuesday 6 Oct 2026, 10:00
+const EVENING = new Date(2026, 9, 6, 21, 0); // after the default 20:00 wrap-up
+
+let failed = 0;
+const step = (name, ok, detail) => {
+  if (!ok) failed += 1;
+  console.log(`[${ok ? 'PASS' : 'FAIL'}] ${name}${detail ? ' — ' + detail : ''}`);
+};
+
+/** Run one journey; a thrown error (a missing element, a timeout) is a FAIL. */
+async function journey(name, browser, opts, body, sink) {
+  const session = await openPage(browser, opts);
+  try {
+    await go(session.page, BASE);
+    await body(session.page);
+  } catch (e) {
+    step(name, false, String(e.message).split('\n')[0]);
+  }
+  sink.errors.push(...session.errors);
+  sink.external.push(...session.external);
+  await session.ctx.close();
+}
+
+const lastSchedule = (s) => s.schedule[s.schedule.length - 1];
+
+const openSettings = async (page) => {
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('dialog').waitFor();
+};
+const closeSettings = async (page) => {
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByRole('dialog').waitFor({ state: 'detached' });
+};
 
 (async () => {
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const page = await ctx.newPage();
-  const errors = [];
-  page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  const sink = { errors: [], external: [] };
 
-  await page.goto(BASE, { waitUntil: 'networkidle' });
-  await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('jw-')).forEach(k => localStorage.removeItem(k)));
-  await page.reload({ waitUntil: 'networkidle' });
+  // J1: every onboarding step, changing something on the way.
+  await journey(
+    'J1 onboarding (full path)',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await page.getByRole('heading', { name: 'Welcome to Faithful Days' }).waitFor();
+      await page.getByRole('button', { name: 'Get started' }).click();
+      // Routines: switch Personal study off.
+      await page.getByRole('switch', { name: 'Personal study' }).uncheck();
+      await page.getByRole('button', { name: 'Next' }).click();
+      // Week: pick Wednesday (weekday 3) as the midweek meeting day.
+      await page.getByRole('heading', { name: 'Your week' }).waitFor();
+      await page.getByRole('button', { name: 'Wednesday', exact: true }).click();
+      await page.getByRole('button', { name: 'Next' }).click();
+      await page.getByRole('heading', { name: 'Your reading' }).waitFor();
+      await page.getByRole('button', { name: 'Next' }).click();
+      await page.getByRole('heading', { name: 'Your rhythm' }).waitFor();
+      await page.getByRole('button', { name: 'Next' }).click();
+      await page.getByRole('heading', { name: 'Your look' }).waitFor();
+      await page.getByRole('button', { name: 'Start my first day' }).click();
+      await page.getByTestId('today').waitFor();
+      const s = await storeWhere(page, (x) => x.onboardingDone);
+      const sched = s && lastSchedule(s);
+      step(
+        'J1 full onboarding reaches Today with the choices saved',
+        !!s && sched.enabled.personalStudy === false && sched.meetingDays.length === 1 && sched.meetingDays[0] === 3,
+        s ? JSON.stringify({ study: sched.enabled.personalStudy, days: sched.meetingDays }) : 'no store'
+      );
+      step(
+        'J1 the switched-off routine is not on Today',
+        (await routineButton(page, 'Personal study').count()) === 0
+      );
+    },
+    sink
+  );
 
-  let failed = 0;
-  const step = (n, ok, d) => {
-    if (!ok) failed += 1;
-    console.log(`[${ok ? 'PASS' : 'FAIL'}] ${n}${d ? ' — ' + d : ''}`);
-  };
+  // J2: skipping every step keeps the defaults.
+  await journey(
+    'J2 onboarding (skip path)',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await onboardSkip(page);
+      const s = await storeWhere(page, (x) => x.onboardingDone);
+      const sched = s && lastSchedule(s);
+      step(
+        'J2 skipping every step lands on Today with the defaults',
+        !!s &&
+          sched.enabled.dailyText === true &&
+          sched.enabled.personalStudy === true &&
+          sched.meetingDays.length === 0,
+        s ? '' : 'no store'
+      );
+      step(
+        'J2 Today lists the daily text and Bible reading',
+        (await routineButton(page, 'Daily text').count()) === 1 &&
+          (await routineButton(page, 'Bible reading').count()) === 1
+      );
+    },
+    sink
+  );
 
-  // J1: open settings, save a link, confirm the row picks it up
-  await page.getByRole('button', { name: /settings/i }).click().catch(() => {});
-  await page.waitForTimeout(200);
-  const panelVisible = await page.locator('#settings-panel').isVisible().catch(() => false);
-  step('J1 settings panel opens', panelVisible);
+  // J3: hold completes, it survives a reload, a tap undoes.
+  await journey(
+    'J3 hold to check and undo',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await onboardSkip(page);
+      const check = routineButton(page, 'Daily text');
+      // A quick press must not complete it.
+      await check.dispatchEvent('pointerdown');
+      await page.waitForTimeout(100);
+      await check.dispatchEvent('pointerup');
+      step('J3 a short press does not check', (await check.getAttribute('aria-pressed')) === 'false');
+      await hold(page, check);
+      await page.waitForFunction(() => document.querySelector('button[aria-pressed="true"]') !== null);
+      step('J3 holding checks the routine', (await check.getAttribute('aria-pressed')) === 'true');
+      await storeWhere(page, (x) => x.log.length > 0);
+      await page.reload({ waitUntil: 'networkidle' });
+      step(
+        'J3 the check survives a reload',
+        (await routineButton(page, 'Daily text').getAttribute('aria-pressed')) === 'true'
+      );
+      await routineButton(page, 'Daily text').click();
+      step(
+        'J3 a tap undoes it',
+        (await routineButton(page, 'Daily text').getAttribute('aria-pressed')) === 'false'
+      );
+      const s = await storeWhere(page, (x) => x.log.length === 0);
+      step('J3 the undo is saved', !!s && s.log.length === 0, s ? '' : 'no store');
+    },
+    sink
+  );
 
-  const primary = page.locator('#link-primary');
-  if (await primary.isVisible().catch(() => false)) {
-    await primary.fill('https://example.com/daily');
-    await page.waitForTimeout(300);
-    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('jw-user-settings') || '{}').links);
-    step('J2 primary link saves', stored && stored.primary === 'https://example.com/daily', JSON.stringify(stored));
-  } else {
-    step('J2 primary link field present', false, 'input #link-primary not visible');
-  }
+  // J4: a routine switched off in Settings leaves Today.
+  await journey(
+    'J4 switch a routine off',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await onboardSkip(page);
+      await openSettings(page);
+      await page.getByRole('dialog').getByRole('switch', { name: 'Daily text' }).uncheck();
+      await closeSettings(page);
+      step('J4 the routine is gone from Today', (await routineButton(page, 'Daily text').count()) === 0);
+      const s = await storeWhere(page, (x) => lastSchedule(x).enabled.dailyText === false);
+      step('J4 the change is saved', !!s && lastSchedule(s).enabled.dailyText === false);
+    },
+    sink
+  );
 
-  // J3: the row now points at the saved link
-  await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForTimeout(300);
-  const hrefs = await page.evaluate(() =>
-    [...document.querySelectorAll('a[href]')].map((a) => a.getAttribute('href')).filter((h) => h.startsWith('http')));
-  step('J3 saved link reaches the rows', hrefs.some((h) => h.includes('example.com')), hrefs.slice(0, 4).join(', '));
+  // J5: a renamed routine shows its new name on Today and after a reload.
+  await journey(
+    'J5 rename a routine',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await onboardSkip(page);
+      await openSettings(page);
+      const dialog = page.getByRole('dialog');
+      await dialog.getByRole('button', { name: 'Rename Daily text' }).click();
+      const field = dialog.getByRole('textbox', { name: 'Name for Daily text' });
+      await field.fill('Morning verse');
+      await field.blur();
+      await closeSettings(page);
+      step('J5 Today shows the new name', (await routineButton(page, 'Morning verse').count()) === 1);
+      await storeWhere(page, (x) => x.labels.dailyText === 'Morning verse');
+      await page.reload({ waitUntil: 'networkidle' });
+      step(
+        'J5 the new name survives a reload',
+        (await routineButton(page, 'Morning verse').count()) === 1 &&
+          (await routineButton(page, 'Daily text').count()) === 0
+      );
+    },
+    sink
+  );
 
-  // J4: invalid link is rejected, with a visible notice
-  await page.getByRole('button', { name: /settings/i }).click().catch(() => {});
-  await page.waitForTimeout(200);
-  const p2 = page.locator('#link-primary');
-  if (await p2.isVisible().catch(() => false)) {
-    await p2.fill('not a url');
-    await page.waitForTimeout(400);
-    const warned = await page.getByText(/not look like a valid|sera ignorado|sera ignor/i).first().isVisible().catch(() => false);
-    step('J4 invalid link shows a notice', warned);
-    await p2.fill('');
-    await page.waitForTimeout(200);
-  }
+  // J6: the ministry toggle records this month's service.
+  await journey(
+    'J6 ministry toggle',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await onboardSkip(page);
+      const name = 'Shared in the ministry this month';
+      await page.getByRole('checkbox', { name }).check();
+      const s = await storeWhere(page, (x) => x.log.some((e) => e.routine === 'ministry'));
+      step(
+        'J6 toggling ministry saves an entry',
+        !!s && s.log.some((e) => e.routine === 'ministry'),
+        s ? '' : 'no store'
+      );
+      await page.reload({ waitUntil: 'networkidle' });
+      step(
+        'J6 the ministry toggle survives a reload',
+        await page.getByRole('checkbox', { name }).isChecked()
+      );
+    },
+    sink
+  );
 
-  // J5: check a row, reload, still checked
-  const firstBox = page.locator('button[aria-pressed]').first();
-  await firstBox.click();
-  await page.waitForTimeout(250);
-  const pressedBefore = await firstBox.getAttribute('aria-pressed');
-  await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForTimeout(300);
-  const pressedAfter = await page.locator('button[aria-pressed]').first().getAttribute('aria-pressed');
-  step('J5 done state survives reload', pressedBefore === 'true' && pressedAfter === 'true', `${pressedBefore} -> ${pressedAfter}`);
+  // J7: at 21:00 the wrap-up card replaces the list; the list can be reopened.
+  await journey(
+    'J7 wrap-up at 21:00',
+    browser,
+    { at: EVENING },
+    async (page) => {
+      await onboardSkip(page);
+      await page.getByRole('heading', { name: 'Your day in review' }).waitFor();
+      step('J7 the wrap-up card shows at 21:00', true);
+      step(
+        'J7 the routine list is hidden behind it',
+        (await routineButton(page, 'Daily text').count()) === 0
+      );
+      await page.getByRole('button', { name: 'Show routines' }).click();
+      step(
+        'J7 Show routines brings the list back',
+        (await routineButton(page, 'Daily text').count()) === 1
+      );
+      await page.getByRole('button', { name: 'Done for today' }).click();
+      step(
+        'J7 Done for today leaves the one-line summary',
+        await page.getByText(/Your day in review ·/).isVisible()
+      );
+    },
+    sink
+  );
 
-  // J6: no console errors across the journey
-  step('J6 no console errors', errors.length === 0, errors.slice(0, 3).join(' | '));
+  // J8: nothing went wrong, and nothing left the origin.
+  step('J8 no console errors', sink.errors.length === 0, sink.errors.slice(0, 3).join(' | '));
+  step(
+    'J8 no third-party requests',
+    sink.external.length === 0,
+    sink.external.slice(0, 3).join(', ')
+  );
 
   await browser.close();
-  console.log(`\n[journeys] ${failed === 0 ? 'all journeys passed' : failed + ' journey(s) failed'}`);
+  console.log(`\n[journeys] ${failed === 0 ? 'all journeys passed' : failed + ' check(s) failed'}`);
   process.exit(failed === 0 ? 0 : 1);
 })().catch((err) => {
   console.error('[journeys] crashed:', err && err.message);
