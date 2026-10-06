@@ -156,7 +156,7 @@ describe('wrapUp', () => {
       store.schedule[0].meetingDays = [3]; // Wednesday
       const r = wrapUp(store, at(21), t);
       expect(r.done).toEqual(['meetingPrep']);
-      expect(r.moved).toEqual([{ id: 'meetingPrep', text: '1 of the last meeting' }]);
+      expect(r.moved).toEqual([{ id: 'meetingPrep', text: '1 of 1 meeting' }]);
     });
 
     it('reports meeting prep as done of the last meetings', () => {

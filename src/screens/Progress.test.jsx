@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import i18n from 'i18next';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { StoreContext } from '../data/useStore.js';
 import { defaultStore } from '../domain/store.js';
@@ -130,6 +131,15 @@ describe('Progress', () => {
     expect(text('1 Samuel')).toBe('1Sa');
     expect(text('Song of Solomon')).toBe('Son');
     expect(text('Psalms')).toBe('Psa');
+  });
+
+  it('reads a single closed occurrence as "of 1", never "of the last"', () => {
+    const one = (key, done) => i18n.t(`fd.progress.${key}`, { count: 1, done });
+    expect(one('recentDays', 1)).toBe('1 of 1 day');
+    expect(one('recentWeeks', 0)).toBe('0 of 1 week');
+    expect(one('recentMeetings', 1)).toBe('1 of 1 meeting');
+    expect(one('recentMonths', 1)).toBe('1 of 1 month');
+    expect(i18n.t('fd.wrapUp.meetingMoved', { count: 1, done: 1 })).toBe('1 of 1 meeting');
   });
 
   it('hides the recent line when nothing has closed yet', () => {
