@@ -276,6 +276,7 @@ describe('rollover timer on resume', () => {
 describe('late onForeground registration', () => {
   it('runs a callback registered from a child effect exactly once after load', async () => {
     const calls = vi.fn();
+    // eslint-disable-next-line no-unused-vars -- used below via JSX
     function Child() {
       useEffect(() => onForeground(calls), []);
       return null;
