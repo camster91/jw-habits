@@ -257,6 +257,41 @@ describe('SettingsSheet', () => {
     expect(current.links).toEqual({ dailyText: 'https://example.org/daily' });
   });
 
+  it('reminders: the master switch and per-routine switches write through', () => {
+    renderSheet();
+    const reminders = section('Reminders');
+    const master = within(reminders).getByRole('switch', { name: 'Reminders' });
+    expect(master).toBeChecked();
+    // One switch per enabled routine.
+    for (const name of ['Daily text', 'Bible reading', 'Meeting prep', 'Ministry']) {
+      expect(within(reminders).getByRole('switch', { name })).toBeChecked();
+    }
+    fireEvent.click(within(reminders).getByRole('switch', { name: 'Bible reading' }));
+    expect(current.reminders).toEqual({ enabled: true, off: ['bibleReading'] });
+    fireEvent.click(within(reminders).getByRole('switch', { name: 'Ministry' }));
+    expect(current.reminders.off).toEqual(['bibleReading', 'ministry']);
+    fireEvent.click(within(reminders).getByRole('switch', { name: 'Bible reading' }));
+    expect(current.reminders.off).toEqual(['ministry']);
+    fireEvent.click(master);
+    expect(current.reminders).toEqual({ enabled: false, off: ['ministry'] });
+  });
+
+  it('reminders: lists only enabled routines, and a migrated "off" can be turned on', () => {
+    const s = withScheduleChange(
+      { ...makeStore(), reminders: { enabled: false, off: [] } },
+      TODAY,
+      { enabled: { ministry: false } }
+    );
+    renderSheet(s);
+    const reminders = section('Reminders');
+    const master = within(reminders).getByRole('switch', { name: 'Reminders' });
+    expect(master).not.toBeChecked();
+    fireEvent.click(master);
+    expect(current.reminders.enabled).toBe(true);
+    expect(within(reminders).getByRole('switch', { name: 'Daily text' })).toBeChecked();
+    expect(within(reminders).queryByRole('switch', { name: 'Ministry' })).toBeNull();
+  });
+
   it("What's New and quiet hours write through", () => {
     renderSheet();
     fireEvent.click(screen.getByRole('switch', { name: "Show what's new on jw.org" }));

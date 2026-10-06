@@ -176,6 +176,7 @@
         "week": "Your week",
         "reading": "Reading",
         "rhythm": "Rhythm",
+        "reminders": "Reminders",
         "look": "Look",
         "links": "Links",
         "backup": "Backup",
@@ -210,6 +211,11 @@
       "whatsNew": {
         "toggle": "Show what's new on jw.org",
         "hint": "A small count on Today when jw.org has something new."
+      },
+      "reminders": {
+        "toggle": "Reminders",
+        "hint": "Gentle notes on this device about what's ready today.",
+        "perRoutine": "Remind me about"
       },
       "quietHours": {
         "toggle": "Quiet hours",

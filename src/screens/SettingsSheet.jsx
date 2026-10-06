@@ -11,6 +11,7 @@ import { TimeField, Toggle } from './onboarding/controls.jsx';
 import LinksSection from '../components/settings/LinksSection.jsx';
 import BackupSection from '../components/settings/BackupSection.jsx';
 import AboutSection from '../components/settings/AboutSection.jsx';
+import RemindersSection from '../components/settings/RemindersSection.jsx';
 
 const FOCUSABLE = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
 const DEFAULT_QUIET = { start: '22:00', end: '07:00' };
@@ -142,6 +143,9 @@ function SettingsDialog({ onClose }) {
           <Section title={section('rhythm')}>
             <StepRhythm {...props} />
           </Section>
+          <Section title={section('reminders')}>
+            <RemindersSection />
+          </Section>
           <Section title={section('quietHours')}>
             <QuietHours {...props} />
           </Section>
@@ -172,8 +176,8 @@ function SettingsDialog({ onClose }) {
 }
 
 /**
- * Everything onboarding sets, plus links, backup, What's New, quiet hours and
- * About. Every change is saved straight away; schedule changes take effect
+ * Everything onboarding sets, plus reminders, links, backup, What's New, quiet
+ * hours and About. Every change is saved straight away; schedule changes take effect
  * from today and leave earlier days as they were.
  */
 export default function SettingsSheet({ open, onClose }) {
