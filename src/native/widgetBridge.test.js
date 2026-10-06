@@ -151,7 +151,13 @@ describe('drainWidgetCheckIns', () => {
 
   it('drops malformed items and survives a plugin failure', async () => {
     plugin.drainQueue.mockResolvedValue({
-      items: [{ routine: 'dailyText' }, null, { routine: 'nope', day: TODAY }, 'x'],
+      items: [
+        { routine: 'dailyText' },
+        { routine: 'dailyText', day: '6 Oct 2026' },
+        null,
+        { routine: 'nope', day: TODAY },
+        'x',
+      ],
     });
     expect(await drainWidgetCheckIns()).toEqual([]);
     plugin.drainQueue.mockRejectedValue(new Error('boom'));

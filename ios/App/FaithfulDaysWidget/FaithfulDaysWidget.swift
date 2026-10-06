@@ -265,8 +265,8 @@ struct RowLabel: View {
                 .foregroundStyle(accent)
             Text(label)
                 .font(.subheadline)
-                .lineLimit(1)
                 .strikethrough(done, color: .secondary)
+                .lineLimit(1)
                 .foregroundStyle(done ? Color.secondary : Color.primary)
         }
     }
