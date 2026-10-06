@@ -105,7 +105,7 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
         />
         <Check
           aria-hidden="true"
-          className={`relative h-5 w-5 ${done ? 'text-white' : 'text-[var(--fd-accent)] opacity-40'}`}
+          className={`relative h-5 w-5 ${done ? 'text-white' : 'text-[var(--fd-accent-text)] opacity-40'}`}
           strokeWidth={3}
         />
       </button>

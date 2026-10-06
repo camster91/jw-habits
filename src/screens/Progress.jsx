@@ -28,7 +28,9 @@ function RoutineCard({ title, s, daysThisYear }) {
         </p>
       )}
       {s.current > 0 && (
-        <p className="text-[var(--fd-accent)]">{t('fd.progress.streak', { count: s.current })}</p>
+        <p className="text-[var(--fd-accent-text)]">
+          {t('fd.progress.streak', { count: s.current })}
+        </p>
       )}
       <p className="text-sm text-base-content/70">
         {t('fd.progress.daysThisYear', { count: daysThisYear })}

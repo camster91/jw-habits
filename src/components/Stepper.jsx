@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Minus, Plus } from 'lucide-react';
 
 const STEP_BUTTON =
-  'btn btn-circle btn-ghost min-h-11 min-w-11 text-[var(--fd-accent)] disabled:opacity-30';
+  'btn btn-circle btn-ghost min-h-11 min-w-11 text-[var(--fd-accent-text)] disabled:opacity-30';
 
 /** A labelled − value + control for a small whole number in `min..max`. */
 export default function Stepper({ label, value, min = 0, max = Infinity, onChange }) {

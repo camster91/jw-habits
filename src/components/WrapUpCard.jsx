@@ -40,7 +40,7 @@ export default function WrapUpCard({
       className="rounded-2xl border-t-4 border-[var(--fd-accent)] bg-base-100 p-4 shadow-sm"
     >
       <h2 id={titleId} className="flex items-center gap-2 text-lg font-semibold">
-        <Moon aria-hidden="true" className="h-5 w-5 text-[var(--fd-accent)]" />
+        <Moon aria-hidden="true" className="h-5 w-5 text-[var(--fd-accent-text)]" />
         {t('fd.today.wrapUpTitle')}
       </h2>
       <div data-testid="wrapup-body" className="mt-3 space-y-3">
@@ -48,7 +48,7 @@ export default function WrapUpCard({
           <>
             {celebrate && (
               <p className="flex items-center gap-2 font-medium motion-safe:animate-fd-celebrate">
-                <PartyPopper aria-hidden="true" className="h-5 w-5 text-[var(--fd-accent)]" />
+                <PartyPopper aria-hidden="true" className="h-5 w-5 text-[var(--fd-accent-text)]" />
                 {t('fd.today.allDone')}
               </p>
             )}
@@ -57,7 +57,7 @@ export default function WrapUpCard({
                 <li key={id} className="flex items-start gap-2">
                   <Check
                     aria-hidden="true"
-                    className="mt-0.5 h-4 w-4 shrink-0 text-[var(--fd-accent)]"
+                    className="mt-0.5 h-4 w-4 shrink-0 text-[var(--fd-accent-text)]"
                     strokeWidth={3}
                   />
                   <span>
@@ -76,7 +76,7 @@ export default function WrapUpCard({
                     <span className="text-base-content/70">{labelOf(id)}</span>
                     <button
                       type="button"
-                      className="btn btn-ghost btn-sm min-h-11 text-[var(--fd-accent)]"
+                      className="btn btn-ghost btn-sm min-h-11 text-[var(--fd-accent-text)]"
                       aria-label={`${t('fd.today.stillTime')}: ${labelOf(id)}`}
                       onClick={onStillTime}
                     >

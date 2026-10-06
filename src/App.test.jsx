@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { defaultStore } from './domain/store.js';
-import { ACCENTS, applyTheme } from './theme/theme.js';
+import { ACCENTS, accentText, applyTheme } from './theme/theme.js';
 
 const platform = vi.hoisted(() => ({ isWeb: true }));
 
@@ -142,12 +142,20 @@ describe('applyTheme', () => {
   afterEach(() => {
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.style.removeProperty('--fd-accent');
+    document.documentElement.style.removeProperty('--fd-accent-text');
   });
 
   it('sets data-theme and --fd-accent from the store', () => {
     applyTheme({ accent: 2, theme: 'dark' });
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(document.documentElement.style.getPropertyValue('--fd-accent')).toBe(ACCENTS[2]);
+    expect(document.documentElement.style.getPropertyValue('--fd-accent-text')).toBe(
+      accentText(2, 'dark')
+    );
+    applyTheme({ accent: 1, theme: 'light' });
+    expect(document.documentElement.style.getPropertyValue('--fd-accent-text')).toBe(
+      accentText(1, 'light')
+    );
   });
 
   it('offers six accents starting with the brand blue', () => {
@@ -162,6 +170,9 @@ describe('applyTheme', () => {
     prefersDark = true;
     listeners.forEach((fn) => fn());
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.style.getPropertyValue('--fd-accent-text')).toBe(
+      accentText(0, 'dark')
+    );
     stop();
     expect(listeners.size).toBe(0);
   });

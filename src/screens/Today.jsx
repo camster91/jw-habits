@@ -194,7 +194,7 @@ export default function Today({ onOpenSettings = () => {} }) {
           <WhatsNewBadge count={store.whatsNew.newCount} onOpen={openWhatsNew} />
         )}
 
-        <div role="status" aria-live="polite" className="min-h-6 text-[var(--fd-accent)]">
+        <div role="status" aria-live="polite" className="min-h-6 text-[var(--fd-accent-text)]">
           {line && (
             <>
               {line.text}

@@ -19,7 +19,7 @@ export default function RoutineRow({ label, detail, done, onComplete, onUndo, li
         {link && (
           <button
             type="button"
-            className="btn btn-circle btn-ghost min-h-11 min-w-11 text-[var(--fd-accent)]"
+            className="btn btn-circle btn-ghost min-h-11 min-w-11 text-[var(--fd-accent-text)]"
             aria-label={t('fd.today.openLink', { label })}
             onClick={() => window.open(link, '_blank', 'noopener')}
           >
