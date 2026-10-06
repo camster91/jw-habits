@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useCallback, useMemo, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { StoreContext } from '../data/useStore.js';
@@ -7,6 +7,7 @@ import { defaultStore, exportJson } from '../domain/store.js';
 import { scheduleOn, withScheduleChange } from '../domain/schedule.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import SettingsSheet from './SettingsSheet.jsx';
+import { consumeBack } from '../utils/backStack.js';
 import { Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -302,6 +303,18 @@ describe('SettingsSheet', () => {
     expect(current.quietHours).toEqual({ start: '21:30', end: '07:00' });
     fireEvent.click(screen.getByRole('switch', { name: 'Quiet hours' }));
     expect(current.quietHours).toBeNull();
+  });
+
+  it('the Android back button closes the open sheet first', () => {
+    const { onClose } = renderSheet();
+    let consumed;
+    act(() => {
+      consumed = consumeBack();
+    });
+    expect(consumed).toBe(true);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(consumeBack()).toBe(false);
   });
 
   it('never asks for notification permission from Settings', () => {

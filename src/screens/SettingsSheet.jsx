@@ -12,6 +12,7 @@ import LinksSection from '../components/settings/LinksSection.jsx';
 import BackupSection from '../components/settings/BackupSection.jsx';
 import AboutSection from '../components/settings/AboutSection.jsx';
 import RemindersSection from '../components/settings/RemindersSection.jsx';
+import { onBack } from '../utils/backStack.js';
 
 const FOCUSABLE = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
 const DEFAULT_QUIET = { start: '22:00', end: '07:00' };
@@ -80,6 +81,9 @@ function SettingsDialog({ onClose }) {
       if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
     };
   }, []);
+
+  // Android back closes the sheet before it navigates or exits.
+  useEffect(() => onBack(onClose), [onClose]);
 
   const onKeyDown = (e) => {
     if (e.key === 'Escape') {

@@ -11,6 +11,7 @@ import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { safeGetItem, safeSetItemQuiet } from './utils/safeStorage.js';
 import { initializeNative, isNative, isWeb, appLifecycle } from './utils/native.js';
+import { consumeBack } from './utils/backStack.js';
 import { StoreProvider } from './data/StoreProvider.jsx';
 import { registerReminderSync } from './native/reminders.js';
 import { registerWhatsNewCheck } from './native/whatsNewClient.js';
@@ -95,6 +96,8 @@ initializeNative().catch(console.error);
 if (isNative) {
   let lastBackPress = 0;
   appLifecycle.onBackButton(({ canGoBack }) => {
+    // An open sheet closes first.
+    if (consumeBack()) return;
     if (canGoBack) {
       window.history.back();
     } else {
