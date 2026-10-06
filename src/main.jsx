@@ -11,6 +11,7 @@ import App from './App.jsx';
 import { safeGetItem, safeSetItemQuiet } from './utils/safeStorage.js';
 import { initializeNative, isNative, appLifecycle } from './utils/native.js';
 import { registerReminderSync } from './native/reminders.js';
+import { registerWhatsNewCheck } from './native/whatsNewClient.js';
 
 // i18next — Spanish/French fall back to English when a key
 // is missing. Language detected from navigator, cached in
@@ -79,6 +80,8 @@ window.onunhandledrejection = function (event) {
 
 // Reschedule local notifications on every app open
 registerReminderSync();
+// Check jw.org's feed for new items (at most daily; dates only)
+registerWhatsNewCheck();
 
 // Initialize native mobile features
 initializeNative().catch(console.error);
