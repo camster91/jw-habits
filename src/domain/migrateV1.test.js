@@ -115,7 +115,9 @@ describe('migrateV1', () => {
     const store = migrate({ [BIBLE]: ['2026-09-20', '2026-10-01'] }, '2026-10-06');
     expect(store.schedule).toHaveLength(1);
     expect(store.schedule[0].from).toBe('2026-09-20');
-    expect(migrate({ [BIBLE]: ['2026-12-01'] }, '2026-10-06').schedule[0].from).toBe('2026-10-06');
+    const future = migrate({ [BIBLE]: ['2026-12-01'] }, '2026-10-06');
+    expect(future.schedule[0].from).toBe('2026-10-06');
+    expect(validateStore(future).ok).toBe(true);
   });
 
   it('does not migrate the history array', () => {
@@ -151,5 +153,34 @@ describe('migrateV1', () => {
     migrateV1(fx.read, '2026-10-06', 'en');
     expect(fx.map).toEqual(before);
     expect([...fx.map.keys()].sort()).toEqual([BEST, BIBLE, SETTINGS, STATE].sort());
+  });
+});
+
+describe('migrateV1 settings fallbacks and wrong types', () => {
+  it('falls back to the v1 defaults (midweek 2, weekend 0) when settings exist', () => {
+    expect(migrate({ [SETTINGS]: {} }).schedule[0].meetingDays).toEqual([0, 2]);
+    expect(migrate({ [SETTINGS]: { midweekDay: 4 } }).schedule[0].meetingDays).toEqual([0, 4]);
+    expect(
+      migrate({ [SETTINGS]: { midweekDay: 9, weekendDay: '6' } }).schedule[0].meetingDays
+    ).toEqual([0, 2]);
+  });
+
+  it('leaves meetingDays empty when there is no settings key', () => {
+    expect(migrate({ [BIBLE]: ['2026-10-01'] }).schedule[0].meetingDays).toEqual([]);
+  });
+
+  it.each([
+    ['done: 5', { [STATE]: { date: '2026-10-05', done: 5 } }],
+    ['done: []', { [STATE]: { date: '2026-10-05', done: [] } }],
+    ['bad state date', { [STATE]: { date: 'nope', done: { text: true } } }],
+    ['midweekDay 9', { [SETTINGS]: { midweekDay: 9 } }],
+    ['midweekDay string', { [SETTINGS]: { midweekDay: '3' } }],
+    ['quietHours string', { [SETTINGS]: { quietHours: 'x' } }],
+  ])('does not throw and stays valid with %s', (_name, entries) => {
+    let store;
+    expect(() => {
+      store = migrate(entries);
+    }).not.toThrow();
+    expect(validateStore(store).ok).toBe(true);
   });
 });

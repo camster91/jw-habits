@@ -69,7 +69,9 @@ export function migrateV1(read, today, locale) {
   }
 
   if (hasSettings) {
-    const days = [settings.midweekDay, settings.weekendDay].filter(isWeekday);
+    const midweek = isWeekday(settings.midweekDay) ? settings.midweekDay : 2;
+    const weekend = isWeekday(settings.weekendDay) ? settings.weekendDay : 0;
+    const days = [midweek, weekend];
     const meetingDays = [...new Set(days)].sort((a, b) => a - b);
     const { reminderTime, quietHours } = settings;
     const quiet =
