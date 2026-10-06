@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useStore } from '../data/useStore.js';
@@ -63,14 +63,19 @@ function SettingsDialog({ onClose }) {
   const titleId = useId();
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
-  // Bumped after an import so sections holding typed text start again from the new store.
-  const [generation, setGeneration] = useState(0);
 
   // Focus moves in on open and back to whatever opened the sheet on close.
+  // While open, focus that lands outside the sheet (however it got there) is
+  // sent back in, so the trap does not depend on where a key press lands.
   useEffect(() => {
     const opener = document.activeElement;
+    const guard = (e) => {
+      if (dialogRef.current && !dialogRef.current.contains(e.target)) closeRef.current?.focus();
+    };
     closeRef.current?.focus();
+    document.addEventListener('focusin', guard);
     return () => {
+      document.removeEventListener('focusin', guard);
       if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
     };
   }, []);
@@ -125,41 +130,37 @@ function SettingsDialog({ onClose }) {
           </button>
         </div>
         <div className="mx-auto max-w-md space-y-4">
-          <div key={generation} className="space-y-4">
-            <Section title={section('routines')}>
-              <StepRoutines {...props} />
-            </Section>
-            <Section title={section('week')}>
-              <StepWeek {...props} />
-            </Section>
-            <Section title={section('reading')}>
-              <StepReading {...props} />
-            </Section>
-            <Section title={section('rhythm')}>
-              <StepRhythm {...props} />
-            </Section>
-            <Section title={section('quietHours')}>
-              <QuietHours {...props} />
-            </Section>
-            <Section title={section('look')}>
-              <StepLook {...props} />
-            </Section>
-            <Section title={section('links')}>
-              <LinksSection />
-            </Section>
-            <Section title={section('whatsNew')}>
-              <Toggle
-                label={t('fd.settings.whatsNew.toggle')}
-                hint={t('fd.settings.whatsNew.hint')}
-                checked={store.whatsNew.enabled}
-                onChange={(on) =>
-                  update((s) => ({ ...s, whatsNew: { ...s.whatsNew, enabled: on } }))
-                }
-              />
-            </Section>
-          </div>
+          <Section title={section('routines')}>
+            <StepRoutines {...props} />
+          </Section>
+          <Section title={section('week')}>
+            <StepWeek {...props} />
+          </Section>
+          <Section title={section('reading')}>
+            <StepReading {...props} />
+          </Section>
+          <Section title={section('rhythm')}>
+            <StepRhythm {...props} />
+          </Section>
+          <Section title={section('quietHours')}>
+            <QuietHours {...props} />
+          </Section>
+          <Section title={section('look')}>
+            <StepLook {...props} />
+          </Section>
+          <Section title={section('links')}>
+            <LinksSection />
+          </Section>
+          <Section title={section('whatsNew')}>
+            <Toggle
+              label={t('fd.settings.whatsNew.toggle')}
+              hint={t('fd.settings.whatsNew.hint')}
+              checked={store.whatsNew.enabled}
+              onChange={(on) => update((s) => ({ ...s, whatsNew: { ...s.whatsNew, enabled: on } }))}
+            />
+          </Section>
           <Section title={section('backup')}>
-            <BackupSection onReplaced={() => setGeneration((g) => g + 1)} />
+            <BackupSection onReplaced={onClose} />
           </Section>
           <Section title={section('about')}>
             <AboutSection />

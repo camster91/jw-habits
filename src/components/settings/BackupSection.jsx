@@ -8,7 +8,7 @@ import { isShareCancel, saveBackup } from '../../utils/backup.js';
  * Export everything as a dated JSON file, or import one. An import is only
  * adopted after an in-app "Replace all data?" confirmation; a file that can't
  * be used says why and leaves the store alone. `onReplaced` runs after an
- * import is adopted.
+ * import is adopted (Settings closes then).
  */
 export default function BackupSection({ onReplaced = () => {} }) {
   const { t } = useTranslation();
@@ -62,9 +62,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
     const next = pending;
     update(() => next);
     setPending(null);
-    setStatus({ error: false, text: t('fd.settings.backup.replaced') });
     onReplaced();
-    exportRef.current?.focus();
   };
 
   const cancel = () => {
@@ -81,7 +79,12 @@ export default function BackupSection({ onReplaced = () => {} }) {
         </button>
         <label className="btn min-h-11 focus-within:outline focus-within:outline-2">
           {t('fd.settings.backup.import')}
-          <input type="file" accept="application/json" className="sr-only" onChange={onFile} />
+          <input
+            type="file"
+            accept=".json,application/json"
+            className="sr-only"
+            onChange={onFile}
+          />
         </label>
       </div>
       {pending && (

@@ -7,7 +7,10 @@ import { isSafeHttpUrl } from '../../utils/safeUrls.js';
 
 const LINK_IDS = ['dailyText', 'meetingPrep', 'bibleReading'];
 
-function LinkField({ label, placeholder, value, invalid, onChange }) {
+/** Empty (use the default) or a safe http(s) address: either can be saved. */
+const savable = (value) => value.trim() === '' || isSafeHttpUrl(value);
+
+function LinkField({ label, placeholder, value, invalid, onChange, onBlur }) {
   const { t } = useTranslation();
   const id = useId();
   const errorId = useId();
@@ -27,6 +30,7 @@ function LinkField({ label, placeholder, value, invalid, onChange }) {
         aria-invalid={invalid}
         aria-describedby={invalid ? errorId : undefined}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
       />
       {invalid && (
         <p id={errorId} className="text-sm text-error">
@@ -39,7 +43,9 @@ function LinkField({ label, placeholder, value, invalid, onChange }) {
 
 /**
  * The user's own links for the routines that open something. Empty means the
- * default (shown as the placeholder). Only http(s) addresses are saved.
+ * default (shown as the placeholder). Each field saves as it is typed while
+ * it is empty or a safe http(s) address; anything else stays in the field,
+ * unsaved, and is flagged once the field loses focus.
  */
 export default function LinksSection() {
   const { t, i18n } = useTranslation();
@@ -47,33 +53,32 @@ export default function LinksSection() {
   const [values, setValues] = useState(() =>
     Object.fromEntries(LINK_IDS.map((id) => [id, store.links[id] ?? '']))
   );
-  const [invalid, setInvalid] = useState([]);
-  const [saved, setSaved] = useState(false);
+  const [flagged, setFlagged] = useState([]);
 
   const placeholder = (id) =>
     id === 'bibleReading'
       ? t('fd.settings.links.bibleDefault')
       : routineLink({ links: {} }, id, i18n.language);
 
-  const save = (e) => {
-    e.preventDefault();
-    const bad = LINK_IDS.filter((id) => values[id].trim() !== '' && !isSafeHttpUrl(values[id]));
-    setInvalid(bad);
-    setSaved(bad.length === 0);
-    if (bad.length > 0) return;
+  const edit = (id, value) => {
+    setValues((x) => ({ ...x, [id]: value }));
+    if (!savable(value)) return;
+    setFlagged((f) => f.filter((x) => x !== id));
     update((s) => {
       const links = { ...s.links };
-      for (const id of LINK_IDS) {
-        const v = values[id].trim();
-        if (v) links[id] = v;
-        else delete links[id];
-      }
+      const v = value.trim();
+      if (v) links[id] = v;
+      else delete links[id];
       return { ...s, links };
     });
   };
 
+  const check = (id) => {
+    if (!savable(values[id])) setFlagged((f) => (f.includes(id) ? f : [...f, id]));
+  };
+
   return (
-    <form className="space-y-3" onSubmit={save} noValidate>
+    <div className="space-y-3">
       <p className="text-sm text-base-content/70">{t('fd.settings.links.body')}</p>
       {LINK_IDS.map((id) => (
         <LinkField
@@ -81,19 +86,11 @@ export default function LinksSection() {
           label={labelFor(store, id, t)}
           placeholder={placeholder(id)}
           value={values[id]}
-          invalid={invalid.includes(id)}
-          onChange={(v) => {
-            setSaved(false);
-            setValues((x) => ({ ...x, [id]: v }));
-          }}
+          invalid={flagged.includes(id)}
+          onChange={(v) => edit(id, v)}
+          onBlur={() => check(id)}
         />
       ))}
-      <button type="submit" className="btn min-h-11">
-        {t('fd.settings.links.save')}
-      </button>
-      <p role="status" className="text-sm">
-        {saved && t('fd.settings.links.saved')}
-      </p>
-    </form>
+    </div>
   );
 }

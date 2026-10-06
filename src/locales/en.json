@@ -264,9 +264,7 @@
       "links": {
         "body": "Leave a link empty to use the default.",
         "bibleDefault": "Today's chapter on jw.org",
-        "invalid": "Use a web address that starts with https:// or http://",
-        "save": "Save links",
-        "saved": "Links saved."
+        "invalid": "Use a web address that starts with https:// or http://"
       },
       "backup": {
         "body": "Save a copy of everything on this device, or bring a copy back.",
@@ -280,7 +278,6 @@
         "confirmBody": "Everything here will be replaced by the backup, and this can't be undone.",
         "replace": "Replace",
         "cancel": "Cancel",
-        "replaced": "Your backup is in place.",
         "errors": {
           "notObject": "This file isn't a Faithful Days backup.",
           "newerVersion": "This backup is from a newer version of Faithful Days. Update the app, then try again.",

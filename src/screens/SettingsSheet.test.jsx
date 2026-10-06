@@ -79,13 +79,28 @@ const backupFile = (obj) =>
     type: 'application/json',
   });
 
+// jsdom has no object URLs: a URL subclass adds them for the export tests.
+const objectUrls = vi.hoisted(() => ({ create: null, revoke: null }));
+
 beforeEach(() => {
   platform.isNative = false;
-  window.open = vi.fn();
-  window.confirm = vi.fn();
-  window.alert = vi.fn();
+  vi.spyOn(window, 'open').mockImplementation(() => null);
+  vi.spyOn(window, 'confirm').mockImplementation(() => true);
+  vi.spyOn(window, 'alert').mockImplementation(() => {});
+  objectUrls.create = vi.fn(() => 'blob:x');
+  objectUrls.revoke = vi.fn();
+  vi.stubGlobal(
+    'URL',
+    class extends URL {
+      static createObjectURL = (b) => objectUrls.create(b);
+      static revokeObjectURL = (u) => objectUrls.revoke(u);
+    }
+  );
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe('SettingsSheet', () => {
   it('changing meeting days appends a schedule entry and keeps the past intact', () => {
@@ -109,7 +124,7 @@ describe('SettingsSheet', () => {
   it('importing a file with version 3 explains why and changes nothing', async () => {
     const { initial } = renderSheet();
     const input = screen.getByLabelText('Import a backup');
-    expect(input).toHaveAttribute('accept', 'application/json');
+    expect(input).toHaveAttribute('accept', '.json,application/json');
     fireEvent.change(input, { target: { files: [backupFile({ ...initial, version: 3 })] } });
     expect(await screen.findByText(/from a newer version of Faithful Days/)).toBeInTheDocument();
     expect(current).toBe(initial);
@@ -139,44 +154,35 @@ describe('SettingsSheet', () => {
     expect(window.confirm).not.toHaveBeenCalled();
   });
 
-  it('Replace adopts the backup and the sections show its values', async () => {
-    const { initial } = renderSheet();
-    const backup = {
-      ...initial,
-      tone: 'quiet',
-      log: [],
-      links: { dailyText: 'https://a.example/x' },
-    };
+  it('Replace adopts the backup and closes the sheet', async () => {
+    const { initial, onClose } = renderSheet();
+    const backup = { ...initial, tone: 'quiet', log: [], onboardingDone: false };
     fireEvent.change(screen.getByLabelText('Import a backup'), {
       target: { files: [backupFile(backup)] },
     });
     fireEvent.click(await screen.findByRole('button', { name: 'Replace' }));
     expect(current).toEqual(backup);
-    expect(within(section('Links')).getByLabelText('Daily text')).toHaveValue(
-      'https://a.example/x'
-    );
-    expect(screen.getByText('Your backup is in place.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Export a backup' })).toHaveFocus();
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(window.confirm).not.toHaveBeenCalled();
     expect(window.alert).not.toHaveBeenCalled();
   });
 
   it('exports on the web as a dated download', async () => {
     const { initial } = renderSheet();
-    let blob;
-    URL.createObjectURL = vi.fn((b) => {
-      blob = b;
-      return 'blob:x';
-    });
-    URL.revokeObjectURL = vi.fn();
     const clicks = [];
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () {
-      clicks.push(this.download);
+      const entry = { name: this.download, revokedYet: null };
+      clicks.push(entry);
+      // Still usable once the code that clicked has run to the end of this task.
+      queueMicrotask(() => (entry.revokedYet = objectUrls.revoke.mock.calls.length > 0));
     });
     fireEvent.click(screen.getByRole('button', { name: 'Export a backup' }));
     await screen.findByText('Backup ready.');
-    expect(clicks).toEqual(['faithful-days-backup-2026-10-06.json']);
-    expect(await blob.text()).toBe(exportJson(initial));
+    expect(clicks).toEqual([{ name: 'faithful-days-backup-2026-10-06.json', revokedYet: false }]);
+    expect(await objectUrls.create.mock.calls[0][0].text()).toBe(exportJson(initial));
+    // Revoked only after the click has had a chance to start the download.
+    await vi.waitFor(() => expect(objectUrls.revoke).toHaveBeenCalledWith('blob:x'));
     expect(Filesystem.writeFile).not.toHaveBeenCalled();
   });
 
@@ -216,7 +222,7 @@ describe('SettingsSheet', () => {
     expect(within(about).getByText(/^Version [0-9]/)).toBeInTheDocument();
   });
 
-  it('links: rejects anything but http(s), saves a good one, and empty means default', () => {
+  it('links: save as typed when valid or empty; anything else stays local and is flagged', () => {
     const { initial } = renderSheet({
       ...makeStore(),
       links: { meetingPrep: 'https://old.example' },
@@ -224,15 +230,31 @@ describe('SettingsSheet', () => {
     const links = section('Links');
     const daily = within(links).getByLabelText('Daily text');
     expect(daily).toHaveAttribute('placeholder', 'https://wol.jw.org/en/wol/dt/r1/lp-e');
+    expect(within(links).queryByRole('button')).not.toBeInTheDocument();
     fireEvent.change(daily, { target: { value: 'javascript:alert(1)' } });
-    fireEvent.click(within(links).getByRole('button', { name: 'Save links' }));
+    expect(current).toBe(initial);
+    fireEvent.blur(daily);
     expect(within(links).getByText(/starts with https:/)).toBeInTheDocument();
     expect(daily).toHaveAttribute('aria-invalid', 'true');
     expect(current).toBe(initial);
     fireEvent.change(daily, { target: { value: 'https://example.org/text' } });
+    expect(within(links).queryByText(/starts with https:/)).not.toBeInTheDocument();
+    expect(current.links).toEqual({
+      meetingPrep: 'https://old.example',
+      dailyText: 'https://example.org/text',
+    });
     fireEvent.change(within(links).getByLabelText('Meeting prep'), { target: { value: '' } });
-    fireEvent.click(within(links).getByRole('button', { name: 'Save links' }));
     expect(current.links).toEqual({ dailyText: 'https://example.org/text' });
+  });
+
+  it('a link typed and then Escape is kept', () => {
+    const { onClose } = renderSheet();
+    const daily = within(section('Links')).getByLabelText('Daily text');
+    daily.focus();
+    fireEvent.change(daily, { target: { value: 'https://example.org/daily' } });
+    fireEvent.keyDown(daily, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(current.links).toEqual({ dailyText: 'https://example.org/daily' });
   });
 
   it("What's New and quiet hours write through", () => {
@@ -269,6 +291,14 @@ describe('SettingsSheet', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     void rerender;
+  });
+
+  it('sends focus that lands outside back into the sheet', () => {
+    renderSheet();
+    const opener = screen.getByRole('button', { name: 'Opener' });
+    opener.focus();
+    expect(opener).not.toHaveFocus();
+    expect(sheet()).toContainElement(document.activeElement);
   });
 
   it('returns focus to the opener when closed with the close button', () => {

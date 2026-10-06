@@ -34,5 +34,6 @@ export async function saveBackup(text, fileName, title) {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Some browsers start the download after click() returns; revoke later.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
