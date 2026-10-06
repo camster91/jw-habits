@@ -298,13 +298,6 @@ describe('Today: cards and lines', () => {
     renderToday(makeStore(), at(9, 0, 1));
     expect(screen.getByText('A new month, a fresh start.')).toBeInTheDocument();
   });
-
-  it('opens Settings from the header', () => {
-    const onOpenSettings = vi.fn();
-    renderToday(makeStore(), at(9), onOpenSettings);
-    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
-    expect(onOpenSettings).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe('Today: wrap-up', () => {

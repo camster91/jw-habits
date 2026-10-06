@@ -9,6 +9,7 @@ import Share from './pages/Share';
 import Today from './screens/Today';
 import Progress from './screens/Progress';
 import Onboarding from './screens/Onboarding';
+import TabBar from './components/TabBar';
 import SettingsSheet from './screens/SettingsSheet';
 import { useStore } from './data/useStore.js';
 import { applyTheme } from './theme/theme.js';
@@ -35,7 +36,13 @@ function Screens() {
   const { accent, theme, onboardingDone } = store;
   useEffect(() => applyTheme({ accent, theme }), [accent, theme]);
 
-  const today = <Today onOpenSettings={openSettings} />;
+  const withTabs = (screen) => (
+    <>
+      {screen}
+      <TabBar onOpenSettings={openSettings} />
+    </>
+  );
+  const today = withTabs(<Today onOpenSettings={openSettings} />);
   return (
     <>
       <Routes>
@@ -45,7 +52,7 @@ function Screens() {
         ) : (
           <>
             <Route path="/" element={today} />
-            <Route path="/progress" element={<Progress />} />
+            <Route path="/progress" element={withTabs(<Progress />)} />
             <Route path="*" element={today} />
           </>
         )}

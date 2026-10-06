@@ -1,0 +1,121 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
+// eslint-disable-next-line no-unused-vars -- used via JSX
+import { StoreContext } from '../data/useStore.js';
+import { defaultStore } from '../domain/store.js';
+import { withScheduleChange } from '../domain/schedule.js';
+import { BOOKS } from '../domain/bible.js';
+// eslint-disable-next-line no-unused-vars -- used via JSX
+import Progress from './Progress.jsx';
+
+// Tuesday 6 October 2026.
+const TODAY = '2026-10-06';
+
+function makeStore(over = {}, patch = {}) {
+  const s = {
+    ...defaultStore('2026-01-01', 'en'),
+    onboardingDone: true,
+    reading: {
+      plan: 'ownPace',
+      start: { book: 14, chapter: 1 },
+      startedOn: '2026-01-01',
+      countEarlierAsRead: true,
+    },
+    ...over,
+  };
+  return withScheduleChange(s, '2026-01-01', { meetingDays: [2, 0], ...patch });
+}
+
+function renderProgress(store) {
+  const value = { store, update: () => {}, today: TODAY };
+  return render(
+    <StoreContext.Provider value={value}>
+      <Progress />
+    </StoreContext.Provider>
+  );
+}
+
+const BANNED = /missed|broke|failed|lost/i;
+
+beforeEach(() => vi.useFakeTimers({ toFake: ['Date'] }));
+afterEach(() => vi.useRealTimers());
+
+describe('Progress', () => {
+  it('fills 13 books when 13 are complete and says so', () => {
+    // Start at book 14, earlier books counted: Genesis..2 Kings is 13 books.
+    renderProgress(makeStore());
+    const map = screen.getByRole('list', { name: 'Bible books' });
+    const items = within(map).getAllByRole('listitem');
+    expect(items).toHaveLength(66);
+    expect(items[0]).toHaveAttribute('aria-label', 'Genesis, read');
+    expect(items[65]).toHaveAttribute('aria-label', 'Revelation, not yet');
+    expect(items.filter((i) => i.getAttribute('aria-label').endsWith(', read'))).toHaveLength(13);
+    expect(screen.getByText('13 of 66 books')).toBeInTheDocument();
+  });
+
+  it('lists the 66 books in canonical order', () => {
+    renderProgress(makeStore());
+    const items = within(screen.getByRole('list', { name: 'Bible books' })).getAllByRole(
+      'listitem'
+    );
+    BOOKS.forEach((b, i) => expect(items[i].getAttribute('aria-label')).toMatch(`${b.name},`));
+  });
+
+  it('shows a card only for routines enabled today', () => {
+    const base = makeStore();
+    const store = withScheduleChange(base, '2026-09-01', {
+      enabled: { ...base.schedule[0].enabled, familyWorship: false },
+    });
+    renderProgress(store);
+    expect(screen.getByRole('heading', { name: 'Daily text' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Family worship' })).not.toBeInTheDocument();
+  });
+
+  it('reads "8 of the last 8 meetings" for eight done meetings', () => {
+    // Tuesdays and Sundays; log the 8 meetings before today.
+    const days = [
+      '2026-09-08',
+      '2026-09-13',
+      '2026-09-15',
+      '2026-09-20',
+      '2026-09-22',
+      '2026-09-27',
+      '2026-09-29',
+      '2026-10-04',
+    ];
+    const log = days.map((day) => ({ routine: 'meetingPrep', day, value: true }));
+    renderProgress(makeStore({ log }));
+    const card = screen.getByRole('heading', { name: 'Meeting prep' }).closest('li');
+    expect(within(card).getByText('8 of the last 8 meetings')).toBeInTheDocument();
+    expect(within(card).getByText('8 in a row')).toBeInTheDocument();
+    expect(within(card).getByText('8 days this year')).toBeInTheDocument();
+  });
+
+  it('omits the streak line when nothing has closed yet, and pluralises naturally', () => {
+    const log = [{ routine: 'dailyText', day: TODAY, value: true }];
+    renderProgress({
+      ...makeStore({ log }),
+      schedule: [{ ...makeStore().schedule[0], from: TODAY }],
+    });
+    const ministry = screen.getByRole('heading', { name: 'Ministry' }).closest('li');
+    expect(within(ministry).queryByText(/in a row/)).not.toBeInTheDocument();
+    expect(within(ministry).getByText('0 days this year')).toBeInTheDocument();
+    const daily = screen.getByRole('heading', { name: 'Daily text' }).closest('li');
+    expect(within(daily).getByText('1 day this year')).toBeInTheDocument();
+  });
+
+  it('shows the reading totals', () => {
+    const log = [
+      { routine: 'bibleReading', day: '2026-10-05', value: { chapters: [0, 1, 2] } },
+      { routine: 'bibleReading', day: TODAY, value: { chapters: [3] } },
+    ];
+    renderProgress(makeStore({ log }));
+    expect(screen.getByText('2 days of reading this year')).toBeInTheDocument();
+    expect(screen.getByText('4 chapters')).toBeInTheDocument();
+  });
+
+  it('never uses discouraging words', () => {
+    const { container } = renderProgress(makeStore());
+    expect(container.textContent).not.toMatch(BANNED);
+  });
+});

@@ -175,6 +175,37 @@
     "settings": {
       "title": "Settings",
       "close": "Close"
+    },
+    "tabs": {
+      "label": "Main navigation",
+      "today": "Today",
+      "progress": "Progress",
+      "settings": "Settings"
+    },
+    "progress": {
+      "title": "Progress",
+      "recentDays_one": "{{done}} of the last day",
+      "recentDays_other": "{{done}} of the last {{count}} days",
+      "recentWeeks_one": "{{done}} of the last week",
+      "recentWeeks_other": "{{done}} of the last {{count}} weeks",
+      "recentMeetings_one": "{{done}} of the last meeting",
+      "recentMeetings_other": "{{done}} of the last {{count}} meetings",
+      "recentMonths_one": "{{done}} of the last month",
+      "recentMonths_other": "{{done}} of the last {{count}} months",
+      "streak_one": "{{count}} in a row",
+      "streak_other": "{{count}} in a row",
+      "daysThisYear_one": "{{count}} day this year",
+      "daysThisYear_other": "{{count}} days this year",
+      "readingTitle": "Bible reading",
+      "readingDays_one": "{{count}} day of reading this year",
+      "readingDays_other": "{{count}} days of reading this year",
+      "chapters_one": "{{count}} chapter",
+      "chapters_other": "{{count}} chapters",
+      "books_one": "{{count}} of 66 books",
+      "books_other": "{{count}} of 66 books",
+      "mapTitle": "Bible books",
+      "mapRead": "{{name}}, read",
+      "mapNotYet": "{{name}}, not yet"
     }
   }
 }

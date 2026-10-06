@@ -76,6 +76,21 @@ describe('App shell', () => {
     expect(await screen.findByTestId('progress')).toBeInTheDocument();
   });
 
+  it('shows the tab bar on Today and Progress but not during onboarding', async () => {
+    seed({ onboardingDone: false });
+    const first = renderApp();
+    await screen.findByTestId('onboarding');
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    first.unmount();
+    localStorage.clear();
+    seed({ onboardingDone: true });
+    renderApp();
+    await screen.findByTestId('today');
+    fireEvent.click(screen.getByRole('link', { name: 'Progress' }));
+    expect(await screen.findByTestId('progress')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Progress' })).toHaveAttribute('aria-current', 'page');
+  });
+
   it('renders the install prompt on the web', async () => {
     seed({ onboardingDone: true });
     renderApp();

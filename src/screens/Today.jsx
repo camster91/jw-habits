@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings } from 'lucide-react';
 import { useStore } from '../data/useStore.js';
 import { BOOKS, portionSize } from '../domain/bible.js';
 import { dueToday, isDone } from '../domain/routines.js';
@@ -176,7 +175,7 @@ export default function Today({ onOpenSettings = () => {} }) {
       className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-4">
-        <header className="flex items-start justify-between gap-3">
+        <header>
           <div>
             <h1 className="text-3xl font-bold">{t('fd.today.title')}</h1>
             <p className="text-sm text-base-content/70">
@@ -187,14 +186,6 @@ export default function Today({ onOpenSettings = () => {} }) {
               }).format(dateOf(today))}
             </p>
           </div>
-          <button
-            type="button"
-            className="btn btn-circle btn-ghost min-h-11 min-w-11"
-            aria-label={t('fd.today.settings')}
-            onClick={onOpenSettings}
-          >
-            <Settings aria-hidden="true" className="h-6 w-6" />
-          </button>
         </header>
 
         {fresh && <p className="text-base-content/80">{t(`fd.today.${fresh}`)}</p>}
