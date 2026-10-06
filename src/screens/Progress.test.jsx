@@ -120,6 +120,18 @@ describe('Progress', () => {
     expect(items.filter((i) => i.querySelector('svg'))).toHaveLength(13);
   });
 
+  it('shows a short visible abbreviation on each cell', () => {
+    renderProgress(makeStore());
+    const items = within(screen.getByRole('list', { name: 'Bible books' })).getAllByRole(
+      'listitem'
+    );
+    const text = (name) => items[BOOKS.findIndex((b) => b.name === name)].textContent;
+    expect(text('Genesis')).toBe('Gen');
+    expect(text('1 Samuel')).toBe('1Sa');
+    expect(text('Song of Solomon')).toBe('Son');
+    expect(text('Psalms')).toBe('Psa');
+  });
+
   it('hides the recent line when nothing has closed yet', () => {
     const base = makeStore();
     renderProgress({ ...base, schedule: [{ ...base.schedule[0], from: TODAY }] });

@@ -27,7 +27,7 @@ export default function BibleMap({ completed }) {
             {read && (
               <Check aria-hidden="true" className="absolute right-0.5 top-0.5 h-2.5 w-2.5" />
             )}
-            <span aria-hidden="true">{b.name.replace(/s/g, '').slice(0, 3)}</span>
+            <span aria-hidden="true">{b.name.split(' ').join('').slice(0, 3)}</span>
           </li>
         );
       })}
