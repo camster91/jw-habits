@@ -14,6 +14,7 @@ import { initializeNative, isNative, isWeb, appLifecycle } from './utils/native.
 import { StoreProvider } from './data/StoreProvider.jsx';
 import { registerReminderSync } from './native/reminders.js';
 import { registerWhatsNewCheck } from './native/whatsNewClient.js';
+import { registerWidgetBridge } from './native/widgetBridge.js';
 
 // i18next — Spanish/French fall back to English when a key
 // is missing. Language detected from navigator, cached in
@@ -84,6 +85,8 @@ window.onunhandledrejection = function (event) {
 registerReminderSync();
 // Check jw.org's feed for new items (at most daily; dates only)
 registerWhatsNewCheck();
+// Apply widget check-ins on foreground and keep the widget snapshot current
+registerWidgetBridge();
 
 // Initialize native mobile features
 initializeNative().catch(console.error);
