@@ -74,11 +74,12 @@ export function isDone(store, id, day) {
   return checkInDays(store, id, day).has(day);
 }
 
-const countIn = (days, from, to) => {
+/** How many of `days` fall within `from..to` inclusive. */
+export function countIn(days, from, to) {
   let n = 0;
   for (const d of days) if (d >= from && d <= to) n++;
   return n;
-};
+}
 
 /**
  * Whether `id`'s current occurrence is still unmet by check-ins made before

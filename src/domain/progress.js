@@ -3,18 +3,21 @@
  * from the log and the dated schedule, never stored. Log entries dated after
  * "today" are ignored.
  *
- * An occurrence exists only when the routine is enabled in the schedule in
- * force on its key day, and never before the start of history
- * (`store.schedule[0].from`). A week, month or meeting window that began
- * before the start of history is "partial": only check-ins from the start
- * count, and it can be 'done' or 'open' but is never missed (it is dropped
- * instead, without spending grace), so a new user's first week or month can
- * earn credit but never costs anything.
+ * Each occurrence has a window: daily = the day; weeklyTarget and weekly = the
+ * Monday-Sunday week; meeting = the day before through the meeting day;
+ * monthly = the calendar month. Only the part up to today is considered.
+ * - An occurrence exists if the routine is enabled on any day of its window
+ *   within history (from `store.schedule[0].from`).
+ * - It can become 'grace' or 'missed' only if the routine was enabled on every
+ *   day of its window, which also means the window began within history.
+ *   Otherwise (switched on or off mid-window, or the first partial period) it
+ *   can only be 'done' or 'open'; if neither, it is dropped and spends no grace.
+ * - Only check-ins from the start of history count towards it.
  */
 import { addDays, weekday, weekStart, monthKey, serviceYear } from './day.js';
 import { scheduleOn } from './schedule.js';
 import { booksCompleted } from './bible.js';
-import { ROUTINE_IDS, cadenceOn, checkInDays, weeklyTarget } from './routines.js';
+import { ROUTINE_IDS, cadenceOn, checkInDays, countIn, weeklyTarget } from './routines.js';
 
 const GRACE = { daily: 2, weeklyTarget: 2, meeting: 1, weekly: 1, monthly: 1 };
 const RECENT = { daily: 30, weeklyTarget: 8, meeting: 8, weekly: 8, monthly: 12 };
@@ -27,7 +30,7 @@ const UNIT = {
 };
 
 const later = (a, b) => (a > b ? a : b);
-const countIn = (days, from, to) => [...days].filter((d) => d >= from && d <= to).length;
+const earlier = (a, b) => (a < b ? a : b);
 
 /** 'YYYY-MM' of the month after `ym`. */
 function nextMonth(ym) {
@@ -37,34 +40,40 @@ function nextMonth(ym) {
 
 /**
  * Raw occurrences of `id` from the start of history through `today`, in key
- * order, each `{key, cadence, done, open, partial}`.
+ * order, each `{key, cadence, done, open, strict}`. `strict` means the routine
+ * was enabled on every day of the window up to today, so it may be missed.
  */
 function rawOccurrences(store, id, today) {
   const start = store.schedule[0].from;
   const days = checkInDays(store, id, today);
   const enabledOn = (d) => d >= start && scheduleOn(store, d).enabled[id] === true;
   const out = [];
-  const push = (key, cadence, done, open, partial = false) =>
-    out.push({ key, cadence, done, open: !done && open, partial });
+
+  /** Adds an occurrence for the window `from..to` (capped at today) if it exists. */
+  const add = (key, cadence, from, to, isDone, open) => {
+    const last = earlier(to, today);
+    let on = 0;
+    let total = 0;
+    for (let d = from; d <= last; d = addDays(d, 1), total++) if (enabledOn(d)) on++;
+    if (on === 0) return;
+    const done = isDone(later(from, start), last);
+    out.push({ key, cadence, done, open: !done && open, strict: on === total });
+  };
+  const anyIn = (from, to) => countIn(days, from, to) > 0;
 
   if (id === 'meetingPrep') {
     // Up to tomorrow: a meeting dated tomorrow has its window open today.
     for (let d = start; d <= addDays(today, 1); d = addDays(d, 1)) {
-      if (!enabledOn(d) || !scheduleOn(store, d).meetingDays.includes(weekday(d))) continue;
-      const dayBefore = addDays(d, -1);
-      const prepared = days.has(d) || (dayBefore >= start && days.has(dayBefore));
-      push(d, 'meeting', prepared, d >= today, dayBefore < start);
+      if (!scheduleOn(store, d).meetingDays.includes(weekday(d))) continue;
+      add(d, 'meeting', addDays(d, -1), d, anyIn, d >= today);
     }
     return out;
   }
 
   if (id === 'ministry') {
     for (let ym = monthKey(start); ym <= monthKey(today); ym = nextMonth(ym)) {
-      const key = `${ym}-01`;
-      if (enabledOn(later(key, start))) {
-        const done = [...days].some((d) => d >= start && monthKey(d) === ym);
-        push(key, 'monthly', done, ym === monthKey(today), key < start);
-      }
+      const monthEnd = addDays(`${nextMonth(ym)}-01`, -1);
+      add(`${ym}-01`, 'monthly', `${ym}-01`, monthEnd, anyIn, ym === monthKey(today));
     }
     return out;
   }
@@ -73,27 +82,24 @@ function rawOccurrences(store, id, today) {
   // decided per week by the schedule in force on the week's Monday.
   for (let monday = weekStart(start); monday <= today; monday = addDays(monday, 7)) {
     const sunday = addDays(monday, 6);
-    const last = sunday < today ? sunday : today;
     const cadence = cadenceOn(store, id, monday);
     if (cadence === 'daily') {
-      for (let d = monday; d <= last; d = addDays(d, 1)) {
-        if (enabledOn(d)) push(d, cadence, days.has(d), d === today);
+      for (let d = monday; d <= earlier(sunday, today); d = addDays(d, 1)) {
+        add(d, cadence, d, d, anyIn, d === today);
       }
       continue;
     }
-    const first = later(monday, start);
-    const partial = monday < start;
-    if (!enabledOn(first)) continue;
-    const schedule = scheduleOn(store, last);
+    const schedule = scheduleOn(store, earlier(sunday, today));
     if (cadence === 'weeklyTarget') {
-      const done = countIn(days, first, last) >= weeklyTarget(schedule, id);
-      push(monday, cadence, done, sunday >= today, partial);
+      const target = weeklyTarget(schedule, id);
+      const met = (from, to) => countIn(days, from, to) >= target;
+      add(monday, cadence, monday, sunday, met, sunday >= today);
     } else {
+      // Due from the family day, but "enabled throughout" uses the whole week.
       const familyDay = addDays(monday, (schedule.familyWorshipDay + 6) % 7);
-      if (familyDay <= today) {
-        const done = countIn(days, later(familyDay, start), last) > 0;
-        push(monday, cadence, done, sunday >= today, partial);
-      }
+      if (familyDay > today) continue;
+      const doneFromFamilyDay = (from, to) => anyIn(later(from, familyDay), to);
+      add(monday, cadence, monday, sunday, doneFromFamilyDay, sunday >= today);
     }
   }
   return out;
@@ -102,9 +108,9 @@ function rawOccurrences(store, id, today) {
 /** All occurrences through `today` with grace applied, oldest first. */
 function judged(store, id, today) {
   const used = new Map();
-  return rawOccurrences(store, id, today).flatMap(({ key, cadence, done, open, partial }) => {
+  return rawOccurrences(store, id, today).flatMap(({ key, cadence, done, open, strict }) => {
     let status = done ? 'done' : open ? 'open' : 'missed';
-    if (status === 'missed' && partial) return [];
+    if (status === 'missed' && !strict) return [];
     if (status === 'missed') {
       // bibleReading may mix daily and weeklyTarget; both share the monthly budget.
       const period = cadence === 'monthly' ? `sy${serviceYear(key)}` : monthKey(key);

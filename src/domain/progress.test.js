@@ -424,3 +424,66 @@ describe('the first partial period (history starts mid-week, mid-month or on a m
     ]);
   });
 });
+
+describe('switching a routine off or on part-way through a period', () => {
+  const base = () => makeStore({ schedule: [entry('2026-09-07')] }); // a Monday; family worship Friday
+  const toggle = (store, id, offFrom, onFrom) => {
+    let s = withScheduleChange(store, offFrom, { enabled: { [id]: false } });
+    if (onFrom) s = withScheduleChange(s, onFrom, { enabled: { [id]: true } });
+    return s;
+  };
+
+  it('family worship off mid-week and back on: that week is neither grace nor missed', () => {
+    const store = toggle(base(), 'familyWorship', '2026-09-16', '2026-09-21');
+    store.log = [log('familyWorship', '2026-09-11')];
+    // Today Thursday 10-01. The week of the 14th is dropped, so September's one
+    // weekly grace is still there for the week of the 21st.
+    expect(occurrences(store, 'familyWorship', '2026-09-01', '2026-10-01')).toEqual([
+      { key: '2026-09-07', status: 'done' },
+      { key: '2026-09-21', status: 'grace' },
+    ]);
+  });
+
+  it('personal study off mid-week below its target: that week is neither grace nor missed', () => {
+    const store = toggle(base(), 'personalStudy', '2026-09-16', '2026-09-21'); // target 3
+    store.log = [
+      '2026-09-07',
+      '2026-09-08',
+      '2026-09-09',
+      '2026-09-14',
+      '2026-09-15',
+      '2026-09-22',
+    ].map((d) => log('personalStudy', d));
+    // Both of September's grace go to the weeks of the 21st and 28th, none to the 14th.
+    expect(occurrences(store, 'personalStudy', '2026-09-01', '2026-10-06')).toEqual([
+      { key: '2026-09-07', status: 'done' },
+      { key: '2026-09-21', status: 'grace' },
+      { key: '2026-09-28', status: 'grace' },
+      { key: '2026-10-05', status: 'open' },
+    ]);
+  });
+
+  it('ministry off on the 2nd of a month: that month is neither grace nor missed', () => {
+    let store = makeStore({ schedule: [entry('2026-09-01')] });
+    store = toggle(store, 'ministry', '2026-10-02', '2026-11-01');
+    store.log = [log('ministry', '2026-09-05', { shared: true, studies: 0 })];
+    // October is dropped, so November gets the service year's single grace.
+    expect(occurrences(store, 'ministry', '2026-09-01', '2026-12-10')).toEqual([
+      { key: '2026-09-01', status: 'done' },
+      { key: '2026-11-01', status: 'grace' },
+      { key: '2026-12-01', status: 'open' },
+    ]);
+  });
+
+  it('family worship switched on on Wednesday and done on Friday: that week is done', () => {
+    let store = makeStore({
+      schedule: [entry('2026-09-07', { enabled: { familyWorship: false } })],
+    });
+    store = withScheduleChange(store, '2026-09-16', { enabled: { familyWorship: true } });
+    store.log = [log('familyWorship', '2026-09-18')];
+    expect(occurrences(store, 'familyWorship', '2026-09-01', '2026-09-21')).toEqual([
+      { key: '2026-09-14', status: 'done' },
+    ]);
+    expect(streak(store, 'familyWorship', '2026-09-21').current).toBe(1);
+  });
+});
