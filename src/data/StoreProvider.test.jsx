@@ -35,7 +35,7 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 // eslint-disable-next-line no-unused-vars -- used inside mount() via JSX
-import { StoreProvider, onForeground, STORE_KEY } from './StoreProvider.jsx';
+import { StoreProvider, onForeground, onStoreChange, STORE_KEY } from './StoreProvider.jsx';
 import { useStore } from './useStore.js';
 import { defaultStore } from '../domain/store.js';
 import { migrateV1 } from '../domain/migrateV1.js';
@@ -203,6 +203,42 @@ describe('today never moves backwards', () => {
     view.unmount();
     expect(lifecycle.unsubscribed).toBe(1);
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('onStoreChange', () => {
+  it('runs after each update with the new store, not during the initial load', async () => {
+    const seen = [];
+    const off = onStoreChange((store) => seen.push(store.studyTopic));
+    await mount();
+    expect(seen).toEqual([]);
+    act(() => latest.update((s) => ({ ...s, studyTopic: 'Hope' })));
+    act(() => latest.update((s) => ({ ...s, studyTopic: 'Joy' })));
+    expect(seen).toEqual(['Hope', 'Joy']);
+    off();
+    act(() => latest.update((s) => ({ ...s, studyTopic: 'Peace' })));
+    expect(seen).toEqual(['Hope', 'Joy']);
+  });
+
+  it('isolates throwing and rejecting callbacks from update', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const good = vi.fn();
+    const offs = [
+      onStoreChange(() => {
+        throw new Error('sync');
+      }),
+      onStoreChange(async () => {
+        throw new Error('async');
+      }),
+      onStoreChange(good),
+    ];
+    await mount();
+    act(() => latest.update((s) => ({ ...s, studyTopic: 'Kept' })));
+    await flush();
+    expect(latest.store.studyTopic).toBe('Kept');
+    expect(good).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledTimes(2);
+    offs.forEach((off) => off());
   });
 });
 

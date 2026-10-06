@@ -9,6 +9,7 @@ import { dueToday, isDone } from './routines.js';
 import { scheduleOn } from './schedule.js';
 import { labelFor } from './store.js';
 
+const ROLLOVER_HOUR = 3;
 const DEFAULT_MORNING = { time: '07:00', phrase: null };
 
 const minutes = (hhmm) => {
@@ -16,10 +17,13 @@ const minutes = (hhmm) => {
   return h * 60 + m;
 };
 
-/** A local Date for app day `day` at 'HH:MM'. */
+/**
+ * A local Date for app day `day` at 'HH:MM'. The app day rolls over at 03:00,
+ * so a clock time before 03:00 belongs to the next calendar date.
+ */
 function at(day, hhmm) {
-  const [y, mo, d] = day.split('-').map(Number);
   const [h, m] = hhmm.split(':').map(Number);
+  const [y, mo, d] = (h < ROLLOVER_HOUR ? addDays(day, 1) : day).split('-').map(Number);
   return new Date(y, mo - 1, d, h, m);
 }
 
@@ -44,7 +48,9 @@ function morningEntry(store, day, t) {
   const fallback = store.anchors?.dailyText ?? DEFAULT_MORNING;
   const anchors = list.map((id) => store.anchors?.[id] ?? fallback);
   const anchor = anchors.reduce((a, b) => (minutes(b.time) < minutes(a.time) ? b : a));
-  const prefix = anchor.phrase ? t(`fd.anchor.${anchor.phrase}`) : anchor.time;
+  const prefix = anchor.phrase
+    ? t(`fd.anchor.${anchor.phrase}`, { defaultValue: anchor.time })
+    : anchor.time;
   const labels = list.map((id) => labelFor(store, id, t));
   const body = t('fd.notify.ready', { count: list.length, prefix, list: joinLabels(labels, t) });
   return { time: anchor.time, body };

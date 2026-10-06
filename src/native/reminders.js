@@ -6,34 +6,32 @@
 import i18n from 'i18next';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { planNotifications } from '../domain/notifications.js';
-import { onForeground } from '../data/StoreProvider.jsx';
+import { onForeground, onStoreChange } from '../data/StoreProvider.jsx';
 import { isNative } from '../utils/native.js';
 
+/** Permission is only ever checked here; it is requested during onboarding. */
 async function permitted() {
-  let { display } = await LocalNotifications.checkPermissions();
-  if (display === 'prompt' || display === 'prompt-with-rationale') {
-    ({ display } = await LocalNotifications.requestPermissions());
-  }
+  const { display } = await LocalNotifications.checkPermissions();
   return display === 'granted';
 }
 
 /**
- * Cancel everything pending, then schedule the next days' plan.
- * Never throws; resolves how many notifications were scheduled.
+ * Cancel everything pending, then schedule the next days' plan if
+ * notifications are allowed. Never asks for permission and never throws;
+ * resolves how many notifications were scheduled.
  * @returns {Promise<{scheduled: number}>}
  */
 export async function syncReminders(store, t) {
   if (!isNative) return { scheduled: 0 };
   try {
-    if (!(await permitted())) return { scheduled: 0 };
+    const plan = planNotifications(store, new Date(), t);
 
     const pending = await LocalNotifications.getPending();
     if (pending.notifications.length > 0) {
       await LocalNotifications.cancel({ notifications: pending.notifications });
     }
 
-    const plan = planNotifications(store, new Date(), t);
-    if (plan.length === 0) return { scheduled: 0 };
+    if (plan.length === 0 || !(await permitted())) return { scheduled: 0 };
     await LocalNotifications.schedule({
       notifications: plan.map(({ id, at, body }) => ({
         id,
@@ -49,12 +47,25 @@ export async function syncReminders(store, t) {
   }
 }
 
+const RESCHEDULE_DELAY_MS = 1000;
+
 /**
  * Reschedule every time the app opens (spec 2.7). Call once at startup,
- * after i18n is initialised. Lives here, not in StoreProvider, so the
+ * after i18n is initialised. Settings changes reschedule after a short debounce. Lives here, not in StoreProvider, so the
  * provider never imports the native plugin.
  * @returns {() => void} unsubscribe
  */
 export function registerReminderSync() {
-  return onForeground(({ store }) => syncReminders(store, i18n.t.bind(i18n)));
+  const sync = (store) => syncReminders(store, i18n.t.bind(i18n));
+  const offForeground = onForeground(({ store }) => sync(store));
+  let timer = null;
+  const offChange = onStoreChange((store) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => void sync(store), RESCHEDULE_DELAY_MS);
+  });
+  return () => {
+    offForeground();
+    offChange();
+    clearTimeout(timer);
+  };
 }

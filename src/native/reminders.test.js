@@ -11,13 +11,24 @@ const plugin = vi.hoisted(() => ({
 const native = vi.hoisted(() => ({ isNative: true }));
 
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: plugin }));
+const hooks = vi.hoisted(() => ({ foreground: null, change: null }));
+vi.mock('../data/StoreProvider.jsx', () => ({
+  onForeground: (cb) => {
+    hooks.foreground = cb;
+    return () => {};
+  },
+  onStoreChange: (cb) => {
+    hooks.change = cb;
+    return () => {};
+  },
+}));
 vi.mock('../utils/native.js', () => ({
   get isNative() {
     return native.isNative;
   },
 }));
 
-import { syncReminders } from './reminders.js';
+import { syncReminders, registerReminderSync } from './reminders.js';
 import { defaultStore } from '../domain/store.js';
 
 const t = i18n.t.bind(i18n);
@@ -65,15 +76,27 @@ describe('syncReminders', () => {
     );
   });
 
-  it('asks for permission when it is undecided', async () => {
+  it('never requests permission, whatever the state', async () => {
+    for (const display of ['prompt', 'prompt-with-rationale', 'denied', 'granted']) {
+      plugin.checkPermissions.mockResolvedValue({ display });
+      await syncReminders(store(), t);
+    }
+    const off = { ...store(), reminders: { enabled: false, off: [] } };
+    await syncReminders(off, t);
+    expect(plugin.requestPermissions).not.toHaveBeenCalled();
+  });
+
+  it('cancels stale notifications even when permission is not granted', async () => {
     plugin.checkPermissions.mockResolvedValue({ display: 'prompt' });
-    expect(await syncReminders(store(), t)).toEqual({ scheduled: 7 });
-    expect(plugin.requestPermissions).toHaveBeenCalled();
+    expect(await syncReminders(store(), t)).toEqual({ scheduled: 0 });
+    expect(plugin.cancel).toHaveBeenCalledWith({ notifications: [{ id: 99 }] });
+    expect(plugin.schedule).not.toHaveBeenCalled();
   });
 
   it('resolves {scheduled: 0} without throwing when permission is denied', async () => {
     plugin.checkPermissions.mockResolvedValue({ display: 'denied' });
     await expect(syncReminders(store(), t)).resolves.toEqual({ scheduled: 0 });
+    expect(plugin.cancel).toHaveBeenCalled();
     expect(plugin.schedule).not.toHaveBeenCalled();
   });
 
@@ -96,5 +119,22 @@ describe('syncReminders', () => {
     native.isNative = false;
     expect(await syncReminders(store(), t)).toEqual({ scheduled: 0 });
     expect(plugin.checkPermissions).not.toHaveBeenCalled();
+  });
+});
+
+describe('registerReminderSync', () => {
+  it('syncs on foreground and, debounced, on store changes with the latest store', async () => {
+    registerReminderSync();
+    const s1 = { ...store(), studyTopic: 'one' };
+    const s2 = { ...store(), studyTopic: 'two' };
+    hooks.change(s1);
+    await vi.advanceTimersByTimeAsync(400);
+    hooks.change(s2);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(plugin.schedule).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(plugin.schedule).toHaveBeenCalledTimes(1);
+    await hooks.foreground({ store: s2 });
+    expect(plugin.schedule).toHaveBeenCalledTimes(2);
   });
 });

@@ -50,6 +50,34 @@ export function onForeground(callback) {
   };
 }
 
+const changeCallbacks = new Set();
+
+/**
+ * Register a callback that runs after each successful `update` with the new
+ * store. Not called during the initial load. A failure is warned about and
+ * never affects the update or other callbacks.
+ * @returns {() => void} unsubscribe
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function onStoreChange(callback) {
+  changeCallbacks.add(callback);
+  return () => {
+    changeCallbacks.delete(callback);
+  };
+}
+
+function notifyChange(store) {
+  for (const callback of [...changeCallbacks]) {
+    try {
+      Promise.resolve(callback(store)).catch((error) =>
+        console.warn('A store-change callback failed:', error)
+      );
+    } catch (error) {
+      console.warn('A store-change callback failed:', error);
+    }
+  }
+}
+
 function currentLocale() {
   const raw = i18n.language || (typeof navigator !== 'undefined' && navigator.language) || 'en';
   return raw.split(/[-_]/)[0] || 'en';
@@ -126,6 +154,7 @@ export function StoreProvider({ children }) {
   const todayRef = useRef(null);
   const readOnlyRef = useRef(false);
   const timerRef = useRef(null);
+  const readyRef = useRef(false);
 
   const persist = useCallback((next) => {
     if (readOnlyRef.current) return;
@@ -140,6 +169,7 @@ export function StoreProvider({ children }) {
       storeRef.current = next;
       setStore(next);
       persist(next);
+      if (readyRef.current) notifyChange(next);
     },
     [persist]
   );
@@ -176,11 +206,13 @@ export function StoreProvider({ children }) {
       setStore(loaded);
       if (!persisted) persist(loaded);
       refreshDay();
+      readyRef.current = true;
       latestArgs = getArgs;
       runForeground();
     });
     return () => {
       cancelled = true;
+      readyRef.current = false;
       clearTimeout(timerRef.current);
       if (latestArgs === getArgs) latestArgs = null;
     };

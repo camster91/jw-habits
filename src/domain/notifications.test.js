@@ -136,6 +136,28 @@ describe('planNotifications', () => {
     expect(plan(store, NOW, 1)).toEqual([]);
   });
 
+  it('schedules a wrap-up before 03:00 on the calendar day after its app day', () => {
+    const store = storeWith([], { wrapUpNotification: true, wrapUpTime: '00:30' });
+    const [e] = plan(store, NOW, 1);
+    expect(e.kind).toBe('evening');
+    expect(e.at).toEqual(new Date(2026, 9, 7, 0, 30));
+  });
+
+  it('keeps an after-midnight entry of the current app day when planning at 02:30 the next calendar day', () => {
+    const store = storeWith([], { wrapUpNotification: true, wrapUpTime: '02:45' });
+    const now = new Date(2026, 9, 7, 2, 30); // app day is still 2026-10-06
+    const [e] = plan(store, now, 1);
+    expect(e.at).toEqual(new Date(2026, 9, 7, 2, 45));
+    expect(plan(store, new Date(2026, 9, 7, 2, 50), 1)).toEqual([]);
+  });
+
+  it('falls back to the time when an anchor phrase is unknown', () => {
+    const store = storeWith(['dailyText'], {
+      anchors: { dailyText: { time: '07:10', phrase: 'bogus' } },
+    });
+    expect(plan(store, NOW, 1)[0].body).toBe('07:10 · Daily text is ready');
+  });
+
   it('is empty when every routine is off or reminders are disabled', () => {
     expect(plan(storeWith([], {}))).toEqual([]);
     const all = storeWith(['dailyText'], { reminders: { enabled: false, off: [] } });
