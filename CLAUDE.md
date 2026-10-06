@@ -42,7 +42,7 @@ user-editable slot instead.
 | i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (v2 strings are English only for now; es/fr fall back to en) |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
-| Testing | Vitest 4 + Testing Library + Playwright | 477 tests / 31 files, 7 smoke, 7 journeys + a clean-run check |
+| Testing | Vitest 4 + Testing Library + Playwright | 495 tests / 32 files, 7 smoke, 7 journeys + a clean-run check |
 | Linting | ESLint 9 + Prettier 3 | |
 
 ## Commands
@@ -84,7 +84,8 @@ src/
 │   ├── Today.jsx, Progress.jsx, SettingsSheet.jsx
 │   └── onboarding/             # Six steps; StepRoutines/Week/Reading/Rhythm/Look are reused by Settings
 ├── components/                 # HoldToCheck, RoutineRow, MinistryRow, Stepper, WrapUpCard, TabBar,
-│                               # MeetingDaysCard, WhatsNewBadge, BibleMap, settings/*, and the PWA
+│                               # MeetingDaysCard, WhatsNewBadge, BibleMap, settings/* (Reminders, Links,
+│                               # Backup, About), and the PWA
 │                               # chrome (PWAProvider, InstallPrompt, UpdatePrompt, OfflineIndicator)
 ├── native/                     # reminders.js, whatsNewClient.js, widgetBridge.js (each exports register*())
 ├── pages/Share.jsx             # PWA share_target landing (web only)

@@ -1,15 +1,7 @@
 process.env.TZ = 'America/Toronto';
 
 import { describe, it, expect } from 'vitest';
-import {
-  appDay,
-  addDays,
-  currentDay,
-  weekday,
-  weekStart,
-  monthKey,
-  serviceYear,
-} from './day.js';
+import { appDay, addDays, currentDay, weekday, weekStart, monthKey, serviceYear } from './day.js';
 
 const zoneIsToronto = Intl.DateTimeFormat().resolvedOptions().timeZone === 'America/Toronto';
 

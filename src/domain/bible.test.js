@@ -97,7 +97,10 @@ describe('nextChapters', () => {
       const next = nextChapters(store, 3);
       seen.push(next.map((c) => c.chapter));
       const chapters = next.map((c) => chapterIndex(c.book, c.chapter));
-      store = { ...store, log: [...store.log, { routine: 'bibleReading', day, value: { chapters } }] };
+      store = {
+        ...store,
+        log: [...store.log, { routine: 'bibleReading', day, value: { chapters } }],
+      };
     }
     expect(seen).toEqual([
       [1, 2, 3],
@@ -117,7 +120,10 @@ describe('nextChapters', () => {
     expect(nextChapters(store, 1)).toEqual([{ book: 19, chapter: 1 }]);
     const later = {
       ...store,
-      log: [...store.log, { routine: 'bibleReading', day: '2026-02-01', value: { chapters: [chapterIndex(19, 1)] } }],
+      log: [
+        ...store.log,
+        { routine: 'bibleReading', day: '2026-02-01', value: { chapters: [chapterIndex(19, 1)] } },
+      ],
     };
     expect(nextChapters(later, 1)).toEqual([{ book: 19, chapter: 2 }]);
   });
