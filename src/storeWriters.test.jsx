@@ -43,6 +43,9 @@ vi.mock('@capacitor/core', async (importOriginal) => ({
 
 const TODAY = '2026-10-06';
 
+/** The UI sweeps fire thousands of events through jsdom; a slow CI runner needs room. */
+const UI_SWEEP_TIMEOUT = 30000;
+
 /** Every store `update` produces, validated. */
 let results;
 
@@ -128,7 +131,7 @@ describe('UI writers keep the store valid', () => {
       }
       expect(results).toHaveLength(1); // the single commit
       expect(failures()).toEqual([]);
-    });
+    }, UI_SWEEP_TIMEOUT);
   }
 
   it('settings: every control in the sheet', () => {
@@ -143,7 +146,7 @@ describe('UI writers keep the store valid', () => {
     pokeAll(screen.getByTestId('settings-sheet'));
     expect(results.length).toBeGreaterThan(50);
     expect(failures()).toEqual([]);
-  });
+  }, UI_SWEEP_TIMEOUT);
 
   describe('today', () => {
     beforeEach(() => {
@@ -180,7 +183,7 @@ describe('UI writers keep the store valid', () => {
       for (const b of screen.queryAllByRole('button', { pressed: true })) fireEvent.click(b);
       expect(results.length).toBeGreaterThan(15);
       expect(failures()).toEqual([]);
-    });
+    }, UI_SWEEP_TIMEOUT);
   });
 });
 
