@@ -8,7 +8,7 @@ import { PWAProvider } from './components/PWAProvider';
 import Share from './pages/Share';
 import Today from './screens/Today';
 import Progress from './screens/Progress';
-import Onboarding from './screens/Onboarding';
+import Onboarding from './screens/onboarding/Onboarding.jsx';
 import TabBar from './components/TabBar';
 import SettingsSheet from './screens/SettingsSheet';
 import { useStore } from './data/useStore.js';

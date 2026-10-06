@@ -172,9 +172,138 @@
       "summary_one": "Your day in review · {{count}} done",
       "summary_other": "Your day in review · {{count}} done"
     },
+    "onboarding": {
+      "stepOf": "Step {{step}} of {{total}}",
+      "back": "Back",
+      "next": "Next",
+      "skip": "Skip — use defaults",
+      "finish": "Start my first day",
+      "welcome": {
+        "title": "Welcome to Faithful Days",
+        "body": "A calm place to keep your spiritual routines: the daily text, Bible reading, meetings, family worship, personal study and the ministry.",
+        "private": "Everything stays on your phone. There's no account and no sign-up.",
+        "start": "Get started"
+      },
+      "routines": {
+        "title": "Your routines",
+        "body": "All six are on. Turn off any you'd rather not keep here, or give them your own names.",
+        "rename": "Rename {{label}}",
+        "nameFor": "Name for {{label}}",
+        "reset": "Reset to default",
+        "resetLabel": "Reset {{label}} to default",
+        "topic": "Study topic (optional)"
+      },
+      "week": {
+        "title": "Your week",
+        "meetingDays": "Meeting days",
+        "meetingHint": "Meeting prep appears the day before each meeting.",
+        "familyDay": "Family worship day",
+        "pioneer": "Are you a pioneer?",
+        "pioneerHint": "Shows your ministry hours each month.",
+        "hoursGoal": "Monthly hours goal"
+      },
+      "reading": {
+        "title": "Your reading",
+        "plan": "Reading plan",
+        "year": "Whole Bible in a year",
+        "ownPace": "My own pace",
+        "book": "Starting book",
+        "chapter": "Starting chapter",
+        "countEarlier": "Count earlier books as read"
+      },
+      "rhythm": {
+        "title": "Your rhythm",
+        "anchorQuestion": "When will you read the daily text?",
+        "setTime": "A set time",
+        "anchorTime": "Daily text time",
+        "wrapUpTime": "Evening wrap-up time",
+        "wrapUpNotification": "Evening wrap-up notification",
+        "tone": "Encouragement after a check-in",
+        "tones": {
+          "quiet": "Quiet",
+          "warm": "Warm",
+          "scripture": "With a scripture reference"
+        },
+        "notifyExplainer": "Faithful Days can send a gentle reminder at the times you choose. Everything stays on your phone, and it's fine to say no.",
+        "allowNotifications": "Allow notifications"
+      },
+      "look": {
+        "title": "Your look",
+        "accent": "Accent colour",
+        "accents": {
+          "0": "Blue",
+          "1": "Green",
+          "2": "Purple",
+          "3": "Rust",
+          "4": "Amber",
+          "5": "Rose"
+        },
+        "theme": "Theme",
+        "themes": {
+          "system": "Match my phone",
+          "light": "Light",
+          "dark": "Dark"
+        }
+      }
+    },
     "settings": {
       "title": "Settings",
-      "close": "Close"
+      "close": "Close",
+      "sections": {
+        "routines": "Routines",
+        "week": "Your week",
+        "reading": "Reading",
+        "rhythm": "Rhythm",
+        "look": "Look",
+        "links": "Links",
+        "backup": "Backup",
+        "whatsNew": "What's New",
+        "quietHours": "Quiet hours",
+        "about": "About"
+      },
+      "links": {
+        "body": "Leave a link empty to use the default.",
+        "bibleDefault": "Today's chapter on jw.org",
+        "invalid": "Use a web address that starts with https:// or http://",
+        "save": "Save links",
+        "saved": "Links saved."
+      },
+      "backup": {
+        "body": "Save a copy of everything on this device, or bring a copy back.",
+        "export": "Export a backup",
+        "import": "Import a backup",
+        "shareTitle": "Faithful Days backup",
+        "exported": "Backup ready.",
+        "exportError": "The backup couldn't be saved. Please try again.",
+        "readError": "That file couldn't be opened.",
+        "confirmTitle": "Replace all data on this device?",
+        "confirmBody": "Everything here will be replaced by the backup, and this can't be undone.",
+        "replace": "Replace",
+        "cancel": "Cancel",
+        "replaced": "Your backup is in place.",
+        "errors": {
+          "notObject": "This file isn't a Faithful Days backup.",
+          "newerVersion": "This backup is from a newer version of Faithful Days. Update the app, then try again.",
+          "olderVersion": "This backup is from an older version of Faithful Days and can't be read here.",
+          "badShape": "Parts of this backup can't be read, so nothing was changed."
+        }
+      },
+      "whatsNew": {
+        "toggle": "Show what's new on jw.org",
+        "hint": "A small count on Today when jw.org has something new."
+      },
+      "quietHours": {
+        "toggle": "Quiet hours",
+        "hint": "No reminders between these times.",
+        "start": "Quiet from",
+        "end": "Quiet until"
+      },
+      "about": {
+        "disclaimer": "Faithful Days is an independent app. It is not affiliated with, endorsed by, or sponsored by Watch Tower Bible and Tract Society or jw.org, and contains no content from jw.org.",
+        "privacy": "Privacy policy",
+        "support": "Support",
+        "version": "Version {{version}}"
+      }
     },
     "tabs": {
       "label": "Main navigation",
