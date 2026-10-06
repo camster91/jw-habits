@@ -5,7 +5,11 @@
  *
  * An occurrence exists only when the routine is enabled in the schedule in
  * force on its key day, and never before the start of history
- * (`store.schedule[0].from`).
+ * (`store.schedule[0].from`). A week, month or meeting window that began
+ * before the start of history is "partial": only check-ins from the start
+ * count, and it can be 'done' or 'open' but is never missed (it is dropped
+ * instead, without spending grace), so a new user's first week or month can
+ * earn credit but never costs anything.
  */
 import { addDays, weekday, weekStart, monthKey, serviceYear } from './day.js';
 import { scheduleOn } from './schedule.js';
@@ -22,6 +26,7 @@ const UNIT = {
   monthly: 'months',
 };
 
+const later = (a, b) => (a > b ? a : b);
 const countIn = (days, from, to) => [...days].filter((d) => d >= from && d <= to).length;
 
 /** 'YYYY-MM' of the month after `ym`. */
@@ -32,20 +37,23 @@ function nextMonth(ym) {
 
 /**
  * Raw occurrences of `id` from the start of history through `today`, in key
- * order, each `{key, cadence, done, open}`.
+ * order, each `{key, cadence, done, open, partial}`.
  */
 function rawOccurrences(store, id, today) {
   const start = store.schedule[0].from;
   const days = checkInDays(store, id, today);
   const enabledOn = (d) => d >= start && scheduleOn(store, d).enabled[id] === true;
   const out = [];
-  const push = (key, cadence, done, open) => out.push({ key, cadence, done, open: !done && open });
+  const push = (key, cadence, done, open, partial = false) =>
+    out.push({ key, cadence, done, open: !done && open, partial });
 
   if (id === 'meetingPrep') {
     // Up to tomorrow: a meeting dated tomorrow has its window open today.
     for (let d = start; d <= addDays(today, 1); d = addDays(d, 1)) {
       if (!enabledOn(d) || !scheduleOn(store, d).meetingDays.includes(weekday(d))) continue;
-      push(d, 'meeting', days.has(d) || days.has(addDays(d, -1)), d >= today);
+      const dayBefore = addDays(d, -1);
+      const prepared = days.has(d) || (dayBefore >= start && days.has(dayBefore));
+      push(d, 'meeting', prepared, d >= today, dayBefore < start);
     }
     return out;
   }
@@ -53,9 +61,9 @@ function rawOccurrences(store, id, today) {
   if (id === 'ministry') {
     for (let ym = monthKey(start); ym <= monthKey(today); ym = nextMonth(ym)) {
       const key = `${ym}-01`;
-      if (enabledOn(key)) {
-        const done = [...days].some((d) => monthKey(d) === ym);
-        push(key, 'monthly', done, ym === monthKey(today));
+      if (enabledOn(later(key, start))) {
+        const done = [...days].some((d) => d >= start && monthKey(d) === ym);
+        push(key, 'monthly', done, ym === monthKey(today), key < start);
       }
     }
     return out;
@@ -73,15 +81,18 @@ function rawOccurrences(store, id, today) {
       }
       continue;
     }
-    if (!enabledOn(monday)) continue;
+    const first = later(monday, start);
+    const partial = monday < start;
+    if (!enabledOn(first)) continue;
     const schedule = scheduleOn(store, last);
     if (cadence === 'weeklyTarget') {
-      const done = countIn(days, monday, last) >= weeklyTarget(schedule, id);
-      push(monday, cadence, done, sunday >= today);
+      const done = countIn(days, first, last) >= weeklyTarget(schedule, id);
+      push(monday, cadence, done, sunday >= today, partial);
     } else {
       const familyDay = addDays(monday, (schedule.familyWorshipDay + 6) % 7);
       if (familyDay <= today) {
-        push(monday, cadence, countIn(days, familyDay, last) > 0, sunday >= today);
+        const done = countIn(days, later(familyDay, start), last) > 0;
+        push(monday, cadence, done, sunday >= today, partial);
       }
     }
   }
@@ -91,8 +102,9 @@ function rawOccurrences(store, id, today) {
 /** All occurrences through `today` with grace applied, oldest first. */
 function judged(store, id, today) {
   const used = new Map();
-  return rawOccurrences(store, id, today).map(({ key, cadence, done, open }) => {
+  return rawOccurrences(store, id, today).flatMap(({ key, cadence, done, open, partial }) => {
     let status = done ? 'done' : open ? 'open' : 'missed';
+    if (status === 'missed' && partial) return [];
     if (status === 'missed') {
       // bibleReading may mix daily and weeklyTarget; both share the monthly budget.
       const period = cadence === 'monthly' ? `sy${serviceYear(key)}` : monthKey(key);
@@ -102,7 +114,7 @@ function judged(store, id, today) {
         status = 'grace';
       }
     }
-    return { key, status };
+    return [{ key, status }];
   });
 }
 

@@ -351,3 +351,76 @@ describe('totals', () => {
     expect(t.readingDaysThisYear).toBe(3);
   });
 });
+
+describe('the first partial period (history starts mid-week, mid-month or on a meeting day)', () => {
+  // History starts Wednesday 2026-10-07; family worship is on Friday.
+  const created = (logEntries = []) =>
+    makeStore({ schedule: [entry('2026-10-07')], log: logEntries });
+
+  it('(a) a family worship check-in in the first week earns a done occurrence and streak 1', () => {
+    const store = created([log('familyWorship', '2026-10-09')]);
+    expect(occurrences(store, 'familyWorship', '2026-10-01', '2026-10-12')).toEqual([
+      { key: '2026-10-05', status: 'done' },
+    ]);
+    expect(streak(store, 'familyWorship', '2026-10-12').current).toBe(1);
+  });
+
+  it('(b) an unchecked first week is neither missed nor grace, and spends no grace', () => {
+    const store = created();
+    // The following Tuesday: the first week has no occurrence at all.
+    expect(occurrences(store, 'familyWorship', '2026-10-01', '2026-10-13')).toEqual([]);
+    // October's single weekly grace is still available for the next week.
+    expect(occurrences(store, 'familyWorship', '2026-10-01', '2026-10-20')).toEqual([
+      { key: '2026-10-12', status: 'grace' },
+    ]);
+  });
+
+  it('(c) ministry shared in the month history starts is done; unshared, that month is skipped', () => {
+    const shared = makeStore({
+      schedule: [entry('2026-10-15')],
+      log: [log('ministry', '2026-10-20', { shared: true, studies: 0 })],
+    });
+    expect(occurrences(shared, 'ministry', '2026-10-01', '2026-11-05')).toEqual([
+      { key: '2026-10-01', status: 'done' },
+      { key: '2026-11-01', status: 'open' },
+    ]);
+    expect(streak(shared, 'ministry', '2026-11-05').current).toBe(1);
+    // Nothing shared: October is dropped and November still gets the service year's grace.
+    const none = makeStore({ schedule: [entry('2026-10-15')] });
+    expect(occurrences(none, 'ministry', '2026-10-01', '2026-12-05')).toEqual([
+      { key: '2026-11-01', status: 'grace' },
+      { key: '2026-12-01', status: 'open' },
+    ]);
+  });
+
+  it('counts only check-ins from the start of history towards a partial weekly target', () => {
+    const met = makeStore({
+      schedule: [entry('2026-10-07')], // target 3
+      log: ['2026-10-07', '2026-10-08', '2026-10-09'].map((d) => log('personalStudy', d)),
+    });
+    expect(occurrences(met, 'personalStudy', '2026-10-01', '2026-10-12')[0]).toEqual({
+      key: '2026-10-05',
+      status: 'done',
+    });
+    const unmet = makeStore({
+      schedule: [entry('2026-10-07')],
+      log: ['2026-10-05', '2026-10-08', '2026-10-09'].map((d) => log('personalStudy', d)),
+    });
+    expect(occurrences(unmet, 'personalStudy', '2026-10-01', '2026-10-12')).toEqual([
+      { key: '2026-10-12', status: 'open' },
+    ]);
+  });
+
+  it('a meeting on the first day of history can be done but is never missed', () => {
+    // History starts on Tuesday 2026-10-06, a meeting day; its window began on Monday.
+    const unprepared = makeStore({ schedule: [entry('2026-10-06')] });
+    expect(occurrences(unprepared, 'meetingPrep', '2026-10-01', '2026-10-08')).toEqual([]);
+    const prepared = makeStore({
+      schedule: [entry('2026-10-06')],
+      log: [log('meetingPrep', '2026-10-06')],
+    });
+    expect(occurrences(prepared, 'meetingPrep', '2026-10-01', '2026-10-08')).toEqual([
+      { key: '2026-10-06', status: 'done' },
+    ]);
+  });
+});
