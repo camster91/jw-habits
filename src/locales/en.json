@@ -141,6 +141,40 @@
         "Today you chose well.",
         "Good work. Be kind to yourself."
       ]
+    },
+    "today": {
+      "title": "Today",
+      "settings": "Settings",
+      "holdToCheck": "Hold to check",
+      "tapToUndo": "Done. Tap to undo",
+      "openLink": "Open {{label}}",
+      "chaptersRead": "Chapters read today",
+      "fewer": "One fewer",
+      "more": "One more",
+      "meetingFor": "for {{day}}'s meeting",
+      "ministryShared": "Shared in the ministry this month",
+      "ministryStudies": "Bible studies",
+      "ministryHours": "Hours this month",
+      "hoursGoal": "{{hours}} of {{goal}} hours",
+      "setMeetingDays": "Set your meeting days",
+      "setMeetingDaysBody": "Meeting prep appears the day before each meeting.",
+      "whatsNew": "{{count}} new on jw.org",
+      "newWeek": "A new week, a fresh start.",
+      "newMonth": "A new month, a fresh start.",
+      "allClear": "Nothing else is due today. Enjoy your day.",
+      "wrapUpTitle": "Your day in review",
+      "showRoutines": "Show routines",
+      "hideRoutines": "Hide routines",
+      "doneForToday": "Done for today",
+      "stillTime": "Still time",
+      "graceKept": "Life happens — kept your streak",
+      "allDone": "Everything is done for today. Well done.",
+      "summary_one": "Your day in review · {{count}} done",
+      "summary_other": "Your day in review · {{count}} done"
+    },
+    "settings": {
+      "title": "Settings",
+      "close": "Close"
     }
   }
 }
