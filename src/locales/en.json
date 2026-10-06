@@ -97,6 +97,49 @@
       "and": "{{head}} and {{last}}",
       "wrapUp": "Your day in review is ready",
       "meetingEve": "Tomorrow's meeting — prep is ready when you are"
+    },
+    "wrapUp": {
+      "restWell": "Rest well — tomorrow's a fresh start.",
+      "bibleMoved_one": "{{count}} chapter · {{books}} of 66 books",
+      "bibleMoved_other": "{{count}} chapters · {{books}} of 66 books",
+      "bibleBooks": "{{books}} of 66 books",
+      "meetingMoved": "{{done}} of the last {{total}} meetings",
+      "studyMoved": "{{count}} of {{target}} this week",
+      "familyMoved": "Done this week"
+    },
+    "encourage": {
+      "warm": [
+        "Nicely done.",
+        "A good start to the day.",
+        "Steady steps add up.",
+        "That counts, and it matters.",
+        "Well done for showing up.",
+        "Little by little, it grows.",
+        "A quiet win. Enjoy it.",
+        "You made room for this today.",
+        "Good habits are built just like this.",
+        "Thank you for taking the time.",
+        "That is a lovely rhythm.",
+        "One more good day in the books.",
+        "You are building something lasting.",
+        "Gentle and steady wins.",
+        "That was time well spent.",
+        "Take a breath and enjoy that.",
+        "Keep going at your own pace.",
+        "A small moment with a big effect.",
+        "Glad you made it happen.",
+        "This is how routines take root.",
+        "Every check-in is a kindness to yourself.",
+        "Peaceful progress, today and always.",
+        "You should feel good about that.",
+        "A fine thing to have done.",
+        "Consistency looks good on you.",
+        "Another thread in a strong cord.",
+        "That is worth a smile.",
+        "Calmly, patiently, you are getting there.",
+        "Today you chose well.",
+        "Good work. Be kind to yourself."
+      ]
     }
   }
 }
