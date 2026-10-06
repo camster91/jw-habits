@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useEffect } from 'react';
 import { render, act } from '@testing-library/react';
+import i18n from 'i18next';
 
 const prefs = vi.hoisted(() => new Map());
 const lifecycle = vi.hoisted(() => ({ handler: null, unsubscribed: 0 }));
@@ -16,6 +18,10 @@ vi.mock('../utils/native.js', () => ({
     },
   },
 }));
+vi.mock('../domain/migrateV1.js', async () => {
+  const actual = await vi.importActual('../domain/migrateV1.js');
+  return { migrateV1: vi.fn(actual.migrateV1) };
+});
 vi.mock('@capacitor/preferences', () => ({
   Preferences: {
     get: async ({ key }) => ({ value: prefs.has(key) ? prefs.get(key) : null }),
@@ -32,6 +38,8 @@ vi.mock('@capacitor/preferences', () => ({
 import { StoreProvider, onForeground, STORE_KEY } from './StoreProvider.jsx';
 import { useStore } from './useStore.js';
 import { defaultStore } from '../domain/store.js';
+import { migrateV1 } from '../domain/migrateV1.js';
+import { Preferences } from '@capacitor/preferences';
 
 let latest;
 // eslint-disable-next-line no-unused-vars -- used inside mount() via JSX
@@ -244,5 +252,99 @@ describe('onForeground', () => {
     expect(warn).toHaveBeenCalledTimes(2);
     expect(latest.store.version).toBe(2);
     offs.forEach((off) => off());
+  });
+});
+
+describe('rollover timer on resume', () => {
+  it('re-arms from the recomputed delay instead of keeping the stale timer', async () => {
+    await mount();
+    expect(vi.getTimerCount()).toBe(1);
+    // Suspended until 23:00; the next 03:00 is now 4 hours away, not 17.
+    vi.setSystemTime(new Date(2026, 9, 6, 23, 0));
+    act(() => lifecycle.handler({ isActive: true }));
+    await flush();
+    expect(vi.getTimerCount()).toBe(1);
+    expect(latest.today).toBe('2026-10-06');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4 * 3600 * 1000);
+    });
+    expect(latest.today).toBe('2026-10-07');
+    expect(vi.getTimerCount()).toBe(1);
+  });
+});
+
+describe('late onForeground registration', () => {
+  it('runs a callback registered from a child effect exactly once after load', async () => {
+    const calls = vi.fn();
+    function Child() {
+      useEffect(() => onForeground(calls), []);
+      return null;
+    }
+    render(
+      <StoreProvider>
+        <Child />
+      </StoreProvider>
+    );
+    await flush();
+    expect(calls).toHaveBeenCalledTimes(1);
+    expect(calls.mock.calls[0][0].store.version).toBe(2);
+    act(() => lifecycle.handler({ isActive: true }));
+    await flush();
+    expect(calls).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('storage failures never overwrite stored data', () => {
+  it('retries a failed read once and then uses the stored value', async () => {
+    const saved = JSON.stringify({ ...defaultStore('2026-10-01', 'en'), studyTopic: 'Kept' });
+    prefs.set(STORE_KEY, saved);
+    vi.spyOn(Preferences, 'get').mockRejectedValueOnce(new Error('transient'));
+    await mount();
+    expect(latest.store.studyTopic).toBe('Kept');
+  });
+
+  it('does not persist anything when the read fails twice', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const saved = JSON.stringify({ ...defaultStore('2026-10-01', 'en'), studyTopic: 'Kept' });
+    prefs.set(STORE_KEY, saved);
+    vi.spyOn(Preferences, 'get').mockRejectedValue(new Error('down'));
+    await mount();
+    act(() => latest.update((s) => ({ ...s, studyTopic: 'Changed' })));
+    await flush();
+    expect(latest.store.studyTopic).toBe('Changed');
+    expect(prefs.get(STORE_KEY)).toBe(saved);
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not persist when the corrupt copy cannot be kept', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    prefs.set(STORE_KEY, 'garbage');
+    vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('full'));
+    await mount();
+    act(() => latest.update((s) => ({ ...s, studyTopic: 'Changed' })));
+    await flush();
+    expect(latest.store.studyTopic).toBe('Changed');
+    expect(prefs.get(STORE_KEY)).toBe('garbage');
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('locale selection', () => {
+  const setLanguage = (value) =>
+    Object.defineProperty(i18n, 'language', { value, configurable: true, writable: true });
+
+  afterEach(() => setLanguage('en'));
+
+  it('uses the primary subtag of the i18next language', async () => {
+    setLanguage('fr-CA');
+    await mount();
+    expect(migrateV1.mock.calls.at(-1)[2]).toBe('fr');
+  });
+
+  it('falls back to the primary subtag of navigator.language', async () => {
+    setLanguage('');
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('es-MX');
+    await mount();
+    expect(migrateV1.mock.calls.at(-1)[2]).toBe('es');
   });
 });

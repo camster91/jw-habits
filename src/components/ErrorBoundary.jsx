@@ -1,6 +1,6 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw, Home, Trash2 } from 'lucide-react';
-import { safeGetItem, safeSetItem, safeClearAll } from '../utils/safeStorage.js';
+import { safeGetItem, safeSetItemQuiet, safeClearAll } from '../utils/safeStorage.js';
 
 /**
  * Error Boundary component to catch JavaScript errors in child components.
@@ -48,7 +48,7 @@ class ErrorBoundary extends Component {
       existingLogs.push(errorLog);
       // Keep only the last 10 errors
       const recentLogs = existingLogs.slice(-10);
-      safeSetItem('jw-error-logs', JSON.stringify(recentLogs));
+      safeSetItemQuiet('jw-error-logs', JSON.stringify(recentLogs));
     } catch {
       // Ignore storage errors
     }

@@ -166,3 +166,18 @@ export function durableRemove(key) {
     }
   });
 }
+
+/**
+ * Best-effort write for diagnostics (error logs): no eviction and no
+ * `jw-storage-full` event, so a full quota stays invisible to the user.
+ * @returns {boolean}
+ */
+export function safeSetItemQuiet(key, value) {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}

@@ -8,7 +8,7 @@ import en from './locales/en.json';
 import es from './locales/es.json';
 import fr from './locales/fr.json';
 import App from './App.jsx';
-import { safeGetItem, safeSetItem } from './utils/safeStorage.js';
+import { safeGetItem, safeSetItemQuiet } from './utils/safeStorage.js';
 import { initializeNative, isNative, appLifecycle } from './utils/native.js';
 
 // i18next — Spanish/French fall back to English when a key
@@ -53,7 +53,7 @@ function logGlobalError(type, message, source, error) {
     existingLogs.push(errorLog);
     // Keep only the last 20 errors
     const recentLogs = existingLogs.slice(-20);
-    safeSetItem('jw-error-logs', JSON.stringify(recentLogs));
+    safeSetItemQuiet('jw-error-logs', JSON.stringify(recentLogs));
   } catch {
     // Ignore storage errors
   }

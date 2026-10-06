@@ -18,15 +18,33 @@ export const STORE_KEY = 'jw-habits-v2';
 const foregroundCallbacks = new Set();
 
 /**
+ * Set while a provider is loaded: returns the latest `{store, update, today}`.
+ * Lets a callback registered after the load still get its first run.
+ */
+let latestArgs = null;
+
+function runCallback(callback, args) {
+  Promise.resolve()
+    .then(() => callback(args))
+    .catch((error) => console.warn('A foreground callback failed:', error));
+}
+
+/**
  * Register a callback that runs once after the store loads and again on every
  * app resume, with the latest `{store, update, today}`. May be async; a failure
- * is warned about and never affects other callbacks.
+ * is warned about and never affects other callbacks. Registering after the
+ * load has finished still schedules one run straight away.
  * @returns {() => void} unsubscribe
  */
 // The spec places onForeground beside the provider, so this file exports a non-component.
 // eslint-disable-next-line react-refresh/only-export-components
 export function onForeground(callback) {
   foregroundCallbacks.add(callback);
+  if (latestArgs) {
+    queueMicrotask(() => {
+      if (foregroundCallbacks.has(callback) && latestArgs) runCallback(callback, latestArgs());
+    });
+  }
   return () => {
     foregroundCallbacks.delete(callback);
   };
@@ -51,19 +69,36 @@ function msUntilNextRollover() {
   return next - now;
 }
 
+/** Read the stored value, retrying once; throws if both attempts fail. */
+async function readStored() {
+  try {
+    return await durableGet(STORE_KEY);
+  } catch {
+    return durableGet(STORE_KEY);
+  }
+}
+
+/**
+ * @returns {Promise<{store: object, persisted: boolean, readOnly: boolean}>}
+ *   `persisted`: the store came from storage unchanged. `readOnly`: storage
+ *   could not be read or the unreadable value could not be kept, so nothing
+ *   may be written this session (the stored value must survive).
+ */
 async function loadStore() {
   const today = appDay(new Date());
   const locale = currentLocale();
   let raw = null;
+  let readOnly = false;
   try {
-    raw = await durableGet(STORE_KEY);
+    raw = await readStored();
   } catch (error) {
-    console.warn('Could not read the stored data:', error);
+    readOnly = true;
+    console.warn('Could not read the stored data; running without saving this session:', error);
   }
   if (raw != null) {
     try {
       const result = validateStore(JSON.parse(raw));
-      if (result.ok) return { store: result.store, persisted: true };
+      if (result.ok) return { store: result.store, persisted: true, readOnly: false };
     } catch {
       // unparseable: handled as corrupt below
     }
@@ -71,7 +106,8 @@ async function loadStore() {
     try {
       await durableSet(`${STORE_KEY}-corrupt-${Date.now()}`, raw);
     } catch (error) {
-      console.warn('Could not keep a copy of the unreadable data:', error);
+      readOnly = true;
+      console.warn('Could not keep a copy of the unreadable data; not saving this session:', error);
     }
   }
   let store = null;
@@ -80,7 +116,7 @@ async function loadStore() {
   } catch (error) {
     console.warn('Migrating the old data failed:', error);
   }
-  return { store: store ?? defaultStore(today, locale), persisted: false };
+  return { store: store ?? defaultStore(today, locale), persisted: false, readOnly };
 }
 
 export function StoreProvider({ children }) {
@@ -88,8 +124,11 @@ export function StoreProvider({ children }) {
   const [today, setToday] = useState(null);
   const storeRef = useRef(null);
   const todayRef = useRef(null);
+  const readOnlyRef = useRef(false);
+  const timerRef = useRef(null);
 
   const persist = useCallback((next) => {
+    if (readOnlyRef.current) return;
     durableSet(STORE_KEY, JSON.stringify(next)).catch((error) => {
       console.warn('Could not save your data:', error);
     });
@@ -105,57 +144,56 @@ export function StoreProvider({ children }) {
     [persist]
   );
 
-  const refreshDay = useCallback(() => {
-    const t = computeToday(storeRef.current.lastSeenDay);
-    todayRef.current = t;
-    setToday(t);
-    if (t !== storeRef.current.lastSeenDay) update((s) => ({ ...s, lastSeenDay: t }));
-  }, [update]);
+  // Recompute today and re-arm the 03:00 timer from the current clock, so a
+  // resume after suspension or a timezone change never leaves a stale timer.
+  const refreshDay = useCallback(
+    function refresh() {
+      const t = computeToday(storeRef.current.lastSeenDay);
+      todayRef.current = t;
+      setToday(t);
+      if (t !== storeRef.current.lastSeenDay) update((s) => ({ ...s, lastSeenDay: t }));
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(refresh, msUntilNextRollover());
+    },
+    [update]
+  );
+
+  const getArgs = useCallback(
+    () => ({ store: storeRef.current, update, today: todayRef.current }),
+    [update]
+  );
 
   const runForeground = useCallback(() => {
-    for (const callback of [...foregroundCallbacks]) {
-      const args = { store: storeRef.current, update, today: todayRef.current };
-      Promise.resolve()
-        .then(() => callback(args))
-        .catch((error) => console.warn('A foreground callback failed:', error));
-    }
-  }, [update]);
+    for (const callback of [...foregroundCallbacks]) runCallback(callback, getArgs());
+  }, [getArgs]);
 
   useEffect(() => {
     let cancelled = false;
-    loadStore().then(({ store: loaded, persisted }) => {
+    loadStore().then(({ store: loaded, persisted, readOnly }) => {
       if (cancelled) return;
+      readOnlyRef.current = readOnly;
       storeRef.current = loaded;
       setStore(loaded);
       if (!persisted) persist(loaded);
       refreshDay();
+      latestArgs = getArgs;
       runForeground();
     });
     return () => {
       cancelled = true;
+      clearTimeout(timerRef.current);
+      if (latestArgs === getArgs) latestArgs = null;
     };
-  }, [persist, refreshDay, runForeground]);
+  }, [persist, refreshDay, runForeground, getArgs]);
 
   const loaded = store !== null;
   useEffect(() => {
     if (!loaded) return undefined;
-    const stopResume = appLifecycle.onStateChange(({ isActive }) => {
+    return appLifecycle.onStateChange(({ isActive }) => {
       if (!isActive) return;
       refreshDay();
       runForeground();
     });
-    let timer;
-    const arm = () => {
-      timer = setTimeout(() => {
-        refreshDay();
-        arm();
-      }, msUntilNextRollover());
-    };
-    arm();
-    return () => {
-      stopResume();
-      clearTimeout(timer);
-    };
   }, [loaded, refreshDay, runForeground]);
 
   const value = useMemo(() => ({ store, update, today }), [store, update, today]);
