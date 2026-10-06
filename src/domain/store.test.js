@@ -361,6 +361,12 @@ describe('labels', () => {
     );
   });
 
+  it('treats a whitespace-only label as unset', () => {
+    expect(labelFor({ ...fresh(), labels: { dailyText: '   ' } }, 'dailyText', t)).toBe(
+      'T(fd.routine.dailyText)'
+    );
+  });
+
   it('renaming a label leaves the log untouched', () => {
     const s = addCheckIn(fresh(), { routine: 'dailyText', day: TODAY, value: true });
     const renamed = { ...s, labels: { ...s.labels, dailyText: 'Morning' } };

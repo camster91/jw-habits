@@ -9,10 +9,10 @@ import { Toggle } from './controls.jsx';
 const MAX_LABEL = 30;
 const MAX_TOPIC = 60;
 
-/** New store with `id`'s custom label set, or removed when `text` is empty. */
+/** New store with `id`'s custom label set, or removed when `text` is blank. */
 function withLabel(store, id, text) {
   const labels = { ...store.labels };
-  if (text === '') delete labels[id];
+  if (text.trim() === '') delete labels[id];
   else labels[id] = text.slice(0, MAX_LABEL);
   return { ...store, labels };
 }

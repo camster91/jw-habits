@@ -128,6 +128,15 @@ describe('Onboarding', () => {
     expect(screen.getByRole('switch', { name: 'Daily text' })).toBeInTheDocument();
   });
 
+  it('never saves a name that is only spaces', () => {
+    renderOnboarding();
+    click('Get started');
+    click('Rename Daily text');
+    fireEvent.change(screen.getByLabelText('Name for Daily text'), { target: { value: '   ' } });
+    expect(current.labels).toEqual({});
+    expect(screen.getByRole('switch', { name: 'Daily text' })).toBeInTheDocument();
+  });
+
   it('Psalms 1 with earlier books counted gives 18 books on Progress', () => {
     renderOnboarding();
     click('Get started');

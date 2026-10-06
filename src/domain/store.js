@@ -266,8 +266,8 @@ export function importJson(text) {
   return validateStore(parsed);
 }
 
-/** The custom label if a non-empty string is set, else the translated default. */
+/** The custom label if one with more than whitespace is set, else the translated default. */
 export function labelFor(store, id, t) {
   const custom = store.labels?.[id];
-  return typeof custom === 'string' && custom !== '' ? custom : t('fd.routine.' + id);
+  return typeof custom === 'string' && custom.trim() !== '' ? custom : t('fd.routine.' + id);
 }
