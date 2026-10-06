@@ -12,7 +12,7 @@ import {
   todaysChapters,
 } from './today.js';
 import { defaultStore } from './store.js';
-import { chapterIndex } from './bible.js';
+import { chapterIndex, portionSize } from './bible.js';
 import { withScheduleChange } from './schedule.js';
 
 const TUE = '2026-10-06';
@@ -115,6 +115,16 @@ describe('setChaptersRead', () => {
       for (const n of [0, 1, 2]) {
         expect(entry(setChaptersRead(s0, TUE, n), 'bibleReading', '2026-10-05')).toEqual(y);
       }
+    }
+  });
+
+  it("keeps a widget check-in (a bare true) on yesterday on the year plan, whatever today's count", () => {
+    const year = { ...READING, plan: 'year', startedOn: '2026-09-01' };
+    const y = { routine: 'bibleReading', day: '2026-10-05', value: true };
+    const s0 = base({ reading: year, log: [y] });
+    const portion = portionSize(s0, TUE);
+    for (const n of [0, portion, 2 * portion]) {
+      expect(entry(setChaptersRead(s0, TUE, n), 'bibleReading', '2026-10-05')).toEqual(y);
     }
   });
 

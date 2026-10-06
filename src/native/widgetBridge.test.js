@@ -43,6 +43,8 @@ import {
 } from './widgetBridge.js';
 import { defaultStore, addCheckIn } from '../domain/store.js';
 import { dueToday } from '../domain/routines.js';
+import { setChaptersRead } from '../domain/today.js';
+import { portionSize } from '../domain/bible.js';
 import { ACCENTS } from '../theme/theme.js';
 
 const t = i18n.t.bind(i18n);
@@ -192,7 +194,7 @@ describe('registerWidgetBridge', () => {
     expect(state.store.log).toHaveLength(2);
     expect(state.store.log).toEqual([
       { routine: 'dailyText', day: TODAY, value: true },
-      { routine: 'bibleReading', day: TODAY, value: { chapters: [] } },
+      { routine: 'bibleReading', day: TODAY, value: true },
     ]);
     const snap = sentSnapshot(plugin.setSnapshot.mock.calls.length - 1);
     expect(snap.doneCount).toBe(2);
@@ -221,6 +223,20 @@ describe('registerWidgetBridge', () => {
       { routine: 'bibleReading', day: TODAY, value: { chapters: [0, 1] } },
     ]);
     expect(plugin.setSnapshot).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it("a widget Bible check-in survives the next day's hold-to-check", async () => {
+    plugin.drainQueue.mockResolvedValue({ items: [{ routine: 'bibleReading', day: TODAY }] });
+    const off = registerWidgetBridge();
+    const { state, update } = provider(store());
+    await hooks.foreground({ store: state.store, update, today: TODAY });
+    const tomorrow = '2026-10-07';
+    // Today's hold-to-check, then undo, then the stepper: none may touch yesterday.
+    const held = setChaptersRead(state.store, tomorrow, portionSize(state.store, tomorrow));
+    for (const s of [held, setChaptersRead(held, tomorrow, 0), setChaptersRead(held, tomorrow, 1)]) {
+      expect(s.log).toContainEqual({ routine: 'bibleReading', day: TODAY, value: true });
+    }
     off();
   });
 

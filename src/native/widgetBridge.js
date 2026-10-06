@@ -91,10 +91,6 @@ function applicable(store, items, today) {
   });
 }
 
-function checkInValue(routine) {
-  return routine === 'bibleReading' ? { chapters: [] } : true;
-}
-
 /** Same rule as the provider's `today`: the clock's app day, never before the last day seen. */
 function todayFor(store) {
   const clock = appDay(new Date());
@@ -119,7 +115,7 @@ export function registerWidgetBridge() {
       update((s) => {
         latest = applicable(s, queued, today).reduce(
           (acc, { routine }) =>
-            addCheckIn(acc, { routine, day: today, value: checkInValue(routine) }),
+            addCheckIn(acc, { routine, day: today, value: true }),
           s
         );
         return latest;
