@@ -45,6 +45,21 @@ export function addDays(day, n) {
   return formatDate(date);
 }
 
+/**
+ * The day the app treats as today: the clock's app day, or `lastSeenDay` when
+ * that is exactly one day ahead (so westward travel never moves today
+ * backwards). A lastSeenDay further ahead (a clock once set forward) is
+ * ignored, and the caller resets it to the clock day.
+ * @param {string} clockDay `appDay(new Date())`
+ * @param {string|null} lastSeenDay
+ */
+export function currentDay(clockDay, lastSeenDay) {
+  if (lastSeenDay && lastSeenDay > clockDay && lastSeenDay <= addDays(clockDay, 1)) {
+    return lastSeenDay;
+  }
+  return clockDay;
+}
+
 /** @returns {number} 0..6, 0 is Sunday */
 export function weekday(day) {
   return parse(day).getDay();

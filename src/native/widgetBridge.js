@@ -9,7 +9,7 @@
 import i18n from 'i18next';
 import { registerPlugin } from '@capacitor/core';
 import { onForeground, onStoreChange } from '../data/StoreProvider.jsx';
-import { addDays, appDay } from '../domain/day.js';
+import { addDays, appDay, currentDay } from '../domain/day.js';
 import { ROUTINE_IDS, dueToday, isDone } from '../domain/routines.js';
 import { addCheckIn, labelFor } from '../domain/store.js';
 import { ACCENTS } from '../theme/theme.js';
@@ -99,10 +99,9 @@ function applicable(store, items, today) {
   });
 }
 
-/** Same rule as the provider's `today`: the clock's app day, never before the last day seen. */
+/** Same rule as the provider's `today` (see `currentDay`). */
 function todayFor(store) {
-  const clock = appDay(new Date());
-  return store.lastSeenDay && store.lastSeenDay > clock ? store.lastSeenDay : clock;
+  return currentDay(appDay(new Date()), store.lastSeenDay);
 }
 
 /**

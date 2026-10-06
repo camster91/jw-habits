@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import i18n from 'i18next';
 import { StoreContext } from './useStore.js';
-import { appDay } from '../domain/day.js';
+import { appDay, currentDay } from '../domain/day.js';
 import { defaultStore, validateStore } from '../domain/store.js';
 import { migrateV1 } from '../domain/migrateV1.js';
 import { appLifecycle } from '../utils/native.js';
@@ -83,10 +83,12 @@ function currentLocale() {
   return raw.split(/[-_]/)[0] || 'en';
 }
 
-/** Today never moves backwards: the later of the clock's app day and the last day seen. */
+/**
+ * Today never moves backwards by a day (westward travel), but a lastSeenDay
+ * more than a day ahead of the clock is dropped; refreshDay then resets it.
+ */
 function computeToday(lastSeenDay) {
-  const clock = appDay(new Date());
-  return lastSeenDay && lastSeenDay > clock ? lastSeenDay : clock;
+  return currentDay(appDay(new Date()), lastSeenDay);
 }
 
 function msUntilNextRollover() {

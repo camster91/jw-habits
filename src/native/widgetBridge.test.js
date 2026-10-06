@@ -314,6 +314,17 @@ describe('registerWidgetBridge', () => {
     off();
   });
 
+  it('publishes for the clock day when lastSeenDay is far ahead, the next day when one ahead', async () => {
+    const off = registerWidgetBridge();
+    hooks.change({ ...store(), lastSeenDay: '2026-10-16' });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(sentSnapshot(0).day).toBe(TODAY);
+    hooks.change({ ...store(), lastSeenDay: '2026-10-07' });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(sentSnapshot(1).day).toBe('2026-10-07');
+    off();
+  });
+
   it('unsubscribes and cancels a pending publish', async () => {
     const off = registerWidgetBridge();
     hooks.change(store());

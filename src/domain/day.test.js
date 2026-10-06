@@ -1,7 +1,15 @@
 process.env.TZ = 'America/Toronto';
 
 import { describe, it, expect } from 'vitest';
-import { appDay, addDays, weekday, weekStart, monthKey, serviceYear } from './day.js';
+import {
+  appDay,
+  addDays,
+  currentDay,
+  weekday,
+  weekStart,
+  monthKey,
+  serviceYear,
+} from './day.js';
 
 const zoneIsToronto = Intl.DateTimeFormat().resolvedOptions().timeZone === 'America/Toronto';
 
@@ -73,5 +81,19 @@ describe('day arithmetic', () => {
     expect(serviceYear('2026-09-01')).toBe(2026);
     expect(serviceYear('2026-12-31')).toBe(2026);
     expect(serviceYear('2027-01-01')).toBe(2026);
+  });
+});
+
+describe('currentDay', () => {
+  it('is the clock day without a lastSeenDay, or when lastSeenDay is behind', () => {
+    expect(currentDay('2026-10-06', null)).toBe('2026-10-06');
+    expect(currentDay('2026-10-06', '2026-10-01')).toBe('2026-10-06');
+  });
+  it('keeps a lastSeenDay one day ahead (westward travel)', () => {
+    expect(currentDay('2026-10-06', '2026-10-07')).toBe('2026-10-07');
+  });
+  it('ignores a lastSeenDay more than one day ahead', () => {
+    expect(currentDay('2026-10-06', '2026-10-08')).toBe('2026-10-06');
+    expect(currentDay('2026-10-06', '2026-10-16')).toBe('2026-10-06');
   });
 });

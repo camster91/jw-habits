@@ -162,6 +162,17 @@ describe('today never moves backwards', () => {
     expect(latest.store.lastSeenDay).toBe('2026-10-07');
   });
 
+  it('ignores a lastSeenDay more than a day ahead (a clock once set forward) and resets it', async () => {
+    prefs.set(
+      STORE_KEY,
+      JSON.stringify({ ...defaultStore('2026-10-01', 'en'), lastSeenDay: '2026-10-16' })
+    );
+    await mount();
+    expect(latest.today).toBe('2026-10-06');
+    expect(latest.store.lastSeenDay).toBe('2026-10-06');
+    expect(JSON.parse(prefs.get(STORE_KEY)).lastSeenDay).toBe('2026-10-06');
+  });
+
   it('persists the current day as lastSeenDay on load', async () => {
     await mount();
     expect(latest.store.lastSeenDay).toBe('2026-10-06');
