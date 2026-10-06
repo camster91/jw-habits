@@ -13,6 +13,7 @@
  * An undone check-in is deleted, never stored as a falsy value.
  */
 import { addDays } from './day.js';
+import { BOOKS } from './bible.js';
 import { ROUTINE_IDS } from './routines.js';
 
 export const STORE_VERSION = 2;
@@ -27,6 +28,8 @@ export const ANCHOR_PHRASE_TIMES = {
 const TONES = ['quiet', 'warm', 'scripture'];
 const THEMES = ['system', 'light', 'dark'];
 const MAX_LABEL = 30;
+const MAX_TOPIC = 60;
+const TOTAL_CHAPTERS = BOOKS.reduce((n, b) => n + b.chapters, 0);
 
 /**
  * A fresh store for a first run.
@@ -79,6 +82,8 @@ const isObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x)
 const isInt = (x, min, max) => Number.isInteger(x) && x >= min && x <= max;
 const isDay = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && addDays(x, 0) === x;
 const isTime = (x) => typeof x === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(x);
+const isNonNegative = (x) => typeof x === 'number' && Number.isFinite(x) && x >= 0;
+const exactKeys = (o, keys) => Object.keys(o).length === keys.length && keys.every((k) => k in o);
 const isRoutineId = (x) => ROUTINE_IDS.includes(x);
 
 function validScheduleEntry(e) {
@@ -86,7 +91,8 @@ function validScheduleEntry(e) {
     isObject(e) &&
     isDay(e.from) &&
     isObject(e.enabled) &&
-    Object.entries(e.enabled).every(([k, v]) => isRoutineId(k) && typeof v === 'boolean') &&
+    exactKeys(e.enabled, ROUTINE_IDS) &&
+    ROUTINE_IDS.every((k) => typeof e.enabled[k] === 'boolean') &&
     Array.isArray(e.meetingDays) &&
     e.meetingDays.every((d) => isInt(d, 0, 6)) &&
     isInt(e.familyWorshipDay, 0, 6) &&
@@ -99,23 +105,42 @@ function validValue(routine, value) {
   if (routine === 'ministry') {
     return (
       isObject(value) &&
+      Object.keys(value).every((k) => ['shared', 'studies', 'hours'].includes(k)) &&
       typeof value.shared === 'boolean' &&
-      typeof value.studies === 'number' &&
-      value.studies >= 0 &&
-      (value.hours === undefined || (typeof value.hours === 'number' && value.hours >= 0))
+      isInt(value.studies, 0, Infinity) &&
+      (value.hours === undefined || isNonNegative(value.hours))
     );
   }
   if (value === true) return true;
   return (
     routine === 'bibleReading' &&
     isObject(value) &&
+    exactKeys(value, ['chapters']) &&
     Array.isArray(value.chapters) &&
-    value.chapters.every((c) => typeof c === 'number')
+    value.chapters.every((c) => isInt(c, 0, TOTAL_CHAPTERS - 1))
   );
 }
 
 function validLogEntry(e) {
-  return isObject(e) && isRoutineId(e.routine) && isDay(e.day) && validValue(e.routine, e.value);
+  return (
+    isObject(e) &&
+    exactKeys(e, ['routine', 'day', 'value']) &&
+    isRoutineId(e.routine) &&
+    isDay(e.day) &&
+    validValue(e.routine, e.value)
+  );
+}
+
+/** Every entry valid, and at most one per (routine, day). */
+function validLog(log) {
+  const seen = new Set();
+  return log.every((e) => {
+    if (!validLogEntry(e)) return false;
+    const key = e.routine + '|' + e.day;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function validAnchor(a) {
@@ -126,6 +151,44 @@ function validAnchor(a) {
   );
 }
 
+function validReading(r) {
+  if (!isObject(r) || !exactKeys(r, ['plan', 'start', 'startedOn', 'countEarlierAsRead'])) {
+    return false;
+  }
+  const book = isObject(r.start) ? BOOKS[r.start.book - 1] : undefined;
+  return (
+    ['year', 'ownPace'].includes(r.plan) &&
+    book !== undefined &&
+    isInt(r.start.chapter, 1, book.chapters) &&
+    isDay(r.startedOn) &&
+    typeof r.countEarlierAsRead === 'boolean'
+  );
+}
+
+function validReminders(r) {
+  return (
+    isObject(r) &&
+    typeof r.enabled === 'boolean' &&
+    Array.isArray(r.off) &&
+    r.off.every(isRoutineId)
+  );
+}
+
+function validWhatsNew(w) {
+  return (
+    isObject(w) &&
+    typeof w.enabled === 'boolean' &&
+    (w.lastCheck === null || typeof w.lastCheck === 'string') &&
+    Array.isArray(w.seen) &&
+    w.seen.every((x) => typeof x === 'string') &&
+    isInt(w.newCount, 0, Infinity)
+  );
+}
+
+function validQuietHours(q) {
+  return isObject(q) && exactKeys(q, ['start', 'end']) && isTime(q.start) && isTime(q.end);
+}
+
 function validShape(s) {
   return (
     Object.keys(s).every((k) => TOP_KEYS.includes(k)) &&
@@ -133,8 +196,9 @@ function validShape(s) {
     Array.isArray(s.schedule) &&
     s.schedule.length > 0 &&
     s.schedule.every(validScheduleEntry) &&
+    s.schedule.every((e, i) => i === 0 || s.schedule[i - 1].from < e.from) &&
     Array.isArray(s.log) &&
-    s.log.every(validLogEntry) &&
+    validLog(s.log) &&
     isObject(s.labels) &&
     Object.entries(s.labels).every(
       ([k, v]) => isRoutineId(k) && typeof v === 'string' && v.length <= MAX_LABEL
@@ -145,7 +209,19 @@ function validShape(s) {
     THEMES.includes(s.theme) &&
     isInt(s.accent, 0, 5) &&
     typeof s.pioneer === 'boolean' &&
-    typeof s.hoursGoal === 'number'
+    isNonNegative(s.hoursGoal) &&
+    validReading(s.reading) &&
+    validReminders(s.reminders) &&
+    validWhatsNew(s.whatsNew) &&
+    isObject(s.links) &&
+    Object.values(s.links).every((v) => typeof v === 'string') &&
+    (s.quietHours === null || validQuietHours(s.quietHours)) &&
+    isTime(s.wrapUpTime) &&
+    typeof s.wrapUpNotification === 'boolean' &&
+    typeof s.onboardingDone === 'boolean' &&
+    typeof s.studyTopic === 'string' &&
+    s.studyTopic.length <= MAX_TOPIC &&
+    (s.lastSeenDay === null || isDay(s.lastSeenDay))
   );
 }
 

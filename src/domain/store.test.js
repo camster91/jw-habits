@@ -127,6 +127,11 @@ describe('export / import', () => {
 });
 
 describe('validateStore shape', () => {
+  const valid = (fn) => {
+    const s = fresh();
+    fn(s);
+    return validateStore(s).ok;
+  };
   const mutate = (fn) => {
     const s = fresh();
     fn(s);
@@ -144,7 +149,7 @@ describe('validateStore shape', () => {
 
   it('rejects labels over 30 chars, non-strings, and unknown ids', () => {
     expect(mutate((s) => (s.labels = { dailyText: 'x'.repeat(31) }))).toBe('badShape');
-    expect(mutate((s) => (s.labels = { dailyText: 'x'.repeat(30) }))).toBeUndefined();
+    expect(valid((s) => (s.labels = { dailyText: 'x'.repeat(30) }))).toBe(true);
     expect(mutate((s) => (s.labels = { dailyText: 5 }))).toBe('badShape');
     expect(mutate((s) => (s.labels = { nope: 'a' }))).toBe('badShape');
   });
@@ -156,7 +161,7 @@ describe('validateStore shape', () => {
     expect(mutate((s) => (s.schedule[0].enabled.nope = true))).toBe('badShape');
     expect(mutate((s) => (s.schedule[0].meetingDays = [7]))).toBe('badShape');
     expect(mutate((s) => (s.schedule[0].meetingDays = [1.5]))).toBe('badShape');
-    expect(mutate((s) => (s.schedule[0].meetingDays = [2, 6]))).toBeUndefined();
+    expect(valid((s) => (s.schedule[0].meetingDays = [2, 6]))).toBe(true);
     expect(mutate((s) => (s.schedule[0].familyWorshipDay = 7))).toBe('badShape');
     expect(mutate((s) => (s.schedule[0].bibleDaysPerWeek = 0))).toBe('badShape');
     expect(mutate((s) => (s.schedule[0].studyPerWeek = 8))).toBe('badShape');
@@ -180,7 +185,7 @@ describe('validateStore shape', () => {
     expect(mutate((s) => (s.theme = 'sepia'))).toBe('badShape');
     expect(mutate((s) => (s.accent = 6))).toBe('badShape');
     expect(mutate((s) => (s.accent = 1.5))).toBe('badShape');
-    expect(mutate((s) => (s.accent = 5))).toBeUndefined();
+    expect(valid((s) => (s.accent = 5))).toBe(true);
   });
 
   it('checks anchors', () => {
@@ -193,8 +198,115 @@ describe('validateStore shape', () => {
     );
     expect(mutate((s) => (s.anchors = { nope: { time: '07:00', phrase: null } }))).toBe('badShape');
     expect(
-      mutate((s) => (s.anchors = { ministry: { time: '08:00', phrase: 'afterBreakfast' } }))
-    ).toBeUndefined();
+      valid((s) => (s.anchors = { ministry: { time: '08:00', phrase: 'afterBreakfast' } }))
+    ).toBe(true);
+  });
+});
+
+describe('validateStore remaining fields and log integrity', () => {
+  const bad = (fn) => {
+    const s = fresh();
+    fn(s);
+    return reasonOf(s);
+  };
+  const entry = (routine, value, day = TODAY) => ({ routine, day, value });
+  const logOk = (...entries) => {
+    const s = fresh();
+    s.log = entries;
+    return validateStore(s).ok;
+  };
+
+  it('rejects bad reading', () => {
+    expect(bad((s) => (s.reading.plan = 'fast'))).toBe('badShape');
+    expect(bad((s) => (s.reading.start.book = 67))).toBe('badShape');
+    expect(bad((s) => (s.reading.start.book = 1.5))).toBe('badShape');
+    expect(bad((s) => (s.reading.start = { book: 1, chapter: 51 }))).toBe('badShape');
+    expect(bad((s) => (s.reading.start = { book: 1, chapter: 0 }))).toBe('badShape');
+    expect(bad((s) => (s.reading.startedOn = 'x'))).toBe('badShape');
+    expect(bad((s) => (s.reading.countEarlierAsRead = 1))).toBe('badShape');
+    expect(bad((s) => (s.reading = null))).toBe('badShape');
+  });
+
+  it('accepts ownPace and the last chapter of a book', () => {
+    const s = fresh();
+    s.reading.plan = 'ownPace';
+    s.reading.start = { book: 1, chapter: 50 };
+    expect(validateStore(s).ok).toBe(true);
+  });
+
+  it('rejects bad reminders, whatsNew, links, quietHours', () => {
+    expect(bad((s) => (s.reminders.enabled = 'yes'))).toBe('badShape');
+    expect(bad((s) => (s.reminders.off = ['nope']))).toBe('badShape');
+    expect(bad((s) => (s.whatsNew.enabled = 1))).toBe('badShape');
+    expect(bad((s) => (s.whatsNew.lastCheck = 5))).toBe('badShape');
+    expect(bad((s) => (s.whatsNew.seen = [1]))).toBe('badShape');
+    expect(bad((s) => (s.whatsNew.newCount = -1))).toBe('badShape');
+    expect(bad((s) => (s.whatsNew.newCount = 1.5))).toBe('badShape');
+    expect(bad((s) => (s.links = []))).toBe('badShape');
+    expect(bad((s) => (s.links = { meetings: 5 }))).toBe('badShape');
+    expect(bad((s) => (s.quietHours = { start: '22:00' }))).toBe('badShape');
+    expect(bad((s) => (s.quietHours = { start: '22:00', end: '7am' }))).toBe('badShape');
+    expect(bad((s) => (s.quietHours = 'night'))).toBe('badShape');
+  });
+
+  it('accepts good quietHours and links', () => {
+    const s = fresh();
+    s.quietHours = { start: '22:00', end: '07:00' };
+    s.links = { meetings: 'https://example.org' };
+    expect(validateStore(s).ok).toBe(true);
+  });
+
+  it('rejects bad scalar fields', () => {
+    expect(bad((s) => (s.wrapUpTime = '8pm'))).toBe('badShape');
+    expect(bad((s) => (s.wrapUpNotification = 'no'))).toBe('badShape');
+    expect(bad((s) => (s.onboardingDone = 0))).toBe('badShape');
+    expect(bad((s) => (s.studyTopic = 5))).toBe('badShape');
+    expect(bad((s) => (s.studyTopic = 'x'.repeat(61)))).toBe('badShape');
+    expect(bad((s) => (s.lastSeenDay = 'yesterday'))).toBe('badShape');
+    expect(bad((s) => (s.hoursGoal = -1))).toBe('badShape');
+    expect(bad((s) => (s.hoursGoal = Infinity))).toBe('badShape');
+    expect(bad((s) => (s.hoursGoal = '50'))).toBe('badShape');
+    expect(bad((s) => (s.pioneer = 'no'))).toBe('badShape');
+    const ok = fresh();
+    ok.lastSeenDay = TODAY;
+    expect(validateStore(ok).ok).toBe(true);
+  });
+
+  it('rejects duplicate log entries and extra keys', () => {
+    expect(logOk(entry('dailyText', true), entry('dailyText', true))).toBe(false);
+    expect(logOk(entry('dailyText', true), entry('dailyText', true, '2026-10-05'))).toBe(true);
+    expect(logOk({ ...entry('dailyText', true), extra: 1 })).toBe(false);
+  });
+
+  it('checks bibleReading and ministry values', () => {
+    expect(logOk(entry('bibleReading', { chapters: [] }))).toBe(true);
+    expect(logOk(entry('bibleReading', { chapters: [0, 1188] }))).toBe(true);
+    expect(logOk(entry('bibleReading', { chapters: [1189] }))).toBe(false);
+    expect(logOk(entry('bibleReading', { chapters: [1.5] }))).toBe(false);
+    expect(logOk(entry('bibleReading', { chapters: ['1'] }))).toBe(false);
+    expect(logOk(entry('bibleReading', { chapters: [1], extra: 1 }))).toBe(false);
+    expect(logOk(entry('ministry', { shared: true, studies: 1.5 }))).toBe(false);
+    expect(logOk(entry('ministry', { shared: true, studies: -1 }))).toBe(false);
+    expect(logOk(entry('ministry', { shared: true, studies: 0, hours: -1 }))).toBe(false);
+    expect(logOk(entry('ministry', { shared: true, studies: 0, hours: Infinity }))).toBe(false);
+    expect(logOk(entry('ministry', { shared: true, studies: 0, hours: 1.5 }))).toBe(true);
+  });
+
+  it('requires all six enabled ids and strictly ascending schedule dates', () => {
+    expect(bad((s) => (s.schedule[0].enabled = {}))).toBe('badShape');
+    expect(bad((s) => delete s.schedule[0].enabled.ministry)).toBe('badShape');
+    expect(bad((s) => (s.schedule[0].enabled.ministry = 1))).toBe('badShape');
+    const twoAt = (a, b) => {
+      const s = fresh();
+      s.schedule = [
+        { ...s.schedule[0], from: a },
+        { ...s.schedule[0], from: b },
+      ];
+      return validateStore(s).ok;
+    };
+    expect(twoAt('2026-10-06', '2026-10-06')).toBe(false);
+    expect(twoAt('2026-10-07', '2026-10-06')).toBe(false);
+    expect(twoAt('2026-10-06', '2026-10-07')).toBe(true);
   });
 });
 
