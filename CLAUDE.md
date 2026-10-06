@@ -89,10 +89,10 @@ src/
 ├── native/                     # reminders.js, whatsNewClient.js, widgetBridge.js (each exports register*())
 ├── pages/Share.jsx             # PWA share_target landing (web only)
 ├── hooks/                      # usePWA, usePWAContext
-├── theme/theme.js              # Accent + light/dark
+├── theme/theme.js              # Accent, light/dark, and --fd-accent-text (accent text at 4.5:1)
 ├── locales/                    # en.json (all fd.* strings), es.json / fr.json (v1 leftovers, see Known issues)
 └── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js, userLinks.js,
-                                # settingsStore.js (Share only), backup.js, pwa.js, relativeDate.js, bibleBooks.ts
+                                # settingsStore.js (Share only), backup.js, pwa.js, backStack.js (Android back)
 ios/App/FaithfulDaysWidget/     # WidgetKit sources (target not in the Xcode project yet)
 docs/ios-widget-setup.md        # One-time Xcode steps for the widget extension
 docs/release-checklist.md       # Manual on-device checklist to run before every store release
@@ -129,7 +129,9 @@ they ship in real installs, so renaming them silently discards user history.
 - **The 03:00 app day.** `appDay(now)` in `domain/day.js` is the local date, or the previous one
   before 03:00 local time, so late-night use counts for the day that is still going. Never use
   `new Date().toISOString().slice(0, 10)` for "today"; `StoreProvider` exposes `today` and
-  re-renders at the rollover.
+  re-renders at the rollover. `currentDay(clockDay, lastSeenDay)` keeps today from moving back
+  a day (westward travel) but ignores a `lastSeenDay` more than a day ahead (a clock once set
+  forward), which the provider then resets.
 - **Dated schedule history.** `store.schedule` is an array of entries sorted by `from`; the one in
   force on a day is the latest starting on or before it. Change it only through
   `withScheduleChange(store, today, patch)`, which adds an entry from today and leaves earlier
@@ -175,8 +177,6 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   storage was full; Today does not. `safeStorage` still dispatches the event.
 - **es/fr hold only v1 strings.** `es.json` / `fr.json` contain no `fd.*` keys, so v2 shows in
   English everywhere until they are translated. Their v1 keys are unused.
-- **`npm run verify:persona`** (`scripts/verify/habit-tracker.cjs`) still describes the v1 Home
-  and fails against v2. It is not part of CI.
 
 ## Rules for changes
 
