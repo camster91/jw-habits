@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { StoreContext } from '../data/useStore.js';
 import { defaultStore } from '../domain/store.js';
 import { withScheduleChange } from '../domain/schedule.js';
-import { chapterIndex } from '../domain/bible.js';
+import { BOOKS, chapterIndex, finderUrl } from '../domain/bible.js';
 import { addDays, appDay } from '../domain/day.js';
 import { WARM_LINES } from '../domain/encouragement.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
@@ -184,6 +184,23 @@ describe('Today: encouragement', () => {
     renderToday(makeStore({ tone: 'scripture' }));
     hold(checkButton('Daily text'));
     expect(screen.getByRole('status').textContent).toMatch(/\d+:\d+/);
+  });
+});
+
+describe('Today: scripture reference', () => {
+  it('is a link that opens the chapter on jw.org', () => {
+    renderToday(makeStore({ tone: 'scripture' }));
+    hold(checkButton('Daily text'));
+    const link = within(screen.getByRole('status')).getByRole('link');
+    const text = link.textContent; // e.g. "Psalms 55:22"
+    const [name, verse] = [
+      text.slice(0, text.lastIndexOf(' ')),
+      text.slice(text.lastIndexOf(' ') + 1),
+    ];
+    const book = BOOKS.find((b) => b.name === name).n;
+    const chapter = Number(verse.split(':')[0]);
+    fireEvent.click(link);
+    expect(window.open).toHaveBeenCalledWith(finderUrl('en', book, chapter), '_blank', 'noopener');
   });
 });
 

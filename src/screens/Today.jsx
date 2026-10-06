@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../data/useStore.js';
-import { BOOKS, portionSize } from '../domain/bible.js';
+import { BOOKS, finderUrl, portionSize } from '../domain/bible.js';
 import { dueToday, isDone } from '../domain/routines.js';
 import { scheduleOn } from '../domain/schedule.js';
 import { addCheckIn, labelFor, removeCheckIn } from '../domain/store.js';
@@ -58,10 +58,24 @@ function useEncouragement(tone, today, t) {
     const { text, ref } = pickEncouragement(tone, encouragementSeed(today, id), t);
     clearTimeout(timer.current);
     if (!text) return setLine(null);
-    setLine({ text, ref: ref && `${BOOKS[ref.book - 1].name} ${ref.chapter}:${ref.verse}` });
+    const label = ref && `${BOOKS[ref.book - 1].name} ${ref.chapter}:${ref.verse}`;
+    setLine({ text, ref: ref && { ...ref, label } });
     timer.current = setTimeout(() => setLine(null), ENCOURAGE_MS);
   };
   return [line, show];
+}
+
+/** The encouragement line's reference, opening that chapter on jw.org. */
+function ScriptureLink({ label, url }) {
+  const open = (e) => {
+    e.preventDefault();
+    window.open(url, '_blank', 'noopener');
+  };
+  return (
+    <a href={url} className="ml-2 italic text-base-content/70 underline" onClick={open}>
+      {label}
+    </a>
+  );
 }
 
 export default function Today({ onOpenSettings = () => {} }) {
@@ -208,7 +222,12 @@ export default function Today({ onOpenSettings = () => {} }) {
           {line && (
             <>
               {line.text}
-              {line.ref && <span className="ml-2 italic text-base-content/70">{line.ref}</span>}
+              {line.ref && (
+                <ScriptureLink
+                  label={line.ref.label}
+                  url={finderUrl(linkLocale(language), line.ref.book, line.ref.chapter)}
+                />
+              )}
             </>
           )}
         </div>
