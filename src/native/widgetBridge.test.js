@@ -41,7 +41,7 @@ import {
   drainWidgetCheckIns,
   registerWidgetBridge,
 } from './widgetBridge.js';
-import { defaultStore, addCheckIn } from '../domain/store.js';
+import { defaultStore, addCheckIn, validateStore } from '../domain/store.js';
 import { dueToday } from '../domain/routines.js';
 import { setChaptersRead } from '../domain/today.js';
 import { portionSize } from '../domain/bible.js';
@@ -267,7 +267,9 @@ describe('registerWidgetBridge', () => {
 
   it("does not overwrite yesterday's existing entry", async () => {
     const y = { routine: 'bibleReading', day: '2026-10-05', value: { chapters: [4] } };
-    plugin.drainQueue.mockResolvedValue({ items: [{ routine: 'bibleReading', day: '2026-10-05' }] });
+    plugin.drainQueue.mockResolvedValue({
+      items: [{ routine: 'bibleReading', day: '2026-10-05' }],
+    });
     const off = registerWidgetBridge();
     const { state, update } = provider(addCheckIn(store(), y));
     await hooks.foreground({ store: state.store, update, today: TODAY });
@@ -284,9 +286,28 @@ describe('registerWidgetBridge', () => {
     const tomorrow = '2026-10-07';
     // Today's hold-to-check, then undo, then the stepper: none may touch yesterday.
     const held = setChaptersRead(state.store, tomorrow, portionSize(state.store, tomorrow));
-    for (const s of [held, setChaptersRead(held, tomorrow, 0), setChaptersRead(held, tomorrow, 1)]) {
+    for (const s of [
+      held,
+      setChaptersRead(held, tomorrow, 0),
+      setChaptersRead(held, tomorrow, 1),
+    ]) {
       expect(s.log).toContainEqual({ routine: 'bibleReading', day: TODAY, value: true });
     }
+    off();
+  });
+
+  it('every drained store passes validateStore', async () => {
+    const days = ['2026-10-02', '2026-10-03', '2026-10-05', TODAY, '2026-10-07'];
+    plugin.drainQueue.mockResolvedValue({
+      items: days.flatMap((day) =>
+        ['dailyText', 'bibleReading', 'ministry'].map((routine) => ({ routine, day }))
+      ),
+    });
+    const off = registerWidgetBridge();
+    const { state, update } = provider(store());
+    await hooks.foreground({ store: state.store, update, today: TODAY });
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(validateStore(state.store).ok).toBe(true);
     off();
   });
 

@@ -37,7 +37,7 @@ vi.mock('@capacitor/preferences', () => ({
 // eslint-disable-next-line no-unused-vars -- used inside mount() via JSX
 import { StoreProvider, onForeground, onStoreChange, STORE_KEY } from './StoreProvider.jsx';
 import { useStore } from './useStore.js';
-import { defaultStore } from '../domain/store.js';
+import { defaultStore, validateStore } from '../domain/store.js';
 import { migrateV1 } from '../domain/migrateV1.js';
 import { Preferences } from '@capacitor/preferences';
 
@@ -171,12 +171,14 @@ describe('today never moves backwards', () => {
     expect(latest.today).toBe('2026-10-06');
     expect(latest.store.lastSeenDay).toBe('2026-10-06');
     expect(JSON.parse(prefs.get(STORE_KEY)).lastSeenDay).toBe('2026-10-06');
+    expect(validateStore(JSON.parse(prefs.get(STORE_KEY))).ok).toBe(true);
   });
 
   it('persists the current day as lastSeenDay on load', async () => {
     await mount();
     expect(latest.store.lastSeenDay).toBe('2026-10-06');
     expect(JSON.parse(prefs.get(STORE_KEY)).lastSeenDay).toBe('2026-10-06');
+    expect(validateStore(JSON.parse(prefs.get(STORE_KEY))).ok).toBe(true);
   });
 
   it('advances on resume when the clock has moved on', async () => {
