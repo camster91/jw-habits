@@ -4,14 +4,14 @@ import { Check } from 'lucide-react';
 import { haptics } from '../utils/native.js';
 
 const KEYS = [' ', 'Enter'];
-// A click this soon after a pointerdown is that press's own click.
+// A click this soon after a press (pointerdown, or Space/Enter keydown) is that press's own click.
 const PRESS_WINDOW_MS = 2000;
 
 /**
  * A round check button that completes after being held for `holdMs` (pointer,
  * or Space/Enter held down), with a haptic tap and a soft fill. Letting go
  * early cancels. When done, a tap (or Space/Enter) undoes at once. A click
- * with no pointer press before it (screen reader, switch or voice control)
+ * with no press before it (screen reader, switch or voice control)
  * completes at once, so the check never depends on holding.
  */
 export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 600 }) {
@@ -19,7 +19,7 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
   const hintId = useId();
   const [holding, setHolding] = useState(false);
   const timer = useRef(null);
-  // The last pointer press: when it began, and whether its hold completed.
+  // The last press (pointer or key): when it began, and whether its hold completed.
   const press = useRef({ at: null, completed: false });
 
   const cancel = () => {
@@ -33,13 +33,13 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
     onComplete();
   };
 
-  const start = (fromPointer) => {
+  const start = () => {
     clearTimeout(timer.current);
     setHolding(true);
     timer.current = setTimeout(() => {
       timer.current = null;
       setHolding(false);
-      if (fromPointer) press.current.completed = true;
+      press.current.completed = true;
       complete();
     }, holdMs);
   };
@@ -49,14 +49,15 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
   const onPointerDown = (e) => {
     if (e.button !== undefined && e.button !== 0) return;
     press.current = { at: Date.now(), completed: false };
-    if (!done) start(true);
+    if (!done) start();
   };
 
   const onClick = () => {
     const { at, completed } = press.current;
     press.current = { at: null, completed: false };
+    // The release of a hold that completed, however long it was held past 600 ms.
+    if (completed) return;
     const fromPress = at !== null && Date.now() - at < PRESS_WINDOW_MS;
-    if (fromPress && completed) return; // the release of a hold that just completed
     if (done) onUndo();
     else if (!fromPress) complete();
   };
@@ -65,8 +66,9 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
     if (!KEYS.includes(e.key)) return;
     e.preventDefault();
     if (e.repeat) return;
+    press.current = { at: Date.now(), completed: false };
     if (done) onUndo();
-    else start(false);
+    else start();
   };
 
   const onKeyUp = (e) => {

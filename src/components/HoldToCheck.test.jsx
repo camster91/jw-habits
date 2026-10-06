@@ -120,6 +120,52 @@ describe('HoldToCheck', () => {
     expect(haptics.success).toHaveBeenCalledTimes(1);
   });
 
+  it('a hold kept down well past completion does not undo itself on release', () => {
+    const onComplete = vi.fn();
+    const onUndo = vi.fn();
+    const { rerender } = render(
+      <HoldToCheck done={false} onComplete={onComplete} onUndo={onUndo} label="Daily text" />
+    );
+    const button = screen.getByRole('button', { name: /Daily text/ });
+    fireEvent.pointerDown(button);
+    advance(600);
+    rerender(<HoldToCheck done onComplete={onComplete} onUndo={onUndo} label="Daily text" />);
+    advance(2400); // still holding, 3 s in total
+    fireEvent.pointerUp(button);
+    fireEvent.click(button);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(onUndo).not.toHaveBeenCalled();
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('a short keyboard tap whose keyup fires a click does not complete', () => {
+    const { onComplete, button } = setup();
+    fireEvent.keyDown(button, { key: ' ' });
+    advance(200);
+    fireEvent.keyUp(button, { key: ' ' });
+    fireEvent.click(button);
+    advance(1000);
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(haptics.success).not.toHaveBeenCalled();
+  });
+
+  it('a keyboard hold completes once and swallows the click that follows', () => {
+    const onComplete = vi.fn();
+    const onUndo = vi.fn();
+    const { rerender } = render(
+      <HoldToCheck done={false} onComplete={onComplete} onUndo={onUndo} label="Daily text" />
+    );
+    const button = screen.getByRole('button', { name: /Daily text/ });
+    fireEvent.keyDown(button, { key: ' ' });
+    advance(600);
+    rerender(<HoldToCheck done onComplete={onComplete} onUndo={onUndo} label="Daily text" />);
+    fireEvent.keyUp(button, { key: ' ' });
+    fireEvent.click(button);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+    expect(onUndo).not.toHaveBeenCalled();
+  });
+
   it('a stale press long ago does not swallow a later assistive click', () => {
     const { onComplete, button } = setup();
     fireEvent.pointerDown(button);
