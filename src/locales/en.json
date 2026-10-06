@@ -75,5 +75,28 @@
     "linkSecondary": "Second link",
     "linkInvalid": "That does not look like a valid http(s) link, so it will be treated as empty.",
     "testFailed": "Could not send the test notification."
+  },
+  "fd": {
+    "routine": {
+      "dailyText": "Daily text",
+      "bibleReading": "Bible reading",
+      "meetingPrep": "Meeting prep",
+      "familyWorship": "Family worship",
+      "personalStudy": "Personal study",
+      "ministry": "Ministry"
+    },
+    "anchor": {
+      "afterBreakfast": "After breakfast",
+      "withFamilyPrayer": "With family prayer",
+      "beforeBed": "Before bed"
+    },
+    "notify": {
+      "title": "Faithful Days",
+      "ready_one": "{{prefix}} · {{list}} is ready",
+      "ready_other": "{{prefix}} · {{list}} are ready",
+      "and": "{{head}} and {{last}}",
+      "wrapUp": "Your day in review is ready",
+      "meetingEve": "Tomorrow's meeting — prep is ready when you are"
+    }
   }
 }

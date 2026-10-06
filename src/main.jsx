@@ -10,6 +10,7 @@ import fr from './locales/fr.json';
 import App from './App.jsx';
 import { safeGetItem, safeSetItemQuiet } from './utils/safeStorage.js';
 import { initializeNative, isNative, appLifecycle } from './utils/native.js';
+import { registerReminderSync } from './native/reminders.js';
 
 // i18next — Spanish/French fall back to English when a key
 // is missing. Language detected from navigator, cached in
@@ -75,6 +76,9 @@ window.onunhandledrejection = function (event) {
   const error = event.reason;
   logGlobalError('unhandled_rejection', error?.message || String(error), 'Promise', error);
 };
+
+// Reschedule local notifications on every app open
+registerReminderSync();
 
 // Initialize native mobile features
 initializeNative().catch(console.error);
