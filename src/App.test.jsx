@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { defaultStore } from './domain/store.js';
 import { ACCENTS, applyTheme } from './theme/theme.js';
 
@@ -10,6 +10,7 @@ vi.mock('./utils/native.js', () => ({
     return platform.isWeb;
   },
   isNative: false,
+  haptics: { success: () => {} },
   appLifecycle: { onStateChange: () => () => {} },
 }));
 vi.mock('./components/InstallPrompt', () => ({
@@ -88,6 +89,18 @@ describe('App shell', () => {
     renderApp();
     await screen.findByTestId('today');
     expect(screen.queryByTestId('install-prompt')).not.toBeInTheDocument();
+  });
+
+  it('opens and closes the Settings sheet from Today', async () => {
+    seed({ onboardingDone: true });
+    renderApp();
+    await screen.findByTestId('today');
+    expect(screen.queryByTestId('settings-sheet')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    const sheet = screen.getByTestId('settings-sheet');
+    expect(sheet).toHaveAttribute('role', 'dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByTestId('settings-sheet')).not.toBeInTheDocument();
   });
 
   it('applies the stored theme and accent to the document', async () => {

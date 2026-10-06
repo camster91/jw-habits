@@ -43,6 +43,19 @@
 @theme {
   --color-jw-blue: #4a6fa4;
   --color-jw-green: #71bc37;
+  /* The wrap-up's light celebration: one soft rise, never a loop. */
+  --animate-fd-celebrate: fd-celebrate 700ms ease-out 1;
+
+  @keyframes fd-celebrate {
+    0% {
+      opacity: 0;
+      transform: translateY(6px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 /* ============================================================
