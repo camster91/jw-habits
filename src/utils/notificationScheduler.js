@@ -2,7 +2,7 @@
  * Daily reminder scheduler.
  *
  * What it does:
- *   - Reads the user's reminderTime + quietHours from localStorage.
+ *   - Reads the user's reminderTime + quietHours from local storage.
  *   - Computes the next moment to fire the reminder (today at
  *     reminderTime, or tomorrow if it's already past).
  *   - Schedules a setTimeout that fires the OS-level notification
@@ -31,6 +31,7 @@
  *   - All data lives in localStorage; nothing is sent over the
  *     network (no server, no analytics).
  */
+import { safeGetItem } from './safeStorage.js';
 
 /** Permission state shape returned by getPermissionState(). */
 export const NOTIFICATION_PERMISSION = {
@@ -298,7 +299,7 @@ export function cancelReminder() {
 }
 
 /**
- * Read settings from localStorage. Resilient to corrupted JSON.
+ * Read settings from local storage. Resilient to corrupted JSON.
  * Re-imported here (instead of via settingsStore) to avoid a
  * circular dependency with SettingsAccordion.jsx, which is the
  * component that toggles settings.
@@ -306,7 +307,7 @@ export function cancelReminder() {
 function loadReminderSettings() {
   if (typeof localStorage === 'undefined') return null;
   try {
-    const raw = JSON.parse(localStorage.getItem(REMINDER_STORAGE_KEY) || '{}');
+    const raw = JSON.parse(safeGetItem(REMINDER_STORAGE_KEY) || '{}');
     if (!raw || typeof raw !== 'object') return null;
     return {
       reminderTime: typeof raw.reminderTime === 'string' ? raw.reminderTime : null,

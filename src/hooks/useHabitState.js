@@ -1,6 +1,6 @@
 /**
  * useHabitState — encapsulates the per-day habit state from
- * localStorage. Extracted from Home.jsx (issue #140) to make
+ * local storage. Extracted from Home.jsx (issue #140) to make
  * the Home page a thin renderer.
  *
  * Responsibilities:
@@ -21,7 +21,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { safeSetItem } from '../utils/safeStorage';
+import { safeGetItem, safeSetItem } from '../utils/safeStorage.js';
 
 const STATE_KEY = 'jw-daily-habits-state';
 const FIRST_DONE_KEY = 'jw-habits-first-done';
@@ -56,7 +56,7 @@ export function pruneHistory(history, today) {
 
 function loadInitialState() {
   try {
-    const raw = localStorage.getItem(STATE_KEY);
+    const raw = safeGetItem(STATE_KEY);
     if (!raw) return { date: todayKey(), done: {}, history: [] };
     const parsed = JSON.parse(raw);
     // Per-day reset: if the saved date isn't today, start fresh.
@@ -85,7 +85,7 @@ function persist(state) {
  */
 export function readBestStreak() {
   try {
-    return parseInt(localStorage.getItem(BEST_STREAK_KEY) || '0', 10) || 0;
+    return parseInt(safeGetItem(BEST_STREAK_KEY) || '0', 10) || 0;
   } catch {
     return 0;
   }
@@ -109,7 +109,7 @@ export function markInteracted() {
  */
 export function hasInteracted() {
   try {
-    return localStorage.getItem(FIRST_DONE_KEY) === '1';
+    return safeGetItem(FIRST_DONE_KEY) === '1';
   } catch {
     return false;
   }
@@ -133,7 +133,7 @@ export function useHabitState() {
     // a per-day reset to `done: {}`, persist that reset so the
     // next reload sees the wiped state. Mirrors the behavior of
     // the inline useState initializer in Home.jsx pre-#140.
-    const raw = localStorage.getItem(STATE_KEY);
+    const raw = safeGetItem(STATE_KEY);
     let stored;
     try {
       stored = raw ? JSON.parse(raw) : null;

@@ -74,7 +74,7 @@ function Home() {
       window.__jw_lang = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
     }
   }, [i18n.resolvedLanguage, i18n.language]);
-  // Initialize from localStorage. We re-read on `storage` events
+  // Initialize from local storage. We re-read on `storage` events
   // and on visibilitychange so the checkbox state stays current
   // across tabs and on wake-from-sleep. If the saved state's
   // date is from a previous day, we write a fresh empty state
@@ -225,7 +225,7 @@ function Home() {
   // Personal-note setter. Saves the typed note for one row, in
   // the current day's state. Persists via the same `done` map
   // (shape: { key: { done: bool, note: string } }). Debounced
-  // 300ms so quick typing doesn't thrash localStorage.
+  // 300ms so quick typing doesn't thrash local storage.
   const noteTimers = useRef({});
   const setRowNote = (key, note) => {
     setState((prev) => {
@@ -251,7 +251,7 @@ function Home() {
   // Bible-reading progress count. Re-reads on every render via
   // a tick counter (bumped when the Bible checkbox toggles) so
   // the chip stays in sync with the persistent counter in
-  // localStorage. The count is a calendar-day set capped at 730
+  // local storage. The count is a calendar-day set capped at 730
   // entries — see jw-bible-reading-days util for details.
   const [bibleReadTick, setBibleReadTick] = useState(0);
   // bibleReadDays is reserved for the upcoming per-habit-days chip.
@@ -292,7 +292,7 @@ function Home() {
 
   // Streak + progress metadata. All derived from local state.
   // - current: consecutive days ending today (or yesterday — grace).
-  // - best: monotonically-increasing all-time best in localStorage.
+  // - best: monotonically-increasing all-time best in local storage.
   // - todayProgress: how many habit rows the user has checked today
   //   out of how many are currently visible (Memorial only counts
   //   when it's March/April).

@@ -8,6 +8,7 @@ import en from './locales/en.json';
 import es from './locales/es.json';
 import fr from './locales/fr.json';
 import App from './App.jsx';
+import { safeGetItem, safeSetItem } from './utils/safeStorage.js';
 import { initializeNative, isNative, appLifecycle } from './utils/native.js';
 
 // i18next — Spanish/French fall back to English when a key
@@ -48,11 +49,11 @@ function logGlobalError(type, message, source, error) {
   };
 
   try {
-    const existingLogs = JSON.parse(localStorage.getItem('jw-error-logs') || '[]');
+    const existingLogs = JSON.parse(safeGetItem('jw-error-logs') || '[]');
     existingLogs.push(errorLog);
     // Keep only the last 20 errors
     const recentLogs = existingLogs.slice(-20);
-    localStorage.setItem('jw-error-logs', JSON.stringify(recentLogs));
+    safeSetItem('jw-error-logs', JSON.stringify(recentLogs));
   } catch {
     // Ignore storage errors
   }
@@ -110,7 +111,7 @@ if (isNative) {
 // light mode before React mounted and the daisyUI theme took
 // over.
 try {
-  const persistedSettings = JSON.parse(localStorage.getItem('jw-progress-settings') || '{}');
+  const persistedSettings = JSON.parse(safeGetItem('jw-progress-settings') || '{}');
   const storedTheme = persistedSettings?.state?.theme;
   let theme;
   if (storedTheme === 'dark' || storedTheme === 'light') {

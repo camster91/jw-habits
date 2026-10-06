@@ -22,7 +22,7 @@
  * quota even with the longest possible date strings.
  */
 
-import { safeSetItem } from './safeStorage';
+import { safeGetItem, safeSetItem } from './safeStorage.js';
 
 const KEY = 'jw-bible-reading-days';
 const MAX_ENTRIES = 730;
@@ -33,7 +33,7 @@ function isoDate(d = new Date()) {
 
 function load() {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = safeGetItem(KEY);
     if (!raw) return new Set();
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) return new Set();
