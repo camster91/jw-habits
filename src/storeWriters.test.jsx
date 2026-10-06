@@ -117,36 +117,44 @@ beforeEach(() => {
 
 describe('UI writers keep the store valid', () => {
   for (const finish of ['Next', 'Skip — use defaults']) {
-    it(`onboarding: every control on every step, then "${finish}" each time`, () => {
-      render(
-        <Harness initial={defaultStore(TODAY, 'en')}>
-          <Onboarding />
-        </Harness>
-      );
-      fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
-      for (let step = 2; step <= 6; step++) {
-        pokeAll(screen.getByTestId('onboarding'));
-        const label = step === 6 && finish === 'Next' ? 'Start my first day' : finish;
-        fireEvent.click(screen.getByRole('button', { name: label }));
-      }
-      expect(results).toHaveLength(1); // the single commit
-      expect(failures()).toEqual([]);
-    }, UI_SWEEP_TIMEOUT);
+    it(
+      `onboarding: every control on every step, then "${finish}" each time`,
+      () => {
+        render(
+          <Harness initial={defaultStore(TODAY, 'en')}>
+            <Onboarding />
+          </Harness>
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Get started' }));
+        for (let step = 2; step <= 6; step++) {
+          pokeAll(screen.getByTestId('onboarding'));
+          const label = step === 6 && finish === 'Next' ? 'Start my first day' : finish;
+          fireEvent.click(screen.getByRole('button', { name: label }));
+        }
+        expect(results).toHaveLength(1); // the single commit
+        expect(failures()).toEqual([]);
+      },
+      UI_SWEEP_TIMEOUT
+    );
   }
 
-  it('settings: every control in the sheet', () => {
-    const initial = { ...defaultStore('2026-09-01', 'en'), onboardingDone: true };
-    render(
-      <Harness initial={initial}>
-        <SettingsSheet open onClose={() => {}} />
-      </Harness>
-    );
-    pokeAll(screen.getByTestId('settings-sheet'));
-    // A second pass reaches controls the first one revealed (quiet hours, reminders).
-    pokeAll(screen.getByTestId('settings-sheet'));
-    expect(results.length).toBeGreaterThan(50);
-    expect(failures()).toEqual([]);
-  }, UI_SWEEP_TIMEOUT);
+  it(
+    'settings: every control in the sheet',
+    () => {
+      const initial = { ...defaultStore('2026-09-01', 'en'), onboardingDone: true };
+      render(
+        <Harness initial={initial}>
+          <SettingsSheet open onClose={() => {}} />
+        </Harness>
+      );
+      pokeAll(screen.getByTestId('settings-sheet'));
+      // A second pass reaches controls the first one revealed (quiet hours, reminders).
+      pokeAll(screen.getByTestId('settings-sheet'));
+      expect(results.length).toBeGreaterThan(50);
+      expect(failures()).toEqual([]);
+    },
+    UI_SWEEP_TIMEOUT
+  );
 
   describe('today', () => {
     beforeEach(() => {
@@ -155,35 +163,39 @@ describe('UI writers keep the store valid', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    it('check-in, undo, stepper, ministry, hours and the badge', () => {
-      const initial = withScheduleChange(
-        {
-          ...defaultStore('2026-09-01', 'en'),
-          onboardingDone: true,
-          pioneer: true,
-          whatsNew: { enabled: true, lastCheck: null, seen: [], newCount: 2 },
-        },
-        '2026-09-01',
-        { meetingDays: [3] }
-      );
-      render(
-        <Harness initial={initial}>
-          <Today />
-        </Harness>
-      );
-      const holds = () => screen.queryAllByRole('button', { pressed: false });
-      for (const b of holds()) {
-        fireEvent.pointerDown(b);
-        act(() => vi.advanceTimersByTime(600));
-        fireEvent.pointerUp(b);
-        fireEvent.click(b);
-      }
-      pokeAll(screen.getByTestId('today'));
-      // Undo every check-in.
-      for (const b of screen.queryAllByRole('button', { pressed: true })) fireEvent.click(b);
-      expect(results.length).toBeGreaterThan(15);
-      expect(failures()).toEqual([]);
-    }, UI_SWEEP_TIMEOUT);
+    it(
+      'check-in, undo, stepper, ministry, hours and the badge',
+      () => {
+        const initial = withScheduleChange(
+          {
+            ...defaultStore('2026-09-01', 'en'),
+            onboardingDone: true,
+            pioneer: true,
+            whatsNew: { enabled: true, lastCheck: null, seen: [], newCount: 2 },
+          },
+          '2026-09-01',
+          { meetingDays: [3] }
+        );
+        render(
+          <Harness initial={initial}>
+            <Today />
+          </Harness>
+        );
+        const holds = () => screen.queryAllByRole('button', { pressed: false });
+        for (const b of holds()) {
+          fireEvent.pointerDown(b);
+          act(() => vi.advanceTimersByTime(600));
+          fireEvent.pointerUp(b);
+          fireEvent.click(b);
+        }
+        pokeAll(screen.getByTestId('today'));
+        // Undo every check-in.
+        for (const b of screen.queryAllByRole('button', { pressed: true })) fireEvent.click(b);
+        expect(results.length).toBeGreaterThan(15);
+        expect(failures()).toEqual([]);
+      },
+      UI_SWEEP_TIMEOUT
+    );
   });
 });
 
