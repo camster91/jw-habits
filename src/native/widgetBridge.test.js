@@ -201,7 +201,7 @@ describe('registerWidgetBridge', () => {
     off();
   });
 
-  it('ignores ministry, stale days and routines already done today', async () => {
+  it('ignores ministry and never overwrites an existing entry', async () => {
     const existing = addCheckIn(store(), {
       routine: 'bibleReading',
       day: TODAY,
@@ -210,7 +210,6 @@ describe('registerWidgetBridge', () => {
     plugin.drainQueue.mockResolvedValue({
       items: [
         { routine: 'ministry', day: TODAY },
-        { routine: 'dailyText', day: '2026-10-05' },
         { routine: 'bibleReading', day: TODAY },
       ],
     });
@@ -223,6 +222,57 @@ describe('registerWidgetBridge', () => {
       { routine: 'bibleReading', day: TODAY, value: { chapters: [0, 1] } },
     ]);
     expect(plugin.setSnapshot).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it("applies yesterday's tap to yesterday when the app opens after 03:00", async () => {
+    const yesterday = '2026-10-05';
+    plugin.drainQueue.mockResolvedValue({
+      items: [
+        { routine: 'dailyText', day: yesterday },
+        { routine: 'bibleReading', day: yesterday },
+      ],
+    });
+    const off = registerWidgetBridge();
+    const { state, update } = provider(store());
+    await hooks.foreground({ store: state.store, update, today: TODAY });
+    expect(state.store.log).toEqual([
+      { routine: 'dailyText', day: yesterday, value: true },
+      { routine: 'bibleReading', day: yesterday, value: true },
+    ]);
+    off();
+  });
+
+  it('drops taps more than 3 days old, before history, in the future, or repeated', async () => {
+    plugin.drainQueue.mockResolvedValue({
+      items: [
+        { routine: 'dailyText', day: '2026-10-01' }, // 5 days old
+        { routine: 'familyWorship', day: '2026-10-07' }, // tomorrow
+        { routine: 'personalStudy', day: '2026-10-03' }, // 3 days old: kept
+        { routine: 'personalStudy', day: '2026-10-03' }, // repeat
+      ],
+    });
+    const off = registerWidgetBridge();
+    const { state, update } = provider(store());
+    await hooks.foreground({ store: state.store, update, today: TODAY });
+    expect(state.store.log).toEqual([{ routine: 'personalStudy', day: '2026-10-03', value: true }]);
+
+    // A 3-day-old tap from before the store's history began is dropped too.
+    const young = provider(defaultStore('2026-10-05', 'en'));
+    plugin.drainQueue.mockResolvedValue({ items: [{ routine: 'dailyText', day: '2026-10-04' }] });
+    await hooks.foreground({ store: young.state.store, update: young.update, today: TODAY });
+    expect(young.update).not.toHaveBeenCalled();
+    off();
+  });
+
+  it("does not overwrite yesterday's existing entry", async () => {
+    const y = { routine: 'bibleReading', day: '2026-10-05', value: { chapters: [4] } };
+    plugin.drainQueue.mockResolvedValue({ items: [{ routine: 'bibleReading', day: '2026-10-05' }] });
+    const off = registerWidgetBridge();
+    const { state, update } = provider(addCheckIn(store(), y));
+    await hooks.foreground({ store: state.store, update, today: TODAY });
+    expect(update).not.toHaveBeenCalled();
+    expect(state.store.log).toEqual([y]);
     off();
   });
 

@@ -1,14 +1,15 @@
 /**
  * Home-screen widgets through the native WidgetBridge plugin. The app writes
  * a small JSON snapshot of today's routines; the widget only reads it and
- * queues `{routine, day}` check-ins, which the app applies on the next
- * foreground. The widget never runs domain logic. Best-effort throughout: on
- * web, or if the plugin fails, nothing happens and nothing throws.
+ * queues `{routine, day}` check-ins, which the app applies to their own day
+ * on the next foreground. The widget never runs domain logic. Best-effort
+ * throughout: on web, or if the plugin fails, nothing happens and nothing
+ * throws.
  */
 import i18n from 'i18next';
 import { registerPlugin } from '@capacitor/core';
 import { onForeground, onStoreChange } from '../data/StoreProvider.jsx';
-import { appDay } from '../domain/day.js';
+import { addDays, appDay } from '../domain/day.js';
 import { ROUTINE_IDS, dueToday, isDone } from '../domain/routines.js';
 import { addCheckIn, labelFor } from '../domain/store.js';
 import { ACCENTS } from '../theme/theme.js';
@@ -77,17 +78,24 @@ export async function drainWidgetCheckIns() {
   }
 }
 
+/** How many days back a queued tap may still land (the app may not open before 03:00). */
+const MAX_AGE_DAYS = 3;
+
 /**
- * The queued items that should become check-ins: today's only (a stale day
- * is dropped), never ministry, and never one already done today (so a widget
- * tap can't overwrite chapters logged in the app).
+ * The queued items that should become check-ins, each on its own day: a day
+ * inside history, not after today and at most 3 days old; never ministry;
+ * and never a routine/day that already has an entry (so a widget tap can't
+ * overwrite chapters logged in the app). Repeats are dropped.
  */
 function applicable(store, items, today) {
+  const oldest = addDays(today, -MAX_AGE_DAYS);
   const seen = new Set();
   return items.filter(({ routine, day }) => {
-    if (day !== today || WIDGET_EXCLUDED.has(routine) || seen.has(routine)) return false;
-    seen.add(routine);
-    return !isDone(store, routine, today);
+    const key = routine + '|' + day;
+    if (WIDGET_EXCLUDED.has(routine) || seen.has(key)) return false;
+    if (day > today || day < oldest || day < store.schedule[0].from) return false;
+    seen.add(key);
+    return !store.log.some((e) => e.routine === routine && e.day === day);
   });
 }
 
@@ -113,9 +121,10 @@ export function registerWidgetBridge() {
     // against the current store in case it moved on during the drain.
     if (applicable(store, queued, today).length > 0) {
       update((s) => {
+        // Always `true`, Bible reading included: `{chapters: []}` is the
+        // catch-up marker only, and today.js takes that back.
         latest = applicable(s, queued, today).reduce(
-          (acc, { routine }) =>
-            addCheckIn(acc, { routine, day: today, value: true }),
+          (acc, { routine, day }) => addCheckIn(acc, { routine, day, value: true }),
           s
         );
         return latest;
