@@ -102,6 +102,33 @@ describe('HoldToCheck', () => {
     expect(onUndo).toHaveBeenCalledTimes(1);
   });
 
+  it('completes at once on a click with no press before it (screen readers, switch, voice)', () => {
+    const { onComplete, onUndo, button } = setup();
+    fireEvent.click(button);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+    expect(onUndo).not.toHaveBeenCalled();
+  });
+
+  it('a completing pointer hold fires once, its trailing click swallowed', () => {
+    const { onComplete, button } = setup();
+    fireEvent.pointerDown(button);
+    advance(600);
+    fireEvent.pointerUp(button);
+    fireEvent.click(button);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+  });
+
+  it('a stale press long ago does not swallow a later assistive click', () => {
+    const { onComplete, button } = setup();
+    fireEvent.pointerDown(button);
+    fireEvent.pointerLeave(button);
+    advance(5000);
+    fireEvent.click(button);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
   it('completes when Space or Enter is held for 600 ms', () => {
     const { onComplete, button } = setup();
     fireEvent.keyDown(button, { key: ' ' });

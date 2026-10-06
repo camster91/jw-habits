@@ -7,7 +7,9 @@ const EMPTY = { shared: false, studies: 0 };
 /**
  * The month's ministry: a "shared this month" toggle and a Bible-study count,
  * plus hours against the monthly goal in pioneer mode. `value` is the month's
- * entry value (or null); every change hands the whole new value to `onChange`.
+ * entry value (or null); each change hands only the changed fields to
+ * `onChange` (a patch; `hours: undefined` clears hours), so the caller can
+ * merge it into the latest store.
  */
 export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange }) {
   const { t } = useTranslation();
@@ -20,13 +22,11 @@ export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange
   const onHours = (text) => {
     setHoursText(text);
     if (text.trim() === '') {
-      const rest = { ...current };
-      delete rest.hours;
-      onChange(rest);
+      onChange({ hours: undefined });
       return;
     }
     const hours = Number(text);
-    if (Number.isFinite(hours) && hours >= 0) onChange({ ...current, hours });
+    if (Number.isFinite(hours) && hours >= 0) onChange({ hours });
   };
 
   return (
@@ -38,14 +38,14 @@ export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange
           type="checkbox"
           className="toggle border-[var(--fd-accent)] checked:bg-[var(--fd-accent)] checked:text-white"
           checked={current.shared}
-          onChange={(e) => onChange({ ...current, shared: e.target.checked })}
+          onChange={(e) => onChange({ shared: e.target.checked })}
         />
       </label>
       <Stepper
         label={t('fd.today.ministryStudies')}
         value={current.studies}
         max={99}
-        onChange={(studies) => onChange({ ...current, studies })}
+        onChange={(studies) => onChange({ studies })}
       />
       {pioneer && (
         <div className="mt-2 flex items-center justify-between gap-3">

@@ -115,6 +115,17 @@ describe('Today: the list', () => {
     expect(checkButton('Daily text')).toBeInTheDocument();
   });
 
+  it('undoing Bible reading takes back the catch-up it made', () => {
+    renderToday(makeStore());
+    const stepper = screen.getByRole('group', { name: 'Chapters read today' });
+    fireEvent.click(within(stepper).getByRole('button', { name: 'One more' }));
+    fireEvent.click(within(stepper).getByRole('button', { name: 'One more' }));
+    expect(entry('bibleReading', '2026-10-05').value).toEqual({ chapters: [] });
+    fireEvent.click(screen.getByRole('button', { name: 'Bible reading', pressed: true }));
+    expect(entry('bibleReading')).toBeUndefined();
+    expect(entry('bibleReading', '2026-10-05')).toBeUndefined();
+  });
+
   it("checking Bible reading logs today's portion", () => {
     renderToday(makeStore());
     hold(checkButton('Bible reading'));
@@ -187,15 +198,42 @@ describe('Today: ministry', () => {
     expect(current.log.filter((e) => e.routine === 'ministry')).toHaveLength(1);
   });
 
-  it('rewrites an earlier entry this month on its own day', () => {
+  it('moves an earlier entry this month to today, and the row stays for undo', () => {
     renderToday(
       makeStore({
         log: [{ routine: 'ministry', day: '2026-10-02', value: { shared: false, studies: 2 } }],
       })
     );
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Shared in the ministry this month' }));
+    const shared = () =>
+      screen.getByRole('checkbox', { name: 'Shared in the ministry this month' });
+    fireEvent.click(shared());
     expect(current.log.filter((e) => e.routine === 'ministry')).toEqual([
-      { routine: 'ministry', day: '2026-10-02', value: { shared: true, studies: 2 } },
+      { routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 2 } },
+    ]);
+    // Still on Today, so the share can be taken back.
+    expect(shared()).toBeChecked();
+    fireEvent.click(shared());
+    expect(entry('ministry').value).toEqual({ shared: false, studies: 2 });
+  });
+
+  it('keeps both of two ministry changes made before a re-render', () => {
+    // A store whose update queues work without re-rendering Today.
+    const queue = [];
+    let store = makeStore();
+    const value = { store, update: (fn) => queue.push(fn), today: '2026-10-06' };
+    vi.setSystemTime(at(9));
+    render(
+      <StoreContext.Provider value={value}>
+        <Today />
+      </StoreContext.Provider>
+    );
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Shared in the ministry this month' }));
+    const studies = screen.getByRole('group', { name: 'Bible studies' });
+    fireEvent.click(within(studies).getByRole('button', { name: 'One more' }));
+    for (const fn of queue) store = fn(store);
+    const ministry = store.log.filter((e) => e.routine === 'ministry');
+    expect(ministry).toEqual([
+      { routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 1 } },
     ]);
   });
 

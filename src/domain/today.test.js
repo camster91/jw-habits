@@ -97,9 +97,25 @@ describe('setChaptersRead', () => {
     expect(entry(s, 'bibleReading', '2026-10-05')).toEqual({
       routine: 'bibleReading',
       day: '2026-10-05',
-      value: true,
+      value: { chapters: [] },
     });
     expect(entry(s, 'bibleReading', TUE).value).toEqual({ chapters: [ps(3), ps(4)] });
+  });
+
+  it('takes the catch-up back when today drops below two portions', () => {
+    const two = setChaptersRead(base(), TUE, 2);
+    expect(entry(setChaptersRead(two, TUE, 1), 'bibleReading', '2026-10-05')).toBeUndefined();
+    expect(entry(setChaptersRead(two, TUE, 0), 'bibleReading', '2026-10-05')).toBeUndefined();
+  });
+
+  it('never takes back a real yesterday check-in', () => {
+    for (const value of [true, { chapters: [ps(1)] }]) {
+      const y = { routine: 'bibleReading', day: '2026-10-05', value };
+      const s0 = base({ log: [y] });
+      for (const n of [0, 1, 2]) {
+        expect(entry(setChaptersRead(s0, TUE, n), 'bibleReading', '2026-10-05')).toEqual(y);
+      }
+    }
   });
 
   it('does not catch up for less than two portions', () => {
@@ -140,14 +156,27 @@ describe('ministry', () => {
     });
   });
 
-  it("rewrites this month's entry on its own day", () => {
+  it("moves this month's entry to today, merging the patch", () => {
     const s0 = base({
       log: [{ routine: 'ministry', day: '2026-10-02', value: { shared: false, studies: 2 } }],
     });
-    const s1 = setMinistry(s0, TUE, { shared: true, studies: 2 });
+    const s1 = setMinistry(s0, TUE, { shared: true });
     expect(s1.log.filter((e) => e.routine === 'ministry')).toEqual([
-      { routine: 'ministry', day: '2026-10-02', value: { shared: true, studies: 2 } },
+      { routine: 'ministry', day: TUE, value: { shared: true, studies: 2 } },
     ]);
+  });
+
+  it('applies two patches in a row without losing either', () => {
+    const s = setMinistry(setMinistry(base(), TUE, { shared: true }), TUE, { studies: 3 });
+    expect(ministryEntry(s, TUE).value).toEqual({ shared: true, studies: 3 });
+  });
+
+  it('removes hours when patched with undefined', () => {
+    const s0 = setMinistry(base(), TUE, { hours: 4 });
+    expect(ministryEntry(s0, TUE).value).toEqual({ shared: false, studies: 0, hours: 4 });
+    const s1 = setMinistry(s0, TUE, { hours: undefined });
+    expect(ministryEntry(s1, TUE).value).toEqual({ shared: false, studies: 0 });
+    expect('hours' in ministryEntry(s1, TUE).value).toBe(false);
   });
 
   it("ignores last month's entry", () => {
@@ -155,6 +184,7 @@ describe('ministry', () => {
       log: [{ routine: 'ministry', day: '2026-09-30', value: { shared: true, studies: 0 } }],
     });
     expect(ministryEntry(s, TUE)).toBeNull();
+    expect(setMinistry(s, TUE, { studies: 1 }).log).toHaveLength(2);
   });
 });
 

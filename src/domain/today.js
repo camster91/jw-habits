@@ -39,24 +39,36 @@ export function chaptersReadOn(store, day) {
   return portionSize(store, day);
 }
 
+/** The catch-up marker: a check-in with no chapters, never written by a real reading. */
+const isCatchUp = (entry) =>
+  Array.isArray(entry?.value?.chapters) &&
+  entry.value.chapters.length === 0 &&
+  Object.keys(entry.value).length === 1;
+
 /**
  * Record `n` chapters read on `day`, starting at the next unread chapter
  * (0 removes the day's entry). Reading two portions or more also checks in a
- * yesterday that was due, inside history, and has no entry (catch-up).
+ * yesterday that was due, inside history, and has no entry (catch-up), with
+ * the marker `{chapters: []}`. Dropping below two portions takes that marker
+ * back; a real check-in on yesterday is never touched.
  */
 export function setChaptersRead(store, day, n) {
-  const before = removeCheckIn(store, 'bibleReading', day);
+  const yesterday = addDays(day, -1);
+  const catchUp = n >= 2 * portionSize(store, day);
+  let before = removeCheckIn(store, 'bibleReading', day);
+  if (!catchUp && isCatchUp(findEntry(before, 'bibleReading', yesterday))) {
+    before = removeCheckIn(before, 'bibleReading', yesterday);
+  }
   if (n <= 0) return before;
   const chapters = nextChapters(before, n).map((c) => chapterIndex(c.book, c.chapter));
   let next = addCheckIn(before, { routine: 'bibleReading', day, value: { chapters } });
-  const yesterday = addDays(day, -1);
   if (
-    n >= 2 * portionSize(store, day) &&
+    catchUp &&
     yesterday >= store.schedule[0].from &&
     findEntry(before, 'bibleReading', yesterday) === null &&
     dueToday(before, yesterday).includes('bibleReading')
   ) {
-    next = addCheckIn(next, { routine: 'bibleReading', day: yesterday, value: true });
+    next = addCheckIn(next, { routine: 'bibleReading', day: yesterday, value: { chapters: [] } });
   }
   return next;
 }
@@ -70,10 +82,17 @@ export function ministryEntry(store, day) {
   );
 }
 
-/** Write the month's single ministry entry: on its existing day, else on `day`. */
-export function setMinistry(store, day, value) {
+/**
+ * Merge `patch` into the month's single ministry entry and move it to `day`,
+ * so an edit counts for the day it is made (and stays undoable on Today).
+ * A patch key set to `undefined` removes that field (e.g. `hours`).
+ */
+export function setMinistry(store, day, patch) {
   const existing = ministryEntry(store, day);
-  return addCheckIn(store, { routine: 'ministry', day: existing?.day ?? day, value });
+  const base = existing ? removeCheckIn(store, 'ministry', existing.day) : store;
+  const merged = { shared: false, studies: 0, ...existing?.value, ...patch };
+  const value = Object.fromEntries(Object.entries(merged).filter(([, v]) => v !== undefined));
+  return addCheckIn(base, { routine: 'ministry', day, value });
 }
 
 /**

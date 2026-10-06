@@ -91,16 +91,20 @@ export default function Today({ onOpenSettings = () => {} }) {
     );
     encourage(id);
   };
-  const undo = (id) => update((s) => removeCheckIn(s, id, today));
+  // Undoing Bible reading also takes back a catch-up it made for yesterday.
+  const undo = (id) =>
+    update((s) =>
+      id === 'bibleReading' ? setChaptersRead(s, today, 0) : removeCheckIn(s, id, today)
+    );
 
   const setChapters = (n) => {
     if (chaptersReadOn(store, today) === 0 && n > 0) encourage('bibleReading');
     update((s) => setChaptersRead(s, today, n));
   };
 
-  const setMinistryValue = (value) => {
-    if (value.shared && !ministryEntry(store, today)?.value.shared) encourage('ministry');
-    update((s) => setMinistry(s, today, value));
+  const patchMinistry = (patch) => {
+    if (patch.shared === true && !ministryEntry(store, today)?.value.shared) encourage('ministry');
+    update((s) => setMinistry(s, today, patch));
   };
 
   // Opening the page zeroes the count; the checks already keep every guid seen.
@@ -139,7 +143,7 @@ export default function Today({ onOpenSettings = () => {} }) {
           value={ministryEntry(store, today)?.value ?? null}
           pioneer={store.pioneer}
           hoursGoal={store.hoursGoal}
-          onChange={setMinistryValue}
+          onChange={patchMinistry}
         />
       );
     }

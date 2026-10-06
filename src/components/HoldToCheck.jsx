@@ -4,24 +4,33 @@ import { Check } from 'lucide-react';
 import { haptics } from '../utils/native.js';
 
 const KEYS = [' ', 'Enter'];
+// A click this soon after a pointerdown is that press's own click.
+const PRESS_WINDOW_MS = 2000;
 
 /**
  * A round check button that completes after being held for `holdMs` (pointer,
  * or Space/Enter held down), with a haptic tap and a soft fill. Letting go
- * early cancels. When done, a tap (or Space/Enter) undoes at once.
+ * early cancels. When done, a tap (or Space/Enter) undoes at once. A click
+ * with no pointer press before it (screen reader, switch or voice control)
+ * completes at once, so the check never depends on holding.
  */
 export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 600 }) {
   const { t } = useTranslation();
   const hintId = useId();
   const [holding, setHolding] = useState(false);
   const timer = useRef(null);
-  // Swallows the click that ends a pointer hold which just completed.
-  const suppressClick = useRef(false);
+  // The last pointer press: when it began, and whether its hold completed.
+  const press = useRef({ at: null, completed: false });
 
   const cancel = () => {
     clearTimeout(timer.current);
     timer.current = null;
     setHolding(false);
+  };
+
+  const complete = () => {
+    haptics.success();
+    onComplete();
   };
 
   const start = (fromPointer) => {
@@ -30,9 +39,8 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
     timer.current = setTimeout(() => {
       timer.current = null;
       setHolding(false);
-      if (fromPointer) suppressClick.current = true;
-      haptics.success();
-      onComplete();
+      if (fromPointer) press.current.completed = true;
+      complete();
     }, holdMs);
   };
 
@@ -40,16 +48,17 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
 
   const onPointerDown = (e) => {
     if (e.button !== undefined && e.button !== 0) return;
-    suppressClick.current = false;
+    press.current = { at: Date.now(), completed: false };
     if (!done) start(true);
   };
 
   const onClick = () => {
-    if (suppressClick.current) {
-      suppressClick.current = false;
-      return;
-    }
+    const { at, completed } = press.current;
+    press.current = { at: null, completed: false };
+    const fromPress = at !== null && Date.now() - at < PRESS_WINDOW_MS;
+    if (fromPress && completed) return; // the release of a hold that just completed
     if (done) onUndo();
+    else if (!fromPress) complete();
   };
 
   const onKeyDown = (e) => {
