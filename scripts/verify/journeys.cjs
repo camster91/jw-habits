@@ -166,7 +166,12 @@ const closeSettings = async (page) => {
     async (page) => {
       await onboardSkip(page);
       await openSettings(page);
-      await page.getByRole('dialog').getByRole('switch', { name: 'Daily text' }).uncheck();
+      // Scoped to the Routines section: Reminders has a 'Daily text' switch too.
+      await page
+        .getByRole('dialog')
+        .getByRole('region', { name: 'Routines' })
+        .getByRole('switch', { name: 'Daily text' })
+        .uncheck();
       await closeSettings(page);
       step('J4 the routine is gone from Today', (await routineButton(page, 'Daily text').count()) === 0);
       const s = await storeWhere(page, (x) => lastSchedule(x).enabled.dailyText === false);
