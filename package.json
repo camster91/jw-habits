@@ -1,7 +1,7 @@
 {
     "name": "habit-tracker",
     "private": true,
-    "version": "4.2.0",
+    "version": "5.0.0",
     "type": "module",
     "description": "Track daily habits and routines. Add your own habits, set reminders, and keep a simple streak.",
     "overrides": {

@@ -9,7 +9,8 @@ import es from './locales/es.json';
 import fr from './locales/fr.json';
 import App from './App.jsx';
 import { safeGetItem, safeSetItemQuiet } from './utils/safeStorage.js';
-import { initializeNative, isNative, appLifecycle } from './utils/native.js';
+import { initializeNative, isNative, isWeb, appLifecycle } from './utils/native.js';
+import { StoreProvider } from './data/StoreProvider.jsx';
 import { registerReminderSync } from './native/reminders.js';
 import { registerWhatsNewCheck } from './native/whatsNewClient.js';
 
@@ -139,7 +140,9 @@ const root = createRoot(container);
 
 root.render(
   <StrictMode>
-    <App />
+    <StoreProvider>
+      <App />
+    </StoreProvider>
   </StrictMode>
 );
 
@@ -148,7 +151,11 @@ root.render(
 // do NOT auto-reload on controllerchange, which would destroy any
 // in-progress state. See src/components/UpdatePrompt.jsx for the
 // banner and src/utils/native.js for the applyUpdate flow.
-if ('serviceWorker' in navigator) {
+if (isWeb && 'serviceWorker' in navigator) {
+  // Register the service worker (the plugin's auto-injection is off, so the
+  // native build never registers one).
+  import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }));
+
   // Handle notification clicks — focus app window. Only accept
   // messages from our controlling SW, and only same-origin paths.
   navigator.serviceWorker.addEventListener('message', (event) => {
@@ -174,7 +181,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // Listen for notification clicks directly (for when SW isn't controlling)
-if ('serviceWorker' in navigator) {
+if (isWeb && 'serviceWorker' in navigator) {
   navigator.serviceWorker.ready
     .then(() => {
       // No-op: registration ready for notification scheduling

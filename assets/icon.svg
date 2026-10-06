@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCE3B8"/>
+      <stop offset="1" stop-color="#F7B267"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+  <!-- rays -->
+  <g stroke="#FFF4DC" stroke-width="26" stroke-linecap="round" opacity="0.9">
+    <line x1="512" y1="250" x2="512" y2="170"/>
+    <line x1="328" y1="326" x2="272" y2="270"/>
+    <line x1="696" y1="326" x2="752" y2="270"/>
+    <line x1="252" y1="500" x2="172" y2="500"/>
+    <line x1="772" y1="500" x2="852" y2="500"/>
+  </g>
+  <!-- sun, half risen -->
+  <circle cx="512" cy="600" r="190" fill="#F2872E"/>
+  <!-- land -->
+  <path d="M0 600 Q512 560 1024 600 V1024 H0 Z" fill="#4A6FA4"/>
+  <!-- open path running to the horizon -->
+  <path d="M492 590 Q532 590 532 590 Q640 800 740 1024 H200 Q420 800 492 590 Z" fill="#FCE3B8"/>
+</svg>
