@@ -19,9 +19,14 @@ function RoutineCard({ title, s, daysThisYear }) {
   return (
     <li className="card bg-base-100 p-4 shadow-sm">
       <h2 className="font-semibold">{title}</h2>
-      <p>
-        {t(`fd.progress.${RECENT_KEY[s.recentUnit]}`, { count: s.recentTotal, done: s.recentDone })}
-      </p>
+      {s.recentTotal > 0 && (
+        <p>
+          {t(`fd.progress.${RECENT_KEY[s.recentUnit]}`, {
+            count: s.recentTotal,
+            done: s.recentDone,
+          })}
+        </p>
+      )}
       {s.current > 0 && (
         <p className="text-[var(--fd-accent)]">{t('fd.progress.streak', { count: s.current })}</p>
       )}
@@ -38,6 +43,7 @@ export default function Progress() {
   const { enabled } = scheduleOn(store, today);
   const sums = totals(store, today);
   const completed = booksCompleted(store);
+  const cards = ROUTINE_IDS.filter((id) => enabled[id]);
 
   return (
     <main
@@ -46,16 +52,18 @@ export default function Progress() {
     >
       <div className="mx-auto max-w-md space-y-4">
         <h1 className="text-3xl font-bold">{t('fd.progress.title')}</h1>
-        <ul className="space-y-3">
-          {ROUTINE_IDS.filter((id) => enabled[id]).map((id) => (
-            <RoutineCard
-              key={id}
-              title={labelFor(store, id, t)}
-              s={streak(store, id, today)}
-              daysThisYear={sums.perRoutineDaysThisYear[id]}
-            />
-          ))}
-        </ul>
+        {cards.length > 0 && (
+          <ul className="space-y-3">
+            {cards.map((id) => (
+              <RoutineCard
+                key={id}
+                title={labelFor(store, id, t)}
+                s={streak(store, id, today)}
+                daysThisYear={sums.perRoutineDaysThisYear[id]}
+              />
+            ))}
+          </ul>
+        )}
         <section className="card space-y-3 bg-base-100 p-4 shadow-sm">
           <h2 className="font-semibold">{t('fd.progress.readingTitle')}</h2>
           <p>{t('fd.progress.readingDays', { count: sums.readingDaysThisYear })}</p>

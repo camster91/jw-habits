@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BOOKS } from '../domain/bible.js';
 
@@ -17,13 +18,16 @@ export default function BibleMap({ completed }) {
             key={b.n}
             data-book={b.n}
             aria-label={t(read ? 'fd.progress.mapRead' : 'fd.progress.mapNotYet', { name: b.name })}
-            className={`flex h-9 items-center justify-center rounded text-[10px] font-medium ${
+            className={`relative flex h-9 items-center justify-center rounded border text-[11px] font-medium ${
               read
-                ? 'bg-[var(--fd-accent)] text-white'
-                : 'border border-base-content/20 text-base-content/60'
+                ? 'border-solid border-[var(--fd-accent)] bg-[var(--fd-accent)] text-white'
+                : 'border-dashed border-base-content/40 text-base-content/60'
             }`}
           >
-            <span aria-hidden="true">{b.name.replace(/\s/g, '').slice(0, 3)}</span>
+            {read && (
+              <Check aria-hidden="true" className="absolute right-0.5 top-0.5 h-2.5 w-2.5" />
+            )}
+            <span aria-hidden="true">{b.name.replace(/s/g, '').slice(0, 3)}</span>
           </li>
         );
       })}

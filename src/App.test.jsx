@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { defaultStore } from './domain/store.js';
 import { ACCENTS, applyTheme } from './theme/theme.js';
 
@@ -116,6 +116,17 @@ describe('App shell', () => {
     expect(sheet).toHaveAttribute('role', 'dialog');
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.queryByTestId('settings-sheet')).not.toBeInTheDocument();
+  });
+
+  it('opens the Settings sheet from the tab bar on Progress', async () => {
+    seed({ onboardingDone: true });
+    window.history.pushState({}, '', '/progress');
+    renderApp();
+    await screen.findByTestId('progress');
+    fireEvent.click(
+      within(screen.getByRole('navigation')).getByRole('button', { name: 'Settings' })
+    );
+    expect(screen.getByTestId('settings-sheet')).toBeInTheDocument();
   });
 
   it('applies the stored theme and accent to the document', async () => {

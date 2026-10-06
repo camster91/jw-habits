@@ -104,6 +104,37 @@ describe('Progress', () => {
     expect(within(daily).getByText('1 day this year')).toBeInTheDocument();
   });
 
+  it('marks read cells with an accent fill, solid border and a check; unread are dashed', () => {
+    renderProgress(makeStore());
+    const items = within(screen.getByRole('list', { name: 'Bible books' })).getAllByRole(
+      'listitem'
+    );
+    const read = items[0];
+    const unread = items[65];
+    expect(read.className).toContain('bg-[var(--fd-accent)]');
+    expect(read.className).toContain('border-solid');
+    expect(read.querySelector('svg')).not.toBeNull();
+    expect(unread.className).not.toContain('bg-[var(--fd-accent)]');
+    expect(unread.className).toContain('border-dashed');
+    expect(unread.querySelector('svg')).toBeNull();
+    expect(items.filter((i) => i.querySelector('svg'))).toHaveLength(13);
+  });
+
+  it('hides the recent line when nothing has closed yet', () => {
+    const base = makeStore();
+    renderProgress({ ...base, schedule: [{ ...base.schedule[0], from: TODAY }] });
+    expect(screen.queryByText(/of the last/)).not.toBeInTheDocument();
+  });
+
+  it('renders no card list when no routine is enabled', () => {
+    const base = makeStore();
+    const none = Object.fromEntries(Object.keys(base.schedule[0].enabled).map((k) => [k, false]));
+    renderProgress({ ...base, schedule: [{ ...base.schedule[0], enabled: none }] });
+    expect(screen.queryByRole('heading', { name: 'Daily text' })).not.toBeInTheDocument();
+    // Only the Bible-map list remains.
+    expect(screen.getAllByRole('list')).toHaveLength(1);
+  });
+
   it('shows the reading totals', () => {
     const log = [
       { routine: 'bibleReading', day: '2026-10-05', value: { chapters: [0, 1, 2] } },
