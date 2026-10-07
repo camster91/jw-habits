@@ -32,8 +32,7 @@ and leap-day arithmetic. This replaces the historical local-midnight proposal.
 
 ## Startup, route and precache budgets
 
-The measured release build has about 175 kB gzip JS, 23 kB gzip CSS and 724 kB
-of precached content (15 entries). Enforced limits: 210,000 bytes gzip JS,
+Each build prints measured gzip JS/CSS, precache bytes and entry counts. Enforced limits: 210,000 bytes gzip JS,
 30,000 bytes gzip CSS and 850,000 bytes precache. `npm run budgets` measures
 actual files and the injected worker manifest; a missing manifest also fails.
 An intentional 1-byte JS limit was confirmed to fail. These artifact budgets

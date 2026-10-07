@@ -10,7 +10,9 @@ release notes and an explicit compatibility/data-export review.
 | iOS widget | WidgetKit extension minimum iOS 17; embedded target and App Group entitlements compile | Signed App Group access, row check-in, rollover and widget reinstall on a device |
 | Android app/widget | Project min SDK 24, target/compile 36; debug compilation passes | Physical install, current WebView, widget sizing/taps, notification permissions and restart/rollover |
 | Chromium browser | CI Chrome 151; smoke/journeys, 320px light/dark axe/reflow and SW offline/update | Physical Android/desktop spot checks and large text |
-| Safari, Firefox, Edge | Target current stable versions; no completed release-engine matrix yet | Browser-engine smoke, keyboard, PWA differences and offline/update evidence |
+| Firefox engine | Playwright 1.62 bundled engine passes real-build smoke/journeys and light/dark 320px axe/reflow on Ubuntu | Physical browser/keyboard and platform-specific PWA/notification checks |
+| WebKit engine | Playwright 1.62 bundled engine passes the same real-build compatibility matrix on Ubuntu | Actual Safari/macOS/iOS WebView and OS share/keyboard/AT checks |
+| Safari and Edge applications | Target current stable versions; actual applications not certified by engine automation | Device/application spot checks, PWA differences and offline/update evidence |
 | Legacy browsers/OS below configured native minimums | No release commitment | Not covered by current release gates |
 
 Viewport targets: 320 px minimum CSS width; phone portrait and landscape,

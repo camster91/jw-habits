@@ -8,7 +8,9 @@
 async function launchBrowser() {
   const name = process.env.PLAYWRIGHT_BROWSER || 'chromium';
   if (!['chromium', 'firefox', 'webkit'].includes(name)) throw new Error(`Unsupported browser: ${name}`);
-  return require('playwright')[name].launch({ headless: true });
+  const browser = await require('playwright')[name].launch({ headless: true });
+  console.log(`Browser engine: ${name} ${browser.version()}`);
+  return browser;
 }
 
 const STORE_KEY = 'jw-habits-v2';
