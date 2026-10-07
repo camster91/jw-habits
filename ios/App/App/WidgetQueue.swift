@@ -30,8 +30,18 @@ final class WidgetQueue {
     }
 
     private func load(_ file: URL) throws -> [WidgetCheckIn] {
-        do { return try JSONDecoder().decode([WidgetCheckIn].self, from: Data(contentsOf: file)) }
+        let data: Data
+        do { data = try Data(contentsOf: file) }
         catch let error as CocoaError where error.code == .fileReadNoSuchFile { return [] }
+        do { return try JSONDecoder().decode([WidgetCheckIn].self, from: data) }
+        catch is DecodingError {
+            // Transport corruption must not disable all future widget taps.
+            // Preserve bytes first; if either write fails, propagate the error.
+            let recovery = root.appendingPathComponent("queue-corrupt-" + UUID().uuidString + ".json")
+            try data.write(to: recovery, options: .atomic)
+            try JSONEncoder().encode([WidgetCheckIn]()).write(to: file, options: .atomic)
+            return []
+        }
     }
 
     func read() throws -> [WidgetCheckIn] { try locked { try load($0) } }

@@ -61,12 +61,16 @@ struct QueueTest {
         let corrupt = Data("corrupt queue".utf8)
         let file = root.appendingPathComponent("queue.json")
         try corrupt.write(to: file)
-        do {
-            _ = try queue.drain()
-            fatalError("Corrupt queue must not be silently erased")
-        } catch {}
-        let preserved = try Data(contentsOf: file)
+        let corruptDrain = try queue.drain()
+        precondition(corruptDrain.isEmpty)
+        let recoveries = try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
+            .filter { $0.lastPathComponent.hasPrefix("queue-corrupt-") }
+        precondition(recoveries.count == 1)
+        let preserved = try Data(contentsOf: recoveries[0])
         precondition(preserved == corrupt)
+        try queue.enqueue(item)
+        let recovered = try queue.drain()
+        precondition(recovered == [item], "Corrupt transport must not block future taps")
         print("Widget day/timezone checks and queue: duplicate taps, 400 cross-process concurrent taps/drains and corrupt-byte preservation passed")
     }
 }
