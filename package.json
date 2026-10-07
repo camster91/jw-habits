@@ -44,6 +44,7 @@
     "dependencies": {
         "@capacitor/android": "^8.3.0",
         "@capacitor/app": "^8.1.0",
+        "@capacitor/app-launcher": "^8.0.1",
         "@capacitor/core": "^8.4.2",
         "@capacitor/filesystem": "^8.1.4",
         "@capacitor/haptics": "^8.0.2",

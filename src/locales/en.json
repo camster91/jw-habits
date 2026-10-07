@@ -233,6 +233,9 @@
         "version": "Version {{version}}"
       }
     },
+    "links": {
+      "opensInLibrary": "Opens in JW Library"
+    },
     "tabs": {
       "label": "Main navigation",
       "today": "Today",

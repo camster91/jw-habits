@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useCallback, useMemo, useState } from 'react';
+import { openLink } from '../native/openLink.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { StoreContext } from '../data/useStore.js';
 import { defaultStore } from '../domain/store.js';
@@ -13,6 +14,7 @@ import Today from './Today.jsx';
 import { haptics } from '../utils/native.js';
 import { CapacitorHttp } from '@capacitor/core';
 
+vi.mock('../native/openLink.js', () => ({ openLink: vi.fn() }));
 vi.mock('../utils/native.js', () => ({ haptics: { success: vi.fn() } }));
 vi.mock('@capacitor/core', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -75,7 +77,7 @@ const BANNED = /missed|broke|failed|lost/i;
 beforeEach(() => {
   vi.useFakeTimers();
   sessionStorage.clear();
-  window.open = vi.fn();
+  openLink.mockClear();
 });
 afterEach(() => vi.useRealTimers());
 
@@ -159,16 +161,12 @@ describe('Today: the list', () => {
   it('opens the routine link externally', () => {
     renderToday(makeStore());
     fireEvent.click(screen.getByRole('button', { name: 'Open Daily text' }));
-    expect(window.open).toHaveBeenCalledWith(
-      'https://wol.jw.org/en/wol/dt/r1/lp-e',
-      '_blank',
-      'noopener'
+    expect(openLink).toHaveBeenCalledWith(
+      'https://www.jw.org/finder?srcid=jwlshare&wtlocale=E&prefer=lang&alias=daily-text&date=20261006'
     );
     fireEvent.click(screen.getByRole('button', { name: 'Open Bible reading' }));
-    expect(window.open).toHaveBeenLastCalledWith(
-      'https://www.jw.org/finder?wtlocale=E&prefer=lang&bible=19003001&pub=nwtsty',
-      '_blank',
-      'noopener'
+    expect(openLink).toHaveBeenLastCalledWith(
+      'https://www.jw.org/finder?wtlocale=E&prefer=lang&bible=19003001&pub=nwtsty'
     );
     expect(screen.queryByRole('button', { name: 'Open Personal study' })).toBeNull();
   });
@@ -212,7 +210,7 @@ describe('Today: scripture reference', () => {
     const book = BOOKS.find((b) => b.name === name).n;
     const chapter = Number(verse.split(':')[0]);
     fireEvent.click(link);
-    expect(window.open).toHaveBeenCalledWith(finderUrl('en', book, chapter), '_blank', 'noopener');
+    expect(openLink).toHaveBeenCalledWith(finderUrl('en', book, chapter));
   });
 });
 
@@ -332,11 +330,7 @@ describe('Today: cards and lines', () => {
     window.fetch = vi.fn();
     renderToday(makeStore({ whatsNew }));
     fireEvent.click(screen.getByRole('button', { name: '2 new on jw.org' }));
-    expect(window.open).toHaveBeenCalledWith(
-      'https://www.jw.org/en/whats-new/',
-      '_blank',
-      'noopener'
-    );
+    expect(openLink).toHaveBeenCalledWith('https://www.jw.org/en/whats-new/');
     expect(current.whatsNew).toEqual({ ...whatsNew, newCount: 0 });
     expect(CapacitorHttp.get).not.toHaveBeenCalled();
     expect(window.fetch).not.toHaveBeenCalled();
