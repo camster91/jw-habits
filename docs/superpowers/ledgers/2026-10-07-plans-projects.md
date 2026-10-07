@@ -41,3 +41,10 @@ Ruling (pre-Task 3): "active family plans" = kind family + not archived, created
 Task 3: minor (deferred): setAgenda accepts whitespace-only free titles on direct calls; same stepId twice in one week not de-duped; provider prunes with appDay(new Date()) not currentDay and only on load; agendaFor previews any Monday (UI must limit to planWeeks — Task 9); no test for addFreeItem at 5 items on a previewed week.
 Task 3: complete (commits 0b5d865..0f05186, review clean)
 Ruling (pre-Task 4): checkInFamily stores a previewed (auto-filled) agenda before marking its steps, so undo and later views match; family plans never become activePlan; undoStudy restores activePlan per the Task 2 ruling with a whole-store round-trip test — cost if wrong: none.
+Task 4: concerns — study logs {stepId} only when it ticks a not-done step (else true); same-day re-check undoes first; preview week stored on family check-in and left stored on undo; undoFamily re-reads the week's agenda (item removed in between stays done; a step hand-marked done the same day is cleared) — follows Decision 2.
+Task 4: review Approved (no Critical/Important). Accepted limitation: family undo can't be exact for a step hand-marked done earlier the same day (family log value is `true` only, Decision 2) — doc note added in the fix.
+External finding (Codex on PR #265, P2, Task 3 code): setAgenda accepts empty planId/stepId → store fails validation next launch → whole store treated as corrupt. Ruling: fix before merging; bundled with Task 4 hardening as one fix round on feat/plans-projects; the release PR then includes Task 4 — cost if wrong: none.
+Task 4: minor (deferred): back-dated study check-in can miss re-activation (archivedOn = finishedOn later than the entry day).
+Task 4: fix round 1/5 (4 addressed + Codex P2 addressed, 0 open — agenda writer reuses store's validAgendaItem, family kind guard, study ticks only the active plan, doc note/test rename; commits fbd0926..adc50ea)
+Task 4: minor (deferred): plans.js cleanTitle trims then slices (a cut title can end in a space).
+Task 4: complete (commits 0f05186..adc50ea, review clean)
