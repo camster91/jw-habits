@@ -24,3 +24,11 @@ Ruling C: Task 5's grep rule applies to link-opening call sites only; a `window.
 
 ## Progress
 Baseline: 502 tests passing.
+Owner instruction (2026-10-07): save everything to GitHub in case usage runs out — push feat/plans-projects and refresh the ledger snapshot on docs/plans-projects-spec (worktree ../jw-docs) after each completed task. Issues: #262 (v5.1 progress/resume), #263 (prepare ahead), #264 (second brain).
+Task 1: Ruling (concern 2): onboarding's "Study topic" input removed (v3 has no studyTopic; projects replace it) — Today shows the active project title — cost if wrong: onboarding no longer names a study focus until Task 8's "New project" flow (could add an onboarding shortcut later).
+Task 1: note (concern 1): step ids are globally unique (a {stepId} log value has no plan id) — every writer creating/copying steps uses newId(); carry into Task 2 dispatch.
+Task 1: ⚠️ agenda 8-ahead/52-back limit not enforced by validation (correct) — owned by Task 3 pruneAgendas.
+Task 1: minor (deferred): importJson default-param clock read; v2 studyTopic missing/non-string loads with no plan (accepted); reminders.test.js:128 uses studyTopic as scratch field.
+Task 1: complete (commits bef3950..a485c6e, review clean)
+Ruling (pre-Task 2): archivePlan (incl. auto-archive on last step) clears activePlan.personalStudy when it points at that plan; Today never shows an archived project — cost if wrong: none.
+Ruling (pre-Task 2, review Minor 2): break the store.js↔upgrade.js import cycle by moving newId and the title/note limits into a leaf module src/domain/ids.js (store.js re-exports newId for compatibility) — cost if wrong: trivial.
