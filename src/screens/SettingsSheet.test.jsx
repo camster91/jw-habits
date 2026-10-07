@@ -246,7 +246,10 @@ describe('SettingsSheet', () => {
     });
     const links = section('Links');
     const daily = within(links).getByLabelText('Daily text');
-    expect(daily).toHaveAttribute('placeholder', 'https://wol.jw.org/en/wol/dt/r1/lp-e');
+    expect(daily).toHaveAttribute(
+      'placeholder',
+      'https://www.jw.org/finder?srcid=jwlshare&wtlocale=E&prefer=lang&alias=daily-text&date=20261006'
+    );
     expect(within(links).queryByRole('button')).not.toBeInTheDocument();
     fireEvent.change(daily, { target: { value: 'javascript:alert(1)' } });
     expect(current).toBe(initial);

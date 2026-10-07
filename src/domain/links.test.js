@@ -19,13 +19,14 @@ describe('linkLocale', () => {
 });
 
 describe('routineLink', () => {
-  it('gives the daily text page per locale', () => {
-    expect(routineLink(store(), 'dailyText', 'en')).toBe('https://wol.jw.org/en/wol/dt/r1/lp-e');
-    expect(routineLink(store(), 'dailyText', 'es')).toBe('https://wol.jw.org/es/wol/dt/r4/lp-s');
-    expect(routineLink(store(), 'dailyText', 'fr-FR')).toBe(
-      'https://wol.jw.org/fr/wol/dt/r30/lp-f'
+  it('gives the daily text finder link per locale', () => {
+    const d = '2026-10-07';
+    expect(routineLink(store(), 'dailyText', 'en', undefined, d)).toContain('wtlocale=E');
+    expect(routineLink(store(), 'dailyText', 'es', undefined, d)).toContain('wtlocale=S');
+    expect(routineLink(store(), 'dailyText', 'fr-FR', undefined, d)).toContain('wtlocale=F');
+    expect(routineLink(store(), 'dailyText', 'de', undefined, d)).toBe(
+      'https://www.jw.org/finder?srcid=jwlshare&wtlocale=E&prefer=lang&alias=daily-text&date=20261007'
     );
-    expect(routineLink(store(), 'dailyText', 'de')).toBe('https://wol.jw.org/en/wol/dt/r1/lp-e');
   });
 
   it('gives the meetings page per locale', () => {
@@ -69,12 +70,20 @@ describe('routineLink', () => {
   });
 
   it('ignores an empty or unsafe custom link', () => {
-    expect(routineLink(store({ dailyText: '' }), 'dailyText', 'en')).toBe(
-      'https://wol.jw.org/en/wol/dt/r1/lp-e'
+    const dt =
+      'https://www.jw.org/finder?srcid=jwlshare&wtlocale=E&prefer=lang&alias=daily-text&date=20261006';
+    expect(routineLink(store({ dailyText: '' }), 'dailyText', 'en', undefined, '2026-10-06')).toBe(
+      dt
     );
-    expect(routineLink(store({ dailyText: 'javascript:alert(1)' }), 'dailyText', 'en')).toBe(
-      'https://wol.jw.org/en/wol/dt/r1/lp-e'
-    );
+    expect(
+      routineLink(
+        store({ dailyText: 'javascript:alert(1)' }),
+        'dailyText',
+        'en',
+        undefined,
+        '2026-10-06'
+      )
+    ).toBe(dt);
     expect(routineLink(store({ personalStudy: 'nope' }), 'personalStudy', 'en')).toBeNull();
   });
 });

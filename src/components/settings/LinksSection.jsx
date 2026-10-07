@@ -49,7 +49,7 @@ function LinkField({ label, placeholder, value, invalid, onChange, onBlur }) {
  */
 export default function LinksSection() {
   const { t, i18n } = useTranslation();
-  const { store, update } = useStore();
+  const { store, update, today } = useStore();
   const [values, setValues] = useState(() =>
     Object.fromEntries(LINK_IDS.map((id) => [id, store.links[id] ?? '']))
   );
@@ -58,7 +58,7 @@ export default function LinksSection() {
   const placeholder = (id) =>
     id === 'bibleReading'
       ? t('fd.settings.links.bibleDefault')
-      : routineLink({ links: {} }, id, i18n.language);
+      : routineLink({ links: {} }, id, i18n.language, undefined, today);
 
   const edit = (id, value) => {
     setValues((x) => ({ ...x, [id]: value }));

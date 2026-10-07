@@ -10,13 +10,15 @@
  * Log entries are `{routine, day, value}`, at most one per routine and day:
  * bibleReading `{chapters: number[]}` or `true`; ministry
  * `{shared: boolean, studies: number, hours?: number}`; personalStudy
- * `{stepId: string}` (the plan step that session completed) or `true`; the
+ * `{stepId: string}` (the plan step that session completed) or `true`;
+ * familyWorship `{stepIds: string[]}` (the agenda steps that session marked
+ * done, possibly none) or `true` (legacy, or logged outside planCheckins); the
  * rest `true`. An undone check-in is deleted, never stored as a falsy value.
  *
  * v3 adds plans (study projects and family worship plans), the active study
  * plan, weekly family agendas keyed by Monday, badge earn days, and the
  * game-layer and share switches. References between them (an agenda step
- * item, `activePlan.personalStudy`, a `{stepId}` log value) may dangle:
+ * item, `activePlan.personalStudy`, a `{stepId}` / `{stepIds}` log value) may dangle:
  * validation checks only their shape, and a dangling one never makes a store
  * unloadable. Stored v2 values and v2 backup files go through `upgradeStore`
  * (upgrade.js) first.
@@ -160,6 +162,14 @@ function validValue(routine, value) {
   if (value === true) return true;
   if (routine === 'personalStudy') {
     return isObject(value) && exactKeys(value, ['stepId']) && isId(value.stepId);
+  }
+  if (routine === 'familyWorship') {
+    return (
+      isObject(value) &&
+      exactKeys(value, ['stepIds']) &&
+      Array.isArray(value.stepIds) &&
+      value.stepIds.every(isId)
+    );
   }
   return (
     routine === 'bibleReading' &&

@@ -8,8 +8,10 @@
  *   unknown step, a step of a plan other than the active study, or a step
  *   already done), so undo never clears a date it did not set.
  * - A family check-in marks every not-done family-plan step on that week's
- *   agenda (an item pointing at a study step is ignored). Undo
- *   clears those steps only where `doneOn` is still the session day.
+ *   agenda (an item pointing at a study step is ignored) and records exactly
+ *   those steps (`{stepIds}`). Undo clears those steps only where `doneOn`
+ *   is still the session day, so a step done by hand before the session, or
+ *   moved off the agenda after it, is handled exactly.
  *
  * Pure: every function returns a new store and never mutates its input. An
  * invalid day returns the input store itself.
@@ -109,11 +111,13 @@ const stepItems = (store, day) => agendaFor(store, weekStart(day)).filter((i) =>
 export function checkInFamily(store, day) {
   if (!isDay(day)) return store;
   const week = weekStart(day);
-  let next = store;
+  // One session per day: a repeat check-in replaces the first, undoing it.
+  let next = undoFamily(store, day);
   if (!Object.hasOwn(next.familyAgendas, week)) {
     const preview = agendaFor(next, week);
     if (preview.length > 0) next = setAgenda(next, week, preview);
   }
+  const stepIds = [];
   for (const item of stepItems(next, day)) {
     const found = findStep(next, item.stepId);
     if (
@@ -123,21 +127,35 @@ export function checkInFamily(store, day) {
       found.step.doneOn === null
     ) {
       next = setStepDone(next, item.planId, item.stepId, day);
+      stepIds.push(item.stepId);
     }
   }
-  return addCheckIn(next, { routine: 'familyWorship', day, value: true });
+  return addCheckIn(next, { routine: 'familyWorship', day, value: { stepIds } });
 }
 
 /**
- * Removes the family-worship entry for `day` and clears `doneOn` on that
- * week's agenda steps where it equals `day`. Family plans never become the
- * active study. The family log value is only `true`, so undo cannot tell a
- * step this check-in marked from one hand-marked done earlier the same day:
- * both are cleared.
+ * Removes the family-worship entry for `day`. A `{stepIds}` entry clears
+ * `doneOn` on exactly those steps, where it still equals `day` (wherever
+ * they now sit on the agenda). Family plans never become the active study.
+ *
+ * Legacy `true` entry (logged before `{stepIds}`, or by Today / the widget):
+ * re-reads that week's agenda and clears its family steps where `doneOn`
+ * equals `day`. It cannot tell a step that session marked from one
+ * hand-marked done earlier the same day: both are cleared.
  */
 export function undoFamily(store, day) {
-  if (!entryFor(store, 'familyWorship', day)) return store;
+  const entry = entryFor(store, 'familyWorship', day);
+  if (!entry) return store;
   let next = store;
+  if (entry.value !== true) {
+    for (const stepId of entry.value.stepIds) {
+      const found = findStep(next, stepId);
+      if (found && found.plan.kind === 'family' && found.step.doneOn === day) {
+        next = setStepDone(next, found.plan.id, stepId, null);
+      }
+    }
+    return removeCheckIn(next, 'familyWorship', day);
+  }
   for (const item of stepItems(next, day)) {
     const found = findStep(next, item.stepId);
     if (

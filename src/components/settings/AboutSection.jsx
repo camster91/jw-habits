@@ -1,17 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { ExternalLink } from 'lucide-react';
 import { version } from '../../../package.json';
+import { openLink } from '../../native/openLink.js';
 
 const PRIVACY_URL = 'https://jwhabits.ashbi.ca/privacy';
 const SUPPORT_URL = 'https://jwhabits.ashbi.ca/support';
 
 function LinkButton({ url, children }) {
   return (
-    <button
-      type="button"
-      className="btn btn-ghost min-h-11 gap-2"
-      onClick={() => window.open(url, '_blank', 'noopener')}
-    >
+    <button type="button" className="btn btn-ghost min-h-11 gap-2" onClick={() => openLink(url)}>
       {children}
       <ExternalLink aria-hidden="true" className="h-4 w-4" />
     </button>
