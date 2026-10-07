@@ -1,7 +1,22 @@
 import { defineConfig } from 'vite'
+import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+
+const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.url))).version;
+let revision = process.env.APP_REVISION;
+if (!revision) {
+  try { revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(); }
+  catch { revision = 'local'; }
+}
+const releaseMarker = {
+  name: 'release-marker',
+  generateBundle() {
+    this.emitFile({ type: 'asset', fileName: 'release.json', source: JSON.stringify({ version, revision }) });
+  }
+};
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -42,6 +57,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    releaseMarker,
     tailwindcss(),
     react(),
     VitePWA({

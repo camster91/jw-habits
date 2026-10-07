@@ -62,7 +62,33 @@ jobs:
           platforms: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
           push: false
 
+  verify:
+    name: Verify publication source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: bash -n scripts/deploy/remote.sh scripts/deploy/rollback.sh
+      - run: python3 scripts/deploy/test_remote.py
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run lint
+      - run: npm test
+      - run: npm run format:check
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run smoke:spawn
+
   publish:
+    needs: verify
     name: Build and publish image
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_call' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))) }}
     runs-on: ubuntu-24.04
@@ -72,12 +98,35 @@ jobs:
       packages: write
       id-token: write
       attestations: write
+      checks: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 1
           persist-credentials: false
+
+      - name: Require successful web, security, smoke and native checks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          required='["Build + Lint + Test", "Playwright smoke", "Android debug compile", "iOS simulator compile"]'
+          for attempt in $(seq 1 90); do
+            curl -fsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > checks.json
+            jq '[.check_runs | group_by(.name)[] | max_by(.id)]' checks.json > latest-checks.json
+            if jq -e --argjson required "$required" 'any(.[]; .name as $name | ($required | index($name)) != null and .status == "completed" and .conclusion != "success")' latest-checks.json >/dev/null; then
+              echo '::error::A required source check failed; nothing will be published'
+              exit 1
+            fi
+            if jq -e --argjson required "$required" '. as $checks | all($required[]; . as $name | any($checks[]; .name == $name and .status == "completed" and .conclusion == "success"))' latest-checks.json >/dev/null; then
+              echo 'All required source checks succeeded'
+              break
+            fi
+            if (( attempt == 90 )); then echo '::error::Required source checks did not complete'; exit 1; fi
+            sleep 10
+          done
 
       - name: Resolve image metadata
         id: meta
@@ -134,19 +183,21 @@ jobs:
           SHORT_SHA: ${{ steps.meta.outputs.sha }}
         run: |
           set -euo pipefail
-          tags="$IMAGE:$IMAGE_TAG,$IMAGE:$IMAGE_TAG-$SHORT_SHA"
+          tags="$IMAGE:$IMAGE_TAG,$IMAGE:$IMAGE_TAG-$SHORT_SHA,$IMAGE:sha-$GITHUB_SHA"
           case "$GITHUB_REF" in
             refs/heads/main|refs/heads/master|refs/tags/v*) tags="$tags,$IMAGE:latest" ;;
           esac
           printf 'tags=%s\n' "$tags" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
+        id: image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           file: ${{ inputs.dockerfile || 'Dockerfile' }}
           platforms: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
           push: true
+          build-args: APP_REVISION=${{ github.sha }}
           tags: ${{ steps.tags.outputs.tags }}
           provenance: true
           sbom: true
@@ -155,6 +206,18 @@ jobs:
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+
+      - name: Record immutable publication
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          jq -n --arg image "$IMAGE@$DIGEST" --arg revision "$GITHUB_SHA" '{image: $image, revision: $revision}' > production-image.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: production-image
+          path: production-image.json
+          retention-days: 90
 
       - name: Image summary
         env:

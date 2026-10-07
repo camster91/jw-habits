@@ -2,20 +2,9 @@ name: Native compile
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'android/**'
-      - 'ios/**'
-      - 'capacitor.config.json'
-      - 'package*.json'
-      - '.github/workflows/native-ci.yml'
   push:
     branches: [main]
-    paths:
-      - 'android/**'
-      - 'ios/**'
-      - 'capacitor.config.json'
-      - 'package*.json'
-      - '.github/workflows/native-ci.yml'
+    tags: ['v*']
   workflow_dispatch:
 permissions:
   contents: read
