@@ -32,7 +32,13 @@ public final class WidgetStore {
 
     public static void writeSnapshot(Context context, String json) {
         synchronized (LOCK) {
-            prefs(context).edit().putString(SNAPSHOT_KEY, json).commit();
+            SharedPreferences p = prefs(context);
+            try {
+                JSONObject snapshot = overlayPending(new JSONObject(json), parseArray(p.getString(QUEUE_KEY, null)));
+                p.edit().putString(SNAPSHOT_KEY, snapshot.toString()).commit();
+            } catch (JSONException ignored) {
+                // An invalid app publish must not replace the last usable snapshot.
+            }
         }
     }
 
@@ -42,7 +48,7 @@ public final class WidgetStore {
             String json = prefs(context).getString(SNAPSHOT_KEY, null);
             if (json == null) return null;
             try {
-                return new JSONObject(json);
+                return overlayPending(new JSONObject(json), parseArray(prefs(context).getString(QUEUE_KEY, null)));
             } catch (JSONException e) {
                 return null;
             }
@@ -65,7 +71,7 @@ public final class WidgetStore {
      * one of its items. Returns whether anything changed.
      */
     public static boolean checkIn(Context context, String routine, String day) {
-        if (routine == null || day == null || !day.equals(appDay(System.currentTimeMillis()))) {
+        if (routine == null || day == null || !isCurrentDay(day, System.currentTimeMillis())) {
             return false;
         }
         synchronized (LOCK) {
@@ -115,6 +121,39 @@ public final class WidgetStore {
                 return false;
             }
         }
+    }
+
+    /** Overlay pending ticks on incoming snapshots until the app drains them. */
+    private static JSONObject overlayPending(JSONObject snapshot, JSONArray queue) throws JSONException {
+        JSONArray items = snapshot.optJSONArray("items");
+        if (items == null) return snapshot;
+        int done = 0;
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (item == null) continue;
+            for (int j = 0; j < queue.length(); j++) {
+                JSONObject pending = queue.optJSONObject(j);
+                if (pending != null && snapshot.optString("day").equals(pending.optString("day"))
+                    && item.optString("routine").equals(pending.optString("routine"))) {
+                    item.put("done", true);
+                }
+            }
+            if (item.optBoolean("done")) done++;
+        }
+        snapshot.put("doneCount", done);
+        return snapshot;
+    }
+
+    /** Preserve a remembered app day at most one day ahead after westward travel. */
+    public static boolean isCurrentDay(String day, long millis) {
+        GregorianCalendar tomorrow = new GregorianCalendar();
+        tomorrow.setTimeInMillis(millis);
+        boolean beforeRollover = tomorrow.get(Calendar.HOUR_OF_DAY) < ROLLOVER_HOUR;
+        // Do date arithmetic at noon so a missing 02:30 during DST cannot skip a day.
+        tomorrow.set(Calendar.HOUR_OF_DAY, 12);
+        if (beforeRollover) tomorrow.add(Calendar.DAY_OF_MONTH, -1);
+        tomorrow.add(Calendar.DAY_OF_MONTH, 1);
+        return day != null && (day.equals(appDay(millis)) || day.equals(appDay(tomorrow.getTimeInMillis())));
     }
 
     private static JSONArray parseArray(String json) {

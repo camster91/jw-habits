@@ -4,7 +4,7 @@ import WidgetKit
 
 /// Shares today's snapshot with the FaithfulDaysWidget extension and hands the
 /// widget's queued check-ins back to the web app. Both live in the App Group's
-/// UserDefaults; the widget never runs domain logic.
+/// UserDefaults (snapshot) and a process-coordinated queue file.
 @objc(WidgetBridgePlugin)
 public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "WidgetBridgePlugin"
@@ -47,19 +47,26 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         lock.lock()
-        let raw = defaults.string(forKey: WidgetBridgePlugin.queueKey)
-        defaults.removeObject(forKey: WidgetBridgePlugin.queueKey)
-        lock.unlock()
-
-        var items: [JSObject] = []
-        if let data = raw?.data(using: .utf8),
-           let parsed = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-            for entry in parsed {
-                if let routine = entry["routine"] as? String, let day = entry["day"] as? String {
-                    items.append(["routine": routine, "day": day])
-                }
-            }
+        defer { lock.unlock() }
+        guard let queue = WidgetQueue.shared else {
+            call.reject("App Group queue is not available")
+            return
         }
-        call.resolve(["items": items])
+        do {
+            // Preserve pending legacy taps before retiring the old preference.
+            // The updated extension writes only the file queue.
+            if let raw = defaults.string(forKey: WidgetBridgePlugin.queueKey),
+               let data = raw.data(using: .utf8),
+               let legacy = try? JSONDecoder().decode([WidgetCheckIn].self, from: data) {
+                for item in legacy { try queue.enqueue(item) }
+                defaults.removeObject(forKey: WidgetBridgePlugin.queueKey)
+            }
+            let items: [JSObject] = try queue.drain().map {
+                ["routine": $0.routine, "day": $0.day]
+            }
+            call.resolve(["items": items])
+        } catch {
+            call.reject("Could not drain the widget queue")
+        }
     }
 }
