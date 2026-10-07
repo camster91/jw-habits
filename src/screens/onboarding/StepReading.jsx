@@ -4,8 +4,8 @@ import { Choice, SelectField, Toggle } from './controls.jsx';
 
 /**
  * Step 4 / Settings → Reading: the plan, where to start, and whether books
- * before the start count as read. Changing the plan or the start restarts the
- * plan today; the counting switch does not.
+ * before the start count as read. Changing only the pace keeps the current position. Changing the start
+ * restarts reading today; the counting switch does not.
  */
 export default function StepReading({ store, change, today }) {
   const { t } = useTranslation();
@@ -24,7 +24,7 @@ export default function StepReading({ store, change, today }) {
           { value: 'year', label: t('fd.onboarding.reading.year') },
           { value: 'ownPace', label: t('fd.onboarding.reading.ownPace') },
         ]}
-        onChange={(v) => restart({ plan: v })}
+        onChange={(plan) => change((s) => ({ ...s, reading: { ...s.reading, plan } }))}
       />
       <SelectField
         label={t('fd.onboarding.reading.book')}

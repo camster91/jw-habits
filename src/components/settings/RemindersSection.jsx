@@ -6,6 +6,7 @@ import { ROUTINE_IDS } from '../../domain/routines.js';
 import { scheduleOn } from '../../domain/schedule.js';
 import { labelFor } from '../../domain/store.js';
 import { Toggle } from '../../screens/onboarding/controls.jsx';
+import { onForeground } from '../../data/StoreProvider.jsx';
 import { isNative } from '../../utils/native.js';
 
 /**
@@ -25,6 +26,7 @@ export default function RemindersSection() {
   // null = unknown (web, not yet read, or the plugin failed).
   const [permission, setPermission] = useState(null);
   const mounted = useRef(true);
+  const pending = useRef(null);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -38,23 +40,33 @@ export default function RemindersSection() {
 
   useEffect(() => {
     if (!isNative) return;
-    Promise.resolve()
-      .then(() => LocalNotifications.checkPermissions())
-      .then((result) => result && remember(result))
-      .catch((error) => console.warn('Could not read notification permission:', error));
+    const read = () =>
+      Promise.resolve()
+        .then(() => LocalNotifications.checkPermissions())
+        .then((result) => result && remember(result))
+        .catch((error) => console.warn('Could not read notification permission:', error));
+    void read();
+    return onForeground(read);
   }, [remember]);
 
-  const ensurePermission = async () => {
-    if (!isNative) return;
-    try {
-      let result = await LocalNotifications.checkPermissions();
-      if (result.display !== 'granted') {
-        result = await LocalNotifications.requestPermissions();
+  const ensurePermission = () => {
+    if (!isNative) return Promise.resolve();
+    if (pending.current) return pending.current;
+    pending.current = (async () => {
+      let result;
+      try {
+        result = await LocalNotifications.checkPermissions();
+      } catch {
+        /* A failed check still allows the user-initiated request. */
       }
-      remember(result);
-    } catch (error) {
-      console.warn('Notification permission was not obtained:', error);
-    }
+      if (result?.display !== 'granted') result = await LocalNotifications.requestPermissions();
+      if (result) remember(result);
+    })()
+      .catch((error) => console.warn('Notification permission was not obtained:', error))
+      .finally(() => {
+        pending.current = null;
+      });
+    return pending.current;
   };
 
   const setEnabled = (on) => {
@@ -80,11 +92,9 @@ export default function RemindersSection() {
         checked={enabled}
         onChange={setEnabled}
       />
-      {showHint && (
-        <p role="status" className="text-sm text-base-content/70">
-          {t('fd.settings.reminders.permissionOff')}
-        </p>
-      )}
+      <p role="status" className={showHint ? 'text-sm text-base-content/70' : 'sr-only'}>
+        {showHint ? t('fd.settings.reminders.permissionOff') : ''}
+      </p>
       {enabled && routines.length > 0 && (
         <fieldset className="space-y-1">
           <legend className="text-sm text-base-content/70">
@@ -93,7 +103,7 @@ export default function RemindersSection() {
           {routines.map((id) => (
             <Toggle
               key={id}
-              label={labelFor(store, id, t)}
+              label={t('fd.settings.reminders.routineLabel', { title: labelFor(store, id, t) })}
               checked={!off.includes(id)}
               onChange={(on) => setRoutine(id, on)}
             />

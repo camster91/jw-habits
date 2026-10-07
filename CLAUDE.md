@@ -12,11 +12,12 @@ sets it up in six skippable steps. Reminders, a "What's New" count from jw.org's
 home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
-- **Version:** 5.0.0
-- **Node:** >= 18.0.0
-- **Screens:** onboarding (until `onboardingDone`), then Today (`/`) and Progress (`/progress`)
-  behind a tab bar; Settings is a modal sheet opened from the tab bar, not a route. `/share`
-  (PWA share target) exists in the web build only.
+- **Version:** 5.1.0
+- **Node:** >= 22.12.0
+- **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
+  trail at `/plans/:planId`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
+  sheet opened from the tab bar, not a route. `/share` (PWA share target) exists in the web
+  build only.
 
 ### No third-party content in shipped code
 
@@ -34,15 +35,15 @@ user-editable slot instead.
 
 | Layer | Technology | Version |
 |---|---|---|
-| Frontend | React 19 + Vite 8 | `react: 19.2.8` (exact, with `react-dom`), `vite: ^8.1.5` |
-| Routing | React Router DOM 7 | `/`, `/progress`, web-only `/share`; `*` falls back to Today |
+| Frontend | React 19 + Vite 8 | `react: 19.3.0` (exact, with `react-dom`), `vite: ^8.1.5` |
+| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, `/progress/badges`, web-only `/share`; `*` falls back to Today |
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
 | i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (v2 strings are English only for now; es/fr fall back to en) |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
-| Testing | Vitest 4 + Testing Library + Playwright | 532 tests / 33 files, 7 smoke, 7 journeys + a clean-run check |
+| Testing | Vitest 4 + Testing Library + Playwright | 803 tests / 54 files, 7 smoke, 7 journeys + a clean-run check |
 | Linting | ESLint 9 + Prettier 3 | |
 
 ## Commands
@@ -55,7 +56,7 @@ user-editable slot instead.
 | `npm test` | Unit tests (Vitest) |
 | `npm run lint` | ESLint |
 | `npm run format:check` | Prettier check (`format` to write) |
-| `npm run smoke:spawn` | Playwright smoke suite, spawns preview (POSIX env syntax: run from Git Bash/CI; on Windows start `npm run preview` and run `node scripts/verify/smoke.cjs`) |
+| `npm run smoke:spawn` | Playwright smoke suite, spawns preview (portable `--spawn` flag) |
 | `npm run journeys` | End-to-end UI journeys (needs preview running) |
 
 Both Playwright suites pin the browser clock with `page.clock` (e.g. `Date(2026, 9, 6, 21, 0)`
@@ -82,16 +83,18 @@ src/
 │   ├── progress.js, wrapup.js, encouragement.js, notifications.js, links.js, whatsNew.js
 │   └── migrateV1.js            # One-time import of the v1 jw- keys (read-only on them)
 ├── screens/
-│   ├── Today.jsx, Progress.jsx, SettingsSheet.jsx
+│   ├── Today.jsx, Plans.jsx, PlanTrail.jsx, FamilyWeeks.jsx, Progress.jsx, SettingsSheet.jsx
 │   └── onboarding/             # Six steps; StepRoutines/Week/Reading/Rhythm/Look are reused by Settings
 ├── components/                 # HoldToCheck, RoutineRow, MinistryRow, Stepper, WrapUpCard, TabBar,
 │                               # MeetingDaysCard, WhatsNewBadge, BibleMap, settings/* (Reminders, Links,
-│                               # Backup, About), and the PWA
+│                               # Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet, PlanIcon, and Today's
+│                               # SomethingElseSheet, TodayAgenda, PlanFinishedCard), and the PWA
 │                               # chrome (PWAProvider, InstallPrompt, UpdatePrompt, OfflineIndicator)
 ├── native/                     # reminders.js, whatsNewClient.js, widgetBridge.js (each exports register*())
 ├── pages/Share.jsx             # PWA share_target landing (web only)
 ├── hooks/                      # usePWA, usePWAContext
 ├── theme/theme.js              # Accent, light/dark, and --fd-accent-text (accent text at 4.5:1)
+├── theme/planColours.js        # The 8 plan colours (white text at 4.5:1) and their text shades (.fd-plan-text)
 ├── locales/                    # en.json (all fd.* strings), es.json / fr.json (v1 leftovers, see Known issues)
 └── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js, userLinks.js,
                                 # settingsStore.js (Share only), backup.js, pwa.js, backStack.js (Android back)
@@ -108,8 +111,8 @@ scripts/verify/                 # smoke.cjs, journeys.cjs, lib.cjs (Playwright)
 | Daily text | `dailyText` | daily | Link to the day's text (locale default or user link) |
 | Bible reading | `bibleReading` | daily (or N days/week) | Chapters-read stepper; link to the day's first chapter |
 | Meeting prep | `meetingPrep` | meeting | Due the day before each meeting day; prompts for meeting days if none set |
-| Family worship | `familyWorship` | weekly | On the chosen weekday |
-| Personal study | `personalStudy` | weekly target | N per week; shows the active study plan (`activePlan.personalStudy`) |
+| Family worship | `familyWorship` | weekly | On the chosen weekday; lists the week's agenda, and the check-in marks its plan steps (`checkInFamily` / `undoFamily`) |
+| Personal study | `personalStudy` | weekly target | N per week; with an active project (`activePlan.personalStudy`) shows its next step, and the check-in ticks it (`checkInStudy` / `undoStudy`) |
 | Ministry | `ministry` | monthly | Shared-this-month toggle, studies count, hours goal for pioneers |
 
 `ROUTINE_IDS` and `dueToday` in `domain/routines.js` are the source of truth for what Today lists.
@@ -139,12 +142,12 @@ they ship in real installs, so renaming them silently discards user history.
   force on a day is the latest starting on or before it. Change it only through
   `withScheduleChange(store, today, patch)`, which adds an entry from today and leaves earlier
   days as they were. Read it with `scheduleOn(store, day)`.
-- **`safeStorage` is the single storage chokepoint.** All reads and writes go through
+- **`safeStorage` is the app-state storage chokepoint.** Store reads and writes go through
   `utils/safeStorage.js` (`durableGet/durableSet` for the v2 store, which uses Capacitor
   Preferences natively and localStorage on the web, plus quota handling and the
-  `jw-storage-full` event). Do not call `localStorage` directly in `src/`.
+  `jw-storage-full` event). New app-state code must use these helpers. The older `/share` settings adapter and i18next language detector also use browser storage.
 - **Wiring in `src/main.jsx`.** `registerReminderSync()`, `registerWhatsNewCheck()` and
-  `registerWidgetBridge()` each subscribe to the store from outside React using
+  `registerWidgetBridge()` and `registerBadgeAwards()` each subscribe to the store from outside React using
   `onForeground(cb)` (app opened / came to the foreground; gets `{ store, update, today }`) and
   `onStoreChange(cb)` (store changed), both exported from `data/StoreProvider.jsx`. New
   background behaviour should be another `register*()` of that shape, called from `main.jsx`.
@@ -176,8 +179,8 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
 - **The widget is unverified.** The Android and iOS widget sources were written without a JDK,
   Android SDK or Xcode. The iOS extension target is not in `project.pbxproj`; follow
   `docs/ios-widget-setup.md`, then run `docs/release-checklist.md` before any store release.
-- **Nothing listens for `jw-storage-full` any more.** The v1 Home page showed a banner when
-  storage was full; Today does not. `safeStorage` still dispatches the event.
+- **Storage failures are visible.** `StorageNotice` listens for `jw-storage-full` and offers
+  backup settings so the current in-memory history can be exported before closing.
 - **es/fr hold only v1 strings.** `es.json` / `fr.json` contain no `fd.*` keys, so v2 shows in
   English everywhere until they are translated. Their v1 keys are unused.
 
@@ -194,3 +197,23 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   (`grep -n`, byte counts), not by trusting the tool's success message.
 - **`deploy-ashbi.yml` keeps its `jw-habits` identifiers** — they name a real container and
   a ghcr.io image. Renaming them breaks the deploy path.
+
+
+## v5.1 plans, garden and sharing
+
+Plans use store v3 with `plans`, `activePlan.personalStudy`, `familyAgendas`,
+`badges`, `showGameLayer` and `showShare`. The Plans tab provides study and family
+plans; Today checks in their steps with exact undo. `openLink` uses the system
+launcher on native devices and a browser tab on web.
+
+Progress has an original eight-stage garden and a derived XP/level bar. Awards
+are recorded once by `registerBadgeAwards`, announced through `fd-badge`, and
+listed at `/progress/badges`. XP has a 100-per-app-day cap. Quiet days incur no
+penalties; badges are retained after undo. There are no rankings, shops or comparisons.
+Hiding points removes XP/levels while keeping the garden and badges. Quiet tone
+suppresses level haptics/confetti; reduced motion suppresses confetti.
+
+Share buttons draw a 1080×1350 PNG locally, then open the native share sheet or
+download it on web. Nothing is sent automatically. Copy builders only read explicit
+public display fields; step notes and links never enter card copy. Temporary native
+files are removed when sharing finishes. `showShare` hides all share buttons.

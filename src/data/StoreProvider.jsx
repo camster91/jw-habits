@@ -58,7 +58,8 @@ const changeCallbacks = new Set();
 
 /**
  * Register a callback that runs after each successful `update` with the new
- * store. Not called during the initial load. A failure is warned about and
+ * store and, as a second argument, `{update, today}` so a listener can write
+ * back. Not called during the initial load. A failure is warned about and
  * never affects the update or other callbacks.
  * @returns {() => void} unsubscribe
  */
@@ -70,10 +71,10 @@ export function onStoreChange(callback) {
   };
 }
 
-function notifyChange(store) {
+function notifyChange(store, extra) {
   for (const callback of [...changeCallbacks]) {
     try {
-      Promise.resolve(callback(store)).catch((error) =>
+      Promise.resolve(callback(store, extra)).catch((error) =>
         console.warn('A store-change callback failed:', error)
       );
     } catch (error) {
@@ -201,7 +202,7 @@ export function StoreProvider({ children }) {
       storeRef.current = next;
       setStore(next);
       persist(next);
-      if (readyRef.current) notifyChange(next);
+      if (readyRef.current) notifyChange(next, { update, today: todayRef.current });
     },
     [persist]
   );
@@ -242,9 +243,6 @@ export function StoreProvider({ children }) {
       setStore(loaded);
       if (!persisted || loaded !== stored) persist(loaded);
       refreshDay();
-      readyRef.current = true;
-      latestArgs = getArgs;
-      runForeground();
     });
     return () => {
       cancelled = true;
@@ -254,17 +252,21 @@ export function StoreProvider({ children }) {
     };
   }, [persist, refreshDay, runForeground, getArgs]);
 
-  const loaded = store !== null;
+  const loaded = store !== null && today !== null;
   useEffect(() => {
     if (!loaded) return undefined;
+    // Child effects (including badge toasts) have subscribed before this effect runs.
+    readyRef.current = true;
+    latestArgs = getArgs;
+    runForeground();
     return appLifecycle.onStateChange(({ isActive }) => {
       if (!isActive) return;
       refreshDay();
       runForeground();
     });
-  }, [loaded, refreshDay, runForeground]);
+  }, [loaded, refreshDay, runForeground, getArgs]);
 
   const value = useMemo(() => ({ store, update, today }), [store, update, today]);
-  if (!loaded || today === null) return null;
+  if (!loaded) return null;
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

@@ -1,3 +1,5 @@
+// eslint-disable-next-line no-unused-vars -- used via JSX
+import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import i18n from 'i18next';
@@ -31,7 +33,9 @@ function renderProgress(store) {
   const value = { store, update: () => {}, today: TODAY };
   return render(
     <StoreContext.Provider value={value}>
-      <Progress />
+      <MemoryRouter>
+        <Progress />
+      </MemoryRouter>
     </StoreContext.Provider>
   );
 }
@@ -170,5 +174,28 @@ describe('Progress', () => {
   it('never uses discouraging words', () => {
     const { container } = renderProgress(makeStore());
     expect(container.textContent).not.toMatch(BANNED);
+  });
+});
+
+describe('garden and levels', () => {
+  it('shows the seed level for a new store', () => {
+    renderProgress(makeStore({ reading: defaultStore(TODAY, 'en').reading }));
+    expect(screen.getByText('Seed · Level 0')).toBeInTheDocument();
+  });
+  it('shows Sprout at 100 XP', () => {
+    const log = Array.from({ length: 10 }, (_, i) => ({
+      routine: 'dailyText',
+      day: `2026-09-${String(i + 1).padStart(2, '0')}`,
+      value: true,
+    }));
+    renderProgress(makeStore({ log }));
+    expect(screen.getByText('Sprout · Level 1')).toBeInTheDocument();
+  });
+  it('keeps the garden and badges when points are hidden', () => {
+    renderProgress(makeStore({ showGameLayer: false }));
+    expect(screen.queryByText(/XP/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Level [0-9]/)).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Your garden:/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Badges' })).toBeInTheDocument();
   });
 });

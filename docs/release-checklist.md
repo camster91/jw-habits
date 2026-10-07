@@ -87,3 +87,20 @@ have **never been compiled**. Until both pass, the widget is unverified.
 - [ ] Each accent colour applies across Today, Progress and Settings.
 - [ ] Theme Light, Dark and System (switch the OS theme while the app is open): text, cards,
       sheets and the status bar stay readable in each.
+
+
+## v5.1 plans and sharing
+
+- [ ] Create a study project, check in its next step, undo, then re-check on the same day.
+- [ ] Plan next week's family agenda; check in and undo without clearing manually completed steps.
+- [ ] Earn a badge and confirm its toast, collection entry, date and garden bloom.
+- [ ] Hide points and levels: XP and level labels disappear; garden and badges remain.
+- [ ] Quiet tone and reduced motion suppress level confetti as configured.
+- [ ] Hide share buttons and confirm every card surface honours the switch.
+- [ ] Download each of the four PNG card types on web. Confirm no private notes or links appear.
+- [ ] On iOS and Android, open the share sheet with a PNG, cancel, then share again.
+- [ ] Open a finder link with JW Library installed, then without it (browser fallback).
+- [ ] Check 390px mobile, 768px tablet and 1440px desktop for clipping, focus and readable contrast.
+
+Rollback: the preserved v2 backup supports returning to the previous data schema;
+a v3 store must not be fed to a v2-only build without an explicit recovery procedure.

@@ -1,3 +1,5 @@
+// eslint-disable-next-line no-unused-vars -- JSX
+import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useCallback, useMemo, useState } from 'react';
@@ -53,7 +55,12 @@ function Harness({ initial }) {
 }
 
 const initialStore = () => defaultStore(TODAY, 'en');
-const renderOnboarding = (store = initialStore()) => render(<Harness initial={store} />);
+const renderOnboarding = (store = initialStore()) =>
+  render(
+    <MemoryRouter>
+      <Harness initial={store} />
+    </MemoryRouter>
+  );
 const click = (name) => fireEvent.click(screen.getByRole('button', { name }));
 const heading = () => screen.getByRole('heading', { level: 1 });
 

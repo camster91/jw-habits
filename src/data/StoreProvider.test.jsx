@@ -250,6 +250,18 @@ describe('onStoreChange', () => {
     expect(seen).toEqual(['Hope', 'Joy']);
   });
 
+  it('passes {update, today} as a second argument so a listener can write back', async () => {
+    let extra = null;
+    const off = onStoreChange((store, e) => {
+      extra = e;
+    });
+    await mount();
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Hope' } })));
+    expect(typeof extra.update).toBe('function');
+    expect(extra.today).toBe(latest.today);
+    off();
+  });
+
   it('isolates throwing and rejecting callbacks from update', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const good = vi.fn();
@@ -555,4 +567,27 @@ describe('StoreProvider reference cleanup (Review Focus 1)', () => {
     await mount();
     expect(set).not.toHaveBeenCalledWith(expect.objectContaining({ key: STORE_KEY }));
   });
+});
+
+// eslint-disable-next-line no-unused-vars -- used in JSX
+function ForegroundListener({ events }) {
+  useEffect(() => {
+    const receive = () => events.push('heard');
+    window.addEventListener('startup-award', receive);
+    return () => window.removeEventListener('startup-award', receive);
+  }, [events]);
+  return null;
+}
+it('runs initial foreground callbacks after child listeners commit', async () => {
+  const events = [];
+  const off = onForeground(() => window.dispatchEvent(new Event('startup-award')));
+  const view = render(
+    <StoreProvider>
+      <ForegroundListener events={events} />
+    </StoreProvider>
+  );
+  await flush();
+  expect(events).toEqual(['heard']);
+  off();
+  view.unmount();
 });

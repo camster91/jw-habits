@@ -1,3 +1,5 @@
+import ShareButton from '../components/fun/ShareButton.jsx';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../data/useStore.js';
 import { booksCompleted } from '../domain/bible.js';
@@ -5,6 +7,10 @@ import { streak, totals } from '../domain/progress.js';
 import { ROUTINE_IDS } from '../domain/routines.js';
 import { scheduleOn } from '../domain/schedule.js';
 import { labelFor } from '../domain/store.js';
+import Garden from '../components/fun/Garden.jsx';
+import LevelBar from '../components/fun/LevelBar.jsx';
+import { totalXp } from '../domain/xp.js';
+import { gardenStage, levelFor } from '../domain/garden.js';
 import BibleMap from '../components/BibleMap.jsx';
 
 const RECENT_KEY = {
@@ -35,6 +41,7 @@ function RoutineCard({ title, s, daysThisYear }) {
       <p className="text-sm text-base-content/70">
         {t('fd.progress.daysThisYear', { count: daysThisYear })}
       </p>
+      <ShareButton kind="streak" data={{ title, streak: s.current, days: daysThisYear }} />
     </li>
   );
 }
@@ -45,6 +52,7 @@ export default function Progress() {
   const { enabled } = scheduleOn(store, today);
   const sums = totals(store, today);
   const completed = booksCompleted(store);
+  const xp = totalXp(store, today);
   const cards = ROUTINE_IDS.filter((id) => enabled[id]);
 
   return (
@@ -54,6 +62,30 @@ export default function Progress() {
     >
       <div className="mx-auto max-w-md space-y-4">
         <h1 className="text-3xl font-bold">{t('fd.progress.title')}</h1>
+        <section className="card space-y-3 bg-base-100 p-4 shadow-sm">
+          <h2 className="font-semibold">{t('fd.fun.gardenTitle')}</h2>
+          <Garden
+            stage={gardenStage(xp)}
+            level={levelFor(xp).level}
+            badges={Object.keys(store.badges).length}
+          />
+          {store.showGameLayer && <LevelBar xp={xp} tone={store.tone} />}
+          <ShareButton
+            kind="garden"
+            stage={gardenStage(xp)}
+            data={{
+              showGameLayer: store.showGameLayer,
+              name:
+                levelFor(xp).level < 8
+                  ? t(`fd.fun.levels.${levelFor(xp).level}`)
+                  : t('fd.fun.treeNumber', { count: levelFor(xp).level - 6 }),
+              level: levelFor(xp).level,
+            }}
+          />
+          <Link className="btn btn-ghost min-h-11" to="/progress/badges">
+            {t('fd.fun.badgesTitle')}
+          </Link>
+        </section>
         {cards.length > 0 && (
           <ul className="space-y-3">
             {cards.map((id) => (

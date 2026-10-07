@@ -193,9 +193,10 @@ async function runSmoke(browser) {
 }
 
 async function maybeSpawnPreview() {
-  if (!process.env.SPAWN_PREVIEW) return null;
-  console.log(`[smoke] SPAWN_PREVIEW=1, spawning \`npm run preview\`...`);
-  const child = spawn('npm', ['run', 'preview'], {
+  if (!process.env.SPAWN_PREVIEW && !process.argv.includes('--spawn')) return null;
+  console.log(`[smoke] --spawn, spawning \`npm run preview\`...`);
+  const child = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'preview'], {
+    shell: process.platform === 'win32',
     cwd: path.resolve(__dirname, '..', '..'),
     stdio: ['ignore', 'pipe', 'pipe'],
     // Own process group, so the cleanup below can stop vite as well as
@@ -257,7 +258,7 @@ async function maybeSpawnPreview() {
     await browser.close();
     if (previewProcess) {
       try {
-        process.kill(-previewProcess.pid, 'SIGTERM');
+        process.kill(process.platform === 'win32' ? previewProcess.pid : -previewProcess.pid, 'SIGTERM');
       } catch {
         previewProcess.kill('SIGTERM');
       }

@@ -1,7 +1,7 @@
 {
     "name": "habit-tracker",
     "private": true,
-    "version": "5.0.0",
+    "version": "5.1.0",
     "type": "module",
     "description": "Track daily habits and routines. Add your own habits, set reminders, and keep a simple streak.",
     "overrides": {
@@ -38,7 +38,7 @@
         "android:bundle": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease",
         "ios:build": "npm run build && npx cap sync ios",
         "smoke": "node scripts/verify/smoke.cjs",
-        "smoke:spawn": "SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs",
+        "smoke:spawn": "node scripts/verify/smoke.cjs --spawn",
         "journeys": "node scripts/verify/journeys.cjs"
     },
     "dependencies": {
@@ -92,6 +92,6 @@
         "vitest": "^4.1.11"
     },
     "engines": {
-        "node": ">=18.0.0"
+        "node": ">=22.12.0"
     }
 }

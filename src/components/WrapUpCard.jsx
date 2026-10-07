@@ -1,3 +1,5 @@
+import ShareButton from './fun/ShareButton.jsx';
+import { weekday } from '../domain/day.js';
 import { useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Moon, PartyPopper } from 'lucide-react';
@@ -95,6 +97,9 @@ export default function WrapUpCard({
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <ToggleRoutines expanded={expanded} onToggle={onToggle} />
+        {weekday(day) === 0 && (
+          <ShareButton kind="weekly" data={({ store, today }) => ({ store, today })} />
+        )}
         <button
           type="button"
           className="btn btn-sm min-h-11 border-none bg-[var(--fd-accent)] text-white"
