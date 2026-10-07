@@ -235,7 +235,8 @@ export function StoreProvider({ children }) {
       if (cancelled) return;
       // Drop references to deleted plans/steps and agenda weeks out of range.
       // Both return the same object when nothing changed, so a clean store is not rewritten.
-      const loaded = pruneAgendas(cleanReferences(stored), appDay(new Date()));
+      // Prune against the provider's app day (non-regressing, like refreshDay), not the raw clock.
+      const loaded = pruneAgendas(cleanReferences(stored), computeToday(stored.lastSeenDay));
       readOnlyRef.current = readOnly;
       storeRef.current = loaded;
       setStore(loaded);

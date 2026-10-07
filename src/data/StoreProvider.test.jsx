@@ -162,6 +162,23 @@ describe('today never moves backwards', () => {
     expect(latest.store.lastSeenDay).toBe('2026-10-07');
   });
 
+  it('prunes agendas against the app day, not the clock behind it (Codex P2)', async () => {
+    vi.setSystemTime(new Date(2026, 9, 11, 10, 0)); // Sunday; lastSeenDay is the Monday after
+    const ahead = '2026-12-07'; // 8 weeks after Monday 2026-10-12
+    const free = [{ id: 'f1', kind: 'free', title: 'Song', link: null }];
+    prefs.set(
+      STORE_KEY,
+      JSON.stringify({
+        ...defaultStore('2026-10-01', 'en'),
+        lastSeenDay: '2026-10-12',
+        familyAgendas: { [ahead]: free },
+      })
+    );
+    await mount();
+    expect(latest.today).toBe('2026-10-12');
+    expect(latest.store.familyAgendas[ahead]).toEqual(free);
+  });
+
   it('ignores a lastSeenDay more than a day ahead (a clock once set forward) and resets it', async () => {
     prefs.set(
       STORE_KEY,
