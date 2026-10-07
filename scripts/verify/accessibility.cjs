@@ -2,7 +2,7 @@
 const { chromium } = require('playwright');
 const { AxeBuilder } = require('@axe-core/playwright');
 const { openPage, go, onboardSkip, hold, routineButton } = require('./lib.cjs');
-const BASE = process.env.A11Y_BASE_URL || 'http://127.0.0.1:4173';
+const BASE = process.env.A11Y_BASE_URL || 'http://localhost:4173';
 let failures = 0;
 async function scan(page, label) {
   const result = await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();

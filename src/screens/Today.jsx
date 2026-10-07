@@ -276,7 +276,7 @@ export default function Today({ onOpenSettings = () => {} }) {
           >
             <PlanIcon icon={plan.icon} className="h-4 w-4" />
           </span>
-          <span className="fd-plan-text truncate font-medium">
+          <span className="fd-plan-text break-words font-medium">
             {step ? t('fd.today.study.line', { plan: plan.title, step: step.title }) : plan.title}
           </span>
         </span>
