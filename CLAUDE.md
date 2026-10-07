@@ -36,7 +36,7 @@ user-editable slot instead.
 | Layer | Technology | Version |
 |---|---|---|
 | Frontend | React 19 + Vite 8 | `react: 19.2.8` (exact, with `react-dom`), `vite: ^8.1.5` |
-| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/:planId`, `/progress`, web-only `/share`; `*` falls back to Today |
+| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, web-only `/share`; `*` falls back to Today |
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
@@ -83,7 +83,7 @@ src/
 │   ├── progress.js, wrapup.js, encouragement.js, notifications.js, links.js, whatsNew.js
 │   └── migrateV1.js            # One-time import of the v1 jw- keys (read-only on them)
 ├── screens/
-│   ├── Today.jsx, Plans.jsx, PlanTrail.jsx, Progress.jsx, SettingsSheet.jsx
+│   ├── Today.jsx, Plans.jsx, PlanTrail.jsx, FamilyWeeks.jsx, Progress.jsx, SettingsSheet.jsx
 │   └── onboarding/             # Six steps; StepRoutines/Week/Reading/Rhythm/Look are reused by Settings
 ├── components/                 # HoldToCheck, RoutineRow, MinistryRow, Stepper, WrapUpCard, TabBar,
 │                               # MeetingDaysCard, WhatsNewBadge, BibleMap, settings/* (Reminders, Links,

@@ -386,6 +386,39 @@
         "openLink": "Open link",
         "refused": "That change couldn't be saved. The step may have changed; close and open it again."
       }
+    },
+    "family": {
+      "title": "Family worship weeks",
+      "back": "Back to Plans",
+      "noPlans": "Make a family plan on the Plans tab and its next steps will be suggested here.",
+      "thisWeek": "This week",
+      "weekOf": "Week of {{date}}",
+      "suggested": "Suggested",
+      "emptyWeek": "Nothing planned for this week.",
+      "keep": "Keep",
+      "keepWeek": "Keep the suggestions for the week of {{date}}",
+      "remove": "Remove {{title}}",
+      "openLink": "Open link for {{title}}",
+      "add": "Add to this week",
+      "full": "This week is full (5 items).",
+      "refused": "That could not be added.",
+      "free": {
+        "title": "Title",
+        "link": "Link (optional)",
+        "add": "Add item",
+        "titleNeeded": "Give it a title.",
+        "badLink": "Use a web address that starts with https:// or http://"
+      },
+      "step": {
+        "pick": "Step from a plan",
+        "choose": "Choose a step",
+        "add": "Add step",
+        "none": "Every open step is already planned."
+      },
+      "earlier": "Earlier weeks",
+      "stepDone": "{{title}}, done",
+      "stepOpen": "{{title}}",
+      "listLabel": "Items for the week of {{date}}"
     }
   }
 }

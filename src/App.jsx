@@ -10,6 +10,7 @@ import Today from './screens/Today';
 import Progress from './screens/Progress';
 import Plans from './screens/Plans.jsx';
 import PlanTrail from './screens/PlanTrail.jsx';
+import FamilyWeeks from './screens/FamilyWeeks.jsx';
 import Onboarding from './screens/onboarding/Onboarding.jsx';
 import TabBar from './components/TabBar';
 import SettingsSheet from './screens/SettingsSheet';
@@ -55,6 +56,7 @@ function Screens() {
           <>
             <Route path="/" element={today} />
             <Route path="/plans" element={withTabs(<Plans />)} />
+            <Route path="/plans/family" element={withTabs(<FamilyWeeks />)} />
             <Route path="/plans/:planId" element={withTabs(<PlanTrail />)} />
             <Route path="/progress" element={withTabs(<Progress />)} />
             <Route path="*" element={today} />
