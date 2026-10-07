@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Check, ExternalLink, Plus, Trash2 } from 'lucide-react';
@@ -50,7 +50,7 @@ function Item({ item, store, onRemove, readOnly }) {
         </span>
       )}
       <span className="min-w-0 flex-1 break-words">
-        {readOnly && info.done ? (
+        {info.done ? (
           <span className="flex items-center gap-1">
             <Check aria-hidden="true" className="h-4 w-4 shrink-0" />
             <span>{t('fd.family.stepDone', { title: info.title })}</span>
@@ -88,16 +88,26 @@ function Item({ item, store, onRemove, readOnly }) {
   );
 }
 
-/** The open steps of the active family plans that this week does not already hold. */
-function pickableSteps(store, items) {
+/**
+ * The open steps of the active family plans that no other week reserves and
+ * this week does not already hold, grouped by plan. `reason` says why the
+ * picker is empty: no family plan, every step done, or every open one planned.
+ */
+function pickableSteps(store, week, items) {
   const used = new Set(items.filter((i) => i.kind === 'step').map((i) => i.stepId));
-  return store.plans
-    .filter((p) => p.kind === 'family' && p.archivedOn === null)
+  for (const [w, list] of Object.entries(store.familyAgendas)) {
+    if (w !== week) for (const i of list) if (i.kind === 'step') used.add(i.stepId);
+  }
+  const plans = store.plans.filter((p) => p.kind === 'family' && p.archivedOn === null);
+  const groups = plans
     .map((plan) => ({
       plan,
       steps: plan.steps.filter((s) => s.doneOn === null && !used.has(s.id)),
     }))
     .filter((g) => g.steps.length > 0);
+  const anyOpen = plans.some((p) => p.steps.some((s) => s.doneOn === null));
+  const reason = plans.length === 0 ? 'noPlans' : anyOpen ? 'allPlanned' : 'allDone';
+  return { groups, reason };
 }
 
 /** The add panel: a free item (title and optional link) or a step from a family plan. */
@@ -112,7 +122,10 @@ function AddPanel({ week, items, onDone }) {
   const [link, setLink] = useState('');
   const [pick, setPick] = useState('');
   const [errors, setErrors] = useState({});
-  const groups = pickableSteps(store, items);
+  const { groups, reason } = pickableSteps(store, week, items);
+  const titleRef = useRef(null);
+  const linkRef = useRef(null);
+  useEffect(() => titleRef.current?.focus(), []);
 
   const addFree = (e) => {
     e.preventDefault();
@@ -121,7 +134,11 @@ function AddPanel({ week, items, onDone }) {
       title: title.trim() ? null : t('fd.family.free.titleNeeded'),
       link: url === '' || isSafeHttpUrl(url) ? null : t('fd.family.free.badLink'),
     };
-    if (next.title || next.link) return setErrors(next);
+    if (next.title || next.link) {
+      setErrors(next);
+      (next.title ? titleRef : linkRef).current?.focus();
+      return;
+    }
     // A refused change returns the store itself: say so rather than close.
     if (addFreeItem(store, week, { title, link: url || null }) === store) {
       return setErrors({ form: t('fd.family.refused') });
@@ -151,16 +168,20 @@ function AddPanel({ week, items, onDone }) {
           </label>
           <input
             id={titleId}
+            ref={titleRef}
             type="text"
             maxLength={MAX_TITLE}
             className="input input-bordered min-h-11 w-full"
             value={title}
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? errId + 't' : undefined}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setErrors((x) => ({ ...x, title: null, form: null }));
+            }}
           />
           {errors.title && (
-            <p id={errId + 't'} className="text-sm text-error">
+            <p id={errId + 't'} role="alert" className="text-sm text-error">
               {errors.title}
             </p>
           )}
@@ -171,16 +192,20 @@ function AddPanel({ week, items, onDone }) {
           </label>
           <input
             id={linkId}
+            ref={linkRef}
             type="url"
             inputMode="url"
             className="input input-bordered min-h-11 w-full"
             value={link}
             aria-invalid={Boolean(errors.link)}
             aria-describedby={errors.link ? errId + 'l' : undefined}
-            onChange={(e) => setLink(e.target.value)}
+            onChange={(e) => {
+              setLink(e.target.value);
+              setErrors((x) => ({ ...x, link: null, form: null }));
+            }}
           />
           {errors.link && (
-            <p id={errId + 'l'} className="text-sm text-error">
+            <p id={errId + 'l'} role="alert" className="text-sm text-error">
               {errors.link}
             </p>
           )}
@@ -220,7 +245,7 @@ function AddPanel({ week, items, onDone }) {
             ))}
           </select>
           {groups.length === 0 && (
-            <p className="text-sm text-base-content/70">{t('fd.family.step.none')}</p>
+            <p className="text-sm text-base-content/70">{t(`fd.family.step.none.${reason}`)}</p>
           )}
         </div>
         <button type="submit" className="btn btn-outline min-h-11" disabled={pick === ''}>

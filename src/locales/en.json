@@ -413,11 +413,14 @@
         "pick": "Step from a plan",
         "choose": "Choose a step",
         "add": "Add step",
-        "none": "Every open step is already planned."
+        "none": {
+          "noPlans": "Make a family plan on the Plans tab to pick its steps here.",
+          "allDone": "Every step of your family plans is done.",
+          "allPlanned": "Every open step is already planned in a week."
+        }
       },
       "earlier": "Earlier weeks",
       "stepDone": "{{title}}, done",
-      "stepOpen": "{{title}}",
       "listLabel": "Items for the week of {{date}}"
     }
   }

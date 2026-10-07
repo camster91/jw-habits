@@ -76,6 +76,15 @@ describe('App shell', () => {
     expect(await screen.findByTestId('progress')).toBeInTheDocument();
   });
 
+  it('shows family weeks on /plans/family with the Plans tab active', async () => {
+    seed({ onboardingDone: true });
+    window.history.pushState({}, '', '/plans/family');
+    renderApp();
+    expect(await screen.findByTestId('family-weeks')).toBeInTheDocument();
+    expect(screen.queryByTestId('plan-trail')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Plans' })).toHaveAttribute('aria-current', 'page');
+  });
+
   it('shows the tab bar on Today and Progress but not during onboarding', async () => {
     seed({ onboardingDone: false });
     const first = renderApp();

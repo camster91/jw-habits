@@ -7,12 +7,17 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { StoreContext } from '../data/useStore.js';
 import { defaultStore } from '../domain/store.js';
 import { createPlan, setStepDone } from '../domain/plans.js';
+import * as agenda from '../domain/agenda.js';
 import { setAgenda } from '../domain/agenda.js';
 import { openLink } from '../native/openLink.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import FamilyWeeks from './FamilyWeeks.jsx';
 
 vi.mock('../native/openLink.js', () => ({ openLink: vi.fn() }));
+vi.mock('../domain/agenda.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, addFreeItem: vi.fn(actual.addFreeItem) };
+});
 
 const TODAY = '2026-10-07'; // a Wednesday; this week's Monday is 2026-10-05
 const NEXT = '2026-10-12';
@@ -91,11 +96,14 @@ describe('FamilyWeeks', () => {
     expect(itemText(AFTER)).toContain('T2');
   });
 
-  it('removes an item and keeps what is left', () => {
+  it('removes that item and keeps what is left', () => {
     render(<Harness initial={twoPlans()} />);
     fireEvent.click(week(NEXT).getByRole('button', { name: 'Remove S1' }));
     expect(current.familyAgendas[NEXT]).toHaveLength(1);
     expect(itemCount(NEXT)).toBe(1);
+    expect(itemText(NEXT)).toContain('T1');
+    expect(itemText(NEXT)).not.toContain('S1');
+    expect(current.familyAgendas[NEXT][0].stepId).toBe(current.plans[1].steps[0].id);
   });
 
   it('adds a free item with an https link', () => {
@@ -181,5 +189,72 @@ describe('FamilyWeeks', () => {
     const s = { ...defaultStore('2026-09-01', 'en'), onboardingDone: true };
     render(<Harness initial={s} />);
     expect(screen.getByText(/Make a family plan/)).toBeInTheDocument();
+  });
+
+  it('writes nothing until Keep', () => {
+    const initial = twoPlans();
+    render(<Harness initial={initial} />);
+    expect(current.familyAgendas).toEqual({});
+    fireEvent.click(week(NEXT).getByRole('button', { name: 'Add to this week' }));
+    expect(current.familyAgendas).toEqual({});
+  });
+
+  it('asks for a title, focuses it, and clears the error on edit', () => {
+    render(<Harness initial={twoPlans()} />);
+    fireEvent.click(week(NEXT).getByRole('button', { name: 'Add to this week' }));
+    const title = week(NEXT).getByLabelText('Title');
+    expect(title).toHaveFocus();
+    fireEvent.click(week(NEXT).getByRole('button', { name: 'Add item' }));
+    expect(week(NEXT).getByRole('alert')).toHaveTextContent('Give it a title.');
+    expect(title).toHaveAttribute('aria-invalid', 'true');
+    expect(current.familyAgendas).toEqual({});
+    fireEvent.change(title, { target: { value: 'x' } });
+    expect(week(NEXT).queryByRole('alert')).toBeNull();
+  });
+
+  it('says so and writes nothing when the domain refuses', () => {
+    agenda.addFreeItem.mockImplementationOnce((s) => s);
+    render(<Harness initial={twoPlans()} />);
+    fireEvent.click(week(NEXT).getByRole('button', { name: 'Add to this week' }));
+    fireEvent.change(week(NEXT).getByLabelText('Title'), { target: { value: 'Game' } });
+    fireEvent.click(week(NEXT).getByRole('button', { name: 'Add item' }));
+    expect(week(NEXT).getByRole('alert')).toHaveTextContent('That could not be added.');
+    expect(current.familyAgendas).toEqual({});
+  });
+
+  it('the picker skips steps reserved in other weeks, done steps, and other plan kinds', () => {
+    let s = twoPlans();
+    const [songs, stories] = s.plans;
+    s = setStepDone(s, songs.id, songs.steps[2].id, '2026-09-20');
+    s = createPlan(
+      s,
+      { title: 'Study', kind: 'study', colour: 0, icon: 'book', steps: steps(['Z1']) },
+      '2026-09-03'
+    ).store;
+    s = setAgenda(s, AFTER, [
+      { id: 'r', kind: 'step', planId: stories.id, stepId: stories.steps[0].id },
+    ]);
+    render(<Harness initial={s} />);
+    fireEvent.click(week(NEXT).getByRole('button', { name: 'Add to this week' }));
+    const options = [...week(NEXT).getByLabelText('Step from a plan').querySelectorAll('option')]
+      .map((o) => o.textContent)
+      .filter((x) => x !== 'Choose a step');
+    expect(options).toEqual(['S2', 'T3']); // S1 and T2 are this week's preview, T1 is reserved in AFTER, S3 is done
+  });
+
+  it('explains an empty picker', () => {
+    const s = { ...defaultStore('2026-09-01', 'en'), onboardingDone: true };
+    render(<Harness initial={s} />);
+    fireEvent.click(week(NEXT).getByRole('button', { name: 'Add to this week' }));
+    expect(week(NEXT).getByText(/Make a family plan on the Plans tab to pick/)).toBeInTheDocument();
+  });
+
+  it('shows the done state of a stored step in the current weeks', () => {
+    let s = twoPlans();
+    const { id: planId, steps: st } = s.plans[0];
+    s = setStepDone(s, planId, st[0].id, '2026-10-06');
+    s = setAgenda(s, '2026-10-05', [{ id: 'a', kind: 'step', planId, stepId: st[0].id }]);
+    render(<Harness initial={s} />);
+    expect(week('2026-10-05').getByText('S1, done')).toBeInTheDocument();
   });
 });
