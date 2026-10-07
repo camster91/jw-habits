@@ -269,7 +269,7 @@ function twoFamilies() {
 }
 
 describe('checkInFamily', () => {
-  it('marks exactly that week’s agenda steps and logs true', () => {
+  it('marks exactly that week’s agenda steps and logs exactly those step ids', () => {
     const { store: s0, a, b } = twoFamilies();
     const store = setAgenda(s0, MON, [
       { id: 'x1', kind: 'step', planId: a, stepId: stepOf(s0, a, 1).id },
@@ -279,7 +279,7 @@ describe('checkInFamily', () => {
       { id: 'y1', kind: 'step', planId: b, stepId: stepOf(s0, b, 0).id },
     ]);
     const next = checkInFamily(withNext, TODAY);
-    expect(entry(next, 'familyWorship', TODAY).value).toBe(true);
+    expect(entry(next, 'familyWorship', TODAY).value).toEqual({ stepIds: [stepOf(s0, a, 1).id] });
     expect(stepOf(next, a, 1).doneOn).toBe(TODAY);
     expect(stepOf(next, a, 0).doneOn).toBeNull();
     expect(stepOf(next, a, 2).doneOn).toBeNull();
@@ -327,7 +327,7 @@ describe('checkInFamily', () => {
     const store = defaultStore(TODAY, 'en');
     const next = checkInFamily(store, TODAY);
     expect(next.familyAgendas).toEqual({});
-    expect(entry(next, 'familyWorship', TODAY).value).toBe(true);
+    expect(entry(next, 'familyWorship', TODAY).value).toEqual({ stepIds: [] });
     expect(undoFamily(next, TODAY)).toEqual(store);
   });
 
@@ -409,6 +409,79 @@ describe('undoFamily', () => {
     const undone = undoFamily(next, TODAY);
     expect(stepOf(undone, a, 0).doneOn).toBeNull();
     expect(stepOf(undone, b, 0).doneOn).toBe('2026-10-06');
+    valid(undone);
+  });
+
+  it('Codex: a step hand-marked done earlier the same day survives check-in and undo', () => {
+    const { store: s0, a, b } = twoFamilies();
+    let store = setAgenda(s0, MON, agendaFor(s0, MON));
+    store = setStepDone(store, a, stepOf(store, a, 0).id, TODAY); // by hand, before the session
+    const next = checkInFamily(store, TODAY);
+    expect(entry(next, 'familyWorship', TODAY).value).toEqual({ stepIds: [stepOf(s0, b, 0).id] });
+    const undone = undoFamily(next, TODAY);
+    expect(stepOf(undone, a, 0).doneOn).toBe(TODAY);
+    expect(stepOf(undone, b, 0).doneOn).toBeNull();
+    expect(undone).toEqual(store);
+    valid(undone);
+  });
+
+  it('clears a recorded step even after its item was removed from the agenda', () => {
+    const { store: s0, a, b } = twoFamilies();
+    const store = setAgenda(s0, MON, agendaFor(s0, MON));
+    const next = checkInFamily(store, TODAY);
+    const items = next.familyAgendas[MON];
+    const trimmed = setAgenda(
+      next,
+      MON,
+      items.filter((i) => i.stepId !== stepOf(s0, a, 0).id)
+    );
+    const undone = undoFamily(trimmed, TODAY);
+    expect(stepOf(undone, a, 0).doneOn).toBeNull();
+    expect(stepOf(undone, b, 0).doneOn).toBeNull();
+    expect(entry(undone, 'familyWorship', TODAY)).toBeUndefined();
+    valid(undone);
+  });
+
+  it('a recorded step re-marked on another day is not cleared', () => {
+    const { store: s0, a } = twoFamilies();
+    const store = setAgenda(s0, MON, agendaFor(s0, MON));
+    let next = checkInFamily(store, TODAY);
+    next = setStepDone(next, a, stepOf(next, a, 0).id, '2026-10-06');
+    expect(stepOf(undoFamily(next, TODAY), a, 0).doneOn).toBe('2026-10-06');
+  });
+
+  it('a repeat check-in on the same day replaces the first, and undo restores the start', () => {
+    const { store: s0, a, b } = twoFamilies();
+    const store = setAgenda(s0, MON, [
+      { id: 'x1', kind: 'step', planId: a, stepId: stepOf(s0, a, 0).id },
+    ]);
+    const once = checkInFamily(store, TODAY);
+    const moved = setAgenda(once, MON, [
+      { id: 'x2', kind: 'step', planId: b, stepId: stepOf(s0, b, 0).id },
+    ]);
+    const twice = checkInFamily(moved, TODAY);
+    expect(stepOf(twice, a, 0).doneOn).toBeNull();
+    expect(stepOf(twice, b, 0).doneOn).toBe(TODAY);
+    expect(entry(twice, 'familyWorship', TODAY).value).toEqual({ stepIds: [stepOf(s0, b, 0).id] });
+    valid(twice);
+    // Undo leaves the start store with only the agenda edit applied: neither session remains.
+    const expected = setAgenda(store, MON, [
+      { id: 'x2', kind: 'step', planId: b, stepId: stepOf(s0, b, 0).id },
+    ]);
+    expect(undoFamily(twice, TODAY)).toEqual(expected);
+  });
+
+  it('legacy true entry: undo still re-reads the week and clears steps done that day', () => {
+    const { store: s0, a, b } = twoFamilies();
+    let store = setAgenda(s0, MON, agendaFor(s0, MON));
+    store = setStepDone(store, a, stepOf(store, a, 0).id, TODAY);
+    store = setStepDone(store, b, stepOf(store, b, 0).id, '2026-10-06');
+    const logged = addCheckIn(store, { routine: 'familyWorship', day: TODAY, value: true });
+    valid(logged);
+    const undone = undoFamily(logged, TODAY);
+    expect(stepOf(undone, a, 0).doneOn).toBeNull();
+    expect(stepOf(undone, b, 0).doneOn).toBe('2026-10-06');
+    expect(entry(undone, 'familyWorship', TODAY)).toBeUndefined();
     valid(undone);
   });
 

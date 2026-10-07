@@ -457,6 +457,8 @@ describe('validateStore v3 fields', () => {
     log: [
       { routine: 'personalStudy', day: '2026-10-04', value: { stepId: 'p1-s1' } },
       { routine: 'personalStudy', day: TODAY, value: true },
+      { routine: 'familyWorship', day: '2026-10-04', value: { stepIds: ['p2-s1'] } },
+      { routine: 'familyWorship', day: TODAY, value: true },
     ],
   });
   const reason = (fn) => {
@@ -519,6 +521,19 @@ describe('validateStore v3 fields', () => {
         reason((s) => (s.plans[0].steps[0].link = link)),
         String(link)
       ).toBe('badShape');
+  });
+
+  it('checks familyWorship {stepIds} log values, and only for familyWorship', () => {
+    const fam = (s) => s.log.find((e) => e.routine === 'familyWorship' && e.day === '2026-10-04');
+    expect(ok((s) => (fam(s).value = { stepIds: [] }))).toBe(true);
+    expect(ok((s) => (fam(s).value = { stepIds: ['gone', 'p2-s1'] }))).toBe(true);
+    expect(reason((s) => (fam(s).value = { stepIds: [''] }))).toBe('badShape');
+    expect(reason((s) => (fam(s).value = { stepIds: 'x' }))).toBe('badShape');
+    expect(reason((s) => (fam(s).value = { stepIds: [3] }))).toBe('badShape');
+    expect(reason((s) => (fam(s).value = { stepIds: [], extra: 1 }))).toBe('badShape');
+    expect(reason((s) => (fam(s).value = {}))).toBe('badShape');
+    expect(reason((s) => (fam(s).value = { stepId: 'p2-s1' }))).toBe('badShape');
+    expect(reason((s) => (s.log[0].value = { stepIds: [] }))).toBe('badShape'); // personalStudy
   });
 
   it('checks activePlan, and lets a dangling one through', () => {
