@@ -290,6 +290,62 @@ describe('lifecycle', () => {
   });
 });
 
+describe('review fixes', () => {
+  it('refuses a malformed step day in createPlan and setStepDone', () => {
+    const s = fresh();
+    for (const bad of ['yesterday', '2026-13-40', 5, '2026-10-7']) {
+      const r = createPlan(
+        s,
+        { title: 'a', kind: 'study', steps: [{ title: 'b', doneOn: bad }] },
+        TODAY
+      );
+      expect(r.planId).toBeNull();
+      expect(r.store).toBe(s);
+    }
+    const { store, planId, plan } = planWith(2);
+    for (const bad of [undefined, 'nope', '2026-02-30', 7]) {
+      expect(setStepDone(store, planId, plan.steps[0].id, bad)).toBe(store);
+    }
+  });
+
+  it('deleteStep archives a plan whose last undone step is deleted', () => {
+    const { store, planId, plan } = planWith(2);
+    let s = setStepDone(store, planId, plan.steps[0].id, '2026-10-05');
+    s = setActiveStudy(s, planId);
+    s = deleteStep(s, planId, plan.steps[1].id);
+    expect(s.plans[0].archivedOn).toBe('2026-10-05');
+    expect(s.activePlan.personalStudy).toBeNull();
+    valid(s);
+    // deleting the only step leaves an empty, unfinished plan: not archived
+    const one = planWith(1);
+    expect(deleteStep(one.store, one.planId, one.plan.steps[0].id).plans[0].archivedOn).toBeNull();
+  });
+
+  it('createPlan with every step done is born archived', () => {
+    const steps = generateChapters(2).map((st, i) => ({
+      ...st,
+      doneOn: i ? '2026-10-06' : '2026-10-02',
+    }));
+    const r = createPlan(fresh(), { title: 'Done', kind: 'study', steps }, TODAY);
+    expect(r.store.plans[0].archivedOn).toBe('2026-10-06');
+    valid(r.store);
+  });
+
+  it('a finished plan can be restored and stays restored', () => {
+    const { store, planId, plan } = planWith(1);
+    const done = setStepDone(store, planId, plan.steps[0].id, TODAY);
+    const back = restorePlan(done, planId);
+    expect(back.plans[0].archivedOn).toBeNull();
+    valid(back);
+  });
+
+  it('updateStep with a null or undefined patch is a no-op', () => {
+    const { store, planId, plan } = planWith(1);
+    expect(updateStep(store, planId, plan.steps[0].id, null)).toBe(store);
+    expect(updateStep(store, planId, plan.steps[0].id, undefined)).toBe(store);
+  });
+});
+
 describe('purity', () => {
   it('never mutates its input', () => {
     const { store, planId, plan } = planWith(3);

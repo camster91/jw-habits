@@ -9,9 +9,13 @@
  * here gets `newId()`.
  */
 import { BOOKS, finderUrl } from './bible.js';
+import { addDays } from './day.js';
 import { MAX_NOTE, MAX_STEPS, MAX_TITLE, newId } from './ids.js';
 import { PLAN_ICONS, PLAN_KINDS, PLAN_COLOURS } from './store.js';
 import { isSafeHttpUrl } from '../utils/safeUrls.js';
+
+/** A real calendar day 'YYYY-MM-DD' (the same test validateStore applies). */
+const isDay = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x) && addDays(x, 0) === x;
 
 const cleanTitle = (x) => (typeof x === 'string' ? x.trim().slice(0, MAX_TITLE) : '');
 
@@ -99,13 +103,14 @@ export function createPlan(store, { title, kind, colour = 0, icon = 'book', step
   for (const s of steps) {
     const st = cleanTitle(s?.title);
     const link = cleanLink(s?.link);
-    if (!st || link === undefined) return refused;
+    const doneOn = s?.doneOn ?? null;
+    if (!st || link === undefined || (doneOn !== null && !isDay(doneOn))) return refused;
     made.push({
       id: newId(),
       title: st,
       link,
       note: cleanNote(s.note),
-      doneOn: typeof s.doneOn === 'string' ? s.doneOn : null,
+      doneOn,
     });
   }
   const plan = {
@@ -118,6 +123,8 @@ export function createPlan(store, { title, kind, colour = 0, icon = 'book', step
     createdOn: today,
     archivedOn: null,
   };
+  // A plan born finished (every step already done) is archived like any other.
+  if (isFinished(plan)) plan.archivedOn = finishedOn(plan);
   return { store: { ...store, plans: [...store.plans, plan] }, planId: plan.id };
 }
 
@@ -136,7 +143,7 @@ export function addStep(store, planId, { title, link = null }) {
 export function updateStep(store, planId, stepId, patch) {
   const plan = store.plans.find((p) => p.id === planId);
   const step = plan?.steps.find((s) => s.id === stepId);
-  if (!step) return store;
+  if (!step || typeof patch !== 'object' || patch === null) return store;
   const next = { ...step };
   if ('title' in patch) {
     next.title = cleanTitle(patch.title);
@@ -171,7 +178,16 @@ export function moveStep(store, planId, stepId, delta) {
 export function deleteStep(store, planId, stepId) {
   const plan = store.plans.find((p) => p.id === planId);
   if (!plan || !plan.steps.some((s) => s.id === stepId)) return store;
-  return mapPlan(store, planId, (p) => ({ ...p, steps: p.steps.filter((s) => s.id !== stepId) }));
+  const steps = plan.steps.filter((s) => s.id !== stepId);
+  let updated = { ...plan, steps };
+  // Deleting the last undone step finishes the plan, so it archives like setStepDone.
+  if (isFinished(updated) && plan.archivedOn === null) {
+    updated = { ...updated, archivedOn: finishedOn(updated) };
+  }
+  const next = mapPlan(store, planId, () => updated);
+  return updated.archivedOn !== null && plan.archivedOn === null
+    ? withoutActive(next, planId)
+    : next;
 }
 
 /**
@@ -181,6 +197,7 @@ export function deleteStep(store, planId, stepId) {
  * undo puts the plan back exactly as it was.
  */
 export function setStepDone(store, planId, stepId, day) {
+  if (day !== null && !isDay(day)) return store;
   const plan = store.plans.find((p) => p.id === planId);
   if (!plan || !plan.steps.some((s) => s.id === stepId)) return store;
   const steps = plan.steps.map((s) => (s.id === stepId ? { ...s, doneOn: day } : s));
@@ -204,7 +221,11 @@ export function archivePlan(store, planId, today) {
   return withoutActive(next, planId);
 }
 
-/** Un-archives a plan. It does not make it the active study again. */
+/**
+ * Un-archives a plan. It does not make it the active study again. A finished
+ * plan may be restored; it stays restored until one of its steps changes
+ * (setStepDone / deleteStep then archive it again).
+ */
 export function restorePlan(store, planId) {
   const plan = store.plans.find((p) => p.id === planId);
   if (!plan || plan.archivedOn === null) return store;
