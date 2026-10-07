@@ -125,6 +125,15 @@ describe('setAgenda and free items', () => {
     expect(addFreeItem(s, MON, { title: 'x'.repeat(60) }).familyAgendas[MON][0].link).toBe(null);
   });
 
+  it('refuses a malformed week key that weekStart would echo back (Codex P2)', () => {
+    const s = defaultStore(TODAY, 'en');
+    for (const bad of ['NaN-NaN-NaN', '2026-02-30', '2026-1-5', '', null]) {
+      expect(setAgenda(s, bad, [])).toBe(s);
+      expect(addFreeItem(s, bad, { title: 'T', link: null })).toBe(s);
+    }
+    valid(setAgenda(s, MON, []));
+  });
+
   it('setAgenda refuses items validateStore would reject (Codex P2) and blank free titles', () => {
     const s = defaultStore(TODAY, 'en');
     expect(setAgenda(s, MON, [{ id: 'x', kind: 'step', planId: '', stepId: '' }])).toBe(s);

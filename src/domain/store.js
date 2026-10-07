@@ -132,7 +132,8 @@ const isRoutineId = (x) => ROUTINE_IDS.includes(x);
 const isId = (x) => typeof x === 'string' && x !== '';
 const isTitle = (x) => typeof x === 'string' && x.length >= 1 && x.length <= MAX_TITLE;
 const isLink = (x) => x === null || isSafeHttpUrl(x);
-const isMonday = (x) => isDay(x) && weekday(x) === 1;
+/** A real calendar day (YYYY-MM-DD) that is a Monday: the familyAgendas key rule. */
+export const isMonday = (x) => isDay(x) && weekday(x) === 1;
 
 function validScheduleEntry(e) {
   return (

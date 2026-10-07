@@ -12,15 +12,13 @@
  */
 import { addDays, weekStart } from './day.js';
 import { MAX_AGENDA_ITEMS, MAX_TITLE, newId } from './ids.js';
-import { validAgendaItem } from './store.js';
+import { isMonday, validAgendaItem } from './store.js';
 import { isSafeHttpUrl } from '../utils/safeUrls.js';
 
 const MAX_AUTOFILL_PLANS = 3;
 const WEEKS_BACK = 52;
 const WEEKS_AHEAD = 8;
 const PREVIEW = 'preview-';
-
-const isMonday = (day) => typeof day === 'string' && weekStart(day) === day;
 
 /** Active family plans in createdOn order (ties keep array order: sort is stable). */
 const activeFamilyPlans = (store) =>
