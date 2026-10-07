@@ -1,3 +1,9 @@
+> **SUPERSEDED — needs rewrite before submission.** Written for the pre-refactor app
+> ("JW Habits", `com.ashbi.jwnews`), which no longer exists. The app is now a general
+> habit tracker, `ca.ashbi.habittracker`, and every store listing field below — name,
+> bundle id, SKU, description, keywords, and the affiliation disclaimer — is wrong for it.
+> Treat this as a starting outline only. See [CLAUDE.md](./CLAUDE.md).
+
 # JW Habits — App Store & Play Store Listing Metadata
 
 > All copy verified against the live app at https://jwhabits.ashbi.ca/ (2026-06-14).

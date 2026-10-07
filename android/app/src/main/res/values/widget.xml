@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_bg">#FFFFFFFF</color>
+    <color name="widget_text">#FF1F2328</color>
+    <color name="widget_accent">#FF4A6FA4</color>
+    <color name="widget_track">#334A6FA4</color>
+
+    <string name="widget_name">Faithful Days</string>
+    <string name="widget_description">Today\'s routines at a glance</string>
+    <string name="widget_count">%1$d of %2$d</string>
+    <string name="widget_stale">Open Faithful Days to start today</string>
+    <string name="widget_empty">Nothing due today</string>
+    <string name="widget_row_done">✓  %1$s</string>
+    <string name="widget_row_todo">○  %1$s</string>
+
+    <style name="WidgetRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingBottom">3dp</item>
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+</resources>

@@ -1,6 +1,6 @@
 {
-  "appId": "com.ashbi.jwnews",
-  "appName": "JW Habits",
+  "appId": "ca.ashbi.habittracker",
+  "appName": "Faithful Days",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {

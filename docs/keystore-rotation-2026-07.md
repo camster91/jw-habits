@@ -77,9 +77,9 @@ Preferred: **BFG Repo-Cleaner** with a replacements file (do **not** commit
 
 ```bash
 # passwords.txt (outside the clone) — one leaked secret per line:
-#   jwnews2024secure
-#   jwnews2024release
-#   JWHabits2026!
+#   <old keystore store password>
+#   <old key alias password>
+#   <old release password>
 #   <any other recovered values from 1Password / git log>
 
 cd /tmp

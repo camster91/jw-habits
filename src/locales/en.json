@@ -1,88 +1,525 @@
 {
-  "appName": "JW Habits",
-  "greeting": {
-    "morning": "Good morning",
-    "afternoon": "Good afternoon",
-    "evening": "Good evening",
-    "night": "Good night"
-  },
-  "habit": {
-    "text": "Daily text",
-    "textSub": "Read today's scripture passage on jw.org",
-    "bible": "Daily Bible reading",
-    "bibleSub": "Open the New World Translation study Bible",
-    "bibleSubToday": "Today: {{today}}",
-    "meeting": "Meeting prep",
-    "meetingSub": "This week's midweek + weekend workbook",
-    "family": "Family worship",
-    "familySub": "Talk prompts, videos, family Bible ideas",
-    "thisWeek": "This week",
-    "sundayWatchtower": "Sunday Watchtower Study",
-    "sundayWatchtowerSub": "Sunday Watchtower Study — {{weekOf}}",
-    "sundayWatchtowerWeeks": "{{count}} week attended",
-    "sundayWatchtowerWeeks_plural": "{{count}} weeks attended",
-    "openInJwLibrary": "Open in JW Library",
-    "openInJwLibraryAria": "Open this week's Watchtower article in JW Library",
-    "memorial": "Memorial",
-    "memorialSeeDate": "See jw.org for the date",
-    "treasures": "Treasures from God's Word",
-    "ministry": "Apply Yourself to the Field Ministry",
-    "living": "Living as Christians",
-    "family15": "15 minutes",
-    "family30": "30 minutes",
-    "family60": "60 minutes",
-    "today": "Today",
-    "tonight": "Tonight",
-    "yearText": "Year Text",
-    "yearTextSub": "{{year}} — Open this year's scripture",
-    "yearTextSubFallback": "View current Year Text on jw.org",
-    "conventions": "Conventions",
-    "conventionsSub": "Find a regional convention on jw.org",
-    "subFieldService": "Field Service",
-    "subPublicMeeting": "Public Meeting + Watchtower Study",
-    "subMidweekMeeting": "Midweek Meeting",
-    "subMidweekMeetingPrep": "Midweek Meeting Prep",
-    "notePlaceholder": "A quick reminder for yourself — never leaves your device.",
-    "bibleReadDays": "days read",
-    "memorialToday": "Today",
-    "memorialTomorrow": "Tomorrow",
-    "memorialInDays": "In {{count}} days",
-    "shareInvite": "Share invite"
-  },
-  "home": {
-    "firstRunHint": "Tap a row to open jw.org. Tap the checkbox when done.",
-    "streakDay": "day streak",
-    "streakDays": "day streak",
-    "streakBest": "best",
-    "streakToday": "today",
-    "storageFull": "This device is out of storage space. Habit checkmarks may not save until you free some space.",
-    "offlineOpen": "You are offline. Connect to open jw.org links — JW Library deep links still work."
-  },
-  "settings": {
-    "title": "Settings",
-    "meetingDays": "Meeting days",
-    "midweek": "Midweek meeting",
-    "midweekHelp": "Day of the week the midweek meeting is held",
-    "weekend": "Weekend meeting",
-    "weekendHelp": "Day of the week the public meeting is held",
-    "daySun": "Sun",
-    "dayMon": "Mon",
-    "dayTue": "Tue",
-    "dayWed": "Wed",
-    "dayThu": "Thu",
-    "dayFri": "Fri",
-    "daySat": "Sat",
-    "expand": "Settings",
-    "collapse": "Done",
-    "reminders": "Daily reminder",
-    "dailyReminder": "Daily reminder",
-    "reminderHelp": "Get a daily nudge to check off today's habits",
-    "reminderTimeLabel": "Time",
-    "testNotification": "Test",
-    "testFired": "Test notification sent",
-    "quietHoursLabel": "Quiet hours",
-    "quietStartLabel": "Quiet hours start",
-    "quietEndLabel": "Quiet hours end",
-    "permissionDenied": "Notifications blocked. Allow them in your browser's site settings to enable."
+  "fd": {
+    "routine": {
+      "dailyText": "Daily text",
+      "bibleReading": "Bible reading",
+      "meetingPrep": "Meeting prep",
+      "familyWorship": "Family worship",
+      "personalStudy": "Personal study",
+      "ministry": "Ministry"
+    },
+    "anchor": {
+      "afterBreakfast": "After breakfast",
+      "withFamilyPrayer": "With family prayer",
+      "beforeBed": "Before bed"
+    },
+    "notify": {
+      "title": "Faithful Days",
+      "ready_one": "{{prefix}} · {{list}} is ready",
+      "ready_other": "{{prefix}} · {{list}} are ready",
+      "and": "{{head}} and {{last}}",
+      "wrapUp": "Your day in review is ready",
+      "meetingEve": "Tomorrow's meeting — prep is ready when you are"
+    },
+    "wrapUp": {
+      "restWell": "Rest well — tomorrow's a fresh start.",
+      "bibleMoved_one": "{{count}} chapter · {{books}} of 66 books",
+      "bibleMoved_other": "{{count}} chapters · {{books}} of 66 books",
+      "bibleBooks": "{{books}} of 66 books",
+      "meetingMoved_one": "{{done}} of 1 meeting",
+      "meetingMoved_other": "{{done}} of the last {{count}} meetings",
+      "studyMoved": "{{count}} of {{target}} this week",
+      "familyMoved": "Done this week"
+    },
+    "encourage": {
+      "warm": [
+        "Nicely done.",
+        "A good start to the day.",
+        "Steady steps add up.",
+        "That counts, and it matters.",
+        "Well done for showing up.",
+        "Little by little, it grows.",
+        "A quiet win. Enjoy it.",
+        "You made room for this today.",
+        "Good habits are built just like this.",
+        "Thank you for taking the time.",
+        "That is a lovely rhythm.",
+        "One more good day in the books.",
+        "You are building something lasting.",
+        "Gentle and steady wins.",
+        "That was time well spent.",
+        "Take a breath and enjoy that.",
+        "Keep going at your own pace.",
+        "A small moment with a big effect.",
+        "Glad you made it happen.",
+        "This is how routines take root.",
+        "Every check-in is a kindness to yourself.",
+        "Peaceful progress, today and always.",
+        "You should feel good about that.",
+        "A fine thing to have done.",
+        "Consistency looks good on you.",
+        "Another thread in a strong cord.",
+        "That is worth a smile.",
+        "Calmly, patiently, you are getting there.",
+        "Today you chose well.",
+        "Good work. Be kind to yourself."
+      ]
+    },
+    "today": {
+      "title": "Today",
+      "holdToCheck": "Hold to check",
+      "tapToUndo": "Done. Tap to undo",
+      "openLink": "Open {{label}}",
+      "chaptersRead": "Chapters read today",
+      "fewer": "One fewer",
+      "more": "One more",
+      "meetingFor": "for {{day}}'s meeting",
+      "ministryShared": "Shared in the ministry this month",
+      "ministryStudies": "Bible studies",
+      "ministryHours": "Hours this month",
+      "hoursGoal": "{{hours}} of {{goal}} hours",
+      "ministrySummary_one": "Shared this month · {{count}} Bible study",
+      "ministrySummary_other": "Shared this month · {{count}} Bible studies",
+      "ministryEdit": "Edit",
+      "setMeetingDays": "Set your meeting days",
+      "setMeetingDaysBody": "Meeting prep appears the day before each meeting.",
+      "whatsNew": "{{count}} new on jw.org",
+      "newWeek": "A new week, a fresh start.",
+      "newMonth": "A new month, a fresh start.",
+      "allClear": "Nothing else is due today. Enjoy your day.",
+      "wrapUpTitle": "Your day in review",
+      "showRoutines": "Show routines",
+      "hideRoutines": "Hide routines",
+      "doneForToday": "Done for today",
+      "stillTime": "Still time",
+      "graceKept": "Life happens — kept your streak",
+      "allDone": "Everything is done for today. Well done.",
+      "summary_one": "Your day in review · {{count}} done",
+      "summary_other": "Your day in review · {{count}} done",
+      "study": {
+        "line": "{{plan}} · {{step}}",
+        "openStep": "Open {{title}}",
+        "somethingElse": "Did something else",
+        "sheetTitle": "What did you study?",
+        "justSession": "Just log a session",
+        "otherSteps": "Or tick a different step"
+      },
+      "finished": {
+        "study": "Project finished: {{title}}. Well done.",
+        "family": "Family plan finished: {{title}}. Well done.",
+        "nextLabel": "Next project",
+        "startNext": "Start next project",
+        "notNow": "Not now",
+        "started": "{{title}} is now your active project.",
+        "refused": "That project could not be started."
+      },
+      "agenda": {
+        "label": "This week's family worship"
+      },
+      "refused": "That could not be logged. Try again."
+    },
+    "onboarding": {
+      "stepOf": "Step {{step}} of {{total}}",
+      "back": "Back",
+      "next": "Next",
+      "skip": "Skip — use defaults",
+      "finish": "Start my first day",
+      "welcome": {
+        "title": "Welcome to Faithful Days",
+        "body": "A calm place to keep your spiritual routines: the daily text, Bible reading, meetings, family worship, personal study and the ministry.",
+        "private": "Everything stays on your phone. There's no account and no sign-up.",
+        "start": "Get started"
+      },
+      "routines": {
+        "title": "Your routines",
+        "body": "All six are on. Turn off any you'd rather not keep here, or give them your own names.",
+        "rename": "Rename {{label}}",
+        "nameFor": "Name for {{label}}",
+        "reset": "Reset to default",
+        "resetLabel": "Reset {{label}} to default"
+      },
+      "week": {
+        "title": "Your week",
+        "meetingDays": "Meeting days",
+        "meetingHint": "Meeting prep appears the day before each meeting.",
+        "familyDay": "Family worship day",
+        "pioneer": "Are you a pioneer?",
+        "pioneerHint": "Shows your ministry hours each month.",
+        "hoursGoal": "Monthly hours goal"
+      },
+      "reading": {
+        "title": "Your reading",
+        "plan": "Reading plan",
+        "year": "Whole Bible in a year",
+        "ownPace": "My own pace",
+        "book": "Starting book",
+        "chapter": "Starting chapter",
+        "countEarlier": "Count earlier books as read"
+      },
+      "rhythm": {
+        "title": "Your rhythm",
+        "anchorQuestion": "When will you read the daily text?",
+        "setTime": "A set time",
+        "anchorTime": "Daily text time",
+        "wrapUpTime": "Evening wrap-up time",
+        "wrapUpNotification": "Evening wrap-up notification",
+        "tone": "Encouragement after a check-in",
+        "tones": {
+          "quiet": "Quiet",
+          "warm": "Warm",
+          "scripture": "With a scripture reference"
+        },
+        "notifyExplainer": "Faithful Days can send a gentle reminder at the times you choose. Everything stays on your phone, and it's fine to say no.",
+        "allowNotifications": "Allow notifications"
+      },
+      "look": {
+        "title": "Your look",
+        "accent": "Accent colour",
+        "accents": {
+          "0": "Blue",
+          "1": "Green",
+          "2": "Purple",
+          "3": "Rust",
+          "4": "Amber",
+          "5": "Rose"
+        },
+        "theme": "Theme",
+        "themes": {
+          "system": "Match my phone",
+          "light": "Light",
+          "dark": "Dark"
+        }
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "close": "Close",
+      "sections": {
+        "routines": "Routines",
+        "week": "Your week",
+        "reading": "Reading",
+        "rhythm": "Rhythm",
+        "reminders": "Reminders",
+        "look": "Look",
+        "links": "Links",
+        "backup": "Backup",
+        "whatsNew": "What's New",
+        "quietHours": "Quiet hours",
+        "about": "About"
+      },
+      "links": {
+        "body": "Leave a link empty to use the default.",
+        "bibleDefault": "Today's chapter on jw.org",
+        "invalid": "Use a web address that starts with https:// or http://"
+      },
+      "backup": {
+        "body": "Save a copy of everything on this device, or bring a copy back.",
+        "export": "Export a backup",
+        "import": "Import a backup",
+        "shareTitle": "Faithful Days backup",
+        "exported": "Backup ready.",
+        "exportError": "The backup couldn't be saved. Please try again.",
+        "readError": "That file couldn't be opened.",
+        "confirmTitle": "Replace all data on this device?",
+        "confirmBody": "Everything here will be replaced by the backup, and this can't be undone.",
+        "replace": "Replace",
+        "cancel": "Cancel",
+        "errors": {
+          "notObject": "This file isn't a Faithful Days backup.",
+          "newerVersion": "This backup is from a newer version of Faithful Days. Update the app, then try again.",
+          "olderVersion": "This backup is from an older version of Faithful Days and can't be read here.",
+          "badShape": "Parts of this backup can't be read, so nothing was changed."
+        }
+      },
+      "whatsNew": {
+        "toggle": "Show what's new on jw.org",
+        "hint": "A small count on Today when jw.org has something new."
+      },
+      "reminders": {
+        "toggle": "Reminders",
+        "hint": "Gentle notes on this device about what's ready today.",
+        "perRoutine": "Remind me about",
+        "permissionOff": "Notifications are turned off for Faithful Days. You can turn them on in your phone's Settings.",
+        "routineLabel": "Reminder: {{title}}"
+      },
+      "quietHours": {
+        "toggle": "Quiet hours",
+        "hint": "No reminders between these times.",
+        "start": "Quiet from",
+        "end": "Quiet until"
+      },
+      "about": {
+        "disclaimer": "Faithful Days is an independent app. It is not affiliated with, endorsed by, or sponsored by Watch Tower Bible and Tract Society or jw.org, and contains no content from jw.org.",
+        "privacy": "Privacy policy",
+        "support": "Support",
+        "version": "Version {{version}}",
+        "diagnostics": "Diagnostic history stays on this device. Up to 20 error times and categories are kept; entries older than 7 days are removed when the app opens.",
+        "clearDiagnostics": "Clear diagnostic history",
+        "inspectDiagnostics": "View diagnostic history",
+        "noDiagnostics": "No diagnostic history.",
+        "clearedDiagnostics": "Diagnostic history cleared.",
+        "diagnosticFailure": "Could not clear diagnostic history."
+      }
+    },
+    "links": {
+      "opensInLibrary": "Opens in JW Library"
+    },
+    "tabs": {
+      "label": "Main navigation",
+      "today": "Today",
+      "plans": "Plans",
+      "progress": "Progress",
+      "settings": "Settings"
+    },
+    "progress": {
+      "title": "Progress",
+      "recentDays_one": "{{done}} of 1 day",
+      "recentDays_other": "{{done}} of the last {{count}} days",
+      "recentWeeks_one": "{{done}} of 1 week",
+      "recentWeeks_other": "{{done}} of the last {{count}} weeks",
+      "recentMeetings_one": "{{done}} of 1 meeting",
+      "recentMeetings_other": "{{done}} of the last {{count}} meetings",
+      "recentMonths_one": "{{done}} of 1 month",
+      "recentMonths_other": "{{done}} of the last {{count}} months",
+      "streak_one": "{{count}} in a row",
+      "streak_other": "{{count}} in a row",
+      "daysThisYear_one": "{{count}} day this year",
+      "daysThisYear_other": "{{count}} days this year",
+      "readingTitle": "Bible reading",
+      "readingDays_one": "{{count}} day of reading this year",
+      "readingDays_other": "{{count}} days of reading this year",
+      "chapters_one": "{{count}} chapter",
+      "chapters_other": "{{count}} chapters",
+      "books_one": "{{count}} of 66 books",
+      "books_other": "{{count}} of 66 books",
+      "mapTitle": "Bible books",
+      "mapRead": "{{name}}, read",
+      "mapNotYet": "{{name}}, not yet"
+    },
+    "plans": {
+      "title": "Plans",
+      "close": "Close",
+      "study": {
+        "heading": "Study projects",
+        "empty": "No projects yet. Start one for a book, a brochure or anything you want to study.",
+        "new": "New project",
+        "active": "Active",
+        "waiting": "Waiting",
+        "makeActive": "Make {{title}} the active project",
+        "makeActiveShort": "Make active"
+      },
+      "family": {
+        "heading": "Family worship",
+        "weeks": "This week and the next 8",
+        "empty": "No family plans yet.",
+        "new": "New family plan"
+      },
+      "completed": {
+        "heading": "Completed",
+        "empty": "Finished plans rest here.",
+        "restore": "Restore {{title}}",
+        "restoreShort": "Restore"
+      },
+      "progress": "{{done}} of {{total}}",
+      "next": "Next: {{title}}",
+      "noSteps": "No steps yet",
+      "kinds": {
+        "study": "Study project",
+        "family": "Family worship plan"
+      },
+      "colours": {
+        "blue": "Blue",
+        "teal": "Teal",
+        "purple": "Purple",
+        "rust": "Rust",
+        "amber": "Amber",
+        "rose": "Rose",
+        "green": "Green",
+        "ocean": "Ocean"
+      },
+      "icons": {
+        "book": "Book",
+        "scroll": "Scroll",
+        "lamp": "Lamp",
+        "mountain": "Mountain",
+        "seedling": "Seedling",
+        "dove": "Dove",
+        "sun": "Sun",
+        "path": "Path"
+      },
+      "new": {
+        "titleStudy": "New project",
+        "titleFamily": "New family plan",
+        "name": "Title",
+        "kind": "Kind",
+        "colour": "Colour",
+        "icon": "Icon",
+        "generator": "Steps",
+        "count": "How many",
+        "book": "Bible book",
+        "create": "Create",
+        "cancel": "Cancel",
+        "generators": {
+          "blank": "Start blank (add steps yourself)",
+          "chapters": "Chapters 1 to N",
+          "lessons": "Lessons 1 to N",
+          "bibleBook": "Bible book by chapter",
+          "weekly": "Weekly, N weeks"
+        },
+        "titleNeeded": "Give it a title",
+        "countRange": "Choose a number from 1 to 200",
+        "refused": "That plan couldn't be made. Check the details and try again."
+      },
+      "trail": {
+        "back": "Plans",
+        "steps": "Steps",
+        "stop": "{{title}}, {{state}}",
+        "state": {
+          "done": "done",
+          "next": "next",
+          "notYet": "not yet"
+        },
+        "empty": "No steps yet. Add the first one below.",
+        "addStep": "Add a step",
+        "add": "Add",
+        "makeActive": "Make this the active project",
+        "active": "Active project",
+        "completed": "Completed. Restore it to carry on.",
+        "restore": "Restore",
+        "deletePlan": "Delete plan",
+        "confirmDeletePlan": "Delete this plan and all its steps?",
+        "confirmDelete": "Delete",
+        "keep": "Keep it",
+        "notFound": "This plan isn't here any more.",
+        "full": "This plan has 200 steps, the most a plan can hold."
+      },
+      "step": {
+        "title": "Title",
+        "link": "Link",
+        "note": "Note",
+        "save": "Save",
+        "markDone": "Mark done",
+        "markUndone": "Mark not done",
+        "doneOn": "Done on {{date}}",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "delete": "Delete step",
+        "confirmDelete": "Delete this step?",
+        "confirm": "Delete",
+        "keep": "Keep it",
+        "badLink": "Use a web address that starts with https:// or http://",
+        "titleNeeded": "A step needs a title",
+        "saved": "Saved",
+        "openInLibrary": "Open in JW Library",
+        "openLink": "Open link",
+        "refused": "That change couldn't be saved. The step may have changed; close and open it again."
+      }
+    },
+    "family": {
+      "title": "Family worship weeks",
+      "back": "Back to Plans",
+      "noPlans": "Make a family plan on the Plans tab and its next steps will be suggested here.",
+      "thisWeek": "This week",
+      "weekOf": "Week of {{date}}",
+      "suggested": "Suggested",
+      "emptyWeek": "Nothing planned for this week.",
+      "keep": "Keep",
+      "keepWeek": "Keep the suggestions for the week of {{date}}",
+      "remove": "Remove {{title}}",
+      "openLink": "Open link for {{title}}",
+      "add": "Add to this week",
+      "full": "This week is full (5 items).",
+      "refused": "That could not be added.",
+      "free": {
+        "title": "Title",
+        "link": "Link (optional)",
+        "add": "Add item",
+        "titleNeeded": "Give it a title.",
+        "badLink": "Use a web address that starts with https:// or http://"
+      },
+      "step": {
+        "pick": "Step from a plan",
+        "choose": "Choose a step",
+        "add": "Add step",
+        "none": {
+          "noPlans": "Make a family plan on the Plans tab to pick its steps here.",
+          "allDone": "Every step of your family plans is done.",
+          "allPlanned": "Every open step is already planned in a week."
+        }
+      },
+      "earlier": "Earlier weeks",
+      "stepDone": "{{title}}, done",
+      "listLabel": "Items for the week of {{date}}"
+    },
+    "fun": {
+      "gardenTitle": "Your garden",
+      "gardenStages": [
+        "Your garden: a seed",
+        "Your garden: a sprout",
+        "Your garden: a seedling",
+        "Your garden: a sapling",
+        "Your garden: a young tree",
+        "Your garden: a flourishing tree",
+        "Your garden: a cedar",
+        "Your garden: a fruitful tree"
+      ],
+      "levels": [
+        "Seed",
+        "Sprout",
+        "Seedling",
+        "Sapling",
+        "Young Tree",
+        "Flourishing Tree",
+        "Cedar",
+        "Fruitful Tree"
+      ],
+      "treeNumber": "Fruitful Tree {{count}}",
+      "level": "{{name}} · Level {{level}}",
+      "xp": "{{earned}} / {{needed}} XP",
+      "levelProgress": "Progress to the next level",
+      "levelReached": "Your garden is growing · {{name}}",
+      "badgesTitle": "Badges",
+      "badgeEarned": "A new bloom · {{name}}",
+      "dismiss": "Dismiss",
+      "earnedOn": "Earned {{day}}",
+      "notYet": "Not yet",
+      "showGameLayer": "Show points and levels",
+      "showShare": "Show share buttons",
+      "badges": {
+        "firstStep": "First step",
+        "firstProject": "First project finished",
+        "firstFamilyPlan": "First family plan finished",
+        "familyWeeks4": "4 weeks of family worship",
+        "familyWeeks12": "12 weeks of family worship",
+        "familyWeeks52": "52 weeks of family worship",
+        "dailyText30": "30 days of daily text",
+        "dailyText100": "100 days of daily text",
+        "dailyText365": "365 days of daily text",
+        "study10": "10 personal study sessions",
+        "plans5": "5 plans finished",
+        "meetings10": "10 meetings prepared in a row",
+        "pentateuch": "The Pentateuch",
+        "gospels": "The Gospels",
+        "greekScriptures": "The Greek Scriptures",
+        "wholeBible": "The whole Bible",
+        "firstFullFamilyWeek": "First full family worship week",
+        "level5": "Flourishing Tree"
+      }
+    },
+    "share": {
+      "finished": "Finished {{title}}! 📖",
+      "garden": "My growing garden",
+      "days": "{{count}} days this year",
+      "routineDays": "{{title}} {{count}} days",
+      "weekly": "A good week",
+      "button": "Share card",
+      "preparing": "Preparing card…",
+      "error": "The card could not be prepared. Please try again.",
+      "badge": "A new bloom · {{title}}"
+    },
+    "storage": {
+      "full": "Your device could not save the latest changes. Export a backup before closing the app, then free storage and reopen it.",
+      "backup": "Open backup settings"
+    }
   }
 }

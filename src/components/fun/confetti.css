@@ -1,0 +1,25 @@
+.fd-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 50;
+}
+.fd-confetti i {
+  position: absolute;
+  top: -16px;
+  width: 8px;
+  height: 12px;
+  animation: fd-fall 1.5s ease-in forwards;
+}
+@keyframes fd-fall {
+  to {
+    transform: translateY(100vh) rotate(240deg);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fd-confetti {
+    display: none;
+  }
+}

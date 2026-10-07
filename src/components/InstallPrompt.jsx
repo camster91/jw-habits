@@ -68,7 +68,7 @@ function InstallPrompt() {
       <div
         className="pointer-events-auto flex items-center gap-2.5 bg-base-100/95 backdrop-blur-md text-base-content shadow-lg border border-base-300/60 rounded-full pl-3 pr-2 py-2"
         role="status"
-        aria-label="Install JW Habits"
+        aria-label="Install Habit Tracker"
       >
         <div className="p-1.5 bg-primary/10 rounded-full">
           <Smartphone className="w-4 h-4 text-primary" />

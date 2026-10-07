@@ -1,7 +1,7 @@
 /**
  * PWA utility — install prompt, connectivity, service worker
  * updates. Notifications are NOT included; the launchpad
- * version of jw-habits does not schedule local notifications.
+ * version of the app does not schedule local notifications.
  *
  * Previously also re-exported `isNotificationSupported` etc.
  * for the settings notification panel; that panel was removed

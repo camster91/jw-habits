@@ -43,6 +43,19 @@
 @theme {
   --color-jw-blue: #4a6fa4;
   --color-jw-green: #71bc37;
+  /* The wrap-up's light celebration: one soft rise, never a loop. */
+  --animate-fd-celebrate: fd-celebrate 700ms ease-out 1;
+
+  @keyframes fd-celebrate {
+    0% {
+      opacity: 0;
+      transform: translateY(6px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 /* ============================================================
@@ -1084,4 +1097,13 @@ input[type='range']::-webkit-slider-thumb {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Text in a plan's colour (planStyle in theme/planColours.js sets the
+   variables): the light or dark shade, each at 4.5:1 on its theme. */
+.fd-plan-text {
+  color: var(--plan-text-light);
+}
+[data-theme='dark'] .fd-plan-text {
+  color: var(--plan-text-dark);
 }
