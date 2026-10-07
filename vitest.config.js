@@ -10,6 +10,7 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
     coverage: {
       provider: 'v8',
+      include: ['src/**/*.{js,jsx}'],
       thresholds: {
         statements: 85, branches: 80, functions: 85, lines: 85,
         'src/domain/**': { statements: 95, branches: 90, functions: 95, lines: 95 },
@@ -24,6 +25,9 @@ export default defineConfig({
         'src/test/',
         '*.config.js',
         'scripts/',
+        // Browser/container gates exercise these environment-owned entry points.
+        'src/main.jsx',
+        'src/sw.js',
       ],
     },
   },

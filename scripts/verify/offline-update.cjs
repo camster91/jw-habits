@@ -50,9 +50,10 @@ const server=http.createServer((req,res)=>{
     await page.getByText('New version available',{exact:true}).waitFor();
     assert.equal(await page.evaluate(()=>!!navigator.serviceWorker.controller),true);
     assert.equal(await page.evaluate(key=>localStorage.getItem(key),STORE_KEY),saved,'waiting update did not replace user state');
-    await page.getByRole('button',{name:'Update',exact:true}).click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(300);
+    await Promise.all([
+      page.waitForNavigation({waitUntil:'networkidle'}),
+      page.getByRole('button',{name:'Update',exact:true}).click()
+    ]);
     console.log('Testing offline navigation');
     await context.setOffline(true);
     await page.reload({waitUntil:'domcontentloaded'});

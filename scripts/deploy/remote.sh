@@ -2,7 +2,10 @@
 # Runs on the VPS; registry credential is supplied only on stdin.
 set -euo pipefail
 : "${PROJECT_DIR:?}" "${PROJECT_NAME:?}" "${PORT:?}" "${IMAGE:?}" "${REVISION:?}" "${PUBLIC_URL:?}" "${GHCR_USER:?}"
-[[ "$IMAGE" =~ ^ghcr.io/camster91/jw-habits@sha256:[a-f0-9]{64}$ ]]
+IMAGE_REPO=${IMAGE_REPO:-ghcr.io/camster91/jw-habits}
+[[ "$IMAGE_REPO" =~ ^ghcr.io/camster91/[a-z0-9]+([._/-][a-z0-9]+)*$ ]]
+[[ "$IMAGE" == "$IMAGE_REPO"@sha256:* ]]
+[[ "${IMAGE##*@sha256:}" =~ ^[a-f0-9]{64}$ ]]
 [[ "$REVISION" =~ ^[a-f0-9]{40}$ ]]
 read -r GHCR_TOKEN
 mkdir -p "$PROJECT_DIR/.release"

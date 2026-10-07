@@ -19,7 +19,11 @@ CI runs `npm run test:coverage`. Global floors are 85% statements/functions/line
 and 80% branches. Pure domain logic has 95% statement/function/line and 90%
 branch floors. Store/migration/notification modules enforce individual floors;
 native scheduling, storage and URL safety have their own risk-based floors.
-These are deliberately below the measured baseline and do not require 100%.
+These are deliberately below the measured all-source baseline (87.7% statements,
+85.96% branches) and do not require 100%. Unimported application files are
+included at zero; browser-owned bootstrap/worker entry points are exercised by
+the built browser/worker/container gates. An intentional 100% URL-safety branch
+floor was confirmed to fail at 81.81%.
 
 Rollover tests execute isolated Node processes in Toronto, Los Angeles, Tokyo
 and Auckland. All daily state follows the approved local 03:00 app-day policy,
