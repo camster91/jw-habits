@@ -19,7 +19,7 @@ export async function refreshAppShell() {
   }
   if ('serviceWorker' in navigator) {
     const registrations = await navigator.serviceWorker.getRegistrations();
-    const expected = new URL('sw.js', document.baseURI).href;
+    const expected = new URL(`${import.meta.env.BASE_URL}sw.js`, location.origin).href;
     await Promise.all(
       registrations
         .filter((reg) =>

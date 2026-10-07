@@ -13,30 +13,36 @@ describe('scoped recovery', () => {
     expect(localStorage.getItem('jw-habits-v2-backup')).toBe('original');
     expect(localStorage.getItem('other-site-data')).toBe('keep');
   });
-  it('refreshes only app-owned caches and service workers', async () => {
-    const remove = vi.fn();
-    const own = {
-      active: { scriptURL: new URL('sw.js', document.baseURI).href },
-      unregister: vi.fn(),
-    };
-    const other = {
-      active: { scriptURL: new URL('other/sw.js', document.baseURI).href },
-      unregister: vi.fn(),
-    };
-    vi.stubGlobal('caches', {
-      keys: async () => ['faithful-days-precache', 'other-cache'],
-      delete: remove,
-    });
-    const original = navigator.serviceWorker;
-    navigator.serviceWorker = { getRegistrations: async () => [own, other] };
-    try {
-      await refreshAppShell();
-      expect(remove).toHaveBeenCalledExactlyOnceWith('faithful-days-precache');
-      expect(own.unregister).toHaveBeenCalledOnce();
-      expect(other.unregister).not.toHaveBeenCalled();
-    } finally {
-      navigator.serviceWorker = original;
-      vi.unstubAllGlobals();
+  it.each(['/plans/example', '/progress/badges'])(
+    'refreshes only app-owned caches and workers from nested route %s',
+    async (route) => {
+      const originalPath = location.pathname;
+      history.replaceState(null, '', route);
+      const remove = vi.fn();
+      const own = {
+        active: { scriptURL: new URL('/sw.js', location.origin).href },
+        unregister: vi.fn(),
+      };
+      const other = {
+        active: { scriptURL: new URL('other/sw.js', document.baseURI).href },
+        unregister: vi.fn(),
+      };
+      vi.stubGlobal('caches', {
+        keys: async () => ['faithful-days-precache', 'other-cache'],
+        delete: remove,
+      });
+      const original = navigator.serviceWorker;
+      navigator.serviceWorker = { getRegistrations: async () => [own, other] };
+      try {
+        await refreshAppShell();
+        expect(remove).toHaveBeenCalledExactlyOnceWith('faithful-days-precache');
+        expect(own.unregister).toHaveBeenCalledOnce();
+        expect(other.unregister).not.toHaveBeenCalled();
+      } finally {
+        history.replaceState(null, '', originalPath);
+        navigator.serviceWorker = original;
+        vi.unstubAllGlobals();
+      }
     }
-  });
+  );
 });
