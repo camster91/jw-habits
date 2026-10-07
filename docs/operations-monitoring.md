@@ -1,6 +1,6 @@
 # Production monitoring and restore gates
 
-The `Production metadata monitor` workflow checks every six hours and supports
+The `Production metadata monitor` workflow checks every six hours and after successful deployments and supports
 manual dispatch. It reads the last successful deployment's retained publication
 record, then checks trusted HTTPS, certificate expiry (at least 14 days), title,
 exact revision, PWA manifest/service worker and public privacy/support pages.
