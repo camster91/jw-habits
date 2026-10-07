@@ -12,15 +12,14 @@
  */
 import { addDays, weekStart } from './day.js';
 import { MAX_AGENDA_ITEMS, MAX_TITLE, newId } from './ids.js';
-import { validAgendaItem } from './store.js';
+import { isMonday, validAgendaItem } from './store.js';
 import { isSafeHttpUrl } from '../utils/safeUrls.js';
+import { familyWeekDays } from './xp.js';
 
 const MAX_AUTOFILL_PLANS = 3;
 const WEEKS_BACK = 52;
 const WEEKS_AHEAD = 8;
 const PREVIEW = 'preview-';
-
-const isMonday = (day) => typeof day === 'string' && weekStart(day) === day;
 
 /** Active family plans in createdOn order (ties keep array order: sort is stable). */
 const activeFamilyPlans = (store) =>
@@ -103,13 +102,21 @@ export function planWeeks(today) {
   return Array.from({ length: WEEKS_AHEAD + 1 }, (_, n) => addDays(monday, 7 * n));
 }
 
-/** Drops weeks before Monday - 52 weeks or after Monday + 8 weeks. Same store if none dropped. */
+/**
+ * Drops weeks before Monday - 52 weeks or after Monday + 8 weeks, except a past
+ * week that earned the full-family-week XP. Same store if none dropped.
+ */
 export function pruneAgendas(store, today) {
   const monday = weekStart(today);
   const first = addDays(monday, -7 * WEEKS_BACK);
   const last = addDays(monday, 7 * WEEKS_AHEAD);
   const entries = Object.entries(store.familyAgendas);
-  const kept = entries.filter(([week]) => week >= first && week <= last);
+  const inRange = ([week]) => week >= first && week <= last;
+  if (entries.every(inRange)) return store;
+  // A past week that earned the full-family-week XP keeps its agenda: the
+  // bonus is recomputed from it, so dropping it would shrink earned XP.
+  const earned = new Set(familyWeekDays(store).map(weekStart));
+  const kept = entries.filter((e) => inRange(e) || (e[0] < first && earned.has(e[0])));
   if (kept.length === entries.length) return store;
   return { ...store, familyAgendas: Object.fromEntries(kept) };
 }

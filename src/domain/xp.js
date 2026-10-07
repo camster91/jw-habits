@@ -18,7 +18,7 @@ export const XP_DAY_CAP = 100;
  * session of a week whose stored agenda is non-empty and whose step items are
  * all done on or before that session. Free items are done by the session.
  */
-function familyWeekDays(store) {
+export function familyWeekDays(store) {
   const stepDone = new Map();
   for (const p of store.plans) for (const s of p.steps) stepDone.set(s.id, s.doneOn);
   const awarded = new Set();

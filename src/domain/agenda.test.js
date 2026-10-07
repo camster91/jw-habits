@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { defaultStore, validateStore } from './store.js';
+import { addCheckIn, defaultStore, validateStore } from './store.js';
+import { totalXp } from './xp.js';
 import { addDays, weekStart } from './day.js';
 import { createPlan, generateChapters, deletePlan, setStepDone, archivePlan } from './plans.js';
 import {
@@ -125,6 +126,15 @@ describe('setAgenda and free items', () => {
     expect(addFreeItem(s, MON, { title: 'x'.repeat(60) }).familyAgendas[MON][0].link).toBe(null);
   });
 
+  it('refuses a malformed week key that weekStart would echo back (Codex P2)', () => {
+    const s = defaultStore(TODAY, 'en');
+    for (const bad of ['NaN-NaN-NaN', '2026-02-30', '2026-1-5', '', null]) {
+      expect(setAgenda(s, bad, [])).toBe(s);
+      expect(addFreeItem(s, bad, { title: 'T', link: null })).toBe(s);
+    }
+    valid(setAgenda(s, MON, []));
+  });
+
   it('setAgenda refuses items validateStore would reject (Codex P2) and blank free titles', () => {
     const s = defaultStore(TODAY, 'en');
     expect(setAgenda(s, MON, [{ id: 'x', kind: 'step', planId: '', stepId: '' }])).toBe(s);
@@ -181,6 +191,21 @@ describe('pruneAgendas', () => {
     );
     expect(s.familyAgendas[MON]).toEqual(free);
     valid(s);
+  });
+
+  it('keeps an old week that earned the full-family-week XP (Codex P2)', () => {
+    const old = addDays(MON, -7 * 60);
+    const { store, plan } = withFamily(2);
+    let s = setAgenda(store, old, [stepItem(plan.id, plan.steps[0].id)]);
+    s = setStepDone(s, plan.id, plan.steps[0].id, old);
+    s = addCheckIn(s, { routine: 'familyWorship', day: old, value: true });
+    const stale = addDays(MON, -7 * 61);
+    s = addFreeItem(s, stale, { title: 'gone', link: null });
+    const before = totalXp(s, TODAY);
+    const pruned = pruneAgendas(s, TODAY);
+    expect(Object.keys(pruned.familyAgendas)).toEqual([old]);
+    expect(totalXp(pruned, TODAY)).toBe(before);
+    valid(pruned);
   });
 
   it('returns the same store when nothing is dropped', () => {
