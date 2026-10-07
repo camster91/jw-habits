@@ -3,10 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 import en from './locales/en.json';
-import es from './locales/es.json';
-import fr from './locales/fr.json';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { recordDiagnostic, pruneDiagnostics } from './utils/diagnostics.js';
@@ -18,31 +15,16 @@ import { registerWhatsNewCheck } from './native/whatsNewClient.js';
 import { registerWidgetBridge } from './native/widgetBridge.js';
 import { registerBadgeAwards } from './native/badgeAwards.js';
 
-// i18next — Spanish/French fall back to English when a key
-// is missing. Language detected from navigator, cached in
-// localStorage under the default i18next key.
-i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources: {
-      en: { translation: en },
-      es: { translation: es },
-      fr: { translation: fr },
-    },
-    // Resolve "es-ES" → "es" so the regional locale detected
-    // from navigator.language matches our resource key (which
-    // is keyed by language, not locale). Without this, the
-    // browser's "es-ES" falls through to the fallback "en".
-    load: 'languageOnly',
-    fallbackLng: 'en',
-    supportedLngs: ['en', 'es', 'fr'],
-    interpolation: { escapeValue: false },
-    detection: {
-      order: ['navigator', 'localStorage', 'htmlTag'],
-      caches: ['localStorage'],
-    },
-  });
+// Initial distribution is English-only (#259). Legacy detector preferences
+// remain untouched; user-written labels, links and stored history are preserved.
+i18n.use(initReactI18next).init({
+  resources: { en: { translation: en } },
+  lng: 'en',
+  fallbackLng: 'en',
+  supportedLngs: ['en'],
+  interpolation: { escapeValue: false },
+});
+document.documentElement.lang = 'en';
 
 // Global error logging function
 function logGlobalError(type, message, source, error) {

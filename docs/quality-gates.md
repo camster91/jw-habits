@@ -32,8 +32,7 @@ and leap-day arithmetic. This replaces the historical local-midnight proposal.
 
 ## Startup, route and precache budgets
 
-The measured release build has about 175 kB gzip JS, 23 kB gzip CSS and 724 kB
-of precached content (15 entries). Enforced limits: 210,000 bytes gzip JS,
+Each build prints measured gzip JS/CSS, precache bytes and entry counts. Enforced limits: 210,000 bytes gzip JS,
 30,000 bytes gzip CSS and 850,000 bytes precache. `npm run budgets` measures
 actual files and the injected worker manifest; a missing manifest also fails.
 An intentional 1-byte JS limit was confirmed to fail. These artifact budgets
@@ -69,3 +68,7 @@ These gates complement the digest-specific container/PWA/public probes in
 [production recovery](production-recovery.md), not store signing or a native
 device pilot. Historical audit and listing documents are explicitly marked as
 superseded by the current architecture and commitment ledger.
+
+## Browser-engine compatibility
+
+The Smoke workflow also runs independent Firefox and WebKit jobs against the real build: storage/onboarding smoke, complete user journeys and the same light/dark 320px axe/reflow matrix. Image publication requires both exact-commit checks in addition to Chromium and native compile checks. The service-worker update drill and screenshot generator remain Chromium-specific. These engine checks do not certify actual Safari/iOS WebViews, OS share targets, VoiceOver/TalkBack, or physical-device notifications.

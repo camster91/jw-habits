@@ -1,21 +1,8 @@
 name: Smoke
 
-# Automated smoke + journey tests. Runs the Playwright suites at
-# scripts/verify/smoke.cjs against the production build served by vite
-# preview. Complements ci.yml (lint + unit tests + build + format + gitleaks).
-#
-# What it covers:
-#   S1: Per-day reset
-#   S2: Done state persists across reload
-#   S3: P0-4 regression — note-only row does NOT count as done
-#   S4: Legacy boolean done shape still works
-#   S5: New {done, note} shape round-trips
-#   S6: First-launch hint hides after first tap
-#   S7: Home renders without console errors
-#
-# Run locally: `npm run smoke:spawn`
-#
-# Added 2026-07-22 alongside the keystore + Dockerfile + deploy fix PR.
+# Real-build routines, storage, English UI/locale, responsive/a11y and offline gates.
+# Chromium owns the worker-update checks and synthetic screenshot references.
+# Firefox/WebKit independently run smoke, journeys and accessibility checks.
 
 on:
   push:
@@ -91,3 +78,36 @@ jobs:
           name: current-store-ui
           path: store-screenshots/
           retention-days: 90
+
+  compatibility:
+    name: Browser compatibility (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    env:
+      PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+      CI: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps "$PLAYWRIGHT_BROWSER"
+      - run: npm run build
+      - run: npm run smoke:spawn
+      - name: Run journeys and accessibility in the selected engine
+        run: |
+          npx vite preview --port 4173 --strictPort > /tmp/preview.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:4173/ > /dev/null && break
+            sleep 1
+          done
+          node scripts/verify/journeys.cjs
+          node scripts/verify/accessibility.cjs

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-const { chromium } = require('playwright');
 const { AxeBuilder } = require('@axe-core/playwright');
-const { openPage, go, onboardSkip, hold, routineButton } = require('./lib.cjs');
+const { launchBrowser, openPage, go, onboardSkip, hold, routineButton } = require('./lib.cjs');
 const BASE = process.env.A11Y_BASE_URL || 'http://localhost:4173';
 let failures = 0;
 async function scan(page, label) {
@@ -15,7 +14,7 @@ async function scan(page, label) {
   console.log(`${label}: ${result.violations.length} automated violations; overflow=${overflow}`);
 }
 (async()=>{
-  const browser = await chromium.launch();
+  const browser = await launchBrowser();
   try {
     for (const theme of ['light','dark']) {
       const {ctx,page}=await openPage(browser,{at:new Date(2026,9,6,10),viewport:{width:320,height:800}});

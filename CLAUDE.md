@@ -40,7 +40,7 @@ user-editable slot instead.
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
-| i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (current fd.* strings are English only for now; es/fr fall back to en) |
+| i18n | i18next + react-i18next | English-only initial release; full es/fr UI tracked in #46 |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
 | Testing | Vitest 5 + Testing Library + Playwright | unit/component coverage gates plus smoke, journeys, accessibility and SW update checks |
@@ -99,7 +99,7 @@ src/
 ├── hooks/                      # usePWA, usePWAContext
 ├── theme/theme.js              # Accent, light/dark, and --fd-accent-text (accent text at 4.5:1)
 ├── theme/planColours.js        # The 8 plan colours (white text at 4.5:1) and their text shades (.fd-plan-text)
-├── locales/                    # en.json (all fd.* strings), es.json / fr.json (v1 leftovers, see Known issues)
+├── locales/                    # en.json (current UI); unused legacy es/fr catalogs removed
 └── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js, userLinks.js,
                                 # settingsStore.js (retained legacy helper), backup.js, pwa.js, backStack.js (Android back)
 ios/App/FaithfulDaysWidget/     # Embedded WidgetKit extension sources (iOS 17+)
@@ -149,7 +149,7 @@ they ship in real installs, so renaming them silently discards user history.
 - **`safeStorage` is the app-state storage chokepoint.** Store reads and writes go through
   `utils/safeStorage.js` (`durableGet/durableSet` for the v2 store, which uses Capacitor
   Preferences natively and localStorage on the web, plus quota handling and the
-  `jw-storage-full` event). New app-state code must use these helpers. The i18next language detector also uses browser storage; Share reads `store.links` and does not use the legacy settings adapter.
+  `jw-storage-full` event). New app-state code must use these helpers. Legacy language-detector preferences are preserved but no longer read/written for the English-only UI; Share reads `store.links` and does not use the legacy settings adapter.
 - **Wiring in `src/main.jsx`.** `registerReminderSync()`, `registerWhatsNewCheck()` and
   `registerWidgetBridge()` and `registerBadgeAwards()` each subscribe to the store from outside React using
   `onForeground(cb)` (app opened / came to the foreground; gets `{ store, update, today }`) and
@@ -184,8 +184,11 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   follow `docs/ios-widget-setup.md` and `docs/release-checklist.md` before store release.
 - **Storage failures are visible.** `StorageNotice` listens for `jw-storage-full` and offers
   backup settings so the current in-memory history can be exported before closing.
-- **es/fr hold only v1 strings.** `es.json` / `fr.json` contain no `fd.*` keys, so the current UI shows in
-  English everywhere until they are translated. Their v1 keys are unused.
+- **The initial release UI is English-only (#259).** The document language, dates and
+  notifications use English. Legacy Spanish/French detector preferences and user data
+  remain untouched. Native widget chrome has es/fr resources, but full app localization
+  and fluent/device review remain #46 gates.
+
 
 ## Rules for changes
 

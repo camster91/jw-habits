@@ -4,6 +4,15 @@
 // browser clock pinned, driving onboarding, and the hold-to-check gesture.
 // Kept free of app imports: these suites drive the built UI only.
 
+/** Real engines for the release compatibility gate; reject accidental fallback. */
+async function launchBrowser() {
+  const name = process.env.PLAYWRIGHT_BROWSER || 'chromium';
+  if (!['chromium', 'firefox', 'webkit'].includes(name)) throw new Error(`Unsupported browser: ${name}`);
+  const browser = await require('playwright')[name].launch({ headless: true });
+  console.log(`Browser engine: ${name} ${browser.version()}`);
+  return browser;
+}
+
 const STORE_KEY = 'jw-habits-v2';
 
 /**
@@ -11,9 +20,9 @@ const STORE_KEY = 'jw-habits-v2';
  * (time then flows normally, so the 600 ms hold still elapses). Console and
  * page errors, and every request that leaves the origin, are collected.
  */
-async function openPage(browser, { at, viewport } = {}) {
+async function openPage(browser, { at, viewport, locale = 'en-CA' } = {}) {
   const ctx = await browser.newContext({
-    locale: 'en-CA',
+    locale,
     viewport: viewport || { width: 390, height: 844 },
     ignoreHTTPSErrors: true,
     serviceWorkers: 'block', // a service worker would interfere with state tests
@@ -81,6 +90,7 @@ async function onboardSkip(page) {
 const routineButton = (page, name) => page.getByRole('button', { name, exact: true });
 
 module.exports = {
+  launchBrowser,
   STORE_KEY,
   openPage,
   go,
