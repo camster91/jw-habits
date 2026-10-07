@@ -13,7 +13,8 @@
 | Store listing and signed distribution | Blocked | #246 / #248–#254 / #261; Apple/Play owner accounts, signing, device QA and pilot evidence |
 | Old Android signing incident | Blocked | #132: Play owner/password-manager access; #133 cannot begin until replacement key is active and collaborators are coordinated |
 | Repository governance | Active | #175: contribution contract and PR template; administrator ruleset still absent |
-| Accessibility, browser/offline upgrades and performance | Active | #136 / #176 / #177 / #181 / #192 / #197; automated coverage plus manual assistive-technology evidence |
+| Component/migration/worker/container test gates | Shipped | #136 / #269; coverage failure probe, multi-zone 03:00 rollover, real-worker updates, exact-digest Docker recovery drill |
+| Accessibility, browser/offline upgrades and performance | Active | #176 / #177 / #181 / #192 / #197; automated coverage plus manual assistive-technology evidence |
 | French/Spanish | Active | #46 / #259 / #258; catalogs, destinations, native copy and fluent review |
 | Human usability/household research | Blocked | #199 / #252: recruit consenting participants; do not fabricate results |
 | Prepare ahead and assignments | Active, design first | #263; its own spec/plan after v5.1 |

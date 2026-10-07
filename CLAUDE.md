@@ -31,7 +31,7 @@ most daily, can be switched off in Settings).
 Do not add bundled third-party content. If a feature seems to need some, it needs a
 user-editable slot instead.
 
-## Stack (verified against `package.json` 2026-10-06)
+## Stack (verified against `package.json` 2026-10-07)
 
 | Layer | Technology | Version |
 |---|---|---|
@@ -40,7 +40,7 @@ user-editable slot instead.
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
-| i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (v2 strings are English only for now; es/fr fall back to en) |
+| i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (current fd.* strings are English only for now; es/fr fall back to en) |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
 | Testing | Vitest 5 + Testing Library + Playwright | unit/component coverage gates plus smoke, journeys, accessibility and SW update checks |
@@ -58,8 +58,12 @@ user-editable slot instead.
 | `npm run format:check` | Prettier check (`format` to write) |
 | `npm run smoke:spawn` | Playwright smoke suite, spawns preview (portable `--spawn` flag) |
 | `npm run journeys` | End-to-end UI journeys (needs preview running) |
+| `npm run test:coverage` | All-source coverage with global and critical-module thresholds |
+| `npm run a11y` | Real-build light/dark 320px accessibility and overflow checks |
+| `npm run offline:verify` | Real worker install/update and byte-preserved offline store checks |
+| `npm run budgets` | Built JS/CSS gzip and precache size limits |
 
-Both Playwright suites pin the browser clock with `page.clock` (e.g. `Date(2026, 9, 6, 21, 0)`
+The smoke and journey suites pin the browser clock with `page.clock` (e.g. `Date(2026, 9, 6, 21, 0)`
 for the wrap-up), so never rely on the real date in them. Shared helpers: `scripts/verify/lib.cjs`.
 
 ## Source tree
@@ -97,7 +101,7 @@ src/
 ├── theme/planColours.js        # The 8 plan colours (white text at 4.5:1) and their text shades (.fd-plan-text)
 ├── locales/                    # en.json (all fd.* strings), es.json / fr.json (v1 leftovers, see Known issues)
 └── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js, userLinks.js,
-                                # settingsStore.js (Share only), backup.js, pwa.js, backStack.js (Android back)
+                                # settingsStore.js (retained legacy helper), backup.js, pwa.js, backStack.js (Android back)
 ios/App/FaithfulDaysWidget/     # Embedded WidgetKit extension sources (iOS 17+)
 docs/ios-widget-setup.md        # Signing/account and device verification for the embedded widget
 docs/release-checklist.md       # Manual on-device checklist to run before every store release
@@ -129,7 +133,7 @@ they ship in real installs, so renaming them silently discards user history.
 | `jw-habits-v2-backup` | raw string | The original v2 value, written once before the first load upgrades it to v3 (`domain/upgrade.js`) |
 | `jw-habits-v2-corrupt-<ms>` | raw string | An unreadable `jw-habits-v2` kept aside before starting fresh |
 | `jw-daily-habits-state`, `jw-bible-reading-days`, `jw-user-settings` | v1 shapes | Read once by `migrateV1`; never written or deleted (rollback) |
-| `jw-error-logs` | `ErrorLog[]` (last 20) | Dev error capture |
+| `jw-error-logs` | `ErrorLog[]` (last 20, at most 7 days) | Dev error capture |
 | `fd-wrapup-dismissed`, `fd-celebrated` | session storage, an app day | Wrap-up dismissed / haptic already fired |
 
 - **The 03:00 app day.** `appDay(now)` in `domain/day.js` is the local date, or the previous one
@@ -145,7 +149,7 @@ they ship in real installs, so renaming them silently discards user history.
 - **`safeStorage` is the app-state storage chokepoint.** Store reads and writes go through
   `utils/safeStorage.js` (`durableGet/durableSet` for the v2 store, which uses Capacitor
   Preferences natively and localStorage on the web, plus quota handling and the
-  `jw-storage-full` event). New app-state code must use these helpers. The older `/share` settings adapter and i18next language detector also use browser storage.
+  `jw-storage-full` event). New app-state code must use these helpers. The i18next language detector also uses browser storage; Share reads `store.links` and does not use the legacy settings adapter.
 - **Wiring in `src/main.jsx`.** `registerReminderSync()`, `registerWhatsNewCheck()` and
   `registerWidgetBridge()` and `registerBadgeAwards()` each subscribe to the store from outside React using
   `onForeground(cb)` (app opened / came to the foreground; gets `{ store, update, today }`) and
@@ -159,7 +163,7 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
 - **Deploy was down from 2026-07-24.** `deploy-ashbi.yml` called a reusable workflow in the
   private, archived `camster91/ashbi-deploy` repo, so every run failed at startup. It is now
   self-contained: it runs after a successful `Build and Push Image` on `main` and deploys the
-  immutable `ghcr.io/camster91/jw-habits:main-<sha7>` image over SSH. Can also be run by hand
+  tested `ghcr.io/camster91/jw-habits@sha256:<digest>` image from the exact publication artifact over SSH, stages it privately, validates the public revision, and restores the retained container on failure. A brief port-transfer interruption remains; zero-downtime edge cutover is tracked in #173. Can also be run by hand
   (`workflow_dispatch`, optional `sha`).
 - **The live site served a self-signed TLS certificate** (seen 2026-10-04, fixed 2026-10-05).
   Cause: `tls.yml` pinned a hand-copied cert file for `jwhabits.ashbi.ca`, which overrides the
@@ -172,8 +176,7 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   atomically and refuses output that is not valid YAML. Run `python3 -m unittest
   ops/test_traefik_guard.py` before changing it.
 - **Hosted CI runs again** (re-enabled 2026-10-02 after being disabled since 2026-09-22).
-  `ci.yml` runs install, `npm audit --audit-level=high`, lint, tests, build, format check
-  and gitleaks. Playwright smoke + journeys (`smoke.yml`) and the image build also run on PRs.
+  `ci.yml` runs install, `npm audit --audit-level=high`, lint, all-source coverage thresholds, build, size/workflow policies, format check and gitleaks. Playwright smoke + journeys (`smoke.yml`) and the image build also run on PRs.
 - **npm 10 crashes** (`edgesOut`) re-resolving the lockfile. Use
   `npx npm@11 install --package-lock-only`.
 - **Native compilation is gated in CI.** Android debug and iOS simulator builds cover the app
@@ -181,7 +184,7 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   follow `docs/ios-widget-setup.md` and `docs/release-checklist.md` before store release.
 - **Storage failures are visible.** `StorageNotice` listens for `jw-storage-full` and offers
   backup settings so the current in-memory history can be exported before closing.
-- **es/fr hold only v1 strings.** `es.json` / `fr.json` contain no `fd.*` keys, so v2 shows in
+- **es/fr hold only v1 strings.** `es.json` / `fr.json` contain no `fd.*` keys, so the current UI shows in
   English everywhere until they are translated. Their v1 keys are unused.
 
 ## Rules for changes
@@ -217,3 +220,7 @@ Share buttons draw a 1080×1350 PNG locally, then open the native share sheet or
 download it on web. Nothing is sent automatically. Copy builders only read explicit
 public display fields; step notes and links never enter card copy. Temporary native
 files are removed when sharing finishes. `showShare` hides all share buttons.
+
+## Current release evidence and ownership
+
+[Commitment ledger](docs/roadmap.md) records the shipped, active, blocked, deferred and superseded directions, including #39–#43. [Quality gates](docs/quality-gates.md) defines automated evidence; [platform matrix](docs/platform-matrix.md) distinguishes targets from verified engines/devices. [Store release pack](docs/store-release-pack.md) supersedes historical listing claims. Signing rotation/history remediation (#132/#133), account reservations, device checks, governance administration and research remain human-owned gates. Do not claim store availability from a successful unsigned compile.
