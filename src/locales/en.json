@@ -239,6 +239,7 @@
     "tabs": {
       "label": "Main navigation",
       "today": "Today",
+      "plans": "Plans",
       "progress": "Progress",
       "settings": "Settings"
     },
@@ -266,6 +267,121 @@
       "mapTitle": "Bible books",
       "mapRead": "{{name}}, read",
       "mapNotYet": "{{name}}, not yet"
+    },
+    "plans": {
+      "title": "Plans",
+      "close": "Close",
+      "study": {
+        "heading": "Study projects",
+        "empty": "No projects yet. Start one for a book, a brochure or anything you want to study.",
+        "new": "New project",
+        "active": "Active",
+        "waiting": "Waiting",
+        "makeActive": "Make {{title}} the active project",
+        "makeActiveShort": "Make active"
+      },
+      "family": {
+        "heading": "Family worship",
+        "weeks": "This week and the next 8",
+        "empty": "No family plans yet.",
+        "new": "New family plan"
+      },
+      "completed": {
+        "heading": "Completed",
+        "empty": "Finished plans rest here.",
+        "restore": "Restore {{title}}",
+        "restoreShort": "Restore"
+      },
+      "progress": "{{done}} of {{total}}",
+      "next": "Next: {{title}}",
+      "noSteps": "No steps yet",
+      "kinds": {
+        "study": "Study project",
+        "family": "Family worship plan"
+      },
+      "colours": {
+        "blue": "Blue",
+        "teal": "Teal",
+        "purple": "Purple",
+        "rust": "Rust",
+        "amber": "Amber",
+        "rose": "Rose",
+        "green": "Green",
+        "ocean": "Ocean"
+      },
+      "icons": {
+        "book": "Book",
+        "scroll": "Scroll",
+        "lamp": "Lamp",
+        "mountain": "Mountain",
+        "seedling": "Seedling",
+        "dove": "Dove",
+        "sun": "Sun",
+        "path": "Path"
+      },
+      "new": {
+        "titleStudy": "New project",
+        "titleFamily": "New family plan",
+        "name": "Title",
+        "kind": "Kind",
+        "colour": "Colour",
+        "icon": "Icon",
+        "generator": "Steps",
+        "count": "How many",
+        "book": "Bible book",
+        "create": "Create",
+        "cancel": "Cancel",
+        "generators": {
+          "blank": "Start blank (add steps yourself)",
+          "chapters": "Chapters 1 to N",
+          "lessons": "Lessons 1 to N",
+          "bibleBook": "Bible book by chapter",
+          "weekly": "Weekly, N weeks"
+        },
+        "titleNeeded": "Give it a title",
+        "countRange": "Choose a number from 1 to 200"
+      },
+      "trail": {
+        "back": "Plans",
+        "steps": "Steps",
+        "stop": "{{title}}, {{state}}",
+        "state": {
+          "done": "done",
+          "next": "next",
+          "notYet": "not yet"
+        },
+        "empty": "No steps yet. Add the first one below.",
+        "addStep": "Add a step",
+        "add": "Add",
+        "makeActive": "Make this the active project",
+        "active": "Active project",
+        "completed": "Completed. Restore it to carry on.",
+        "restore": "Restore",
+        "deletePlan": "Delete plan",
+        "confirmDeletePlan": "Delete this plan and all its steps?",
+        "confirmDelete": "Delete",
+        "keep": "Keep it",
+        "notFound": "This plan isn't here any more."
+      },
+      "step": {
+        "title": "Title",
+        "link": "Link",
+        "note": "Note",
+        "save": "Save",
+        "open": "Open",
+        "markDone": "Mark done",
+        "markUndone": "Mark not done",
+        "doneOn": "Done on {{date}}",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "delete": "Delete step",
+        "confirmDelete": "Delete this step?",
+        "confirm": "Delete",
+        "keep": "Keep it",
+        "badLink": "Use a web address that starts with https:// or http://",
+        "titleNeeded": "A step needs a title",
+        "saved": "Saved"
+      }
     }
   }
 }

@@ -31,21 +31,30 @@ function contrast(a, b) {
 const readable = (hex, mode) => BACKGROUNDS[mode].every((bg) => contrast(hex, bg) >= MIN_CONTRAST);
 
 /**
- * The accent as text in `mode`: unchanged when it already reads at 4.5:1,
- * otherwise mixed toward black (light) or white (dark) just far enough.
- * @param {number} index into ACCENTS (unknown falls back to the first)
+ * A colour as text in `mode`: unchanged when it already reads at 4.5:1 on both
+ * of that theme's backgrounds, otherwise mixed toward black (light) or white
+ * (dark) just far enough. Used for accents and plan colours alike.
+ * @param {string} hex '#rrggbb'
  * @param {'light'|'dark'} mode
  */
-export function accentText(index, mode) {
-  const accent = ACCENTS[index] ?? ACCENTS[0];
-  if (readable(accent, mode)) return accent;
+export function textShade(hex, mode) {
+  if (readable(hex, mode)) return hex;
   const target = mode === 'dark' ? 255 : 0;
-  const rgb = channels(accent);
+  const rgb = channels(hex);
   for (let step = 1; step <= 100; step++) {
     const mixed = toHex(rgb.map((c) => c + ((target - c) * step) / 100));
     if (readable(mixed, mode)) return mixed;
   }
   return mode === 'dark' ? '#ffffff' : '#000000';
+}
+
+/**
+ * The accent as text in `mode` (see `textShade`).
+ * @param {number} index into ACCENTS (unknown falls back to the first)
+ * @param {'light'|'dark'} mode
+ */
+export function accentText(index, mode) {
+  return textShade(ACCENTS[index] ?? ACCENTS[0], mode);
 }
 
 /**

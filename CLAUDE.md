@@ -14,9 +14,10 @@ home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 - **App ID:** `ca.ashbi.habittracker`
 - **Version:** 5.0.0
 - **Node:** >= 18.0.0
-- **Screens:** onboarding (until `onboardingDone`), then Today (`/`) and Progress (`/progress`)
-  behind a tab bar; Settings is a modal sheet opened from the tab bar, not a route. `/share`
-  (PWA share target) exists in the web build only.
+- **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
+  trail at `/plans/:planId`) and Progress (`/progress`) behind a tab bar; Settings is a modal
+  sheet opened from the tab bar, not a route. `/share` (PWA share target) exists in the web
+  build only.
 
 ### No third-party content in shipped code
 
@@ -35,7 +36,7 @@ user-editable slot instead.
 | Layer | Technology | Version |
 |---|---|---|
 | Frontend | React 19 + Vite 8 | `react: 19.2.8` (exact, with `react-dom`), `vite: ^8.1.5` |
-| Routing | React Router DOM 7 | `/`, `/progress`, web-only `/share`; `*` falls back to Today |
+| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/:planId`, `/progress`, web-only `/share`; `*` falls back to Today |
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
@@ -82,16 +83,17 @@ src/
 │   ├── progress.js, wrapup.js, encouragement.js, notifications.js, links.js, whatsNew.js
 │   └── migrateV1.js            # One-time import of the v1 jw- keys (read-only on them)
 ├── screens/
-│   ├── Today.jsx, Progress.jsx, SettingsSheet.jsx
+│   ├── Today.jsx, Plans.jsx, PlanTrail.jsx, Progress.jsx, SettingsSheet.jsx
 │   └── onboarding/             # Six steps; StepRoutines/Week/Reading/Rhythm/Look are reused by Settings
 ├── components/                 # HoldToCheck, RoutineRow, MinistryRow, Stepper, WrapUpCard, TabBar,
 │                               # MeetingDaysCard, WhatsNewBadge, BibleMap, settings/* (Reminders, Links,
-│                               # Backup, About), and the PWA
+│                               # Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet, PlanIcon), and the PWA
 │                               # chrome (PWAProvider, InstallPrompt, UpdatePrompt, OfflineIndicator)
 ├── native/                     # reminders.js, whatsNewClient.js, widgetBridge.js (each exports register*())
 ├── pages/Share.jsx             # PWA share_target landing (web only)
 ├── hooks/                      # usePWA, usePWAContext
 ├── theme/theme.js              # Accent, light/dark, and --fd-accent-text (accent text at 4.5:1)
+├── theme/planColours.js        # The 8 plan colours (white text at 4.5:1) and their text shades (.fd-plan-text)
 ├── locales/                    # en.json (all fd.* strings), es.json / fr.json (v1 leftovers, see Known issues)
 └── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js, userLinks.js,
                                 # settingsStore.js (Share only), backup.js, pwa.js, backStack.js (Android back)

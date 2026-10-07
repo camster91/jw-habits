@@ -8,6 +8,8 @@ import { PWAProvider } from './components/PWAProvider';
 import Share from './pages/Share';
 import Today from './screens/Today';
 import Progress from './screens/Progress';
+import Plans from './screens/Plans.jsx';
+import PlanTrail from './screens/PlanTrail.jsx';
 import Onboarding from './screens/onboarding/Onboarding.jsx';
 import TabBar from './components/TabBar';
 import SettingsSheet from './screens/SettingsSheet';
@@ -15,8 +17,8 @@ import { useStore } from './data/useStore.js';
 import { applyTheme } from './theme/theme.js';
 import { isWeb } from './utils/native.js';
 
-// Faithful Days shell: onboarding until it is done, then Today and
-// Progress. The install/update/offline chrome and the /share route exist
+// Faithful Days shell: onboarding until it is done, then Today, Plans
+// (and each plan's trail) and Progress. The install/update/offline chrome and the /share route exist
 // only in the web build; the native app has no use for them.
 
 function routerBasename() {
@@ -52,6 +54,8 @@ function Screens() {
         ) : (
           <>
             <Route path="/" element={today} />
+            <Route path="/plans" element={withTabs(<Plans />)} />
+            <Route path="/plans/:planId" element={withTabs(<PlanTrail />)} />
             <Route path="/progress" element={withTabs(<Progress />)} />
             <Route path="*" element={today} />
           </>

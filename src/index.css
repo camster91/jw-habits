@@ -1098,3 +1098,12 @@ input[type='range']::-webkit-slider-thumb {
   white-space: nowrap;
   border: 0;
 }
+
+/* Text in a plan's colour (planStyle in theme/planColours.js sets the
+   variables): the light or dark shade, each at 4.5:1 on its theme. */
+.fd-plan-text {
+  color: var(--plan-text-light);
+}
+[data-theme='dark'] .fd-plan-text {
+  color: var(--plan-text-dark);
+}
