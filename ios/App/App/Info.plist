@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	    <string>JW Habits</string>
+	    <string>Faithful Days</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -33,7 +33,7 @@
 		<string>arm64</string>
 	</array>
 	<key>NSCalendarsUsageDescription</key>
-	<string>JW Habits uses your calendar to set reminders for meetings and study schedules.</string>
+	<string>Faithful Days uses your calendar to set reminders for your routines.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This app does not track you.</string>
 	<key>UISupportedInterfaceOrientations</key>

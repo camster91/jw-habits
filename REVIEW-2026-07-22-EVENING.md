@@ -1,3 +1,8 @@
+> **HISTORICAL — superseded 2026-09-21.** This document describes the app before the
+> generic-habit-tracker refactor. Organisation-specific rows, the link library it
+> references, and the bundle id it names no longer exist. Kept for the record only;
+> do not treat it as current. See [CLAUDE.md](./CLAUDE.md).
+
 # jw-habits — Second Repo Review (2026-07-22 evening)
 
 **Repo:** `camster91/jw-habits` · branch `chore/security-followup-from-review-2026-07-22` (PR #130, unmerged)
@@ -48,12 +53,12 @@ Plus two new P2s the first audit missed:
 
 **File:** `docs/keystore-rotation-2026-07.md`
 
-The runbook's audit table at lines 11-14 contained the literal strings `<REDACTED>` / `<REDACTED>` (representing `jwnews-2024-prefix`-suffixed passwords). Line 16 had `jwnews-2024-prefix` as a placeholder. Line 91 had a similar placeholder inside a git-filter-repo callback. **All literals have since been redacted to `<REDACTED>` / `jwnews-2024-prefix` placeholders in the follow-up commit.**
+The runbook's audit table at lines 11-14 contained the literal strings `[REDACTED]` / `[REDACTED]` (representing `jwnews-2024-prefix`-suffixed passwords). Line 16 had `jwnews-2024-prefix` as a placeholder. Line 91 had a similar placeholder inside a git-filter-repo callback. **All literals have since been redacted to `[REDACTED]` / `jwnews-2024-prefix` placeholders in the follow-up commit.**
 
 The new `ci.yml` gitleaks step will scan every push + PR. **This PR will fail its own CI gate.**
 
 **Fix (3 options, in order of preference):**
-1. **Redact the runbook's table** — replace literal values with `<REDACTED>` and use `jwnews-2024-prefix` as a generic placeholder. Add a comment that the actual values are in 1Password.
+1. **Redact the runbook's table** — replace literal values with `[REDACTED]` and use `jwnews-2024-prefix` as a generic placeholder. Add a comment that the actual values are in 1Password.
 2. **Add a `.gitleaksignore`** for the runbook file: `.gitleaksignore:docs/keystore-rotation-2026-07.md:allow-docs` — explicit allowlist with rationale.
 3. **Add `# gitleaks:allow` annotations** at the relevant lines.
 

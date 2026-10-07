@@ -8,7 +8,15 @@ import en from './locales/en.json';
 import es from './locales/es.json';
 import fr from './locales/fr.json';
 import App from './App.jsx';
-import { initializeNative, isNative, appLifecycle } from './utils/native.js';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
+import { recordDiagnostic, pruneDiagnostics } from './utils/diagnostics.js';
+import { initializeNative, isNative, isWeb, appLifecycle } from './utils/native.js';
+import { consumeBack } from './utils/backStack.js';
+import { StoreProvider } from './data/StoreProvider.jsx';
+import { registerReminderSync } from './native/reminders.js';
+import { registerWhatsNewCheck } from './native/whatsNewClient.js';
+import { registerWidgetBridge } from './native/widgetBridge.js';
+import { registerBadgeAwards } from './native/badgeAwards.js';
 
 // i18next — Spanish/French fall back to English when a key
 // is missing. Language detected from navigator, cached in
@@ -28,6 +36,7 @@ i18n
     // browser's "es-ES" falls through to the fallback "en".
     load: 'languageOnly',
     fallbackLng: 'en',
+    supportedLngs: ['en', 'es', 'fr'],
     interpolation: { escapeValue: false },
     detection: {
       order: ['navigator', 'localStorage', 'htmlTag'],
@@ -37,31 +46,15 @@ i18n
 
 // Global error logging function
 function logGlobalError(type, message, source, error) {
-  const errorLog = {
-    timestamp: new Date().toISOString(),
-    type,
-    message: message || 'Unknown error',
-    source: source || 'unknown',
-    stack: error?.stack || '',
-    userAgent: navigator.userAgent,
-    url: window.location.href,
-  };
-
-  try {
-    const existingLogs = JSON.parse(localStorage.getItem('jw-error-logs') || '[]');
-    existingLogs.push(errorLog);
-    // Keep only the last 20 errors
-    const recentLogs = existingLogs.slice(-20);
-    localStorage.setItem('jw-error-logs', JSON.stringify(recentLogs));
-  } catch {
-    // Ignore storage errors
-  }
+  recordDiagnostic(type);
 
   // Log to console in development
   if (import.meta.env.DEV) {
     console.error(`[${type}]`, message, error);
   }
 }
+
+pruneDiagnostics();
 
 // Global error handler for uncaught exceptions
 window.onerror = function (message, source, lineno, colno, error) {
@@ -75,6 +68,15 @@ window.onunhandledrejection = function (event) {
   logGlobalError('unhandled_rejection', error?.message || String(error), 'Promise', error);
 };
 
+// Reschedule local notifications on every app open
+registerReminderSync();
+// Check jw.org's feed for new items (at most daily; dates only)
+registerWhatsNewCheck();
+// Apply widget check-ins on foreground and keep the widget snapshot current
+registerWidgetBridge();
+// Award badges once when their rules are met (never revoked)
+registerBadgeAwards();
+
 // Initialize native mobile features
 initializeNative().catch(console.error);
 
@@ -82,6 +84,8 @@ initializeNative().catch(console.error);
 if (isNative) {
   let lastBackPress = 0;
   appLifecycle.onBackButton(({ canGoBack }) => {
+    // An open sheet closes first.
+    if (consumeBack()) return;
     if (canGoBack) {
       window.history.back();
     } else {
@@ -97,41 +101,17 @@ if (isNative) {
   });
 }
 
-// Apply theme at app startup (before React mounts). The
-// Settings page has been removed — there is no UI toggle. We
-// resolve the theme from one of two sources, in priority order:
-//  1. localStorage `jw-progress-settings.state.theme` — set
-//     programmatically (or by a previous version of the app
-//     before the Settings page was deleted). Preserved for
-//     users who explicitly chose dark mode before the strip-down.
-//  2. `prefers-color-scheme: dark` — the OS-level setting.
-//  3. light — the default.
-// Without this, a user on a dark OS would see a flash of
-// light mode before React mounted and the daisyUI theme took
-// over.
-try {
-  const persistedSettings = JSON.parse(localStorage.getItem('jw-progress-settings') || '{}');
-  const storedTheme = persistedSettings?.state?.theme;
-  let theme;
-  if (storedTheme === 'dark' || storedTheme === 'light') {
-    theme = storedTheme;
-  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    theme = 'dark';
-  } else {
-    theme = 'light';
-  }
-  document.documentElement.setAttribute('data-theme', theme);
-} catch {
-  // Ignore malformed localStorage; default theme is light.
-}
-
 // Create root and render
 const container = document.getElementById('root');
 const root = createRoot(container);
 
 root.render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    </ErrorBoundary>
   </StrictMode>
 );
 
@@ -140,7 +120,13 @@ root.render(
 // do NOT auto-reload on controllerchange, which would destroy any
 // in-progress state. See src/components/UpdatePrompt.jsx for the
 // banner and src/utils/native.js for the applyUpdate flow.
-if ('serviceWorker' in navigator) {
+if (isWeb && 'serviceWorker' in navigator) {
+  // Register the service worker (the plugin's auto-injection is off, so the
+  // native build never registers one).
+  import('virtual:pwa-register')
+    .then(({ registerSW }) => registerSW({ immediate: true }))
+    .catch((error) => console.warn('Service worker registration failed:', error));
+
   // Handle notification clicks — focus app window. Only accept
   // messages from our controlling SW, and only same-origin paths.
   navigator.serviceWorker.addEventListener('message', (event) => {
@@ -166,7 +152,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // Listen for notification clicks directly (for when SW isn't controlling)
-if ('serviceWorker' in navigator) {
+if (isWeb && 'serviceWorker' in navigator) {
   navigator.serviceWorker.ready
     .then(() => {
       // No-op: registration ready for notification scheduling

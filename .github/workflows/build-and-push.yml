@@ -1,4 +1,4 @@
-name: Build and Publish Image
+name: Build and Push Image
 
 # Pull requests receive a read-only, build-only check. Trusted pushes and
 # version tags publish the GHCR image used by the existing VPS deployment.

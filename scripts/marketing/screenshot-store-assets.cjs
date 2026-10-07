@@ -1,8 +1,14 @@
 // screenshot-store-assets.cjs
 //
-// Captures store-listing screenshots for JW Habits in the exact
-// dimensions required by Apple App Store and Google Play Store.
-// Run from repo root: node scripts/marketing/screenshot-store-assets.cjs
+// Captures store-listing screenshots in the exact dimensions required by
+// the Apple App Store and Google Play Store.
+//
+// Targets a LOCAL build by default; pass a URL as argv[2] to shoot a
+// deployed copy. The previous default pointed at a host that has been
+// serving 502 since 2026-07-24.
+//
+// Run: npm run build && npm run preview &
+//      node scripts/marketing/screenshot-store-assets.cjs
 //
 // Outputs go to ./store-screenshots/<view-name>-<size>.png
 // E.g. ./store-screenshots/home-iphone-67-1290x2796.png
@@ -10,11 +16,11 @@
 // All shots are captured in both light and dark mode so Cam can
 // pick whichever looks better for each store listing.
 
-const { chromium, devices } = require('playwright');
+const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
-const URL = 'https://jwhabits.ashbi.ca/';
+const URL = process.argv[2] || 'http://localhost:4173/';
 const OUTPUT_DIR = path.resolve(__dirname, '..', '..', 'store-screenshots');
 
 if (!fs.existsSync(OUTPUT_DIR)) {

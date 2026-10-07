@@ -33,7 +33,11 @@ const localStorageMock = {
   },
   key: (i) => Array.from(localStorageStore.keys())[i] ?? null,
 };
-global.localStorage = localStorageMock;
+Object.defineProperty(globalThis, 'localStorage', {
+  configurable: true,
+  writable: true,
+  value: localStorageMock,
+});
 
 // ── Mock Notification API ─────────────────────────────
 global.Notification = {

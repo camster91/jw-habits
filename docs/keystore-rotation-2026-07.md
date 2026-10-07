@@ -10,8 +10,8 @@ The following values were leaked and are still recoverable via `git log -p --all
 
 | Variable | Was at | Currently in HEAD? |
 |---|---|---|
-| `KEYSTORE_PASSWORD` | `scripts/generate-android-keystore.sh:11` | No (redacted to `<REDACTED>`) |
-| `KEY_PASSWORD` | `scripts/generate-android-keystore.sh:12` | No (redacted to `<REDACTED>`) |
+| `KEYSTORE_PASSWORD` | `scripts/generate-android-keystore.sh:11` | No (redacted to `[REDACTED]`) |
+| `KEY_PASSWORD` | `scripts/generate-android-keystore.sh:12` | No (redacted to `[REDACTED]`) |
 | `storePassword` (gradle) | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
 | `keyPassword` (gradle) | `android/app/build.gradle` (historical) | Need to verify (likely also redacted) |
 
@@ -76,8 +76,11 @@ Preferred: **BFG Repo-Cleaner** with a replacements file (do **not** commit
 `passwords.txt` — keep it outside the repo):
 
 ```bash
-# passwords.txt is sensitive material and must stay outside the repository.
-# Put recovered values in the local file only; never paste them into docs, commands, prompts, or logs.
+# passwords.txt (outside the clone) — one leaked secret per line:
+#   <old keystore store password>
+#   <old key alias password>
+#   <old release password>
+#   <any other recovered values from 1Password / git log>
 
 cd /tmp
 git clone --mirror https://github.com/camster91/jw-habits.git
@@ -100,7 +103,7 @@ git push origin --force --tags
 ### Step 5 — Add ongoing protection (already done)
 
 - [x] `.gitignore` hardened: `*.keystore`, `*.jks`, `keystore.properties`, `android/keystore.properties`, `android/app/keystore.properties`
-- [x] `ci.yml` runs `gitleaks/gitleaks-action@v3` on every push + PR
+- [x] `ci.yml` runs `gitleaks/gitleaks-action@v2` on every push + PR
 - [x] `scripts/generate-android-keystore.sh` — env/prompt only; **never echoes passwords**
 - [x] `android/app/build.gradle` — `keystore.properties` / env only (no machine path)
 - [x] `android/keystore.properties.example` committed as a template
