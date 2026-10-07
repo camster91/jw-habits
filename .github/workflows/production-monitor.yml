@@ -24,15 +24,26 @@ jobs:
       - name: Resolve last successfully deployed revision
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
-          curl -fsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/deploy-ashbi.yml/runs?status=success&per_page=1" > deployments.json
-          run_id=$(jq -r '.workflow_runs[0].id // empty' deployments.json)
-          [[ "$run_id" =~ ^[0-9]+$ ]] || { echo '::error::No successful deployment'; exit 1; }
-          get() { curl -fsSL --retry 3 -H "Authorization: Bearer $GH_TOKEN" "$1"; }
+          get() { curl -fsSL --retry 3 -H "Authorization: Bearer $GH_TOKEN" -H 'Cache-Control: no-cache' "$1"; }
           api="https://api.github.com/repos/$GITHUB_REPOSITORY"
-          artifact=$(get "$api/actions/runs/$run_id/artifacts" | jq -r '[.artifacts[] | select(.name == "production-deployment" and .expired == false)][0].id // empty')
+          run_id="$SOURCE_RUN_ID"
+          if [[ -z "$run_id" ]]; then
+            # Scheduled/manual checks resolve a completed successful deployment.
+            # The triggering run ID avoids workflow-list indexing lag after deploy.
+            run_id=$(get "$api/actions/workflows/deploy-ashbi.yml/runs?status=completed&per_page=100" | jq -r '[.workflow_runs[] | select(.conclusion == "success")][0].id // empty')
+          fi
+          [[ "$run_id" =~ ^[0-9]+$ ]] || { echo '::error::No successful deployment'; exit 1; }
+          artifact=""
+          for attempt in $(seq 1 10); do
+            if get "$api/actions/runs/$run_id" | jq -e '.conclusion == "success" and .path == ".github/workflows/deploy-ashbi.yml"' >/dev/null; then
+              artifact=$(get "$api/actions/runs/$run_id/artifacts" | jq -r '[.artifacts[] | select(.name == "production-deployment" and .expired == false)][0].id // empty')
+              [[ "$artifact" =~ ^[0-9]+$ ]] && break
+            fi
+            sleep 2
+          done
           [[ "$artifact" =~ ^[0-9]+$ ]] || { echo '::error::Deployment record missing/expired'; exit 1; }
           get "$api/actions/artifacts/$artifact/zip" > deployment.zip
           unzip -p deployment.zip publication.json > deployment.json
