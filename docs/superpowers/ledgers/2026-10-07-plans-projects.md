@@ -48,3 +48,9 @@ Task 4: minor (deferred): back-dated study check-in can miss re-activation (arch
 Task 4: fix round 1/5 (4 addressed + Codex P2 addressed, 0 open — agenda writer reuses store's validAgendaItem, family kind guard, study ticks only the active plan, doc note/test rename; commits fbd0926..adc50ea)
 Task 4: minor (deferred): plans.js cleanTitle trims then slices (a cut title can end in a space).
 Task 4: complete (commits 0f05186..adc50ea, review clean)
+Ruling (Codex P2 on PR #265, supersedes the accepted Task 4 limitation and amends Decision 2): familyWorship log value may be `true` or `{stepIds: string[]}`; checkInFamily logs the step ids it actually marked; undoFamily clears doneOn only on those ids (when doneOn === day); legacy `true` entries keep the old agenda re-read behaviour — fixes same-day hand-marked steps being cleared — cost if wrong: one more value shape in validateStore.
+Task 5: concerns — linkLabel/fd.links.opensInLibrary not yet shown in UI (Tasks 8–10 will); Package.swift hand-edited and committed (AppLauncher); Today.test mocks openLink.
+Task 5: ⚠️/Minor 1 linkLabel has no consumer yet — owned by Task 8 (StepSheet uses linkLabel per plan).
+Task 5: minor (deferred): no lookalike-host negative tests; port not checked (hostname vs host); date= single-digit assertion; AppLauncher {completed:false} no fallback (benign for https); dailyTextUrl with undefined day.
+Task 5: complete (commits adc50ea..1729a6a, review clean)
+Task 4: fix round 2/5 (Codex P2 addressed — family check-in logs {stepIds}; undo clears only those; same-day re-check-in undoes first; commits 1729a6a..bf6b9e0). Today.jsx still logs family `true` until Task 10 wires checkInFamily.
