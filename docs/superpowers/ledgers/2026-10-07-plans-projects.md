@@ -54,3 +54,11 @@ Task 5: ⚠️/Minor 1 linkLabel has no consumer yet — owned by Task 8 (StepSh
 Task 5: minor (deferred): no lookalike-host negative tests; port not checked (hostname vs host); date= single-digit assertion; AppLauncher {completed:false} no fallback (benign for https); dailyTextUrl with undefined day.
 Task 5: complete (commits adc50ea..1729a6a, review clean)
 Task 4: fix round 2/5 (Codex P2 addressed — family check-in logs {stepIds}; undo clears only those; same-day re-check-in undoes first; commits 1729a6a..bf6b9e0). Today.jsx still logs family `true` until Task 10 wires checkInFamily.
+Ruling (pre-Task 6): full family week = a familyWorship entry on D whose week has a STORED agenda with ≥1 item, every step item's step exists with doneOn ≤ D (free items count as done by the session); awarded once per week on the first qualifying session; plan-finished XP on finishedOn for finished plans (archived or not); level ≥ 8 named 'Fruitful Tree '+(level−6) — cost if wrong: XP numbers shift slightly.
+External (Codex on PR #265 @23d9aaf): P2 createPlan/archivePlan write an unchecked `today` into createdOn/archivedOn → invalid store → corrupt-on-load. Ruling: fix (refuse non-day) before merge — cost if wrong: none.
+External (Codex @23d9aaf): repeated P2 on undoFamily's legacy `true` path. Ruling: accepted as-is — legacy entries can't record step ids; no UI reaches undoFamily until Task 10, which writes {stepIds}; replied on the PR thread — cost if wrong: a pre-v5.1 family entry undone via the new UI could clear a same-day hand-marked step.
+Task 6: Ruling: levelFor/gardenStage/levelName live in src/domain/garden.js (not xp.js as the plan said) — cohesive; later tasks (7, 11, 12) import them from garden.js — cost if wrong: none.
+Task 6: ⚠️ finishedOn null for unfinished plans — verified in plans.js (finishedOn returns null unless all steps done).
+Task 6: minor (deferred): undo/cap interaction and plan-finish XP not discriminated by tests (cap hides 85+); untested: plan finished after today, two family entries same day.
+Task 6: complete (commits bf6b9e0..058784a, review clean)
+Codex date fix: complete (4ed5ecf, re-review clean). Flake watch: one full-suite run reported 633/645 with no failure output; 12 further runs all 645/645 — likely a transient worker/timeout under concurrent load; recheck at the final review.
