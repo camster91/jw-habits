@@ -93,10 +93,11 @@ function Item({ item, store, onRemove, readOnly }) {
  * this week does not already hold, grouped by plan. `reason` says why the
  * picker is empty: no family plan, every step done, or every open one planned.
  */
-function pickableSteps(store, week, items) {
+function pickableSteps(store, week, items, today) {
   const used = new Set(items.filter((i) => i.kind === 'step').map((i) => i.stepId));
   for (const [w, list] of Object.entries(store.familyAgendas)) {
-    if (w !== week) for (const i of list) if (i.kind === 'step') used.add(i.stepId);
+    if (w !== week && w >= weekStart(today))
+      for (const i of list) if (i.kind === 'step') used.add(i.stepId);
   }
   const plans = store.plans.filter((p) => p.kind === 'family' && p.archivedOn === null);
   const groups = plans
@@ -113,7 +114,7 @@ function pickableSteps(store, week, items) {
 /** The add panel: a free item (title and optional link) or a step from a family plan. */
 function AddPanel({ week, items, onDone }) {
   const { t } = useTranslation();
-  const { store, update } = useStore();
+  const { store, update, today } = useStore();
   const titleId = useId();
   const linkId = useId();
   const errId = useId();
@@ -122,7 +123,7 @@ function AddPanel({ week, items, onDone }) {
   const [link, setLink] = useState('');
   const [pick, setPick] = useState('');
   const [errors, setErrors] = useState({});
-  const { groups, reason } = pickableSteps(store, week, items);
+  const { groups, reason } = pickableSteps(store, week, items, today);
   const titleRef = useRef(null);
   const linkRef = useRef(null);
   useEffect(() => titleRef.current?.focus(), []);

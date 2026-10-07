@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw, Home, Trash2 } from 'lucide-react';
-import { safeGetItem, safeSetItemQuiet, safeClearAll } from '../utils/safeStorage.js';
+import { safeClearAll } from '../utils/safeStorage.js';
+import { recordDiagnostic } from '../utils/diagnostics.js';
 
 /**
  * Error Boundary component to catch JavaScript errors in child components.
@@ -32,26 +33,8 @@ class ErrorBoundary extends Component {
     this.logError(error, errorInfo);
   }
 
-  logError(error, errorInfo) {
-    // Store error in localStorage for debugging
-    const errorLog = {
-      timestamp: new Date().toISOString(),
-      message: error?.message || 'Unknown error',
-      stack: error?.stack || '',
-      componentStack: errorInfo?.componentStack || '',
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-    };
-
-    try {
-      const existingLogs = JSON.parse(safeGetItem('jw-error-logs') || '[]');
-      existingLogs.push(errorLog);
-      // Keep only the last 10 errors
-      const recentLogs = existingLogs.slice(-10);
-      safeSetItemQuiet('jw-error-logs', JSON.stringify(recentLogs));
-    } catch {
-      // Ignore storage errors
-    }
+  logError() {
+    recordDiagnostic('component');
   }
 
   handleReload = () => {

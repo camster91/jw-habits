@@ -38,7 +38,7 @@
         "android:bundle": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease",
         "ios:build": "npm run build && npx cap sync ios",
         "smoke": "node scripts/verify/smoke.cjs",
-        "smoke:spawn": "SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs",
+        "smoke:spawn": "node scripts/verify/smoke.cjs --spawn",
         "journeys": "node scripts/verify/journeys.cjs"
     },
     "dependencies": {
@@ -92,6 +92,6 @@
         "vitest": "^4.1.11"
     },
     "engines": {
-        "node": ">=18.0.0"
+        "node": ">=22.12.0"
     }
 }

@@ -239,7 +239,8 @@
         "toggle": "Reminders",
         "hint": "Gentle notes on this device about what's ready today.",
         "perRoutine": "Remind me about",
-        "permissionOff": "Notifications are turned off for Faithful Days. You can turn them on in your phone's Settings."
+        "permissionOff": "Notifications are turned off for Faithful Days. You can turn them on in your phone's Settings.",
+        "routineLabel": "Reminder: {{title}}"
       },
       "quietHours": {
         "toggle": "Quiet hours",
@@ -251,7 +252,13 @@
         "disclaimer": "Faithful Days is an independent app. It is not affiliated with, endorsed by, or sponsored by Watch Tower Bible and Tract Society or jw.org, and contains no content from jw.org.",
         "privacy": "Privacy policy",
         "support": "Support",
-        "version": "Version {{version}}"
+        "version": "Version {{version}}",
+        "diagnostics": "Diagnostic history stays on this device. Up to 20 error times and categories are kept; entries older than 7 days are removed when the app opens.",
+        "clearDiagnostics": "Clear diagnostic history",
+        "inspectDiagnostics": "View diagnostic history",
+        "noDiagnostics": "No diagnostic history.",
+        "clearedDiagnostics": "Diagnostic history cleared.",
+        "diagnosticFailure": "Could not clear diagnostic history."
       }
     },
     "links": {
@@ -509,6 +516,10 @@
       "preparing": "Preparing card…",
       "error": "The card could not be prepared. Please try again.",
       "badge": "A new bloom · {{title}}"
+    },
+    "storage": {
+      "full": "Your device could not save the latest changes. Export a backup before closing the app, then free storage and reopen it.",
+      "backup": "Open backup settings"
     }
   }
 }

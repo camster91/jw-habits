@@ -13,6 +13,15 @@ import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
 const platform = vi.hoisted(() => ({ isNative: false }));
+const foreground = vi.hoisted(() => ({ callback: null }));
+vi.mock('../data/StoreProvider.jsx', () => ({
+  onForeground: (callback) => {
+    foreground.callback = callback;
+    return () => {
+      foreground.callback = null;
+    };
+  },
+}));
 
 vi.mock('../utils/native.js', () => ({
   get isNative() {
@@ -226,13 +235,13 @@ describe('SettingsSheet', () => {
     expect(within(about).getByText(DISCLAIMER)).toBeInTheDocument();
     fireEvent.click(within(about).getByRole('button', { name: 'Privacy policy' }));
     expect(window.open).toHaveBeenCalledWith(
-      'https://jwhabits.ashbi.ca/privacy',
+      'https://jwhabits.ashbi.ca/privacy/',
       '_blank',
       'noopener'
     );
     fireEvent.click(within(about).getByRole('button', { name: 'Support' }));
     expect(window.open).toHaveBeenCalledWith(
-      'https://jwhabits.ashbi.ca/support',
+      'https://jwhabits.ashbi.ca/support/',
       '_blank',
       'noopener'
     );
@@ -284,13 +293,13 @@ describe('SettingsSheet', () => {
     expect(master).toBeChecked();
     // One switch per enabled routine.
     for (const name of ['Daily text', 'Bible reading', 'Meeting prep', 'Ministry']) {
-      expect(within(reminders).getByRole('switch', { name })).toBeChecked();
+      expect(within(reminders).getByRole('switch', { name: `Reminder: ${name}` })).toBeChecked();
     }
-    fireEvent.click(within(reminders).getByRole('switch', { name: 'Bible reading' }));
+    fireEvent.click(within(reminders).getByRole('switch', { name: 'Reminder: Bible reading' }));
     expect(current.reminders).toEqual({ enabled: true, off: ['bibleReading'] });
-    fireEvent.click(within(reminders).getByRole('switch', { name: 'Ministry' }));
+    fireEvent.click(within(reminders).getByRole('switch', { name: 'Reminder: Ministry' }));
     expect(current.reminders.off).toEqual(['bibleReading', 'ministry']);
-    fireEvent.click(within(reminders).getByRole('switch', { name: 'Bible reading' }));
+    fireEvent.click(within(reminders).getByRole('switch', { name: 'Reminder: Bible reading' }));
     expect(current.reminders.off).toEqual(['ministry']);
     fireEvent.click(master);
     expect(current.reminders).toEqual({ enabled: false, off: ['ministry'] });
@@ -308,8 +317,8 @@ describe('SettingsSheet', () => {
     expect(master).not.toBeChecked();
     fireEvent.click(master);
     expect(current.reminders.enabled).toBe(true);
-    expect(within(reminders).getByRole('switch', { name: 'Daily text' })).toBeChecked();
-    expect(within(reminders).queryByRole('switch', { name: 'Ministry' })).toBeNull();
+    expect(within(reminders).getByRole('switch', { name: 'Reminder: Daily text' })).toBeChecked();
+    expect(within(reminders).queryByRole('switch', { name: 'Reminder: Ministry' })).toBeNull();
   });
 
   it("What's New and quiet hours write through", () => {
@@ -355,7 +364,7 @@ describe('SettingsSheet', () => {
       await settle();
       expect(LocalNotifications.checkPermissions).not.toHaveBeenCalled();
       expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
-      expect(within(section('Reminders')).queryByRole('status')).toBeNull();
+      expect(within(section('Reminders')).queryByRole('status')).toBeEmptyDOMElement();
       expect(screen.queryByText(HINT)).toBeNull();
     });
 
@@ -412,7 +421,9 @@ describe('SettingsSheet', () => {
       LocalNotifications.requestPermissions.mockResolvedValue(perm('denied'));
       renderSheet({ ...makeStore(), reminders: { enabled: true, off: ['ministry'] } });
       await settle();
-      fireEvent.click(within(section('Reminders')).getByRole('switch', { name: 'Ministry' }));
+      fireEvent.click(
+        within(section('Reminders')).getByRole('switch', { name: 'Reminder: Ministry' })
+      );
       await settle();
       expect(LocalNotifications.requestPermissions).toHaveBeenCalledTimes(1);
       expect(current.reminders.off).toEqual([]);
@@ -423,11 +434,80 @@ describe('SettingsSheet', () => {
       LocalNotifications.checkPermissions.mockResolvedValue(perm('prompt'));
       renderSheet();
       await settle();
-      fireEvent.click(within(section('Reminders')).getByRole('switch', { name: 'Ministry' }));
+      fireEvent.click(
+        within(section('Reminders')).getByRole('switch', { name: 'Reminder: Ministry' })
+      );
       toggleMaster();
       await settle();
       expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
       expect(screen.queryByText(HINT)).toBeNull(); // master off: no hint
+    });
+
+    it('coalesces permission requests while switches overlap', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('prompt'));
+      let finish;
+      LocalNotifications.requestPermissions.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          })
+      );
+      renderSheet(off());
+      await settle();
+      toggleMaster();
+      await settle();
+      toggleMaster();
+      toggleMaster();
+      await settle();
+      expect(LocalNotifications.requestPermissions).toHaveBeenCalledTimes(1);
+      await act(async () => finish(perm('granted')));
+      expect(screen.queryByText(HINT)).toBeNull();
+    });
+
+    it('requests on user activation even if the permission check failed', async () => {
+      platform.isNative = true;
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      LocalNotifications.checkPermissions.mockRejectedValue(new Error('check failed'));
+      LocalNotifications.requestPermissions.mockResolvedValue(perm('granted'));
+      renderSheet(off());
+      await settle();
+      toggleMaster();
+      await settle();
+      expect(LocalNotifications.requestPermissions).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(HINT)).toBeNull();
+    });
+
+    it('refreshes permission after returning from OS settings', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('denied'));
+      renderSheet();
+      await settle();
+      expect(screen.getByText(HINT)).toBeInTheDocument();
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('granted'));
+      await act(async () => foreground.callback());
+      expect(screen.queryByText(HINT)).toBeNull();
+      expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
+    });
+
+    it('unsubscribes safely while a permission request is pending', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('prompt'));
+      let finish;
+      LocalNotifications.requestPermissions.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          })
+      );
+      const view = renderSheet(off());
+      await settle();
+      toggleMaster();
+      await settle();
+      view.unmount();
+      expect(foreground.callback).toBeNull();
+      await act(async () => finish(perm('granted')));
+      expect(LocalNotifications.requestPermissions).toHaveBeenCalledTimes(1);
     });
 
     it('catches plugin errors: the store change still lands, nothing throws', async () => {

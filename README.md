@@ -18,7 +18,7 @@ A calm, private routine tracker for iOS, Android and the web. Faithful Days keep
 
 ## Getting started
 
-Requires Node 18 or newer.
+Requires Node 22.12 or newer. `.nvmrc` selects Node 22.
 
 ```bash
 git clone https://github.com/camster91/jw-habits.git

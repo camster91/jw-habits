@@ -40,7 +40,8 @@ const validItem = (i) => validAgendaItem(i) && (i.kind !== 'free' || i.title.tri
 export function autoFill(store, weekStartDay) {
   const reserved = new Set();
   for (const [week, items] of Object.entries(store.familyAgendas)) {
-    if (week === weekStartDay) continue;
+    if (week === weekStartDay || (store.lastSeenDay && week < weekStart(store.lastSeenDay)))
+      continue;
     for (const i of items) if (isStepItem(i)) reserved.add(i.stepId);
   }
   const items = [];

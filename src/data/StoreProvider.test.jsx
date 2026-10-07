@@ -568,3 +568,26 @@ describe('StoreProvider reference cleanup (Review Focus 1)', () => {
     expect(set).not.toHaveBeenCalledWith(expect.objectContaining({ key: STORE_KEY }));
   });
 });
+
+// eslint-disable-next-line no-unused-vars -- used in JSX
+function ForegroundListener({ events }) {
+  useEffect(() => {
+    const receive = () => events.push('heard');
+    window.addEventListener('startup-award', receive);
+    return () => window.removeEventListener('startup-award', receive);
+  }, [events]);
+  return null;
+}
+it('runs initial foreground callbacks after child listeners commit', async () => {
+  const events = [];
+  const off = onForeground(() => window.dispatchEvent(new Event('startup-award')));
+  const view = render(
+    <StoreProvider>
+      <ForegroundListener events={events} />
+    </StoreProvider>
+  );
+  await flush();
+  expect(events).toEqual(['heard']);
+  off();
+  view.unmount();
+});

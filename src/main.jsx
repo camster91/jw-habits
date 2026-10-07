@@ -9,7 +9,7 @@ import es from './locales/es.json';
 import fr from './locales/fr.json';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
-import { safeGetItem, safeSetItemQuiet } from './utils/safeStorage.js';
+import { recordDiagnostic, pruneDiagnostics } from './utils/diagnostics.js';
 import { initializeNative, isNative, isWeb, appLifecycle } from './utils/native.js';
 import { consumeBack } from './utils/backStack.js';
 import { StoreProvider } from './data/StoreProvider.jsx';
@@ -36,6 +36,7 @@ i18n
     // browser's "es-ES" falls through to the fallback "en".
     load: 'languageOnly',
     fallbackLng: 'en',
+    supportedLngs: ['en', 'es', 'fr'],
     interpolation: { escapeValue: false },
     detection: {
       order: ['navigator', 'localStorage', 'htmlTag'],
@@ -45,31 +46,15 @@ i18n
 
 // Global error logging function
 function logGlobalError(type, message, source, error) {
-  const errorLog = {
-    timestamp: new Date().toISOString(),
-    type,
-    message: message || 'Unknown error',
-    source: source || 'unknown',
-    stack: error?.stack || '',
-    userAgent: navigator.userAgent,
-    url: window.location.href,
-  };
-
-  try {
-    const existingLogs = JSON.parse(safeGetItem('jw-error-logs') || '[]');
-    existingLogs.push(errorLog);
-    // Keep only the last 20 errors
-    const recentLogs = existingLogs.slice(-20);
-    safeSetItemQuiet('jw-error-logs', JSON.stringify(recentLogs));
-  } catch {
-    // Ignore storage errors
-  }
+  recordDiagnostic(type);
 
   // Log to console in development
   if (import.meta.env.DEV) {
     console.error(`[${type}]`, message, error);
   }
 }
+
+pruneDiagnostics();
 
 // Global error handler for uncaught exceptions
 window.onerror = function (message, source, lineno, colno, error) {

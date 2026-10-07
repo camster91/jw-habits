@@ -13,7 +13,7 @@ home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
 - **Version:** 5.1.0
-- **Node:** >= 18.0.0
+- **Node:** >= 22.12.0
 - **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
   trail at `/plans/:planId`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
   sheet opened from the tab bar, not a route. `/share` (PWA share target) exists in the web
@@ -43,7 +43,7 @@ user-editable slot instead.
 | i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (v2 strings are English only for now; es/fr fall back to en) |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
-| Testing | Vitest 4 + Testing Library + Playwright | 793 tests / 51 files, 7 smoke, 7 journeys + a clean-run check |
+| Testing | Vitest 4 + Testing Library + Playwright | 803 tests / 54 files, 7 smoke, 7 journeys + a clean-run check |
 | Linting | ESLint 9 + Prettier 3 | |
 
 ## Commands
@@ -56,7 +56,7 @@ user-editable slot instead.
 | `npm test` | Unit tests (Vitest) |
 | `npm run lint` | ESLint |
 | `npm run format:check` | Prettier check (`format` to write) |
-| `npm run smoke:spawn` | Playwright smoke suite, spawns preview (POSIX env syntax: run from Git Bash/CI; on Windows start `npm run preview` and run `node scripts/verify/smoke.cjs`) |
+| `npm run smoke:spawn` | Playwright smoke suite, spawns preview (portable `--spawn` flag) |
 | `npm run journeys` | End-to-end UI journeys (needs preview running) |
 
 Both Playwright suites pin the browser clock with `page.clock` (e.g. `Date(2026, 9, 6, 21, 0)`
@@ -142,10 +142,10 @@ they ship in real installs, so renaming them silently discards user history.
   force on a day is the latest starting on or before it. Change it only through
   `withScheduleChange(store, today, patch)`, which adds an entry from today and leaves earlier
   days as they were. Read it with `scheduleOn(store, day)`.
-- **`safeStorage` is the single storage chokepoint.** All reads and writes go through
+- **`safeStorage` is the app-state storage chokepoint.** Store reads and writes go through
   `utils/safeStorage.js` (`durableGet/durableSet` for the v2 store, which uses Capacitor
   Preferences natively and localStorage on the web, plus quota handling and the
-  `jw-storage-full` event). Do not call `localStorage` directly in `src/`.
+  `jw-storage-full` event). New app-state code must use these helpers. The older `/share` settings adapter and i18next language detector also use browser storage.
 - **Wiring in `src/main.jsx`.** `registerReminderSync()`, `registerWhatsNewCheck()` and
   `registerWidgetBridge()` and `registerBadgeAwards()` each subscribe to the store from outside React using
   `onForeground(cb)` (app opened / came to the foreground; gets `{ store, update, today }`) and
@@ -179,8 +179,8 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
 - **The widget is unverified.** The Android and iOS widget sources were written without a JDK,
   Android SDK or Xcode. The iOS extension target is not in `project.pbxproj`; follow
   `docs/ios-widget-setup.md`, then run `docs/release-checklist.md` before any store release.
-- **Nothing listens for `jw-storage-full` any more.** The v1 Home page showed a banner when
-  storage was full; Today does not. `safeStorage` still dispatches the event.
+- **Storage failures are visible.** `StorageNotice` listens for `jw-storage-full` and offers
+  backup settings so the current in-memory history can be exported before closing.
 - **es/fr hold only v1 strings.** `es.json` / `fr.json` contain no `fd.*` keys, so v2 shows in
   English everywhere until they are translated. Their v1 keys are unused.
 

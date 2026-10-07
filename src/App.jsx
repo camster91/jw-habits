@@ -1,3 +1,4 @@
+import StorageNotice from './components/StorageNotice.jsx';
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -67,6 +68,7 @@ function Screens() {
         )}
       </Routes>
       {onboardingDone && <BadgeToast />}
+      <StorageNotice onBackup={openSettings} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );

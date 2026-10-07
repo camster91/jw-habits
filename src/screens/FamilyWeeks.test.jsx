@@ -258,3 +258,18 @@ describe('FamilyWeeks', () => {
     expect(week('2026-10-05').getByText('S1, done')).toBeInTheDocument();
   });
 });
+
+it('lets an unfinished step from a past week be scheduled again', () => {
+  let s = { ...twoPlans(), lastSeenDay: TODAY };
+  const step = s.plans[0].steps[0];
+  s = setAgenda(s, '2026-09-28', [
+    { id: 'past', kind: 'step', planId: s.plans[0].id, stepId: step.id },
+  ]);
+  s = setAgenda(s, NEXT, []);
+  render(<Harness initial={s} />);
+  fireEvent.click(week(NEXT).getByRole('button', { name: 'Add to this week' }));
+  expect(week(NEXT).getByRole('option', { name: /S1/ })).toBeInTheDocument();
+  fireEvent.change(week(NEXT).getByLabelText('Step from a plan'), { target: { value: step.id } });
+  fireEvent.click(week(NEXT).getByRole('button', { name: 'Add step' }));
+  expect(current.familyAgendas[NEXT][0].stepId).toBe(step.id);
+});

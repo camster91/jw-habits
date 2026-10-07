@@ -1,0 +1,13 @@
+import { fireEvent, render, screen } from '@testing-library/react';
+import { expect, it, vi } from 'vitest';
+// eslint-disable-next-line no-unused-vars -- used in JSX
+import StorageNotice from './StorageNotice.jsx';
+it('announces a failed save and opens backup settings', () => {
+  const backup = vi.fn();
+  render(<StorageNotice onBackup={backup} />);
+  expect(screen.queryByRole('alert')).toBeNull();
+  fireEvent(window, new CustomEvent('jw-storage-full'));
+  expect(screen.getByRole('alert')).toHaveTextContent(/backup/i);
+  fireEvent.click(screen.getByRole('button', { name: /backup/i }));
+  expect(backup).toHaveBeenCalledOnce();
+});
