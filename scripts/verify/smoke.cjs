@@ -64,6 +64,19 @@ async function open(browser, at) {
 const pressed = (page, name) => lib.routineButton(page, name).getAttribute('aria-pressed');
 
 async function runSmoke(browser) {
+  // Release UI language must match document speech even with legacy detection preferences.
+  for (const locale of ['es-ES', 'fr-FR']) {
+    const { ctx, page, errors } = await lib.openPage(browser, { at: DAY1, locale });
+    await page.addInitScript(() => localStorage.setItem('i18nextLng', 'fr'));
+    await lib.go(page, BASE_URL);
+    await lib.onboardSkip(page);
+    const htmlLanguage = await page.locator('html').getAttribute('lang');
+    const english = await lib.routineButton(page, 'Daily text').isVisible();
+    const legacyKept = await page.evaluate(() => localStorage.getItem('i18nextLng') === 'fr');
+    record(`English initial release under ${locale}`, htmlLanguage === 'en' && english && legacyKept && errors.length === 0);
+    await ctx.close();
+  }
+
   // ---- S1: a first run renders onboarding with no console errors ----
   {
     const { ctx, page, errors } = await open(browser, DAY1);

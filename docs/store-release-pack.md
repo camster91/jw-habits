@@ -75,3 +75,7 @@ account-holder task. Do not mark the declarations complete from unit tests.
 Outstanding gates: #132/#133 signing incident, #246 name reservations,
 #248/#249 signed artifacts, #251 physical QA, #252 pilot, #253 account-specific
 Play eligibility, #254 submission/review and #255 web-retirement prerequisites.
+
+## Initial language claim
+
+Declare the current app UI as English only. #259 chooses its English-only initial-release alternative and removes unused v1 es/fr catalogs. Native widget chrome resources may follow the device language; full Spanish/French app UI, notifications/destination review, and fluent accessibility checks remain #46. Do not advertise full es/fr support from the native widget resources.

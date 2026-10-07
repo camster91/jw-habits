@@ -11,9 +11,9 @@ const STORE_KEY = 'jw-habits-v2';
  * (time then flows normally, so the 600 ms hold still elapses). Console and
  * page errors, and every request that leaves the origin, are collected.
  */
-async function openPage(browser, { at, viewport } = {}) {
+async function openPage(browser, { at, viewport, locale = 'en-CA' } = {}) {
   const ctx = await browser.newContext({
-    locale: 'en-CA',
+    locale,
     viewport: viewport || { width: 390, height: 844 },
     ignoreHTTPSErrors: true,
     serviceWorkers: 'block', // a service worker would interfere with state tests

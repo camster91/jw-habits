@@ -15,7 +15,8 @@
 | Repository governance | Active | #175: contribution contract and PR template; administrator ruleset still absent |
 | Component/migration/worker/container test gates | Shipped | #136 / #269; coverage failure probe, multi-zone 03:00 rollover, real-worker updates, exact-digest Docker recovery drill |
 | Accessibility, browser/offline upgrades and performance | Active | #176 / #177 / #181 / #192 / #197; automated coverage plus manual assistive-technology evidence |
-| French/Spanish | Active | #46 / #259 / #258; catalogs, destinations, native copy and fluent review |
+| Initial release language | Shipped | #259: English-only UI/document language; legacy language preferences preserved |
+| French/Spanish app UI | Deferred for initial release | Cameron / #46; revisit after current store release and fluent review; native widget chrome is separately localized |
 | Human usability/household research | Blocked | #199 / #252: recruit consenting participants; do not fabricate results |
 | Prepare ahead and assignments | Active, design first | #263; its own spec/plan after v5.1 |
 | Second brain / capture | Active, design first | #264; local notes/tags/search first, native share extension after device verification |
