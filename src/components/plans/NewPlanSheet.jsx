@@ -39,8 +39,15 @@ function Choices({ legend, children }) {
  */
 export default function NewPlanSheet({ kind: initialKind = 'study', onClose }) {
   const { t, i18n } = useTranslation();
-  const { update, today } = useStore();
-  const ids = { title: useId(), generator: useId(), count: useId(), book: useId(), err: useId() };
+  const { store, update, today } = useStore();
+  const ids = {
+    title: useId(),
+    generator: useId(),
+    count: useId(),
+    countErr: useId(),
+    book: useId(),
+    err: useId(),
+  };
 
   const [title, setTitle] = useState('');
   const [autoTitle, setAutoTitle] = useState(true);
@@ -63,6 +70,8 @@ export default function NewPlanSheet({ kind: initialKind = 'study', onClose }) {
   const chooseGenerator = (g) => {
     setGenerator(g);
     if (g === 'bibleBook') followBook(book);
+    // Leaving the Bible book drops its name, unless the user wrote the title.
+    else if (generator === 'bibleBook' && autoTitle) setTitle('');
   };
 
   const chooseBook = (n) => {
@@ -84,8 +93,14 @@ export default function NewPlanSheet({ kind: initialKind = 'study', onClose }) {
         : COUNTED[generator]
           ? COUNTED[generator](n)
           : [];
+    const input = { title, kind, colour, icon, steps };
+    // A refusal keeps the sheet open with a message instead of closing silently.
+    if (!createPlan(store, input, today).planId) {
+      setErrors({ form: t('fd.plans.new.refused') });
+      return;
+    }
     update((s) => {
-      const made = createPlan(s, { title, kind, colour, icon, steps }, today);
+      const made = createPlan(s, input, today);
       if (!made.planId) return s;
       return kind === 'study' && s.activePlan.personalStudy === null
         ? setActiveStudy(made.store, made.planId)
@@ -211,9 +226,14 @@ export default function NewPlanSheet({ kind: initialKind = 'study', onClose }) {
             className="input input-bordered min-h-11 w-32"
             value={count}
             aria-invalid={Boolean(errors.count)}
+            aria-describedby={errors.count ? ids.countErr : undefined}
             onChange={(e) => setCount(e.target.value)}
           />
-          {errors.count && <p className="text-sm text-error">{errors.count}</p>}
+          {errors.count && (
+            <p id={ids.countErr} className="text-sm text-error">
+              {errors.count}
+            </p>
+          )}
         </div>
       )}
 
@@ -237,6 +257,7 @@ export default function NewPlanSheet({ kind: initialKind = 'study', onClose }) {
         </div>
       )}
 
+      {errors.form && <p className="text-sm text-error">{errors.form}</p>}
       <div className="flex gap-2 pt-2">
         <button type="button" className="btn btn-primary min-h-11 flex-1" onClick={create}>
           {t('fd.plans.new.create')}

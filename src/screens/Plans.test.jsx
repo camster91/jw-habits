@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useCallback, useMemo, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used via JSX
@@ -10,6 +10,12 @@ import { finderUrl } from '../domain/bible.js';
 import { createPlan, generateChapters, setActiveStudy, setStepDone } from '../domain/plans.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import Plans from './Plans.jsx';
+
+// The real domain, with createPlan spied on so a refusal can be forced.
+vi.mock('../domain/plans.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, createPlan: vi.fn(actual.createPlan) };
+});
 
 const TODAY = '2026-10-07';
 let current;
@@ -125,7 +131,38 @@ describe('Plans', () => {
     fireEvent.change(within(dialog).getByLabelText('Steps'), { target: { value: 'chapters' } });
     fireEvent.change(within(dialog).getByLabelText('How many'), { target: { value: '201' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
-    expect(within(dialog).getByText('Choose a number from 1 to 200')).toBeInTheDocument();
+    const howMany = within(dialog).getByLabelText('How many');
+    expect(howMany).toHaveAttribute('aria-invalid', 'true');
+    expect(howMany).toHaveAccessibleDescription('Choose a number from 1 to 200');
+    expect(current.plans).toHaveLength(0);
+  });
+
+  it('drops the auto-filled book title when leaving the Bible-book generator', () => {
+    renderPlans();
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+    const dialog = screen.getByRole('dialog', { name: 'New project' });
+    const steps = within(dialog).getByLabelText('Steps');
+    fireEvent.change(steps, { target: { value: 'bibleBook' } });
+    expect(within(dialog).getByLabelText('Title')).toHaveValue('Genesis');
+    fireEvent.change(steps, { target: { value: 'chapters' } });
+    expect(within(dialog).getByLabelText('Title')).toHaveValue('');
+
+    // A title the user typed stays.
+    fireEvent.change(steps, { target: { value: 'bibleBook' } });
+    fireEvent.change(within(dialog).getByLabelText('Title'), { target: { value: 'My Genesis' } });
+    fireEvent.change(steps, { target: { value: 'lessons' } });
+    expect(within(dialog).getByLabelText('Title')).toHaveValue('My Genesis');
+  });
+
+  it('keeps the sheet open with a message when createPlan refuses', () => {
+    renderPlans();
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+    const dialog = screen.getByRole('dialog', { name: 'New project' });
+    fireEvent.change(within(dialog).getByLabelText('Title'), { target: { value: 'Refused' } });
+    createPlan.mockImplementationOnce((s) => ({ store: s, planId: null }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+    expect(screen.getByRole('dialog', { name: 'New project' })).toBeInTheDocument();
+    expect(within(dialog).getByText(/couldn.t be made/)).toBeInTheDocument();
     expect(current.plans).toHaveLength(0);
   });
 

@@ -8,11 +8,25 @@ import { openLink } from '../native/openLink.js';
 import { StoreContext } from '../data/useStore.js';
 import { defaultStore } from '../domain/store.js';
 import { finderUrl } from '../domain/bible.js';
-import { archivePlan, createPlan, generateBibleBook, setActiveStudy } from '../domain/plans.js';
+import {
+  archivePlan,
+  createPlan,
+  generateBibleBook,
+  generateChapters,
+  setActiveStudy,
+  setStepDone,
+  updateStep,
+} from '../domain/plans.js';
+import { PLAN_COLOURS } from '../theme/planColours.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import PlanTrail from './PlanTrail.jsx';
 
 vi.mock('../native/openLink.js', () => ({ openLink: vi.fn() }));
+// The real domain, with updateStep spied on so a refusal can be forced.
+vi.mock('../domain/plans.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, updateStep: vi.fn(actual.updateStep) };
+});
 
 const TODAY = '2026-10-07';
 let current;
@@ -130,8 +144,9 @@ describe('PlanTrail', () => {
     const { store, planId } = danielStore();
     renderTrail(store, planId);
     const dialog = openStop('Daniel 2, not yet');
-    expect(within(dialog).getByText('Opens in JW Library')).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole('button', { name: /Open/ }));
+    const open = within(dialog).getByRole('button', { name: 'Open in JW Library' });
+    expect(open).not.toHaveAccessibleDescription();
+    fireEvent.click(open);
     expect(openLink).toHaveBeenCalledWith(finderUrl('en', 27, 2));
   });
 
@@ -147,7 +162,9 @@ describe('PlanTrail', () => {
     });
     fireEvent.change(within(dialog).getByLabelText('Note'), { target: { value: 'Read with Mum' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-    expect(within(dialog).getByText(/https:/)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Link')).toHaveAccessibleDescription(
+      'Use a web address that starts with https:// or http://'
+    );
     expect(plan().steps[0].title).toBe('Daniel 1');
 
     fireEvent.change(within(dialog).getByLabelText('Link'), {
@@ -159,7 +176,22 @@ describe('PlanTrail', () => {
       link: 'https://example.org/x',
       note: 'Read with Mum',
     });
-    expect(within(dialog).getByText('example.org')).toBeInTheDocument();
+    expect(within(dialog).getByRole('status')).toHaveTextContent('Saved');
+    expect(within(dialog).getByRole('button', { name: 'Open link' })).toHaveAccessibleDescription(
+      'example.org'
+    );
+  });
+
+  it('says so, and not "Saved", when updateStep refuses the change', () => {
+    const { store, planId } = danielStore();
+    renderTrail(store, planId);
+    const dialog = openStop('Daniel 1, next');
+    fireEvent.change(within(dialog).getByLabelText('Title'), { target: { value: 'Renamed' } });
+    updateStep.mockImplementationOnce((s) => s);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(within(dialog).getByRole('status')).toHaveTextContent('');
+    expect(within(dialog).getByText(/couldn.t be saved/)).toBeInTheDocument();
+    expect(plan().steps[0].title).toBe('Daniel 1');
   });
 
   it('moves a step up and down', () => {
@@ -193,6 +225,29 @@ describe('PlanTrail', () => {
     expect(stops()).toHaveLength(11);
   });
 
+  it('moves focus to the plan heading after deleting the stop that opened the sheet', () => {
+    const { store, planId } = danielStore();
+    renderTrail(store, planId);
+    const stop = screen.getByRole('button', { name: 'Daniel 12, not yet' });
+    stop.focus();
+    fireEvent.click(stop);
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete step' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: 'Daniel' }));
+  });
+
+  it('returns focus to the stop when the sheet closes normally', () => {
+    const { store, planId } = danielStore();
+    renderTrail(store, planId);
+    const stop = screen.getByRole('button', { name: 'Daniel 2, not yet' });
+    stop.focus();
+    fireEvent.click(stop);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(stop);
+  });
+
   it('adds a step at the end', () => {
     const { store, planId } = danielStore();
     renderTrail(store, planId);
@@ -206,7 +261,14 @@ describe('PlanTrail', () => {
   it('makes a waiting project active', () => {
     const { store, planId } = danielStore();
     renderTrail(store, planId);
-    fireEvent.click(screen.getByRole('button', { name: 'Make this the active project' }));
+    const button = screen.getByRole('button', { name: 'Make this the active project' });
+    // Solid white with plan-coloured text (every plan colour is >= 4.5:1 on
+    // white, see planColours.test.js), never translucent white over the colour.
+    expect(button.className.split(' ')).toContain('bg-white');
+    expect(button.className).not.toContain('bg-white/');
+    expect(button.style.color).toBe('rgb(123, 94, 167)');
+    expect(PLAN_COLOURS[2]).toBe('#7B5EA7');
+    fireEvent.click(button);
     expect(current.activePlan.personalStudy).toBe(planId);
     expect(screen.getByText('Active project')).toBeInTheDocument();
   });
@@ -222,17 +284,53 @@ describe('PlanTrail', () => {
     expect(screen.getByText('plans list')).toBeInTheDocument();
   });
 
-  it('shows a completed plan read-only, with Restore', () => {
+  it('shows a completed plan read-only apart from Done, with Restore', () => {
     const { store, planId } = danielStore();
     renderTrail(archivePlan(store, planId, TODAY), planId);
     expect(screen.queryByLabelText('Add a step')).not.toBeInTheDocument();
     const dialog = openStop('Daniel 1, next');
-    expect(within(dialog).queryByRole('button', { name: 'Mark done' })).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Mark done' })).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Title')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Move down' })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('button', { name: 'Delete step' })).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
     expect(plan().archivedOn).toBeNull();
     expect(screen.getByLabelText('Add a step')).toBeInTheDocument();
+  });
+
+  it('turns the open sheet read-only, apart from Undone, when its step finishes the plan', () => {
+    let { store, planId } = danielStore();
+    for (const st of store.plans[0].steps.slice(0, 11)) {
+      store = setStepDone(store, planId, st.id, TODAY);
+    }
+    renderTrail(store, planId);
+    const dialog = openStop('Daniel 12, next');
+    expect(within(dialog).getByLabelText('Title')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Mark done' }));
+
+    expect(plan().archivedOn).toBe(TODAY);
+    expect(within(dialog).queryByLabelText('Title')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Move up' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Delete step' })).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Mark not done' }));
+    expect(plan().archivedOn).toBeNull();
+    expect(within(dialog).getByLabelText('Title')).toBeInTheDocument();
+  });
+
+  it('explains why Add is off once a plan holds 200 steps', () => {
+    const s = { ...defaultStore('2026-09-01', 'en'), onboardingDone: true };
+    const { store, planId } = createPlan(
+      s,
+      { title: 'Long', kind: 'study', steps: generateChapters(200) },
+      '2026-09-01'
+    );
+    renderTrail(store, planId);
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+    expect(screen.getByLabelText('Add a step')).toHaveAccessibleDescription(
+      'This plan has 200 steps, the most a plan can hold.'
+    );
   });
 
   it('says so when the plan is not there', () => {

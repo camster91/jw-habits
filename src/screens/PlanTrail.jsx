@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Plus, RotateCcw, Star, Trash2 } from 'lucide-react';
@@ -124,6 +124,7 @@ function AddStep({ plan }) {
   const { t } = useTranslation();
   const { update } = useStore();
   const id = useId();
+  const hintId = useId();
   const [title, setTitle] = useState('');
   const full = plan.steps.length >= MAX_STEPS;
   const add = (e) => {
@@ -133,7 +134,7 @@ function AddStep({ plan }) {
     setTitle('');
   };
   return (
-    <form className="flex items-end gap-2" onSubmit={add}>
+    <form className="flex items-start gap-2" onSubmit={add}>
       <div className="flex flex-1 flex-col gap-1">
         <label htmlFor={id} className="text-sm font-medium">
           {t('fd.plans.trail.addStep')}
@@ -145,10 +146,16 @@ function AddStep({ plan }) {
           className="input input-bordered min-h-11 w-full"
           value={title}
           disabled={full}
+          aria-describedby={full ? hintId : undefined}
           onChange={(e) => setTitle(e.target.value)}
         />
+        {full && (
+          <p id={hintId} className="text-sm text-base-content/70">
+            {t('fd.plans.trail.full')}
+          </p>
+        )}
       </div>
-      <button type="submit" className="btn btn-primary min-h-11" disabled={full}>
+      <button type="submit" className="btn btn-primary mt-6 min-h-11" disabled={full}>
         <Plus aria-hidden="true" className="h-5 w-5" />
         {t('fd.plans.trail.add')}
       </button>
@@ -220,9 +227,11 @@ export default function PlanTrail() {
   const { t } = useTranslation();
   const { planId } = useParams();
   const { store, update } = useStore();
-  // What the sheet shows, fixed when it opens: finishing the last step
-  // archives the plan, but the open sheet stays editable so it can be undone.
+  // The step whose sheet is open. The sheet follows the plan live: once the
+  // plan is archived (even by finishing its last step there) only Done/Undone
+  // stays. Focus lands on the heading when the sheet deleted its own stop.
   const [open, setOpen] = useState(null);
+  const headingRef = useRef(null);
   const plan = store.plans.find((p) => p.id === planId);
 
   const shell = (children) => (
@@ -261,7 +270,13 @@ export default function PlanTrail() {
           >
             <PlanIcon icon={plan.icon} className="h-6 w-6" />
           </span>
-          <h1 className="min-w-0 break-words text-2xl font-bold">{plan.title}</h1>
+          <h1
+            ref={headingRef}
+            tabIndex={-1}
+            className="min-w-0 break-words text-2xl font-bold focus:outline-none"
+          >
+            {plan.title}
+          </h1>
         </div>
         {total > 0 && (
           <>
@@ -284,7 +299,10 @@ export default function PlanTrail() {
           ) : (
             <button
               type="button"
-              className="btn btn-sm min-h-11 border-0 bg-white/20 text-white hover:bg-white/30"
+              // Solid white with the plan colour as text: every plan colour
+              // reads at 4.5:1 or better on white, hovered or not.
+              className="btn btn-sm min-h-11 border-0 bg-white hover:bg-white hover:shadow-md"
+              style={{ color: planColour(plan.colour) }}
               onClick={() => update((s) => setActiveStudy(s, plan.id))}
             >
               <Star aria-hidden="true" className="h-4 w-4" />
@@ -309,7 +327,7 @@ export default function PlanTrail() {
 
       <div style={planStyle(plan.colour)} className="rounded-3xl bg-base-100 px-2 py-4">
         {total > 0 ? (
-          <Trail plan={plan} onOpen={(stepId) => setOpen({ stepId, readOnly: archived })} />
+          <Trail plan={plan} onOpen={setOpen} />
         ) : (
           <p className="px-2 text-base-content/70">{t('fd.plans.trail.empty')}</p>
         )}
@@ -320,11 +338,11 @@ export default function PlanTrail() {
 
       {open && (
         <StepSheet
-          key={open.stepId}
+          key={open}
           planId={plan.id}
-          stepId={open.stepId}
-          readOnly={open.readOnly}
+          stepId={open}
           onClose={() => setOpen(null)}
+          fallbackFocus={() => headingRef.current}
         />
       )}
     </>

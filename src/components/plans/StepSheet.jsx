@@ -4,7 +4,7 @@ import { ArrowDown, ArrowUp, Check, ExternalLink, RotateCcw, Trash2 } from 'luci
 import { useStore } from '../../data/useStore.js';
 import { deleteStep, moveStep, setStepDone, updateStep } from '../../domain/plans.js';
 import { MAX_NOTE, MAX_TITLE } from '../../domain/ids.js';
-import { linkLabel } from '../../domain/jwlinks.js';
+import { isJwFinderLink, linkLabel } from '../../domain/jwlinks.js';
 import { openLink } from '../../native/openLink.js';
 import { isSafeHttpUrl } from '../../utils/safeUrls.js';
 import { planStyle } from '../../theme/planColours.js';
@@ -42,27 +42,41 @@ function Field({ label, error, children }) {
   );
 }
 
+/**
+ * Opens the step's link. Its name says where it goes: "Open in JW Library"
+ * for a finder link, otherwise "Open link" described by the host.
+ */
 function LinkButton({ url }) {
   const { t } = useTranslation();
+  const hostId = useId();
+  const library = isJwFinderLink(url);
   return (
-    <button
-      type="button"
-      className="btn btn-outline min-h-11 w-full justify-start gap-2 normal-case"
-      onClick={() => openLink(url)}
-    >
-      <ExternalLink aria-hidden="true" className="h-5 w-5 shrink-0" />
-      <span>{t('fd.plans.step.open')}</span>
-      <span className="truncate text-sm font-normal text-base-content/70">{linkLabel(url, t)}</span>
-    </button>
+    <div className="space-y-1">
+      <button
+        type="button"
+        className="btn btn-outline min-h-11 w-full justify-start gap-2 normal-case"
+        aria-describedby={library ? undefined : hostId}
+        onClick={() => openLink(url)}
+      >
+        <ExternalLink aria-hidden="true" className="h-5 w-5 shrink-0" />
+        {library ? t('fd.plans.step.openInLibrary') : t('fd.plans.step.openLink')}
+      </button>
+      {!library && (
+        <p id={hostId} className="truncate text-sm text-base-content/70">
+          {linkLabel(url, t)}
+        </p>
+      )}
+    </div>
   );
 }
 
 /**
  * One step of a plan: its link, note and done state, with editing, moving and
- * deleting. A completed plan's steps open `readOnly`. Closes itself when the
- * step disappears (deleted here or elsewhere).
+ * deleting. While the plan is archived (on the Completed shelf, including the
+ * moment its last step is done) only Done/Undone stays: no rename, move or
+ * delete. Renders nothing once the step is gone.
  */
-export default function StepSheet({ planId, stepId, readOnly = false, onClose }) {
+export default function StepSheet({ planId, stepId, onClose, fallbackFocus }) {
   const { t, i18n } = useTranslation();
   const { store, update, today } = useStore();
   const plan = store.plans.find((p) => p.id === planId);
@@ -77,17 +91,25 @@ export default function StepSheet({ planId, stepId, readOnly = false, onClose })
   const [confirming, setConfirming] = useState(false);
 
   if (!step) return null;
+  const readOnly = plan.archivedOn !== null;
 
   const save = () => {
     const next = {
       title: title.trim() ? null : t('fd.plans.step.titleNeeded'),
       link: link.trim() === '' || isSafeHttpUrl(link.trim()) ? null : t('fd.plans.step.badLink'),
     };
-    setErrors(next);
-    if (next.title || next.link) return setSaved(false);
-    update((s) =>
-      updateStep(s, planId, stepId, { title, link: link.trim() || null, note: note || null })
-    );
+    if (next.title || next.link) {
+      setErrors(next);
+      return setSaved(false);
+    }
+    const patch = { title, link: link.trim() || null, note: note || null };
+    // A refused patch returns the store itself: say so rather than "Saved".
+    if (updateStep(store, planId, stepId, patch) === store) {
+      setErrors({ form: t('fd.plans.step.refused') });
+      return setSaved(false);
+    }
+    setErrors({});
+    update((s) => updateStep(s, planId, stepId, patch));
     setSaved(true);
   };
 
@@ -105,7 +127,7 @@ export default function StepSheet({ planId, stepId, readOnly = false, onClose })
   };
 
   return (
-    <Sheet title={step.title} onClose={onClose} testId="step-sheet">
+    <Sheet title={step.title} onClose={onClose} testId="step-sheet" fallbackFocus={fallbackFocus}>
       <div style={planStyle(plan.colour)} className="space-y-4">
         {step.doneOn && (
           <p className="fd-plan-text flex items-center gap-2 font-medium">
@@ -114,35 +136,28 @@ export default function StepSheet({ planId, stepId, readOnly = false, onClose })
           </p>
         )}
 
+        {!step.doneOn ? (
+          <button
+            type="button"
+            className="btn min-h-11 w-full border-0 bg-[var(--plan)] text-white hover:bg-[var(--plan)]"
+            onClick={toggleDone}
+          >
+            <Check aria-hidden="true" className="h-5 w-5" />
+            {t('fd.plans.step.markDone')}
+          </button>
+        ) : (
+          <button type="button" className="btn btn-outline min-h-11 w-full" onClick={toggleDone}>
+            <RotateCcw aria-hidden="true" className="h-5 w-5" />
+            {t('fd.plans.step.markUndone')}
+          </button>
+        )}
+
+        {step.link && <LinkButton url={step.link} />}
+
         {readOnly ? (
-          <>
-            {step.link && <LinkButton url={step.link} />}
-            {step.note && <p className="whitespace-pre-wrap break-words">{step.note}</p>}
-          </>
+          step.note && <p className="whitespace-pre-wrap break-words">{step.note}</p>
         ) : (
           <>
-            {!step.doneOn ? (
-              <button
-                type="button"
-                className="btn min-h-11 w-full border-0 bg-[var(--plan)] text-white hover:bg-[var(--plan)] hover:brightness-110"
-                onClick={toggleDone}
-              >
-                <Check aria-hidden="true" className="h-5 w-5" />
-                {t('fd.plans.step.markDone')}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn btn-outline min-h-11 w-full"
-                onClick={toggleDone}
-              >
-                <RotateCcw aria-hidden="true" className="h-5 w-5" />
-                {t('fd.plans.step.markUndone')}
-              </button>
-            )}
-
-            {step.link && <LinkButton url={step.link} />}
-
             <Field label={t('fd.plans.step.title')} error={errors.title}>
               {(p) => (
                 <input
@@ -189,6 +204,7 @@ export default function StepSheet({ planId, stepId, readOnly = false, onClose })
                 {saved ? t('fd.plans.step.saved') : ''}
               </span>
             </div>
+            {errors.form && <p className="text-sm text-error">{errors.form}</p>}
 
             <div className="flex gap-2">
               <button

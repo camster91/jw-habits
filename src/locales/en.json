@@ -339,7 +339,8 @@
           "weekly": "Weekly, N weeks"
         },
         "titleNeeded": "Give it a title",
-        "countRange": "Choose a number from 1 to 200"
+        "countRange": "Choose a number from 1 to 200",
+        "refused": "That plan couldn't be made. Check the details and try again."
       },
       "trail": {
         "back": "Plans",
@@ -361,14 +362,14 @@
         "confirmDeletePlan": "Delete this plan and all its steps?",
         "confirmDelete": "Delete",
         "keep": "Keep it",
-        "notFound": "This plan isn't here any more."
+        "notFound": "This plan isn't here any more.",
+        "full": "This plan has 200 steps, the most a plan can hold."
       },
       "step": {
         "title": "Title",
         "link": "Link",
         "note": "Note",
         "save": "Save",
-        "open": "Open",
         "markDone": "Mark done",
         "markUndone": "Mark not done",
         "doneOn": "Done on {{date}}",
@@ -380,7 +381,10 @@
         "keep": "Keep it",
         "badLink": "Use a web address that starts with https:// or http://",
         "titleNeeded": "A step needs a title",
-        "saved": "Saved"
+        "saved": "Saved",
+        "openInLibrary": "Open in JW Library",
+        "openLink": "Open link",
+        "refused": "That change couldn't be saved. The step may have changed; close and open it again."
       }
     }
   }

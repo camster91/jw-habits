@@ -9,13 +9,18 @@ const FOCUSABLE = 'button, input, select, textarea, a[href], [tabindex]:not([tab
  * A bottom sheet for the Plans screens: a modal dialog titled by `title`,
  * closed by its X, Escape, a tap outside or Android back. Focus moves in on
  * open, stays inside while open and goes back to the opener on close (the
- * same rules as SettingsSheet).
+ * same rules as SettingsSheet). When the opener is gone by then (the sheet
+ * deleted what opened it), focus goes to `fallbackFocus()` instead.
  */
-export default function Sheet({ title, onClose, children, testId }) {
+export default function Sheet({ title, onClose, children, testId, fallbackFocus }) {
   const { t } = useTranslation();
   const titleId = useId();
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
+  const fallbackRef = useRef(fallbackFocus);
+  useEffect(() => {
+    fallbackRef.current = fallbackFocus;
+  });
 
   useEffect(() => {
     const opener = document.activeElement;
@@ -26,7 +31,11 @@ export default function Sheet({ title, onClose, children, testId }) {
     document.addEventListener('focusin', guard);
     return () => {
       document.removeEventListener('focusin', guard);
-      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
+      if (opener instanceof HTMLElement && opener.isConnected && opener !== document.body) {
+        opener.focus();
+      } else {
+        fallbackRef.current?.()?.focus();
+      }
     };
   }, []);
 
