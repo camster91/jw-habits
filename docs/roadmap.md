@@ -8,7 +8,7 @@
 | Study/family projects, agendas and trails | Shipped | #262 / #266, v5.1 |
 | Garden, badges, optional levels, local PNG sharing | Shipped | #266; web smoke and responsive journeys |
 | Privacy/support pages and local diagnostic controls | Shipped | #247 / #171; deployed HTTPS pages |
-| Node/tooling alignment and dependency maintenance | Active | #169 / #260 / #233 / #204 / #226 |
+| Node/tooling alignment and dependency maintenance | Shipped | #169 / #260; Node 22 baseline, portable smoke launcher, storage warnings, no unused TS configuration; dependency PRs merged |
 | Native compile and widget integration | Active | #243–#245 / #258; compilation plus physical-device check-ins required |
 | Store listing and signed distribution | Blocked | #246 / #248–#254 / #261; Apple/Play owner accounts, signing, device QA and pilot evidence |
 | Old Android signing incident | Blocked | #132: Play owner/password-manager access; #133 cannot begin until replacement key is active and collaborators are coordinated |
@@ -24,3 +24,5 @@
 | Earlier 1,100-line Home / midnight notes / calendar bars | Superseded | Home removed; current store persists history and rolls app days at 03:00; reading map reflects recorded chapters |
 
 A “Shipped” web feature does not imply native/store certification. Broad tracking issues #184/#185/#200/#201/#239/#261 stay open until their remaining linked gates pass. Historical snapshots are retained rather than rewritten as current claims.
+
+Current automated validation contracts: [quality gates](quality-gates.md) and [production recovery](production-recovery.md). Shared-content preview is ephemeral and opens only hosts saved in the current app link settings; no attachment or shared text is persisted. Native capture is tracked separately in #264.

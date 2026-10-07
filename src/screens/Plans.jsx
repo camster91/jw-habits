@@ -56,7 +56,7 @@ function PlanCard({ plan, status, children }) {
         </span>
         <span className="min-w-0 flex-1 space-y-1">
           <span className="flex items-center gap-2">
-            <span className="truncate text-lg font-semibold">{plan.title}</span>
+            <span className="break-words text-lg font-semibold">{plan.title}</span>
             {status && (
               <span className="fd-plan-text shrink-0 rounded-full border border-current px-2 text-xs font-medium">
                 {status}
@@ -64,7 +64,7 @@ function PlanCard({ plan, status, children }) {
             )}
           </span>
           {next && plan.archivedOn === null && (
-            <span className="block truncate text-sm text-base-content/70">
+            <span className="block break-words text-sm text-base-content/70">
               {t('fd.plans.next', { title: next.title })}
             </span>
           )}

@@ -53,10 +53,14 @@ need an operations policy and an actual drill (#179).
 
 `python3 scripts/deploy/test_remote.py` exercises isolated simulated failures:
 bad staged image, failed production start, failed public probe, and successful
-retention. These prove script sequencing; they are not a real Docker/VPS drill.
+retention. These prove script sequencing. The image workflow additionally runs the
+published digest on an isolated Docker runner: mismatched staged revision,
+invalid public HTTPS, successful deployment and manual rollback must preserve
+or restore the original container ID. This is a real Docker drill, not a VPS
+or edge-controlled zero-downtime exercise.
 GitHub compile checks and a live successful digest/revision deploy provide
-additional evidence. Manual rollback and induced failure on a safe Docker
-host remain open until actually exercised.
+additional evidence. The runner drill must pass before the image workflow succeeds and triggers
+production. Clean-host/VPS-edge restore policy remains in #179.
 
 Signing-key replacement/escrow (#132/#133), administrator-required branch
 rules (#175), physical-device QA and store-account submission are separate

@@ -16,7 +16,7 @@ home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 - **Node:** >= 22.12.0
 - **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
   trail at `/plans/:planId`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
-  sheet opened from the tab bar, not a route. `/share` (PWA share target) exists in the web
+  sheet opened from the tab bar, not a route. `/share` (lazy, preview-only PWA share target) exists in the web
   build only.
 
 ### No third-party content in shipped code
@@ -43,7 +43,7 @@ user-editable slot instead.
 | i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (v2 strings are English only for now; es/fr fall back to en) |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
-| Testing | Vitest 5 + Testing Library + Playwright | 809 tests / 56 files, 7 smoke, 7 journeys + a clean-run check |
+| Testing | Vitest 5 + Testing Library + Playwright | unit/component coverage gates plus smoke, journeys, accessibility and SW update checks |
 | Linting | ESLint 9 + Prettier 3 | |
 
 ## Commands

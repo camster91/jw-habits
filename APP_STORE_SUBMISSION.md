@@ -1,3 +1,5 @@
+> Historical snapshot, superseded by [current commitments](docs/roadmap.md) and [current architecture](CLAUDE.md). Retained as evidence; claims here do not certify the current release or store readiness.
+
 > **SUPERSEDED — needs rewrite before submission.** Written for the pre-refactor app
 > ("JW Habits", `com.ashbi.jwnews`), which no longer exists. The app is now a general
 > habit tracker, `ca.ashbi.habittracker`, and every store listing field below — name,

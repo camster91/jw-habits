@@ -9,7 +9,8 @@
 # the multi-arch build until timeout. Only the nginx stage is per-arch.
 FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY package*.json .npmrc ./
+COPY scripts/verify/runtime.cjs scripts/verify/runtime.cjs
 RUN npm ci
 COPY . .
 ARG APP_REVISION=local

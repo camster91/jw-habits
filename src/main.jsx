@@ -123,8 +123,10 @@ root.render(
 if (isWeb && 'serviceWorker' in navigator) {
   // Register the service worker (the plugin's auto-injection is off, so the
   // native build never registers one).
-  import('virtual:pwa-register')
-    .then(({ registerSW }) => registerSW({ immediate: true }))
+  // Register directly: the plugin helper also reloads on activation, which
+  // would race our explicit Update button's single controllerchange reload.
+  navigator.serviceWorker
+    .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
     .catch((error) => console.warn('Service worker registration failed:', error));
 
   // Handle notification clicks — focus app window. Only accept

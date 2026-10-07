@@ -55,6 +55,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Immutable workflow policy
+        run: node scripts/verify/workflow-policy.cjs
+
       # Hard fail on high/critical advisories. The overrides block in
       # package.json pins fixed floors, but those go stale as soon as a
       # newer advisory lands (js-yaml 4.3.1 vs 4.3.2, Oct 2026). Without
@@ -72,7 +75,7 @@ jobs:
 
       # Hard fail on test failures.
       - name: Unit tests
-        run: npm test
+        run: npm run test:coverage
         env:
           CI: true
 
@@ -83,6 +86,9 @@ jobs:
         env:
           NODE_ENV: production
           CI: true
+
+      - name: Bundle and precache budgets
+        run: node scripts/verify/budgets.cjs
 
       # Format check. Was previously a separate format.yml workflow (now
       # removed in the 2026-07-22 review follow-up because it duplicated

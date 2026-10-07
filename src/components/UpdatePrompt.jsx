@@ -51,7 +51,7 @@ function UpdatePrompt() {
                    shadow-xs"
       >
         <RefreshCw className="w-4 h-4 text-base-content/70 shrink-0" />
-        <span className="text-xs font-medium truncate">New version available</span>
+        <span className="text-xs font-medium break-words">New version available</span>
         <button
           onClick={handleUpdate}
           // py-2 + text-xs clears a 32px hit area; min-h-[44px] would break

@@ -2,8 +2,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Share2, ExternalLink, Home, Link as LinkIcon, FileText, ArrowLeft } from 'lucide-react';
 import { haptics } from '../utils/native';
 import { isAllowedShareUrl } from '../utils/safeUrls';
-import { loadSettings } from '../utils/settingsStore';
-import { userLinksFrom } from '../utils/userLinks';
+import { useStore } from '../data/useStore.js';
 
 function SharePage() {
   const [searchParams] = useSearchParams();
@@ -15,8 +14,8 @@ function SharePage() {
   // Opening a shared link is a deliberate user action, but it must not
   // become a phishing trampoline for arbitrary URLs. Only hosts the user
   // has saved as their own link slots are permitted.
-  const savedLinks = userLinksFrom(loadSettings());
-  const allowedHosts = [savedLinks.primary, savedLinks.secondary]
+  const { store } = useStore();
+  const allowedHosts = Object.values(store.links)
     .filter(Boolean)
     .map((u) => {
       try {
@@ -48,7 +47,7 @@ function SharePage() {
       <h1 className="ios-large-title">
         <Share2 className="w-6 h-6 inline mr-2 text-primary/70" aria-hidden="true" />
         Shared Content
-        <span className="sub">Content received via share</span>
+        <span className="sub">Preview only — shared content is not saved</span>
       </h1>
 
       {/* Main Content */}
@@ -109,10 +108,10 @@ function SharePage() {
               </div>
             </div>
 
-            {/* Back to Home */}
+            {/* Back to Today */}
             <button onClick={handleBack} className="btn btn-outline btn-block gap-2">
               <Home className="w-4 h-4" />
-              Back to Home
+              Back to Today
             </button>
           </>
         ) : (
@@ -123,12 +122,12 @@ function SharePage() {
             </div>
             <h2 className="text-xl font-bold text-base-content/70">No Shared Content</h2>
             <p className="text-sm text-base-content/70 mt-2 max-w-xs mx-auto">
-              This page receives content shared from other apps. Try sharing a link or text to JW
-              Habits.
+              This page receives content shared from other apps. Try sharing a link or text to
+              Faithful Days.
             </p>
             <button onClick={handleBack} className="btn btn-primary mt-6 gap-2">
               <ArrowLeft className="w-4 h-4" />
-              Back to Home
+              Back to Today
             </button>
           </div>
         )}
