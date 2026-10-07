@@ -46,14 +46,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // main.jsx registers the worker itself, and only on the web.
+      injectRegister: false,
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-maskable-512x512.png'],
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.js',
       manifest: {
     id: '/',
-        name: 'Habit Tracker',
-        short_name: 'Habit Tracker',
+        name: 'Faithful Days',
+        short_name: 'Faithful Days',
         description: 'Track daily habits and routines on your own device.',
         theme_color: '#4A6FA4',
         background_color: '#ffffff',

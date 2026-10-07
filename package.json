@@ -1,7 +1,7 @@
 {
     "name": "habit-tracker",
     "private": true,
-    "version": "4.2.0",
+    "version": "5.0.0",
     "type": "module",
     "description": "Track daily habits and routines. Add your own habits, set reminders, and keep a simple streak.",
     "overrides": {
@@ -39,18 +39,19 @@
         "ios:build": "npm run build && npx cap sync ios",
         "smoke": "node scripts/verify/smoke.cjs",
         "smoke:spawn": "SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs",
-        "verify:persona": "node scripts/verify/habit-tracker.cjs",
         "journeys": "node scripts/verify/journeys.cjs"
     },
     "dependencies": {
         "@capacitor/android": "^8.3.0",
         "@capacitor/app": "^8.1.0",
         "@capacitor/core": "^8.4.2",
+        "@capacitor/filesystem": "^8.1.4",
         "@capacitor/haptics": "^8.0.2",
         "@capacitor/ios": "^8.3.0",
         "@capacitor/keyboard": "^8.0.5",
         "@capacitor/local-notifications": "^8.2.1",
         "@capacitor/preferences": "^8.0.1",
+        "@capacitor/share": "^8.0.3",
         "@capacitor/splash-screen": "^8.0.1",
         "@capacitor/status-bar": "^8.0.3",
         "date-fns": "^4.4.0",
