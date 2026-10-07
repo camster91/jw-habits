@@ -13,6 +13,7 @@ import { WARM_LINES } from '../domain/encouragement.js';
 import Today from './Today.jsx';
 import { haptics } from '../utils/native.js';
 import { CapacitorHttp } from '@capacitor/core';
+import en from '../locales/en.json';
 
 vi.mock('../native/openLink.js', () => ({ openLink: vi.fn() }));
 vi.mock('../utils/native.js', () => ({ haptics: { success: vi.fn() } }));
@@ -485,5 +486,218 @@ describe('Today: copy', () => {
       expect(container.textContent).not.toMatch(BANNED);
       unmount();
     }
+  });
+});
+
+// ---- v5.1: study projects and family agendas -------------------------------
+
+const LINK = 'https://www.jw.org/finder?wtlocale=E&bible=27001001&pub=nwtsty';
+
+const steps = (prefix, label, n, doneThrough = 0) =>
+  Array.from({ length: n }, (_, i) => ({
+    id: `${prefix}${i + 1}`,
+    title: `${label} ${i + 1}`,
+    link: i === 0 ? LINK : null,
+    note: null,
+    doneOn: i < doneThrough ? '2026-10-01' : null,
+  }));
+
+const plan = (id, title, kind, planSteps, over = {}) => ({
+  id,
+  title,
+  kind,
+  colour: 2,
+  icon: 'scroll',
+  steps: planSteps,
+  createdOn: '2026-09-20',
+  archivedOn: null,
+  ...over,
+});
+
+const daniel = (doneThrough = 0) =>
+  plan('pd', 'Daniel', 'study', steps('d', 'Daniel', 12, doneThrough));
+const acts = () => plan('pa', 'Acts', 'study', steps('a', 'Acts', 28));
+
+const studyStore = (plans = [daniel()], active = 'pd') =>
+  makeStore({ plans, activePlan: { personalStudy: active } });
+
+const stepById = (id) => current.plans.flatMap((p) => p.steps).find((s) => s.id === id);
+
+describe('Today: personal study with an active project', () => {
+  it('shows the project, its next step and progress; a hold ticks that step', () => {
+    renderToday(studyStore());
+    expect(screen.getByText('Daniel · Daniel 1')).toBeInTheDocument();
+    expect(screen.getByText('0 of 12')).toBeInTheDocument();
+    hold(checkButton('Personal study'));
+    expect(entry('personalStudy').value).toEqual({ stepId: 'd1' });
+    expect(stepById('d1').doneOn).toBe('2026-10-06');
+    expect(screen.getByText('1 of 12')).toBeInTheDocument();
+  });
+
+  it("opens the next step's link", () => {
+    renderToday(studyStore());
+    fireEvent.click(screen.getByRole('button', { name: 'Open Daniel 1' }));
+    expect(openLink).toHaveBeenCalledWith(LINK);
+  });
+
+  it('"Did something else" then "Just log a session" logs true and ticks no step', () => {
+    renderToday(studyStore());
+    fireEvent.click(screen.getByRole('button', { name: 'Did something else' }));
+    const sheet = screen.getByRole('dialog', { name: 'What did you study?' });
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Just log a session' }));
+    expect(entry('personalStudy').value).toBe(true);
+    expect(current.plans[0].steps.every((s) => s.doneOn === null)).toBe(true);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('"Did something else" can tick a different undone step', () => {
+    renderToday(studyStore([daniel(1)]));
+    fireEvent.click(screen.getByRole('button', { name: 'Did something else' }));
+    const sheet = screen.getByRole('dialog', { name: 'What did you study?' });
+    // Only undone steps are offered.
+    expect(within(sheet).queryByRole('button', { name: 'Daniel 1' })).toBeNull();
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Daniel 4' }));
+    expect(entry('personalStudy').value).toEqual({ stepId: 'd4' });
+    expect(stepById('d4').doneOn).toBe('2026-10-06');
+    expect(stepById('d2').doneOn).toBeNull();
+  });
+
+  it('undoing a study check-in un-ticks the step it ticked', () => {
+    renderToday(studyStore());
+    hold(checkButton('Personal study'));
+    fireEvent.click(screen.getByRole('button', { name: 'Personal study', pressed: true }));
+    expect(entry('personalStudy')).toBeUndefined();
+    expect(stepById('d1').doneOn).toBeNull();
+    expect(screen.getByText('Daniel · Daniel 1')).toBeInTheDocument();
+  });
+
+  it('finishing the last step celebrates; undoing it restores the project as active', () => {
+    renderToday(studyStore([daniel(11)]));
+    hold(checkButton('Personal study'));
+    expect(current.plans[0].archivedOn).toBe('2026-10-06');
+    expect(current.activePlan.personalStudy).toBeNull();
+    expect(screen.getByText('Project finished: Daniel. Well done.')).toBeInTheDocument();
+    // No waiting project: no offer.
+    expect(screen.queryByRole('button', { name: 'Start next project' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Personal study', pressed: true }));
+    expect(current.plans[0].archivedOn).toBeNull();
+    expect(current.activePlan.personalStudy).toBe('pd');
+    expect(stepById('d12').doneOn).toBeNull();
+    expect(screen.queryByText('Project finished: Daniel. Well done.')).toBeNull();
+    expect(screen.getByText('Daniel · Daniel 12')).toBeInTheDocument();
+  });
+
+  it('finishing with one waiting project offers it, and accepting makes it active', () => {
+    renderToday(studyStore([daniel(11), acts()]));
+    hold(checkButton('Personal study'));
+    expect(screen.getByText('Project finished: Daniel. Well done.')).toBeInTheDocument();
+    const picker = screen.getByRole('combobox', { name: 'Next project' });
+    expect(within(picker).getByRole('option', { name: 'Acts' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Start next project' }));
+    expect(current.activePlan.personalStudy).toBe('pa');
+    expect(screen.getByText('Acts is now your active project.')).toBeInTheDocument();
+    expect(screen.getByText('Acts · Acts 1')).toBeInTheDocument();
+  });
+
+  it('with no active project keeps the v5.0 row and logs a plain session', () => {
+    renderToday(studyStore([daniel()], null));
+    expect(screen.queryByRole('button', { name: 'Did something else' })).toBeNull();
+    expect(screen.getByText('0 of 3 this week')).toBeInTheDocument();
+    hold(checkButton('Personal study'));
+    expect(entry('personalStudy').value).toBe(true);
+    expect(stepById('d1').doneOn).toBeNull();
+  });
+});
+
+const family = (done = {}) =>
+  plan(
+    'pf',
+    'Proverbs',
+    'family',
+    steps('f', 'Proverbs', 6).map((s) => ({ ...s, doneOn: done[s.id] ?? null }))
+  );
+
+// Family worship on Tuesdays, so it is due on Tuesday 6 October.
+const familyStore = (done = {}) =>
+  makeStore(
+    {
+      plans: [family(done)],
+      familyAgendas: {
+        '2026-10-05': [
+          { id: 'i1', kind: 'step', planId: 'pf', stepId: 'f1' },
+          { id: 'i2', kind: 'step', planId: 'pf', stepId: 'f2' },
+        ],
+      },
+    },
+    { meetingDays: [2, 0], familyWorshipDay: 2 }
+  );
+
+describe('Today: family worship agenda', () => {
+  it("lists the week's agenda items with their links", () => {
+    renderToday(familyStore());
+    const agenda = screen.getByRole('list', { name: "This week's family worship" });
+    expect(within(agenda).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(agenda).getByText('Proverbs 1')).toBeInTheDocument();
+    expect(within(agenda).getByText('Proverbs 2')).toBeInTheDocument();
+    fireEvent.click(within(agenda).getByRole('button', { name: 'Open link for Proverbs 1' }));
+    expect(openLink).toHaveBeenCalledWith(LINK);
+  });
+
+  it('the check-in marks both agenda steps done', () => {
+    renderToday(familyStore());
+    hold(checkButton('Family worship'));
+    expect(entry('familyWorship').value).toEqual({ stepIds: ['f1', 'f2'] });
+    expect(stepById('f1').doneOn).toBe('2026-10-06');
+    expect(stepById('f2').doneOn).toBe('2026-10-06');
+    expect(screen.getByText('Proverbs 1, done')).toBeInTheDocument();
+  });
+
+  it('with no agenda the row is plain and the check-in marks nothing', () => {
+    renderToday(makeStore({}, { meetingDays: [2, 0], familyWorshipDay: 2 }));
+    expect(screen.queryByRole('list', { name: "This week's family worship" })).toBeNull();
+    hold(checkButton('Family worship'));
+    expect(entry('familyWorship').value).toEqual({ stepIds: [] });
+    fireEvent.click(screen.getByRole('button', { name: 'Family worship', pressed: true }));
+    expect(entry('familyWorship')).toBeUndefined();
+  });
+
+  it('undoing a family check-in un-ticks only the steps it marked', () => {
+    // Proverbs 2 was marked done by hand earlier today, before the session.
+    renderToday(familyStore({ f2: '2026-10-06' }));
+    hold(checkButton('Family worship'));
+    expect(entry('familyWorship').value).toEqual({ stepIds: ['f1'] });
+    fireEvent.click(screen.getByRole('button', { name: 'Family worship', pressed: true }));
+    expect(entry('familyWorship')).toBeUndefined();
+    expect(stepById('f1').doneOn).toBeNull();
+    expect(stepById('f2').doneOn).toBe('2026-10-06');
+  });
+});
+
+describe('Today: v5.1 copy', () => {
+  it('never says missed, broke, failed or lost', () => {
+    const scenes = [
+      () => renderToday(studyStore()),
+      () => {
+        const r = renderToday(studyStore());
+        fireEvent.click(screen.getByRole('button', { name: 'Did something else' }));
+        return r;
+      },
+      () => {
+        const r = renderToday(studyStore([daniel(11), acts()]));
+        hold(checkButton('Personal study'));
+        return r;
+      },
+      () => {
+        const r = renderToday(familyStore());
+        hold(checkButton('Family worship'));
+        return r;
+      },
+    ];
+    for (const scene of scenes) {
+      const { unmount } = scene();
+      expect(document.body.textContent).not.toMatch(BANNED);
+      unmount();
+    }
+    expect(JSON.stringify(en.fd.today)).not.toMatch(BANNED);
   });
 });

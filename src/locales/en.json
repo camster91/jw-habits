@@ -95,7 +95,28 @@
       "graceKept": "Life happens — kept your streak",
       "allDone": "Everything is done for today. Well done.",
       "summary_one": "Your day in review · {{count}} done",
-      "summary_other": "Your day in review · {{count}} done"
+      "summary_other": "Your day in review · {{count}} done",
+      "study": {
+        "line": "{{plan}} · {{step}}",
+        "openStep": "Open {{title}}",
+        "somethingElse": "Did something else",
+        "sheetTitle": "What did you study?",
+        "justSession": "Just log a session",
+        "otherSteps": "Or tick a different step",
+        "refused": "That could not be logged. Try again."
+      },
+      "finished": {
+        "study": "Project finished: {{title}}. Well done.",
+        "family": "Family plan finished: {{title}}. Well done.",
+        "nextLabel": "Next project",
+        "startNext": "Start next project",
+        "notNow": "Not now",
+        "started": "{{title}} is now your active project.",
+        "refused": "That project could not be started."
+      },
+      "agenda": {
+        "label": "This week's family worship"
+      }
     },
     "onboarding": {
       "stepOf": "Step {{step}} of {{total}}",

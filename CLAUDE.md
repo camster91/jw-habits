@@ -87,7 +87,8 @@ src/
 │   └── onboarding/             # Six steps; StepRoutines/Week/Reading/Rhythm/Look are reused by Settings
 ├── components/                 # HoldToCheck, RoutineRow, MinistryRow, Stepper, WrapUpCard, TabBar,
 │                               # MeetingDaysCard, WhatsNewBadge, BibleMap, settings/* (Reminders, Links,
-│                               # Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet, PlanIcon), and the PWA
+│                               # Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet, PlanIcon, and Today's
+│                               # SomethingElseSheet, TodayAgenda, PlanFinishedCard), and the PWA
 │                               # chrome (PWAProvider, InstallPrompt, UpdatePrompt, OfflineIndicator)
 ├── native/                     # reminders.js, whatsNewClient.js, widgetBridge.js (each exports register*())
 ├── pages/Share.jsx             # PWA share_target landing (web only)
@@ -110,8 +111,8 @@ scripts/verify/                 # smoke.cjs, journeys.cjs, lib.cjs (Playwright)
 | Daily text | `dailyText` | daily | Link to the day's text (locale default or user link) |
 | Bible reading | `bibleReading` | daily (or N days/week) | Chapters-read stepper; link to the day's first chapter |
 | Meeting prep | `meetingPrep` | meeting | Due the day before each meeting day; prompts for meeting days if none set |
-| Family worship | `familyWorship` | weekly | On the chosen weekday |
-| Personal study | `personalStudy` | weekly target | N per week; shows the active study plan (`activePlan.personalStudy`) |
+| Family worship | `familyWorship` | weekly | On the chosen weekday; lists the week's agenda, and the check-in marks its plan steps (`checkInFamily` / `undoFamily`) |
+| Personal study | `personalStudy` | weekly target | N per week; with an active project (`activePlan.personalStudy`) shows its next step, and the check-in ticks it (`checkInStudy` / `undoStudy`) |
 | Ministry | `ministry` | monthly | Shared-this-month toggle, studies count, hours goal for pioneers |
 
 `ROUTINE_IDS` and `dueToday` in `domain/routines.js` are the source of truth for what Today lists.
