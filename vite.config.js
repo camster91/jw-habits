@@ -21,13 +21,11 @@ const releaseMarker = {
 // https://vite.dev/config/
 export default defineConfig({
   build: {
+    emptyOutDir: true,
     rollupOptions: {
       output: {
-        // Per-page code splitting. We rely on React.lazy() in App.jsx
-        // for routes, plus Vite's default vendor splitting. manualChunks
-        // was tried and caused circular dependency issues (some chunks
-        // were loaded before React, breaking createContext). The default
-        // splitter is safer.
+        // Share is dynamically imported by App; the other screens are eager.
+        // Keep one dependency chunk to avoid React/component dependency cycles.
         manualChunks(id) {
           // Extract the npm package name from a node_modules path.
           const pkgMatch = id.match(/node_modules\/((?:@[^/]+\/[^/]+)|[^/]+)/);
@@ -37,16 +35,6 @@ export default defineConfig({
             // splitter also creates one, so this matches behavior but keeps
             // the bundle shape predictable.
             return 'vendor';
-          }
-          // Split each page into its own chunk
-          if (id.includes('/pages/')) {
-            const pageName = id.split('/pages/')[1].split('.')[0];
-            return `page-${pageName}`;
-          }
-          // Split stores into separate chunks
-          if (id.includes('/stores/')) {
-            const storeName = id.split('/stores/')[1].split('.')[0];
-            return `store-${storeName}`;
           }
           // NOTE: do NOT split /components/ into a shared chunk. That creates
           // a circular dep with pages (page-Home imports components, but

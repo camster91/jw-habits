@@ -1,5 +1,5 @@
 import { setCacheNameDetails } from 'workbox-core';
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
@@ -57,9 +57,8 @@ registerRoute(
         // caches.match returns a Promise — must await. The previous
         // `caches.match(...) || fetch(...)` always took the Promise
         // branch (truthy) and never fell back when the match missed.
-        const cached =
-          (await caches.match('/index.html')) ||
-          (await caches.match(new URL('/index.html', self.location.origin).href));
+        // Workbox revisioned entries have query-string cache keys.
+        const cached = await matchPrecache('/index.html');
         if (cached) return cached;
         return Response.error();
       }

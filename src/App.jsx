@@ -1,12 +1,12 @@
 import StorageNotice from './components/StorageNotice.jsx';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import InstallPrompt from './components/InstallPrompt';
 import UpdatePrompt from './components/UpdatePrompt';
 import OfflineIndicator from './components/OfflineIndicator';
 import { PWAProvider } from './components/PWAProvider';
-import Share from './pages/Share';
+const Share = lazy(() => import('./pages/Share.jsx'));
 import Today from './screens/Today';
 import Badges from './screens/Badges.jsx';
 import BadgeToast from './components/fun/BadgeToast.jsx';
@@ -52,7 +52,16 @@ function Screens() {
   return (
     <>
       <Routes>
-        {isWeb && <Route path="/share" element={<Share />} />}
+        {isWeb && (
+          <Route
+            path="/share"
+            element={
+              <Suspense fallback={<p role="status">Loading shared content…</p>}>
+                <Share />
+              </Suspense>
+            }
+          />
+        )}
         {!onboardingDone ? (
           <Route path="*" element={<Onboarding />} />
         ) : (

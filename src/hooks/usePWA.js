@@ -61,8 +61,11 @@ export function usePWA() {
   useEffect(() => {
     if (!isPWACapable()) return;
 
+    let hadController = Boolean(navigator.serviceWorker.controller);
+    let disposed = false;
     const handleControllerChange = () => {
-      setUpdateAvailable(true);
+      if (hadController && !disposed) setUpdateAvailable(true);
+      hadController = Boolean(navigator.serviceWorker.controller);
     };
 
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
@@ -72,6 +75,7 @@ export function usePWA() {
     let onUpdateFound = null;
     navigator.serviceWorker.ready
       .then((registration) => {
+        if (disposed) return;
         registrationRef = registration;
         if (registration.waiting) {
           setUpdateAvailable(true);
@@ -81,7 +85,11 @@ export function usePWA() {
           const newWorker = registration.installing;
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              if (
+                !disposed &&
+                newWorker.state === 'installed' &&
+                navigator.serviceWorker.controller
+              ) {
                 setUpdateAvailable(true);
               }
             });
@@ -92,6 +100,7 @@ export function usePWA() {
       .catch(() => {});
 
     return () => {
+      disposed = true;
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
       if (registrationRef && onUpdateFound) {
         registrationRef.removeEventListener('updatefound', onUpdateFound);

@@ -80,5 +80,7 @@ jobs:
             sleep 1
           done
           node scripts/verify/journeys.cjs
+          node scripts/verify/accessibility.cjs
+          node scripts/verify/offline-update.cjs
         env:
           CI: true

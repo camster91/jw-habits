@@ -1,0 +1,67 @@
+# Faithful Days automated release gates
+
+The current target is WCAG 2.2 AA. Automated checks are a release gate, not an
+assertion of full conformance or physical-device assistive-technology support.
+
+## Accessibility and reflow
+
+`npm run a11y` scans the real build at 320 px in light/dark and reduced-motion
+mode: onboarding, Today, a completed routine, Settings, Plans, Progress, badges
+and shared-content preview. Axe A/AA checks include color contrast; page-width
+checks reject horizontal overflow. Essential routine details and project context
+wrap. Completed labels retain full text contrast, with a checked control as the
+completion cue. VoiceOver, TalkBack, keyboard across browser engines, dynamic
+text and fluent Spanish/French review remain manual gates (#176/#192/#46).
+
+## Critical coverage and date integrity
+
+CI runs `npm run test:coverage`. Global floors are 85% statements/functions/lines
+and 80% branches. Pure domain logic has 95% statement/function/line and 90%
+branch floors. Store/migration/notification modules enforce individual floors;
+native scheduling, storage and URL safety have their own risk-based floors.
+These are deliberately below the measured baseline and do not require 100%.
+
+Rollover tests execute isolated Node processes in Toronto, Los Angeles, Tokyo
+and Auckland. All daily state follows the approved local 03:00 app-day policy,
+including negative/positive offsets, midnight, DST boundaries, year changes
+and leap-day arithmetic. This replaces the historical local-midnight proposal.
+
+## Startup, route and precache budgets
+
+The measured release build has about 175 kB gzip JS, 23 kB gzip CSS and 724 kB
+of precached content (15 entries). Enforced limits: 210,000 bytes gzip JS,
+30,000 bytes gzip CSS and 850,000 bytes precache. `npm run budgets` measures
+actual files and the injected worker manifest; a missing manifest also fails.
+An intentional 1-byte JS limit was confirmed to fail. These artifact budgets
+protect size; they do not substitute for real-device Core Web Vitals.
+
+The `/share` preview is a real lazy import. With workers disabled, startup must
+not request its chunk. Installation intentionally precaches its approximately
+3 kB raw chunk so an installed PWA can receive shared content while offline.
+Vite explicitly empties the output directory to prevent stale bundles from
+inflating an update. Other screens remain eager; no broad lazy-route claim is
+made.
+
+## Worker install and update
+
+`npm run offline:verify` serves the real build/worker from an isolated local
+HTTP server. It installs the worker, records a routine, navigates deep links and
+lazy Share offline, supplies a changed worker, checks the waiting update and
+activates it through the actual Update button. The persisted store must remain
+byte-for-byte unchanged through update and offline reload. Initial installation
+must not announce an available update. Workbox's revision-aware `matchPrecache`
+serves the offline navigation fallback.
+
+## Workflow and runtime policy
+
+`node scripts/verify/workflow-policy.cjs` rejects mutable remote action/reusable
+references. Its negative `actions/checkout@main` fixture was confirmed to fail.
+Pins are updated through Dependabot PRs, reviewed with their version comments
+and normal CI. Node 22 is the contributor/CI/Docker baseline; the app requires
+22.12 or newer. The preinstall helper was tested with actual Node 18 and returns
+an actionable error before attempting a build.
+
+These gates complement the digest-specific container/PWA/public probes in
+[production recovery](production-recovery.md), not store signing or a native
+device pilot. Historical audit and listing documents are explicitly marked as
+superseded by the current architecture and commitment ledger.

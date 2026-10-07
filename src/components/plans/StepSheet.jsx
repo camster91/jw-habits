@@ -62,7 +62,7 @@ function LinkButton({ url }) {
         {library ? t('fd.plans.step.openInLibrary') : t('fd.plans.step.openLink')}
       </button>
       {!library && (
-        <p id={hostId} className="truncate text-sm text-base-content/70">
+        <p id={hostId} className="break-words text-sm text-base-content/70">
           {linkLabel(url, t)}
         </p>
       )}

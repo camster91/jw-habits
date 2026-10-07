@@ -1,3 +1,5 @@
+> Historical snapshot, superseded by [current commitments](docs/roadmap.md) and [current architecture](CLAUDE.md). Retained as evidence; claims here do not certify the current release or store readiness.
+
 > **HISTORICAL — superseded 2026-09-21.** This document describes the app before the
 > generic-habit-tracker refactor. Organisation-specific rows, the link library it
 > references, and the bundle id it names no longer exist. Kept for the record only;
