@@ -108,3 +108,37 @@ describe('safeGetItem / session helpers', () => {
     expect(safeSessionGetItem('safe-sess')).toBe('1');
   });
 });
+
+describe('durable storage (web)', () => {
+  beforeEach(() => {
+    restoreLocalStorageMock();
+    localStorage.clear();
+  });
+
+  it('roundtrips through localStorage when not native', async () => {
+    const { durableGet, durableSet, durableRemove } = await import('./safeStorage');
+    expect(await durableGet('d')).toBeNull();
+    await durableSet('d', 'x');
+    expect(localStorage.getItem('d')).toBe('x');
+    expect(await durableGet('d')).toBe('x');
+    await durableRemove('d');
+    expect(await durableGet('d')).toBeNull();
+  });
+
+  it('serializes writes so the last one wins', async () => {
+    const { durableSet, durableGet } = await import('./safeStorage');
+    await Promise.all([durableSet('w', '1'), durableSet('w', '2'), durableSet('w', '3')]);
+    expect(await durableGet('w')).toBe('3');
+  });
+
+  it('rejects when a web write fails, and later writes still run', async () => {
+    const { durableSet, durableGet } = await import('./safeStorage');
+    localStorage.setItem = () => {
+      throw new Error('boom');
+    };
+    await expect(durableSet('f', 'x')).rejects.toThrow();
+    restoreLocalStorageMock();
+    await durableSet('f', 'y');
+    expect(await durableGet('f')).toBe('y');
+  });
+});

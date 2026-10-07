@@ -17,16 +17,51 @@ mount. This guard writes to the correct path.
 Idempotent: skips work that's already done. Detects the
 jw-habits block by its unique router id.
 
+TLS: the router asks Traefik's `letsencrypt` resolver for its
+certificate. This guard used to also pin a hand-copied cert file
+(/etc/traefik/certs/jwhabits.ashbi.ca.{crt,key}) in tls.yml. A
+static cert that matches the host wins over ACME, so when that file
+was replaced by a self-signed placeholder (2026-07-20) the site
+served it and browsers refused the page. The guard now removes that
+pinned entry instead of adding it, so Let's Encrypt issues and renews
+the real certificate.
+
 Cron entry (every minute):
   * * * * * root /root/jw-habits/ops/traefik-guard.py >> /var/log/jwhabits-traefik-guard.log 2>&1
 """
 import os
+import re
+import shutil
 import subprocess
 import sys
 
+try:
+    import yaml
+except ImportError:  # validation is skipped, the atomic write still applies
+    yaml = None
+
+if yaml is not None:
+
+    class UniqueKeyLoader(yaml.SafeLoader):
+        """SafeLoader that rejects duplicate mapping keys.
+
+        PyYAML keeps the last of two equal keys without complaint, so a
+        second `jwhabits:` router would otherwise pass validation.
+        """
+
+        def construct_mapping(self, node, deep=False):
+            seen = set()
+            for key_node, _ in node.value:
+                key = self.construct_object(key_node, deep=deep)
+                if key in seen:
+                    raise yaml.constructor.ConstructorError(
+                        None, None, f"duplicate key {key!r}", key_node.start_mark
+                    )
+                seen.add(key)
+            return super().construct_mapping(node, deep)
+
 ROUTERS = "/opt/traefik/dynamic/routers.yml"
 TLS = "/opt/traefik/dynamic/tls.yml"
-CERTS_DIR = "/etc/traefik/certs"
 JW_HOST = "jwhabits.ashbi.ca"
 
 # Use `date` for the timestamp — no datetime import, no
@@ -38,6 +73,14 @@ LOG_PREFIX = subprocess.run(
 
 def log(msg):
     print(f"[{LOG_PREFIX}] {msg}", flush=True)
+
+
+def guard_revision():
+    here = os.path.dirname(os.path.realpath(__file__))
+    r = subprocess.run(
+        ["git", "-C", here, "rev-parse", "--short", "HEAD"], capture_output=True, text=True
+    )
+    return r.stdout.strip() or "unknown"
 
 
 def has_block(path, marker):
@@ -74,10 +117,85 @@ SERVICE_BLOCK = (
     f"        servers:\n"
     f"          - url: \"http://127.0.0.1:18080\"\n"
 )
-CERT_BLOCK = (
-    f"    - certFile: {CERTS_DIR}/{JW_HOST}.crt\n"
-    f"      keyFile: {CERTS_DIR}/{JW_HOST}.key\n"
+
+
+HSTS_NAME = "jwhabits-hsts"
+# A router rule for our host, whether or not the value is quoted. Other
+# deploys rewrite routers.yml through a YAML dumper, which drops the quotes.
+HOST_RULE = re.compile(
+    r"^ {6}rule: *(?P<q>[\"']?)Host\(`" + re.escape(JW_HOST) + r"`\)(?P=q) *(?:#.*)?$"
 )
+
+
+def router_blocks(lines):
+    """Yield (start, end) line ranges of the routers under "  routers:".
+
+    A router starts at a 4-space-indented key and runs until the next line
+    indented 4 spaces or less.
+    """
+    try:
+        i = lines.index("  routers:\n") + 1
+    except ValueError:
+        return
+    start = None
+    while i < len(lines):
+        line = lines[i]
+        body = line.lstrip(" ")
+        indent = len(line) - len(body)
+        if body.strip():
+            if indent <= 2:
+                break
+            if indent == 4:
+                if start is not None:
+                    yield start, i
+                start = i
+        i += 1
+    if start is not None:
+        yield start, i
+
+
+def jw_router_blocks(lines):
+    return [
+        (s, e)
+        for s, e in router_blocks(lines)
+        if any(HOST_RULE.match(l.rstrip("\n")) for l in lines[s + 1 : e])
+    ]
+
+
+def attach_hsts(lines):
+    """Add jwhabits-hsts to every router whose rule is our host.
+
+    Handles a router with no middlewares, an inline list
+    (`middlewares: [a]`) and a block list (`- a` lines). Returns True when
+    any router changed.
+    """
+    changed = False
+    # Work from the bottom so earlier line numbers stay valid.
+    for s, e in reversed(jw_router_blocks(lines)):
+        block = lines[s:e]
+        if any(HSTS_NAME in l for l in block):
+            continue
+        mw = next((k for k, l in enumerate(block) if l.startswith("      middlewares:")), None)
+        if mw is None:
+            # Put it after the rule line; key order does not matter to Traefik.
+            at = s + next(k for k, l in enumerate(block) if HOST_RULE.match(l.rstrip("\n")))
+            lines.insert(at + 1, f"      middlewares: [{HSTS_NAME}]\n")
+        else:
+            line = block[mw].rstrip("\n")
+            inline = re.match(r"^( {6}middlewares: *\[)(.*)\] *$", line)
+            if inline:
+                items = inline.group(2).strip()
+                lines[s + mw] = f"{inline.group(1)}{items + ', ' if items else ''}{HSTS_NAME}]\n"
+            elif line.strip() == "middlewares:":
+                # Block list: copy the indent of the first "- item".
+                item = block[mw + 1] if mw + 1 < len(block) else ""
+                dash = item[: len(item) - len(item.lstrip(" "))] if item.lstrip().startswith("- ") else "      "
+                lines.insert(s + mw + 1, f"{dash}- {HSTS_NAME}\n")
+            else:
+                log(f"WARNING: unrecognised middlewares line {line!r}; HSTS not attached")
+                continue
+        changed = True
+    return changed
 
 
 def append_routers():
@@ -94,11 +212,12 @@ def append_routers():
 
     We insert the middleware (if absent), the router just before
     "  services:", and the service at the end of the services block.
+    Every router for our host gets the HSTS middleware attached.
     """
     text = open(ROUTERS).read()
     changed = False
 
-    if "jwhabits-hsts:" not in text:
+    if f"{HSTS_NAME}:" not in text:
         # Prefer inserting under an existing middlewares: section;
         # otherwise create one before routers:.
         if "\n  middlewares:\n" in text:
@@ -118,7 +237,11 @@ def append_routers():
             return False
         changed = True
 
-    if "  jwhabits:" not in text:
+    lines = text.splitlines(keepends=True)
+    # The fallback adds `jwhabits:` keys, so it must not run while any exist,
+    # even under a router whose rule we don't recognise as ours.
+    has_key = any(lines[s] == "    jwhabits:\n" for s, _ in router_blocks(lines))
+    if not has_key and not jw_router_blocks(lines):
         if "\n  services:\n" not in text:
             log(f"WARNING: '{ROUTERS}' has no 'services:' marker; cannot insert router")
             return False
@@ -126,45 +249,79 @@ def append_routers():
         if not text.endswith("\n"):
             text += "\n"
         text += SERVICE_BLOCK
+        lines = text.splitlines(keepends=True)
         changed = True
-    elif "middlewares: [jwhabits-hsts]" not in text and "jwhabits:" in text:
-        # Router exists from an older guard run — attach HSTS middleware.
-        old = (
-            "    jwhabits:\n"
-            "      rule: \"Host(`jwhabits.ashbi.ca`)\"\n"
-            "      entryPoints: [websecure]\n"
-            "      service: jwhabits\n"
-            "      tls:\n"
-        )
-        new = (
-            "    jwhabits:\n"
-            "      rule: \"Host(`jwhabits.ashbi.ca`)\"\n"
-            "      entryPoints: [websecure]\n"
-            "      service: jwhabits\n"
-            "      middlewares: [jwhabits-hsts]\n"
-            "      tls:\n"
-        )
-        if old in text:
-            text = text.replace(old, new, 1)
-            changed = True
+    if attach_hsts(lines):
+        changed = True
 
     if not changed:
         return False
-    with open(ROUTERS, "w") as f:
+    return write_checked(ROUTERS, "".join(lines))
+
+
+def write_checked(path, text):
+    """Replace `path` with `text` atomically, refusing output that won't parse.
+
+    routers.yml and tls.yml are shared by every site on the VPS, and Traefik
+    reloads them the moment they change, so a half-written or broken file
+    takes all of them down. Write a sibling temp file (its name does not end
+    in .yml, so the file provider ignores it), parse it, then rename it over
+    the original. Returns True when the file was replaced.
+    """
+    if yaml is not None:
+        try:
+            doc = yaml.load(text, Loader=UniqueKeyLoader)
+        except yaml.YAMLError as e:
+            log(f"ABORT: refusing to write {path}; result is not valid YAML: {e}")
+            return False
+        if not isinstance(doc, dict):
+            log(f"ABORT: refusing to write {path}; result is not a YAML mapping")
+            return False
+    tmp = os.path.join(os.path.dirname(path), f".{os.path.basename(path)}.guard-tmp")
+    with open(tmp, "w") as f:
         f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    shutil.copymode(path, tmp)
+    os.replace(tmp, path)
     return True
 
 
-def append_tls():
-    text = open(TLS).read()
-    if JW_HOST + ".crt" in text:
+def remove_pinned_cert():
+    """Drop the hand-pinned jwhabits cert entry from tls.yml, if present.
+
+    Removes the whole `- certFile: .../jwhabits.ashbi.ca.crt` list item
+    (and its keyFile/stores lines). Other certificates are untouched.
+    Returns True when the file changed.
+    """
+    if not os.path.exists(TLS):
         return False
-    if not text.endswith("\n"):
-        text += "\n"
-    text += CERT_BLOCK
-    with open(TLS, "w") as f:
-        f.write(text)
-    return True
+    lines = open(TLS).read().splitlines(keepends=True)
+    out = []
+    removed = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.lstrip(" ")
+        if stripped.startswith("- ") and f"{JW_HOST}." in line:
+            # Skip this list item and its continuation lines, which are
+            # indented deeper than the "- " marker.
+            dash_col = len(line) - len(stripped)
+            i += 1
+            while i < len(lines):
+                nxt = lines[i]
+                body = nxt.lstrip(" ")
+                indent = len(nxt) - len(body)
+                if body.strip() and indent <= dash_col:
+                    break
+                i += 1
+            removed = True
+            continue
+        out.append(line)
+        i += 1
+    if not removed:
+        return False
+    return write_checked(TLS, "".join(out))
 
 
 def main():
@@ -172,31 +329,23 @@ def main():
     if not os.path.exists(ROUTERS):
         log(f"ABORT: {ROUTERS} does not exist; cannot guard")
         return 1
-    if not os.path.exists(TLS):
-        log(f"ABORT: {TLS} does not exist; cannot guard")
-        return 1
 
     changed = False
     if append_routers():
-        log(f"appended jwhabits router to {ROUTERS}")
+        log(f"updated jwhabits router/HSTS middleware in {ROUTERS}")
         changed = True
-    if append_tls():
-        log(f"appended jwhabits cert to {TLS}")
+    if remove_pinned_cert():
+        log(f"removed pinned jwhabits cert from {TLS}; letsencrypt resolver takes over")
         changed = True
 
+    # Name the commit in every run, so a checkout that was never pulled
+    # shows up in the log instead of passing as "correct".
+    rev = f"guard @ {guard_revision()}"
     if changed:
-        log("traefik dynamic files updated; jw-habits is live again")
+        log(f"traefik dynamic files updated; jw-habits is live again ({rev})")
     else:
-        log("traefik dynamic files are correct; no action")
+        log(f"traefik dynamic files are correct; no action ({rev})")
 
-    # Sanity: cert files should exist
-    cert = f"{CERTS_DIR}/{JW_HOST}.crt"
-    key = f"{CERTS_DIR}/{JW_HOST}.key"
-    if not (os.path.exists(cert) and os.path.exists(key)):
-        log(f"WARNING: cert files missing at {cert} and {key}")
-        log("the certs are LE-issued and live in Caddy's cache at")
-        log(f"  /root/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/{JW_HOST}/")
-        log(f"copy with: cp <cache_dir>/{JW_HOST}.{ '{' }crt,key{ '}' } {CERTS_DIR}/")
     return rc
 
 

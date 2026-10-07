@@ -1,7 +1,7 @@
 {
     "name": "habit-tracker",
     "private": true,
-    "version": "4.2.0",
+    "version": "5.1.0",
     "type": "module",
     "description": "Track daily habits and routines. Add your own habits, set reminders, and keep a simple streak.",
     "overrides": {
@@ -38,19 +38,21 @@
         "android:bundle": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease",
         "ios:build": "npm run build && npx cap sync ios",
         "smoke": "node scripts/verify/smoke.cjs",
-        "smoke:spawn": "SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs",
-        "verify:persona": "node scripts/verify/habit-tracker.cjs",
+        "smoke:spawn": "node scripts/verify/smoke.cjs --spawn",
         "journeys": "node scripts/verify/journeys.cjs"
     },
     "dependencies": {
         "@capacitor/android": "^8.3.0",
         "@capacitor/app": "^8.1.0",
+        "@capacitor/app-launcher": "^8.0.1",
         "@capacitor/core": "^8.4.2",
+        "@capacitor/filesystem": "^8.1.4",
         "@capacitor/haptics": "^8.0.2",
         "@capacitor/ios": "^8.3.0",
         "@capacitor/keyboard": "^8.0.5",
         "@capacitor/local-notifications": "^8.2.1",
         "@capacitor/preferences": "^8.0.1",
+        "@capacitor/share": "^8.0.3",
         "@capacitor/splash-screen": "^8.0.1",
         "@capacitor/status-bar": "^8.0.3",
         "date-fns": "^4.4.0",
@@ -72,13 +74,13 @@
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "@vitejs/plugin-react": "^6.0.4",
-        "@vitest/coverage-v8": "^4.1.11",
+        "@vitest/coverage-v8": "^5.0.3",
         "daisyui": "^5.6.18",
         "eslint": "^9.39.1",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-react-hooks": "^7.0.1",
         "eslint-plugin-react-refresh": "^0.5.4",
-        "globals": "^16.5.0",
+        "globals": "^17.12.0",
         "jsdom": "^29.1.1",
         "playwright": "^1.62.0",
         "prettier": "^3.8.4",
@@ -90,6 +92,6 @@
         "vitest": "^5.0.3"
     },
     "engines": {
-        "node": ">=18.0.0"
+        "node": ">=22.12.0"
     }
 }

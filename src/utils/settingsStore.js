@@ -14,7 +14,7 @@
  *     affecting the day's habit progress, and vice versa.
  */
 
-import { safeSetItem } from './safeStorage';
+import { safeGetItem, safeSetItem, safeRemoveItem } from './safeStorage.js';
 
 const STORAGE_KEY = 'jw-user-settings';
 
@@ -98,14 +98,14 @@ function mergeWithDefaults(raw) {
 }
 
 /**
- * Load settings from localStorage. Always returns a complete
+ * Load settings from local storage. Always returns a complete
  * settings object (never null/undefined). On any parse error
  * or schema mismatch, returns the defaults.
  */
 export function loadSettings() {
   if (typeof localStorage === 'undefined') return { ...DEFAULTS };
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const raw = JSON.parse(safeGetItem(STORAGE_KEY) || '{}');
     return mergeWithDefaults(raw);
   } catch {
     return { ...DEFAULTS };
@@ -113,7 +113,7 @@ export function loadSettings() {
 }
 
 /**
- * Save settings to localStorage. Swallows quota / private-mode
+ * Save settings to local storage. Swallows quota / private-mode
  * errors silently — the in-memory state is still updated by
  * the caller, and the next save will retry.
  */
@@ -130,7 +130,7 @@ export function saveSettings(settings) {
 export function clearSettings() {
   if (typeof localStorage === 'undefined') return;
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    safeRemoveItem(STORAGE_KEY);
   } catch {
     // ignore
   }

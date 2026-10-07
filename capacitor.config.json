@@ -1,6 +1,6 @@
 {
   "appId": "ca.ashbi.habittracker",
-  "appName": "Habit Tracker",
+  "appName": "Faithful Days",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {
