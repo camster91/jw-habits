@@ -5,9 +5,10 @@
  * - A study check-in records the step it ticked in the log value
  *   (`{stepId}`), so undo clears THAT step even after the steps were renamed
  *   or reordered. It records `true` when it ticked nothing (no step, an
- *   unknown or non-study step, or a step already done), so undo never clears
- *   a date it did not set.
- * - A family check-in marks every not-done step on that week's agenda. Undo
+ *   unknown step, a step of a plan other than the active study, or a step
+ *   already done), so undo never clears a date it did not set.
+ * - A family check-in marks every not-done family-plan step on that week's
+ *   agenda (an item pointing at a study step is ignored). Undo
  *   clears those steps only where `doneOn` is still the session day.
  *
  * Pure: every function returns a new store and never mutates its input. An
@@ -36,16 +37,21 @@ function findStep(store, stepId) {
 // ---- personal study --------------------------------------------------------
 
 /**
- * Logs a personal-study session on `day`. With the id of a not-done step of a
- * study plan, sets its `doneOn = day` and logs `{stepId}`; otherwise logs
- * `true`. A check-in already logged for `day` is undone first, so the day
+ * Logs a personal-study session on `day`. With the id of a not-done step of
+ * the ACTIVE study plan (`activePlan.personalStudy`), sets its
+ * `doneOn = day` and logs `{stepId}`; otherwise logs `true` (session only). A check-in already logged for `day` is undone first, so the day
  * holds one session and undo restores the day as it was before both.
  */
 export function checkInStudy(store, day, stepId) {
   if (!isDay(day)) return store;
   let next = undoStudy(store, day);
   const found = typeof stepId === 'string' ? findStep(next, stepId) : null;
-  if (!found || found.plan.kind !== 'study' || found.step.doneOn !== null) {
+  const ticks =
+    found !== null &&
+    found.plan.kind === 'study' &&
+    found.plan.id === next.activePlan.personalStudy &&
+    found.step.doneOn === null;
+  if (!ticks) {
     return addCheckIn(next, { routine: 'personalStudy', day, value: true });
   }
   next = setStepDone(next, found.plan.id, stepId, day);
@@ -110,7 +116,12 @@ export function checkInFamily(store, day) {
   }
   for (const item of stepItems(next, day)) {
     const found = findStep(next, item.stepId);
-    if (found && found.plan.id === item.planId && found.step.doneOn === null) {
+    if (
+      found &&
+      found.plan.id === item.planId &&
+      found.plan.kind === 'family' &&
+      found.step.doneOn === null
+    ) {
       next = setStepDone(next, item.planId, item.stepId, day);
     }
   }
@@ -120,14 +131,21 @@ export function checkInFamily(store, day) {
 /**
  * Removes the family-worship entry for `day` and clears `doneOn` on that
  * week's agenda steps where it equals `day`. Family plans never become the
- * active study.
+ * active study. The family log value is only `true`, so undo cannot tell a
+ * step this check-in marked from one hand-marked done earlier the same day:
+ * both are cleared.
  */
 export function undoFamily(store, day) {
   if (!entryFor(store, 'familyWorship', day)) return store;
   let next = store;
   for (const item of stepItems(next, day)) {
     const found = findStep(next, item.stepId);
-    if (found && found.plan.id === item.planId && found.step.doneOn === day) {
+    if (
+      found &&
+      found.plan.id === item.planId &&
+      found.plan.kind === 'family' &&
+      found.step.doneOn === day
+    ) {
       next = setStepDone(next, item.planId, item.stepId, null);
     }
   }

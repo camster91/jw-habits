@@ -12,6 +12,7 @@
  */
 import { addDays, weekStart } from './day.js';
 import { MAX_AGENDA_ITEMS, MAX_TITLE, newId } from './ids.js';
+import { validAgendaItem } from './store.js';
 import { isSafeHttpUrl } from '../utils/safeUrls.js';
 
 const MAX_AUTOFILL_PLANS = 3;
@@ -30,17 +31,11 @@ const activeFamilyPlans = (store) =>
 /** A step item is `{id, kind:'step', planId, stepId}`; a free item carries a title and link. */
 const isStepItem = (i) => i?.kind === 'step';
 
-function validItem(i) {
-  if (!i || typeof i !== 'object' || typeof i.id !== 'string' || i.id === '') return false;
-  if (i.kind === 'step') return typeof i.planId === 'string' && typeof i.stepId === 'string';
-  return (
-    i.kind === 'free' &&
-    typeof i.title === 'string' &&
-    i.title.length >= 1 &&
-    i.title.length <= MAX_TITLE &&
-    (i.link === null || (typeof i.link === 'string' && isSafeHttpUrl(i.link)))
-  );
-}
+/**
+ * Exactly the item rule validateStore applies (so a written agenda can never
+ * make the store unloadable), plus: a free item's title must not be blank.
+ */
+const validItem = (i) => validAgendaItem(i) && (i.kind !== 'free' || i.title.trim() !== '');
 
 /** The next not-done, unscheduled step of each active family plan (<= 3 plans, <= 5 items). */
 export function autoFill(store, weekStartDay) {

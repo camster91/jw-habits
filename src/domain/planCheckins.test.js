@@ -82,6 +82,20 @@ describe('checkInStudy', () => {
     expect(undoStudy(next, TODAY)).toEqual(marked);
   });
 
+  it('logs true and ticks nothing for a step of a study plan that is not active', () => {
+    const { store: s0 } = activeStudy();
+    const other = withPlan(2, 'study', s0);
+    const next = checkInStudy(other.store, TODAY, stepOf(other.store, other.planId, 0).id);
+    expect(entry(next, 'personalStudy', TODAY).value).toBe(true);
+    expect(next.plans).toEqual(other.store.plans);
+    const none = withPlan(2);
+    const idle = checkInStudy(none.store, TODAY, stepOf(none.store, none.planId, 0).id);
+    expect(entry(idle, 'personalStudy', TODAY).value).toBe(true);
+    expect(idle.plans).toEqual(none.store.plans);
+    valid(next);
+    expect(undoStudy(next, TODAY)).toEqual(other.store);
+  });
+
   it('refuses an invalid day', () => {
     const { store, planId } = activeStudy();
     expect(checkInStudy(store, '2026-02-30', stepOf(store, planId, 0).id)).toBe(store);
@@ -199,16 +213,17 @@ describe('undoStudy', () => {
     expect(undone.activePlan.personalStudy).toBe(other.planId);
   });
 
-  it('does not re-activate a plan that was archived before the check-in day', () => {
+  it('keeps an archive date set by hand after the check-in, and does not re-activate', () => {
     const { store: s0, planId } = activeStudy(1);
     const done = checkInStudy(s0, TODAY, stepOf(s0, planId, 0).id);
-    // The user archives it by hand on a later day before undoing; nothing to un-archive.
+    // The archive date is moved to a later day before undoing; nothing to un-archive.
     const archived = {
       ...done,
       plans: done.plans.map((p) => (p.id === planId ? { ...p, archivedOn: '2026-10-08' } : p)),
     };
     const undone = undoStudy(archived, TODAY);
     expect(stepOf(undone, planId, 0).doneOn).toBeNull();
+    expect(planOf(undone, planId).archivedOn).toBe('2026-10-08');
     expect(undone.activePlan.personalStudy).toBeNull();
     valid(undone);
   });
@@ -350,6 +365,28 @@ describe('checkInFamily', () => {
     expect(planOf(undone, fam.planId).archivedOn).toBeNull();
     expect(undone.activePlan.personalStudy).toBeNull();
     expect(undone).toEqual(store);
+  });
+
+  it('ignores an agenda item that points at a study step (never finishes the active study)', () => {
+    const study = activeStudy(1);
+    const fam = withPlan(2, 'family', study.store);
+    const studyStep = stepOf(fam.store, study.planId, 0).id;
+    const store = setAgenda(fam.store, MON, [
+      { id: 'x1', kind: 'step', planId: study.planId, stepId: studyStep },
+      { id: 'x2', kind: 'step', planId: fam.planId, stepId: stepOf(fam.store, fam.planId, 0).id },
+    ]);
+    const next = checkInFamily(store, TODAY);
+    expect(stepOf(next, study.planId, 0).doneOn).toBeNull();
+    expect(planOf(next, study.planId).archivedOn).toBeNull();
+    expect(next.activePlan.personalStudy).toBe(study.planId);
+    expect(stepOf(next, fam.planId, 0).doneOn).toBe(TODAY);
+    valid(next);
+    // A study step done today (by the study check-in) is not cleared by the family undo.
+    const both = checkInStudy(next, TODAY, studyStep);
+    const undone = undoFamily(both, TODAY);
+    expect(stepOf(undone, study.planId, 0).doneOn).toBe(TODAY);
+    expect(stepOf(undone, fam.planId, 0).doneOn).toBeNull();
+    valid(undone);
   });
 
   it('refuses an invalid day', () => {

@@ -125,6 +125,23 @@ describe('setAgenda and free items', () => {
     expect(addFreeItem(s, MON, { title: 'x'.repeat(60) }).familyAgendas[MON][0].link).toBe(null);
   });
 
+  it('setAgenda refuses items validateStore would reject (Codex P2) and blank free titles', () => {
+    const s = defaultStore(TODAY, 'en');
+    expect(setAgenda(s, MON, [{ id: 'x', kind: 'step', planId: '', stepId: '' }])).toBe(s);
+    expect(setAgenda(s, MON, [{ id: 'x', kind: 'step', planId: 'p', stepId: '' }])).toBe(s);
+    expect(setAgenda(s, MON, [{ id: 'x', kind: 'step', planId: '', stepId: 's' }])).toBe(s);
+    expect(setAgenda(s, MON, [{ id: 'x', kind: 'free', title: '   ', link: null }])).toBe(s);
+    expect(setAgenda(s, MON, [{ id: 'x', kind: 'step', planId: 'p', stepId: 's', extra: 1 }])).toBe(
+      s
+    );
+    const ok = setAgenda(s, MON, [
+      { id: 'x', kind: 'step', planId: 'p', stepId: 's' },
+      { id: 'y', kind: 'free', title: 'Song', link: null },
+    ]);
+    expect(ok.familyAgendas[MON]).toHaveLength(2);
+    valid(ok);
+  });
+
   it('removes an item (storing the rest of a preview) and ignores unknown ids', () => {
     const a = withFamily(1);
     const b = withFamily(1, a.store);

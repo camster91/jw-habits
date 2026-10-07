@@ -283,7 +283,8 @@ function validActivePlan(a) {
   );
 }
 
-function validAgendaItem(item) {
+/** One family agenda item; exported so agenda.js writes only what this accepts. */
+export function validAgendaItem(item) {
   if (!isObject(item) || !isId(item.id)) return false;
   if (item.kind === 'step') {
     return (
