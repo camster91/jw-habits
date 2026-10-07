@@ -45,6 +45,9 @@ function familyWeekDays(store) {
   return days;
 }
 
+/** Full-family-week days (ascending) on or before `today`. */
+export const fullFamilyWeekDays = (store, today) => familyWeekDays(store).filter((d) => d <= today);
+
 /** @returns {{[day: string]: number}} XP per app day up to `today`, each capped at 100. */
 export function xpByDay(store, today) {
   const raw = {};

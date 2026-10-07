@@ -16,6 +16,7 @@ import { StoreProvider } from './data/StoreProvider.jsx';
 import { registerReminderSync } from './native/reminders.js';
 import { registerWhatsNewCheck } from './native/whatsNewClient.js';
 import { registerWidgetBridge } from './native/widgetBridge.js';
+import { registerBadgeAwards } from './native/badgeAwards.js';
 
 // i18next — Spanish/French fall back to English when a key
 // is missing. Language detected from navigator, cached in
@@ -88,6 +89,8 @@ registerReminderSync();
 registerWhatsNewCheck();
 // Apply widget check-ins on foreground and keep the widget snapshot current
 registerWidgetBridge();
+// Award badges once when their rules are met (never revoked)
+registerBadgeAwards();
 
 // Initialize native mobile features
 initializeNative().catch(console.error);

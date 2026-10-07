@@ -233,6 +233,18 @@ describe('onStoreChange', () => {
     expect(seen).toEqual(['Hope', 'Joy']);
   });
 
+  it('passes {update, today} as a second argument so a listener can write back', async () => {
+    let extra = null;
+    const off = onStoreChange((store, e) => {
+      extra = e;
+    });
+    await mount();
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Hope' } })));
+    expect(typeof extra.update).toBe('function');
+    expect(extra.today).toBe(latest.today);
+    off();
+  });
+
   it('isolates throwing and rejecting callbacks from update', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const good = vi.fn();
