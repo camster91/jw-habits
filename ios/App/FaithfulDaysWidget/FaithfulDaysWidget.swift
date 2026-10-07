@@ -14,19 +14,13 @@ struct WidgetItem: Codable, Identifiable, Hashable {
 }
 
 /// The snapshot the app writes to `fd.snapshot`. The widget only reads it
-/// (and, in CheckInIntent, flips one item's `done` so the tap shows at once).
+/// and overlays queued check-ins so an app refresh cannot erase pending ticks.
 struct WidgetSnapshot: Codable, Hashable {
     let day: String
     var doneCount: Int
     let dueCount: Int
     var items: [WidgetItem]
     let accent: String
-}
-
-/// A check-in waiting in `fd.queue` for the app to apply on next foreground.
-struct QueuedCheckIn: Codable, Hashable {
-    let routine: String
-    let day: String
 }
 
 enum WidgetStore {
@@ -42,26 +36,24 @@ enum WidgetStore {
     static func readSnapshot() -> WidgetSnapshot? {
         guard let json = defaults?.string(forKey: snapshotKey),
               let data = json.data(using: .utf8) else { return nil }
-        return try? JSONDecoder().decode(WidgetSnapshot.self, from: data)
+        guard var snapshot = try? JSONDecoder().decode(WidgetSnapshot.self, from: data) else { return nil }
+        let pending = (try? WidgetQueue.shared?.read()) ?? []
+        let legacy: [WidgetCheckIn] = {
+            guard let raw = defaults?.string(forKey: queueKey), let bytes = raw.data(using: .utf8) else { return [] }
+            return (try? JSONDecoder().decode([WidgetCheckIn].self, from: bytes)) ?? []
+        }()
+        let routines = Set((pending + legacy).filter { $0.day == snapshot.day }.map { $0.routine })
+        for index in snapshot.items.indices where routines.contains(snapshot.items[index].routine) {
+            snapshot.items[index].done = true
+        }
+        snapshot.doneCount = snapshot.items.filter { $0.done }.count
+        return snapshot
     }
 
-    static func writeSnapshot(_ snapshot: WidgetSnapshot) {
-        guard let data = try? JSONEncoder().encode(snapshot),
-              let json = String(data: data, encoding: .utf8) else { return }
-        defaults?.set(json, forKey: snapshotKey)
-    }
-
-    static func readQueue() -> [QueuedCheckIn] {
-        guard let json = defaults?.string(forKey: queueKey),
-              let data = json.data(using: .utf8),
-              let items = try? JSONDecoder().decode([QueuedCheckIn].self, from: data) else { return [] }
-        return items
-    }
-
-    static func writeQueue(_ items: [QueuedCheckIn]) {
-        guard let data = try? JSONEncoder().encode(items),
-              let json = String(data: data, encoding: .utf8) else { return }
-        defaults?.set(json, forKey: queueKey)
+    /// Mirrors currentDay: preserve an app's day one day ahead after westward travel.
+    static func isCurrentDay(_ day: String, at now: Date) -> Bool {
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) ?? now
+        return day == appDay(now) || day == appDay(tomorrow)
     }
 
     /// Gregorian calendar in the device's time zone, whatever calendar the user prefers,
@@ -108,7 +100,7 @@ struct TodayEntry: TimelineEntry {
 
     /// The snapshot only if it belongs to this entry's app day; never stale ticks.
     var current: WidgetSnapshot? {
-        guard let snapshot = snapshot, snapshot.day == WidgetStore.appDay(date) else { return nil }
+        guard let snapshot = snapshot, WidgetStore.isCurrentDay(snapshot.day, at: date) else { return nil }
         return snapshot
     }
 }
@@ -210,7 +202,7 @@ struct SmallTodayView: View {
             VStack(spacing: 0) {
                 Text(String(snapshot.doneCount))
                     .font(.title.bold())
-                Text("of " + String(snapshot.dueCount))
+                Text(String(format: NSLocalizedString("of %d", comment: "Small widget total"), snapshot.dueCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -227,7 +219,7 @@ struct MediumTodayView: View {
         HStack(spacing: 14) {
             ZStack {
                 ProgressRing(done: snapshot.doneCount, due: snapshot.dueCount, accent: accent, lineWidth: 8)
-                Text(String(snapshot.doneCount) + " of " + String(snapshot.dueCount))
+                Text(String(format: NSLocalizedString("%d of %d", comment: "Completed routines"), snapshot.doneCount, snapshot.dueCount))
                     .font(.caption.bold())
             }
             .frame(width: 72, height: 72)

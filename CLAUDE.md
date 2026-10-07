@@ -59,9 +59,9 @@ user-editable slot instead.
 | `npm run smoke:spawn` | Playwright smoke suite, spawns preview (portable `--spawn` flag) |
 | `npm run journeys` | End-to-end UI journeys (needs preview running) |
 | `npm run test:coverage` | All-source coverage with global and critical-module thresholds |
-| `npm run a11y` | Real-build light/dark 320px accessibility and overflow checks |
-| `npm run offline:verify` | Real worker install/update and byte-preserved offline store checks |
-| `npm run budgets` | Built JS/CSS gzip and precache size limits |
+| `npm run a11y` | Real-build light/dark 320px checks (build and preview required) |
+| `npm run offline:verify` | Real worker update/offline checks (build required) |
+| `npm run budgets` | Built JS/CSS gzip and precache size limits (build required) |
 
 The smoke and journey suites pin the browser clock with `page.clock` (e.g. `Date(2026, 9, 6, 21, 0)`
 for the wrap-up), so never rely on the real date in them. Shared helpers: `scripts/verify/lib.cjs`.

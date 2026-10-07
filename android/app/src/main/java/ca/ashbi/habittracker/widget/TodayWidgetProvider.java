@@ -8,6 +8,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.os.Build;
+import android.util.SizeF;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -17,6 +23,7 @@ import ca.ashbi.habittracker.R;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import java.util.ArrayList;
 
 /**
  * The "Today" home-screen widget. Narrow (small): a ring with "done of due".
@@ -89,8 +96,8 @@ public class TodayWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_root, openAppIntent(context));
 
         JSONObject snapshot = WidgetStore.readSnapshot(context);
-        String today = WidgetStore.appDay(System.currentTimeMillis());
-        if (snapshot == null || !today.equals(snapshot.optString("day"))) {
+        String today = snapshot == null ? "" : snapshot.optString("day");
+        if (snapshot == null || !WidgetStore.isCurrentDay(today, System.currentTimeMillis())) {
             views.setViewVisibility(R.id.widget_content, View.GONE);
             views.setViewVisibility(R.id.widget_stale, View.VISIBLE);
             return views;
@@ -102,7 +109,7 @@ public class TodayWidgetProvider extends AppWidgetProvider {
         int due = Math.max(0, snapshot.optInt("dueCount", 0));
         int accent = parseColor(snapshot.optString("accent", ""));
         // An empty day reads as a full ring.
-        views.setProgressBar(R.id.widget_ring, Math.max(due, 1), due == 0 ? 1 : Math.min(done, due), false);
+        views.setImageViewBitmap(R.id.widget_ring, ring(done, due, accent));
         views.setTextViewText(R.id.widget_count, context.getString(R.string.widget_count, done, due));
         views.setTextColor(R.id.widget_count, accent);
 
@@ -141,7 +148,35 @@ public class TodayWidgetProvider extends AppWidgetProvider {
     private static boolean isMedium(AppWidgetManager manager, int appWidgetId) {
         Bundle options = manager.getAppWidgetOptions(appWidgetId);
         int minWidth = options == null ? 0 : options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0);
-        return minWidth >= MEDIUM_MIN_WIDTH_DP;
+        if (minWidth > 0) return minWidth >= MEDIUM_MIN_WIDTH_DP;
+        // Some launchers deliver initial sizes before MIN_WIDTH is populated.
+        if (Build.VERSION.SDK_INT >= 31 && options != null) {
+            ArrayList<SizeF> sizes = options.getParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES);
+            if (sizes != null && !sizes.isEmpty()) {
+                float narrowest = Float.MAX_VALUE;
+                for (SizeF size : sizes) narrowest = Math.min(narrowest, size.getWidth());
+                return narrowest >= MEDIUM_MIN_WIDTH_DP;
+            }
+        }
+        int maxWidth = options == null ? 0 : options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0);
+        return maxWidth >= MEDIUM_MIN_WIDTH_DP;
+    }
+
+    /** RemoteViews-safe bitmap ring, using the user's accent for arc and track. */
+    private static Bitmap ring(int done, int due, int accent) {
+        Bitmap bitmap = Bitmap.createBitmap(216, 216, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(18);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        RectF bounds = new RectF(12, 12, 204, 204);
+        paint.setColor((accent & 0x00ffffff) | 0x33000000);
+        canvas.drawOval(bounds, paint);
+        paint.setColor(accent);
+        float fraction = due == 0 ? 1f : Math.min(1f, (float) done / due);
+        canvas.drawArc(bounds, -90, 360 * fraction, false, paint);
+        return bitmap;
     }
 
     private static int parseColor(String hex) {

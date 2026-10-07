@@ -56,6 +56,10 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx cap sync ios
+      - name: Verify cross-process widget queue
+        run: |
+          swiftc ios/App/App/WidgetQueue.swift scripts/native/widget-queue-test.swift -o /tmp/widget-queue-test
+          /tmp/widget-queue-test
       - name: Compile app and embedded targets without signing
         run: >-
           xcodebuild -project ios/App/App.xcodeproj -scheme App

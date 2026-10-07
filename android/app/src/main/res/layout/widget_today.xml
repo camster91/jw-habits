@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Today widget. Only RemoteViews-safe views: LinearLayout, FrameLayout, ProgressBar, TextView. -->
+<!-- Today widget. Only RemoteViews-safe views: LinearLayout, FrameLayout, ImageView, TextView. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -20,15 +20,11 @@
             android:layout_width="72dp"
             android:layout_height="72dp">
 
-            <ProgressBar
+            <ImageView
                 android:id="@+id/widget_ring"
-                style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:indeterminate="false"
-                android:max="1"
-                android:progress="0"
-                android:progressDrawable="@drawable/widget_ring" />
+                android:importantForAccessibility="no" />
 
             <TextView
                 android:id="@+id/widget_count"

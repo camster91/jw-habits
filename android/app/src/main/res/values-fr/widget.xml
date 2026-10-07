@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Les habitudes du jour en un coup d’œil</string>
+    <string name="widget_count">%1$d sur %2$d</string>
+    <string name="widget_stale">Ouvrez Faithful Days pour commencer la journée</string>
+    <string name="widget_empty">Rien de prévu aujourd’hui</string>
+</resources>

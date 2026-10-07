@@ -10,8 +10,8 @@
     <string name="widget_count">%1$d of %2$d</string>
     <string name="widget_stale">Open Faithful Days to start today</string>
     <string name="widget_empty">Nothing due today</string>
-    <string name="widget_row_done">✓  %1$s</string>
-    <string name="widget_row_todo">○  %1$s</string>
+    <string name="widget_row_done">✓\u2002%1$s</string>
+    <string name="widget_row_todo">○\u2002%1$s</string>
 
     <style name="WidgetRow">
         <item name="android:layout_width">match_parent</item>

@@ -11,7 +11,7 @@ review in the proposed capability map before changing this contract.
 | Plans/steps/notes/links, active project and family agendas | User-written organisation and external destinations | Until deleted/reset/app storage removed | JSON/OS backup; destination receives a request only on open |
 | Badges, theme/accent, game/share preferences | Optional presentation/progress | Until reset/app storage removed; derived garden/XP not a remote profile | JSON/OS backup |
 | Language and mirrored boot theme | Local UI/startup preference | Until changed or app/site storage removed | Device/browser-managed settings |
-| Widget snapshot and routine/day queue | Local widget display/tap transport | Snapshot replaced; queued taps drained on foreground, only up to three days old accepted | App Group/shared preferences and OS widget; no server |
+| Widget snapshot and routine/day queue | Local widget display/tap transport | Snapshot replaced; queued taps drained on foreground, only up to three days old accepted | App Group snapshot/locked iOS queue file, Android shared preferences and OS widget; no server |
 | Migration/recovery/corrupt copies and legacy keys | Preserve original bytes for recovery | No automatic expiry; current-store reset preserves them; OS/site clearing removes them | Local only unless user exports a copy |
 | Diagnostic categories/times | Local troubleshooting | At most 20, seven-day retention; user can inspect/clear | No remote reporting |
 | Temporary native PNG/JSON files | User-controlled system sharing | Best-effort cleanup after completion/cancel, OS-managed cache | Recipient apps chosen by user |
