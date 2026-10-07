@@ -102,8 +102,7 @@
         "somethingElse": "Did something else",
         "sheetTitle": "What did you study?",
         "justSession": "Just log a session",
-        "otherSteps": "Or tick a different step",
-        "refused": "That could not be logged. Try again."
+        "otherSteps": "Or tick a different step"
       },
       "finished": {
         "study": "Project finished: {{title}}. Well done.",
@@ -116,7 +115,8 @@
       },
       "agenda": {
         "label": "This week's family worship"
-      }
+      },
+      "refused": "That could not be logged. Try again."
     },
     "onboarding": {
       "stepOf": "Step {{step}} of {{total}}",

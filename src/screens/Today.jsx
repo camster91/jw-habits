@@ -124,6 +124,18 @@ export default function Today({ onOpenSettings = () => {} }) {
   const [finished, setFinished] = useState(null);
   const [choosing, setChoosing] = useState(false);
   const [sheetError, setSheetError] = useState(null);
+  // The routine whose plan check-in was just refused (its row says so).
+  const [refusedId, setRefusedId] = useState(null);
+  // Set when the finished card closes, so the next render moves focus to the study row.
+  const refocusRow = useRef(false);
+  useEffect(() => {
+    if (!refocusRow.current) return;
+    refocusRow.current = false;
+    const target =
+      document.querySelector('[data-testid="row-personalStudy"] button') ??
+      document.querySelector('[data-testid="today"] h1');
+    target?.focus();
+  });
 
   const language = i18n.language;
   const schedule = scheduleOn(store, today);
@@ -135,6 +147,21 @@ export default function Today({ onOpenSettings = () => {} }) {
   const fresh = freshStart(today);
   const showList = !wrapping || expanded;
   const study = todaysStudyStep(store);
+  const studyEntry = store.log.find((e) => e.routine === 'personalStudy' && e.day === today);
+  // What the study row shows. While today is checked in: the step that check-in
+  // ticked, or (a plain session) the project alone. Otherwise the next step.
+  // Null means no active project: the v5.0 row.
+  const studyView = (() => {
+    if (studyEntry && studyEntry.value !== true) {
+      const { stepId } = studyEntry.value;
+      const plan = store.plans.find(
+        (p) => p.kind === 'study' && p.steps.some((x) => x.id === stepId)
+      );
+      if (plan) return { plan, step: plan.steps.find((x) => x.id === stepId), done: true };
+    }
+    if (!study) return null;
+    return studyEntry ? { plan: study.plan, step: null, done: true } : { ...study, done: false };
+  })();
   const finishedPlan = finished && store.plans.find((p) => p.id === finished.planId);
   // Study projects waiting their turn: the next-project offer picks from these.
   const waiting = store.plans.filter(
@@ -162,8 +189,14 @@ export default function Today({ onOpenSettings = () => {} }) {
   };
 
   const complete = (id) => {
-    if (id === 'personalStudy' || id === 'familyWorship') planCheckIn(checkIns[id]);
-    else update(checkIns[id] ?? ((s) => addCheckIn(s, { routine: id, day: today, value: true })));
+    if (id === 'personalStudy' || id === 'familyWorship') {
+      // A refusal changes nothing: say so on the row, with no encouragement.
+      const ok = planCheckIn(checkIns[id]);
+      setRefusedId(ok ? null : id);
+      if (!ok) return;
+    } else {
+      update(checkIns[id] ?? ((s) => addCheckIn(s, { routine: id, day: today, value: true })));
+    }
     encourage(id);
   };
 
@@ -176,14 +209,17 @@ export default function Today({ onOpenSettings = () => {} }) {
     familyWorship: (s) => undoFamily(s, today),
   };
   const undo = (id) => {
-    if (id === 'personalStudy' || id === 'familyWorship') setFinished(null);
+    if (id === 'personalStudy' || id === 'familyWorship') {
+      setFinished(null);
+      setRefusedId(null);
+    }
     update(undos[id] ?? ((s) => removeCheckIn(s, id, today)));
   };
 
   // 'Did something else': tick another step of the project, or just log a session.
   const pickOther = (stepId) => {
     if (!planCheckIn((s) => checkInStudy(s, today, stepId))) {
-      setSheetError(t('fd.today.study.refused'));
+      setSheetError(t('fd.today.refused'));
       return;
     }
     setChoosing(false);
@@ -229,17 +265,18 @@ export default function Today({ onOpenSettings = () => {} }) {
       );
       return t('fd.today.meetingFor', { day });
     }
-    if (id === 'personalStudy' && study) {
+    if (id === 'personalStudy' && studyView) {
+      const { plan, step } = studyView;
       return (
-        <span className="flex min-w-0 items-center gap-2" style={planStyle(study.plan.colour)}>
+        <span className="flex min-w-0 items-center gap-2" style={planStyle(plan.colour)}>
           <span
             aria-hidden="true"
             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--plan)] text-white"
           >
-            <PlanIcon icon={study.plan.icon} className="h-4 w-4" />
+            <PlanIcon icon={plan.icon} className="h-4 w-4" />
           </span>
           <span className="fd-plan-text truncate font-medium">
-            {t('fd.today.study.line', { plan: study.plan.title, step: study.step.title })}
+            {step ? t('fd.today.study.line', { plan: plan.title, step: step.title }) : plan.title}
           </span>
         </span>
       );
@@ -276,7 +313,9 @@ export default function Today({ onOpenSettings = () => {} }) {
       );
     }
     const firstChapter = id === 'bibleReading' ? todaysChapters(store, today)[0] : undefined;
-    const project = id === 'personalStudy' ? study : null;
+    const project = id === 'personalStudy' ? studyView : null;
+    // A plain session names no step, so there is no step link either.
+    const projectLink = project?.step?.link ?? null;
     const agenda =
       id === 'familyWorship' ? agendaRows(agendaFor(store, weekStart(today)), store) : [];
     return (
@@ -288,8 +327,10 @@ export default function Today({ onOpenSettings = () => {} }) {
         done={isDone(store, id, today)}
         onComplete={() => complete(id)}
         onUndo={() => undo(id)}
-        link={project ? project.step.link : routineLink(store, id, language, firstChapter, today)}
-        linkName={project ? t('fd.today.study.openStep', { title: project.step.title }) : undefined}
+        link={project ? projectLink : routineLink(store, id, language, firstChapter, today)}
+        linkName={
+          projectLink ? t('fd.today.study.openStep', { title: project.step.title }) : undefined
+        }
       >
         {project && (
           <div
@@ -302,17 +343,24 @@ export default function Today({ onOpenSettings = () => {} }) {
             <span className="text-base-content/70">
               {t('fd.wrapUp.studyMoved', studyProgress(store, today))}
             </span>
-            <button
-              type="button"
-              className="btn btn-link btn-sm min-h-11 px-0 text-[var(--fd-accent-text)]"
-              onClick={() => {
-                setSheetError(null);
-                setChoosing(true);
-              }}
-            >
-              {t('fd.today.study.somethingElse')}
-            </button>
+            {!project.done && (
+              <button
+                type="button"
+                className="btn btn-link btn-sm min-h-11 px-0 text-[var(--fd-accent-text)]"
+                onClick={() => {
+                  setSheetError(null);
+                  setChoosing(true);
+                }}
+              >
+                {t('fd.today.study.somethingElse')}
+              </button>
+            )}
           </div>
+        )}
+        {refusedId === id && (
+          <p role="alert" className="text-sm text-error">
+            {t('fd.today.refused')}
+          </p>
         )}
         {agenda.length > 0 && <TodayAgenda rows={agenda} />}
         {id === 'bibleReading' && (
@@ -335,7 +383,9 @@ export default function Today({ onOpenSettings = () => {} }) {
       <div className="mx-auto max-w-md space-y-4">
         <header>
           <div>
-            <h1 className="text-3xl font-bold">{t('fd.today.title')}</h1>
+            <h1 tabIndex={-1} className="text-3xl font-bold focus:outline-none">
+              {t('fd.today.title')}
+            </h1>
             <p className="text-sm text-base-content/70">
               {new Intl.DateTimeFormat(language, {
                 weekday: 'long',
@@ -366,17 +416,22 @@ export default function Today({ onOpenSettings = () => {} }) {
           )}
         </div>
 
-        {finishedPlan && (
-          <PlanFinishedCard
-            key={finishedPlan.id}
-            plan={finishedPlan}
-            tone={store.tone}
-            waiting={waiting}
-            started={finished.started}
-            onStart={startNext}
-            onClose={() => setFinished(null)}
-          />
-        )}
+        <div aria-live="polite" data-testid="plan-finished-live" className="empty:mb-0">
+          {finishedPlan && (
+            <PlanFinishedCard
+              key={finishedPlan.id}
+              plan={finishedPlan}
+              tone={store.tone}
+              waiting={waiting}
+              started={finished.started}
+              onStart={startNext}
+              onClose={() => {
+                refocusRow.current = true;
+                setFinished(null);
+              }}
+            />
+          )}
+        </div>
 
         {schedule.enabled.meetingPrep && schedule.meetingDays.length === 0 && (
           <MeetingDaysCard onOpen={onOpenSettings} />
@@ -412,7 +467,7 @@ export default function Today({ onOpenSettings = () => {} }) {
           </ul>
         )}
       </div>
-      {choosing && study && (
+      {choosing && study && !studyEntry && (
         <SomethingElseSheet
           plan={study.plan}
           onPick={pickOther}

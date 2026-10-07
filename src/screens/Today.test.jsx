@@ -14,9 +14,19 @@ import Today from './Today.jsx';
 import { haptics } from '../utils/native.js';
 import { CapacitorHttp } from '@capacitor/core';
 import en from '../locales/en.json';
+import { checkInStudy } from '../domain/planCheckins.js';
 
 vi.mock('../native/openLink.js', () => ({ openLink: vi.fn() }));
 vi.mock('../utils/native.js', () => ({ haptics: { success: vi.fn() } }));
+// The real plan check-ins, wrapped so one test can make a check-in refuse.
+vi.mock('../domain/planCheckins.js', async (importOriginal) => {
+  const real = await importOriginal();
+  return {
+    ...real,
+    checkInStudy: vi.fn(real.checkInStudy),
+    checkInFamily: vi.fn(real.checkInFamily),
+  };
+});
 vi.mock('@capacitor/core', async (importOriginal) => ({
   ...(await importOriginal()),
   CapacitorHttp: { get: vi.fn() },
@@ -596,7 +606,10 @@ describe('Today: personal study with an active project', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start next project' }));
     expect(current.activePlan.personalStudy).toBe('pa');
     expect(screen.getByText('Acts is now your active project.')).toBeInTheDocument();
-    expect(screen.getByText('Acts · Acts 1')).toBeInTheDocument();
+    // Focus moves to the confirmation, never to the page body.
+    expect(document.activeElement).toBe(screen.getByText('Acts is now your active project.'));
+    // The done row still shows the step today's check-in ticked.
+    expect(screen.getByText('Daniel · Daniel 12')).toBeInTheDocument();
   });
 
   it('with no active project keeps the v5.0 row and logs a plain session', () => {
@@ -699,5 +712,153 @@ describe('Today: v5.1 copy', () => {
       unmount();
     }
     expect(JSON.stringify(en.fd.today)).not.toMatch(BANNED);
+  });
+});
+
+describe('Today: fix round 1', () => {
+  const row = (id) => screen.getByTestId(`row-${id}`);
+
+  it('hides "Did something else" once the study row is done today', () => {
+    renderToday(studyStore());
+    hold(checkButton('Personal study'));
+    expect(screen.queryByRole('button', { name: 'Did something else' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Personal study', pressed: true }));
+    expect(screen.getByRole('button', { name: 'Did something else' })).toBeInTheDocument();
+  });
+
+  it('a done row shows and links the step today ticked, not the next one', () => {
+    renderToday(studyStore());
+    hold(checkButton('Personal study'));
+    expect(within(row('personalStudy')).getByText('Daniel · Daniel 1')).toBeInTheDocument();
+    expect(screen.queryByText('Daniel · Daniel 2')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Open Daniel 1' }));
+    expect(openLink).toHaveBeenCalledWith(LINK);
+  });
+
+  it('a done row from "Just log a session" shows the plan title only, with no step link', () => {
+    renderToday(studyStore());
+    fireEvent.click(screen.getByRole('button', { name: 'Did something else' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Just log a session' }));
+    expect(within(row('personalStudy')).getByText('Daniel')).toBeInTheDocument();
+    expect(screen.queryByText('Daniel · Daniel 1')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Open Daniel 1' })).toBeNull();
+  });
+
+  it('announces a finished project through a live region mounted beforehand', () => {
+    renderToday(studyStore([daniel(11)]));
+    const live = screen.getByTestId('plan-finished-live');
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    expect(live.textContent).toBe('');
+    hold(checkButton('Personal study'));
+    expect(screen.getByTestId('plan-finished-live')).toBe(live);
+    expect(live.textContent).toContain('Project finished: Daniel. Well done.');
+  });
+
+  it('"Not now" closes the card and focuses the study row', () => {
+    renderToday(studyStore([daniel(11), acts()]));
+    hold(checkButton('Personal study'));
+    fireEvent.click(screen.getByRole('button', { name: 'Not now' }));
+    expect(screen.queryByText('Project finished: Daniel. Well done.')).toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Personal study', pressed: true })
+    );
+  });
+
+  it('a refused hold says so and gives no encouragement', () => {
+    checkInStudy.mockImplementationOnce((s) => s);
+    renderToday(studyStore());
+    hold(checkButton('Personal study'));
+    expect(screen.getByRole('alert')).toHaveTextContent('That could not be logged. Try again.');
+    expect(screen.getByRole('status').textContent).toBe('');
+    expect(entry('personalStudy')).toBeUndefined();
+  });
+
+  it('study: check-in, undo, check-in again on the same day', () => {
+    renderToday(studyStore());
+    hold(checkButton('Personal study'));
+    fireEvent.click(screen.getByRole('button', { name: 'Personal study', pressed: true }));
+    expect(current.plans[0].steps.every((s) => s.doneOn === null)).toBe(true);
+    hold(checkButton('Personal study'));
+    expect(entry('personalStudy').value).toEqual({ stepId: 'd1' });
+    expect(current.plans[0].steps.map((s) => s.doneOn)).toEqual([
+      '2026-10-06',
+      ...Array(11).fill(null),
+    ]);
+    expect(current.log.filter((e) => e.routine === 'personalStudy')).toHaveLength(1);
+  });
+
+  it('family: check-in, undo, check-in again on the same day', () => {
+    renderToday(familyStore());
+    hold(checkButton('Family worship'));
+    fireEvent.click(screen.getByRole('button', { name: 'Family worship', pressed: true }));
+    expect(current.plans[0].steps.every((s) => s.doneOn === null)).toBe(true);
+    hold(checkButton('Family worship'));
+    expect(entry('familyWorship').value).toEqual({ stepIds: ['f1', 'f2'] });
+    expect(current.plans[0].steps.map((s) => s.doneOn)).toEqual([
+      '2026-10-06',
+      '2026-10-06',
+      null,
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it('undoes a widget-style true family entry from Today (that day on the agenda steps)', () => {
+    const s = familyStore({ f1: '2026-10-06', f2: '2026-10-06', f4: '2026-10-06' });
+    renderToday({
+      ...s,
+      log: [...s.log, { routine: 'familyWorship', day: '2026-10-06', value: true }],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Family worship', pressed: true }));
+    expect(entry('familyWorship')).toBeUndefined();
+    expect(stepById('f1').doneOn).toBeNull();
+    expect(stepById('f2').doneOn).toBeNull();
+    // Not on the agenda: left alone.
+    expect(stepById('f4').doneOn).toBe('2026-10-06');
+  });
+
+  it('shows the auto-filled agenda for a week with nothing stored, and the check-in keeps it', () => {
+    renderToday({ ...familyStore(), familyAgendas: {} });
+    const agenda = screen.getByRole('list', { name: "This week's family worship" });
+    expect(within(agenda).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(agenda).getByText('Proverbs 1')).toBeInTheDocument();
+    hold(checkButton('Family worship'));
+    expect(entry('familyWorship').value).toEqual({ stepIds: ['f1'] });
+    expect(current.familyAgendas['2026-10-05']).toHaveLength(1);
+    expect(current.familyAgendas['2026-10-05'][0]).toMatchObject({ kind: 'step', stepId: 'f1' });
+  });
+
+  it('finishing a family plan shows the family copy and no project offer', () => {
+    const done = { f1: '2026-10-01', f2: '2026-10-01', f3: '2026-10-01', f4: '2026-10-01' };
+    const s = familyStore(done);
+    renderToday({
+      ...s,
+      plans: [...s.plans, acts()],
+      familyAgendas: {
+        '2026-10-05': [
+          { id: 'i5', kind: 'step', planId: 'pf', stepId: 'f5' },
+          { id: 'i6', kind: 'step', planId: 'pf', stepId: 'f6' },
+        ],
+      },
+    });
+    hold(checkButton('Family worship'));
+    expect(screen.getByText('Family plan finished: Proverbs. Well done.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start next project' })).toBeNull();
+  });
+
+  it('the next-project picker leaves out family, archived and active plans', () => {
+    const old = plan('po', 'Old', 'study', steps('o', 'Old', 2, 2), { archivedOn: '2026-10-01' });
+    const romans = plan('pr', 'Romans', 'study', steps('r', 'Romans', 16));
+    renderToday(studyStore([daniel(11), acts(), old, family(), romans]));
+    hold(checkButton('Personal study'));
+    const picker = screen.getByRole('combobox', { name: 'Next project' });
+    const names = within(picker)
+      .getAllByRole('option')
+      .map((o) => o.textContent);
+    expect(names).toEqual(['Acts', 'Romans']);
+    fireEvent.change(picker, { target: { value: 'pr' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Start next project' }));
+    expect(current.activePlan.personalStudy).toBe('pr');
   });
 });
