@@ -1,16 +1,8 @@
 name: Build and Push Image
 
-# Reusable build workflow for camster91/* Node.js web apps.
-# Triggered on push to main and on tag. Builds a multi-stage Docker image
-# and pushes it to ghcr.io. The image becomes the canonical deployable
-# artifact — any host (Coolify, Hostinger, Render, Fly, local docker) can
-# run it without needing source code, Node, or build tools on the host.
-#
-# Conventions:
-#   - Image: ghcr.io/camster91/<repo>:main (or :<tag> for releases)
-#   - Multi-arch: linux/amd64 + linux/arm64 (Raspberry Pi, Apple Silicon hosts)
-#   - Buildx cache pushed to GHCR type=cache (saves ~3min per build)
-#   - SBOM + provenance attestations enabled (for supply-chain trust)
+# Pull requests receive a read-only, build-only check. Trusted pushes and
+# version tags publish the GHCR image used by the existing VPS deployment.
+# Reusable calls publish only for main/master or version-tag refs.
 
 on:
   push:
@@ -21,71 +13,114 @@ on:
   workflow_call:
     inputs:
       image_name:
-        description: 'Override image name (default: repo name)'
+        description: 'Override image name (default: repository name)'
         required: false
         type: string
       dockerfile:
-        description: 'Path to Dockerfile (default: ./Dockerfile)'
+        description: 'Path to Dockerfile'
         required: false
         type: string
         default: 'Dockerfile'
       platforms:
-        description: 'Buildx platforms (default: amd64 + arm64)'
+        description: 'Build platforms'
         required: false
         type: string
         default: 'linux/amd64,linux/arm64'
 
-permissions:
-  contents: read
-  packages: write
-  id-token: write
-  attestations: write
+permissions: {}
 
 concurrency:
-  group: build-${{ github.ref }}
+  group: image-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
-    name: Build & push image
-    runs-on: ubuntu-latest
+    name: Build image (no publish)
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_call' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/tags/v')) }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+
+      - name: Build image without publishing
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: ${{ inputs.dockerfile || 'Dockerfile' }}
+          platforms: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
+          push: false
+
+  publish:
+    name: Build and publish image
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_call' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
 
       - name: Resolve image metadata
         id: meta
+        env:
+          IMAGE_NAME_INPUT: ${{ inputs.image_name }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
         run: |
-          REPO_NAME="${{ github.event.repository.name }}"
-          if [ -n "${{ inputs.image_name }}" ]; then REPO_NAME="${{ inputs.image_name }}"; fi
-          REF="${{ github.ref }}"
-          if [[ "$REF" == refs/tags/* ]]; then
-            TAG="${REF#refs/tags/}"
-          elif [[ "$REF" == refs/heads/main || "$REF" == refs/heads/master ]]; then
-            TAG="main"
-          elif [[ "$REF" == refs/pull/* ]]; then
-            TAG="pr-${{ github.event.pull_request.number }}"
-          else
-            TAG="${REF#refs/heads/}"
+          set -euo pipefail
+          image_name="$IMAGE_NAME_INPUT"
+          if [[ -z "$image_name" ]]; then
+            image_name="$(printf '%s' "$REPOSITORY_NAME" | tr '[:upper:]' '[:lower:]')"
           fi
-          SHA_SHORT="${{ github.event.pull_request.head.sha || github.sha }}" | head -c 7
-          SHA_SHORT=$(echo "${{ github.sha }}" | head -c 7)
-          echo "image=ghcr.io/camster91/${REPO_NAME}" >> $GITHUB_OUTPUT
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "sha=${SHA_SHORT}" >> $GITHUB_OUTPUT
+          if [[ ! "$image_name" =~ ^[a-z0-9]+([._/-][a-z0-9]+)*$ ]]; then
+            echo "::error::image_name must be a lowercase Docker repository name"
+            exit 1
+          fi
+
+          case "$GITHUB_REF" in
+            refs/tags/v*) image_tag="$(printf '%s' "$GITHUB_REF" | sed 's#^refs/tags/##')" ;;
+            refs/heads/main|refs/heads/master) image_tag="main" ;;
+            *)
+              echo "::error::Publishing is limited to main, master, and v-prefixed tags"
+              exit 1
+              ;;
+          esac
+          if [[ ! "$image_tag" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+            echo "::error::The ref does not form a valid Docker tag"
+            exit 1
+          fi
+
+          short_sha="$(printf '%s' "$GITHUB_SHA" | cut -c1-7)"
+          printf 'image=ghcr.io/camster91/%s\n' "$image_name" >> "$GITHUB_OUTPUT"
+          printf 'tag=%s\n' "$image_tag" >> "$GITHUB_OUTPUT"
+          printf 'sha=%s\n' "$short_sha" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
       - name: Log in to GHCR
-        # PRs build but do not push — skip registry login on PRs.
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v4
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -93,41 +128,26 @@ jobs:
 
       - name: Resolve publish tags
         id: tags
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          IMAGE_TAG: ${{ steps.meta.outputs.tag }}
+          SHORT_SHA: ${{ steps.meta.outputs.sha }}
         run: |
-          IMAGE="${{ steps.meta.outputs.image }}"
-          TAG="${{ steps.meta.outputs.tag }}"
-          SHA="${{ steps.meta.outputs.sha }}"
-          TAGS="${IMAGE}:${TAG},${IMAGE}:${TAG}-${SHA}"
-          # Never retag :latest from a PR — that overwrites the
-          # production-facing floating tag with unreviewed code.
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            if [[ "${{ github.ref }}" == refs/heads/main || "${{ github.ref }}" == refs/heads/master || "${{ github.ref }}" == refs/tags/* ]]; then
-              TAGS="${TAGS},${IMAGE}:latest"
-            fi
-          fi
-          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
-          echo "push=$([ "${{ github.event_name }}" = "pull_request" ] && echo false || echo true)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Docker layers
-        uses: actions/cache@v6
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.ref_name }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-main
-            ${{ runner.os }}-buildx-
+          set -euo pipefail
+          tags="$IMAGE:$IMAGE_TAG,$IMAGE:$IMAGE_TAG-$SHORT_SHA"
+          case "$GITHUB_REF" in
+            refs/heads/main|refs/heads/master|refs/tags/v*) tags="$tags,$IMAGE:latest" ;;
+          esac
+          printf 'tags=%s\n' "$tags" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: .
           file: ${{ inputs.dockerfile || 'Dockerfile' }}
           platforms: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
-          # PRs: build-only verification. Main/tags: push immutable + latest.
-          push: ${{ steps.tags.outputs.push }}
+          push: true
           tags: ${{ steps.tags.outputs.tags }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           provenance: true
           sbom: true
           labels: |
@@ -137,12 +157,17 @@ jobs:
             org.opencontainers.image.created=${{ github.event.repository.updated_at }}
 
       - name: Image summary
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          IMAGE_TAG: ${{ steps.meta.outputs.tag }}
+          SHORT_SHA: ${{ steps.meta.outputs.sha }}
+          PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
         run: |
-          echo "## Image published" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Pull:** \`docker pull ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Run:** \`docker run -d -p 3000:3000 --name ${{ github.event.repository.name }} ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Platforms:** ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}" >> $GITHUB_STEP_SUMMARY
-          echo "**SHA:** ${{ steps.meta.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Image published"
+            echo ""
+            echo "**Image:** $IMAGE:$IMAGE_TAG"
+            echo "**Pull:** docker pull $IMAGE:$IMAGE_TAG"
+            echo "**Platforms:** $PLATFORMS"
+            echo "**SHA:** $SHORT_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"

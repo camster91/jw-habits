@@ -1,189 +1,132 @@
 name: iOS TestFlight
-
-# Builds an .ipa from the Capacitor iOS project on
-# macos-latest, uploads to App Store Connect via the
-# official apple-actions/upload-testflight-build action,
-# then waits for the build to finish processing on Apple's
-# side.
-#
-# Triggers:
-#   - workflow_dispatch: manual trigger via gh workflow run
-#   - push to a v*-tag: tagged releases get auto-uploaded
-#
-# Secrets required (NEVER commit .p8 key material — *.p8 is gitignored):
-#   - ASC_API_PRIVATE_KEY  : full PKCS8 contents of the App Store
-#                            Connect API .p8 key (GitHub Actions secret)
-#   - ASC_KEY_ID           : App Store Connect API Key id
-#   - ASC_ISSUER_ID        : App Store Connect API Issuer id
-#   - MATCH_PASSWORD       : Apple developer team password
-#                            (only needed if ios/Matchfile is
-#                            committed — currently not)
-#
-# Async/non-blocking: the job uploads and exits; the build
-# continues processing in TestFlight after the workflow
-# finishes. Apple normally takes 2-5 minutes.
-#
-# Why macos-latest and not a self-hosted runner: the iOS
-# build requires Xcode + the iOS SDK + Apple provisioning
-# tooling. macos-14 image has all of these pre-installed
-# and is the only GitHub-hosted option that works.
-
 on:
   workflow_dispatch:
     inputs:
       bundle_version:
-        description: 'Override CURRENT_PROJECT_VERSION (build number)'
+        description: 'Build number override (default: workflow run number)'
         required: false
         type: string
-        default: ''
       marketing_version:
-        description: 'Override MARKETING_VERSION (display version)'
+        description: 'Version override (default: tag or package version)'
         required: false
         type: string
-        default: ''
       skip_upload:
-        description: 'Skip the TestFlight upload step (build only)'
+        description: 'Unsigned simulator compile only'
         required: false
         type: boolean
         default: false
   push:
-    tags:
-      - 'v*'
-
+    tags: ['v*']
+permissions:
+  contents: read
 concurrency:
   group: ios-testflight-${{ github.ref }}
   cancel-in-progress: false
-
-permissions:
-  contents: read
-
 jobs:
   ios:
-    name: Build & Upload to TestFlight
     runs-on: macos-latest
     timeout-minutes: 60
     env:
-      # Default values — overridden by user inputs when supplied.
-      MARKETING_VERSION: ${{ github.event.inputs.marketing_version || '4.2.0' }}
-      CURRENT_PROJECT_VERSION: ${{ github.event.inputs.bundle_version || '421' }}
-      SKIP_UPLOAD: ${{ github.event.inputs.skip_upload && 'true' || 'false' }}
-
+      VERSION_INPUT: ${{ inputs.marketing_version }}
+      BUILD_INPUT: ${{ inputs.bundle_version }}
+      RUN_BUILD: ${{ github.run_number }}
+      SKIP_UPLOAD: ${{ inputs.skip_upload && 'true' || 'false' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      # Run the same CI gate that the existing ci.yml uses.
-      # If anything fails here we never reach the upload step,
-      # so the TestFlight build is at minimum equivalent to
-      # what's already gated by the standard PR workflow.
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm test
-
-      - name: Format check
-        run: npm run format:check
-
-      - name: Build web bundle
-        run: npm run build
-
-      # Syncing Capacitor actually writes ios/App/capacitor.config.json
-      # (gitignored) and ios/App/App/config.xml. We commit the sync
-      # back to the workflow branch only when not a tag push.
-      - name: Capacitor sync
-        run: npx cap sync ios
-
-      - name: Bump version
-        working-directory: ios/App
-        # PlistBuddy writes both CFBundleShortVersionString and
-        # CFBundleVersion in one shot. Idempotent: re-running
-        # overwrites the same keys.
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint && npm test && npm run format:check && npm run build
+      - run: npx cap sync ios
+      - name: Resolve matching app and widget versions
         run: |
-          /usr/libexec/PlistBuddy -c \
-            "Set :CFBundleShortVersionString $MARKETING_VERSION" \
-            App/Info.plist
-          /usr/libexec/PlistBuddy -c \
-            "Set :CFBundleVersion $CURRENT_PROJECT_VERSION" \
-            App/Info.plist
-          echo "MARKETING_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' App/Info.plist)"
-          echo "CURRENT_PROJECT_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' App/Info.plist)"
-
-      - name: Install Capacitor iOS Pods
-        working-directory: ios/App
-        # CocoaPods is pre-installed on the macos-latest image
-        # but we explicitly `pod install --repo-update` to keep
-        # the spec repo in sync with whatever tag we built.
-        run: pod install --repo-update
-
-      # Build the .xcarchive + export .ipa
-      - name: Build iOS archive (Release)
-        working-directory: ios/App
-        run: |
-          set -o pipefail
-          xcodebuild \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -archivePath build/App.xcarchive \
-            -destination 'generic/platform=iOS' \
-            -allowProvisioningUpdates \
-            archive
-          # Export a signed IPA. The export options plist at
-          # ios/App/exportOptions.plist is auto-generated below
-          # if missing (see "Generate export options plist").
-          xcodebuild \
-            -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build/ipa \
-            -exportOptionsPlist App/exportOptions.plist \
-            -allowProvisioningUpdates
-
-      - name: Locate signed IPA
-        id: ipa
-        working-directory: ios/App
-        run: |
-          IPA=$(find build/ipa -name "*.ipa" -type f | head -1)
-          if [ -z "$IPA" ]; then
-            echo "::error::No .ipa produced"
-            exit 1
+          set -euo pipefail
+          version="$VERSION_INPUT"
+          if [[ -z "$version" ]]; then
+            if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+              version="${GITHUB_REF_NAME#v}"
+            else
+              version="$(node -p 'JSON.parse(require("fs").readFileSync("package.json", "utf8")).version')"
+            fi
           fi
-          echo "ipa_path=$IPA" >> "$GITHUB_OUTPUT"
-          ls -lah "$IPA"
-
-      # Upload to TestFlight. Skip when the input flag is set
-      # (useful for validating the build works without
-      # polluting TestFlight queues).
-      # Action inputs must match apple-actions/upload-testflight-build
-      # (app-path / issuer-id / api-key-id / api-private-key) —
-      # the previous app-store-connect-* / build-path names were
-      # silently ignored and uploads could never succeed.
+          build="${BUILD_INPUT:-$RUN_BUILD}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo '::error::Version must be major.minor.patch'; exit 1; }
+          [[ "$build" =~ ^[1-9][0-9]*$ ]] || { echo '::error::Build must be a positive integer'; exit 1; }
+          printf 'MARKETING_VERSION=%s\nCURRENT_PROJECT_VERSION=%s\n' "$version" "$build" >> "$GITHUB_ENV"
+      - name: Unsigned simulator compile
+        if: env.SKIP_UPLOAD == 'true'
+        run: >-
+          xcodebuild -project ios/App/App.xcodeproj -scheme App
+          -sdk iphonesimulator -configuration Debug
+          -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
+          MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION"
+      - name: Prepare signing authentication
+        if: env.SKIP_UPLOAD != 'true'
+        env:
+          ASC_API_PRIVATE_KEY: ${{ secrets.ASC_API_PRIVATE_KEY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          for name in ASC_API_PRIVATE_KEY ASC_KEY_ID ASC_ISSUER_ID ASC_TEAM_ID; do
+            [[ -n "${!name}" ]] || { echo "::error::Missing repository secret: $name"; exit 1; }
+          done
+          umask 077
+          printf '%s' "$ASC_API_PRIVATE_KEY" > "$RUNNER_TEMP/AuthKey_ci.p8"
+          python3 - <<'PY'
+          import os, plistlib
+          with open('ios/App/App/exportOptions.plist', 'wb') as output:
+              plistlib.dump({'method': 'app-store-connect', 'signingStyle': 'automatic', 'teamID': os.environ['ASC_TEAM_ID'], 'destination': 'export', 'uploadSymbols': True}, output)
+          PY
+      - name: Archive and export signed app with matching widget version
+        if: env.SKIP_UPLOAD != 'true'
+        working-directory: ios/App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -archivePath build/App.xcarchive -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates -authenticationKeyPath "$RUNNER_TEMP/AuthKey_ci.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            archive CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM="$ASC_TEAM_ID" \
+            MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION"
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build/ipa \
+            -exportOptionsPlist App/exportOptions.plist -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey_ci.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Locate signed IPA
+        if: env.SKIP_UPLOAD != 'true'
+        id: ipa
+        run: |
+          set -euo pipefail
+          ipa="$(find "$GITHUB_WORKSPACE/ios/App/build/ipa" -name '*.ipa' -type f -print -quit)"
+          [[ -n "$ipa" ]] || { echo '::error::No signed IPA was produced'; exit 1; }
+          printf 'path=%s\n' "$ipa" >> "$GITHUB_OUTPUT"
       - name: Upload to TestFlight
         if: env.SKIP_UPLOAD != 'true'
-        uses: apple-actions/upload-testflight-build@v5.5.0
+        uses: apple-actions/upload-testflight-build@14df18fee5a4ff3b76971dd382f033494a0194e9 # v5.5.0
         with:
-          app-path: ${{ steps.ipa.outputs.ipa_path }}
+          app-path: ${{ steps.ipa.outputs.path }}
           app-type: ios
           issuer-id: ${{ secrets.ASC_ISSUER_ID }}
           api-key-id: ${{ secrets.ASC_KEY_ID }}
           api-private-key: ${{ secrets.ASC_API_PRIVATE_KEY }}
-
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey_ci.p8"
       - name: Summary
         if: success()
         run: |
-          echo "## ✅ TestFlight build uploaded" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- MARKETING_VERSION: $MARKETING_VERSION" >> "$GITHUB_STEP_SUMMARY"
-          echo "- CURRENT_PROJECT_VERSION: $CURRENT_PROJECT_VERSION" >> "$GITHUB_STEP_SUMMARY"
-          echo "- IPA: \`${{ steps.ipa.outputs.ipa_path }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Open [App Store Connect → TestFlight](https://appstoreconnect.apple.com/apps/your-bundle-id/testflight/ios) to assign the build to a tester group."
+          if [[ "$SKIP_UPLOAD" == true ]]; then
+            echo 'Unsigned simulator compilation passed; no TestFlight upload requested.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Upload accepted by the TestFlight action; confirm processing and installation in App Store Connect.' >> "$GITHUB_STEP_SUMMARY"
+          fi

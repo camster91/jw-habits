@@ -43,7 +43,7 @@ user-editable slot instead.
 | i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (v2 strings are English only for now; es/fr fall back to en) |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
-| Testing | Vitest 4 + Testing Library + Playwright | 803 tests / 54 files, 7 smoke, 7 journeys + a clean-run check |
+| Testing | Vitest 5 + Testing Library + Playwright | 803 tests / 54 files, 7 smoke, 7 journeys + a clean-run check |
 | Linting | ESLint 9 + Prettier 3 | |
 
 ## Commands
@@ -98,8 +98,8 @@ src/
 ├── locales/                    # en.json (all fd.* strings), es.json / fr.json (v1 leftovers, see Known issues)
 └── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js, userLinks.js,
                                 # settingsStore.js (Share only), backup.js, pwa.js, backStack.js (Android back)
-ios/App/FaithfulDaysWidget/     # WidgetKit sources (target not in the Xcode project yet)
-docs/ios-widget-setup.md        # One-time Xcode steps for the widget extension
+ios/App/FaithfulDaysWidget/     # Embedded WidgetKit extension sources (iOS 17+)
+docs/ios-widget-setup.md        # Signing/account and device verification for the embedded widget
 docs/release-checklist.md       # Manual on-device checklist to run before every store release
 scripts/verify/                 # smoke.cjs, journeys.cjs, lib.cjs (Playwright)
 ```
@@ -176,9 +176,9 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   and gitleaks. Playwright smoke + journeys (`smoke.yml`) and the image build also run on PRs.
 - **npm 10 crashes** (`edgesOut`) re-resolving the lockfile. Use
   `npx npm@11 install --package-lock-only`.
-- **The widget is unverified.** The Android and iOS widget sources were written without a JDK,
-  Android SDK or Xcode. The iOS extension target is not in `project.pbxproj`; follow
-  `docs/ios-widget-setup.md`, then run `docs/release-checklist.md` before any store release.
+- **Native compilation is gated in CI.** Android debug and iOS simulator builds cover the app
+  and embedded widget. Device check-ins, signing and TestFlight installation remain unverified;
+  follow `docs/ios-widget-setup.md` and `docs/release-checklist.md` before store release.
 - **Storage failures are visible.** `StorageNotice` listens for `jw-storage-full` and offers
   backup settings so the current in-memory history can be exported before closing.
 - **es/fr hold only v1 strings.** `es.json` / `fr.json` contain no `fd.*` keys, so v2 shows in

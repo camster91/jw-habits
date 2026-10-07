@@ -18,6 +18,9 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		705B555A0A3B43458F875079 /* FaithfulDaysWidget.appex in Copy Files */ = {isa = PBXBuildFile; fileRef = 74D2D4A1BDE14C05BA7EDC14 /* FaithfulDaysWidget.appex */; };
+		4BD91E71BC404C499D2AC813 /* FaithfulDaysWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D271C4A61374367BBC39E07 /* FaithfulDaysWidget.swift */; };
+		ECE7C98568E5498E90222993 /* CheckInIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CF6A93B2FF648C197C8C2CD /* CheckInIntent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,9 +34,13 @@
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		6E8167BC784647062E5F1E2F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		6E8167BC784647062E5F1E2F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = ../PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		74D2D4A1BDE14C05BA7EDC14 /* FaithfulDaysWidget.appex */ = {isa = PBXFileReference; name = "FaithfulDaysWidget.appex"; path = "FaithfulDaysWidget.appex"; sourceTree = BUILT_PRODUCTS_DIR; fileEncoding = undefined; lastKnownFileType = undefined; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; };
+		6D271C4A61374367BBC39E07 /* FaithfulDaysWidget.swift */ = {isa = PBXFileReference; name = "FaithfulDaysWidget.swift"; path = "FaithfulDaysWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		1CF6A93B2FF648C197C8C2CD /* CheckInIntent.swift */ = {isa = PBXFileReference; name = "CheckInIntent.swift"; path = "CheckInIntent.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		0DE92FEF95464011A28BCFDF /* FaithfulDaysWidget.entitlements */ = {isa = PBXFileReference; name = "FaithfulDaysWidget.entitlements"; path = "FaithfulDaysWidget.entitlements"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -42,6 +49,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3888D7985D9E4D6B98917F91 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -54,6 +68,7 @@
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
+				DA7E5071F9684F5982B6372A /* FaithfulDaysWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -61,6 +76,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				74D2D4A1BDE14C05BA7EDC14 /* FaithfulDaysWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -68,7 +84,6 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
-				
 				6E8167BC784647062E5F1E2F /* PrivacyInfo.xcprivacy */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
@@ -84,6 +99,17 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		DA7E5071F9684F5982B6372A /* FaithfulDaysWidget */ = {
+			isa = PBXGroup;
+			children = (
+				6D271C4A61374367BBC39E07 /* FaithfulDaysWidget.swift */,
+				1CF6A93B2FF648C197C8C2CD /* CheckInIntent.swift */,
+				0DE92FEF95464011A28BCFDF /* FaithfulDaysWidget.entitlements */,
+			);
+			name = FaithfulDaysWidget;
+			path = FaithfulDaysWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -94,6 +120,7 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				E6FADE4864BB4902BA9B7FE4 /* Copy Files */,
 			);
 			buildRules = (
 			);
@@ -107,14 +134,31 @@
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
 		};
+		E2A3193428994ADEA11E25B3 /* "FaithfulDaysWidget" */ = {
+			isa = PBXNativeTarget;
+			name = "FaithfulDaysWidget";
+			productName = "FaithfulDaysWidget";
+			productReference = 74D2D4A1BDE14C05BA7EDC14;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = DB27A2C0483246368769B823;
+			buildPhases = (
+				F72CB0D1AE984722B74CBA75 /* Sources */,
+				3888D7985D9E4D6B98917F91 /* Frameworks */,
+				56B04D011E524ACDA8E78E9F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
 		504EC2FC1FED79650016851F /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 0920;
-				LastUpgradeCheck = 0920;
+				LastSwiftUpdateCheck = 920;
+				LastUpgradeCheck = 920;
 				TargetAttributes = {
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
@@ -140,6 +184,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				E2A3193428994ADEA11E25B3 /* "FaithfulDaysWidget" */,
 			);
 		};
 /* End PBXProject section */
@@ -149,7 +194,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				
 				6606BF23E288537A30FA352A /* PrivacyInfo.xcprivacy in Resources */,
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
 				50B271D11FEDC1A000F3C39B /* public in Resources */,
@@ -157,6 +201,13 @@
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
 				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56B04D011E524ACDA8E78E9F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -170,6 +221,15 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				A7967818161E4B4206BB25C7 /* MainViewController.swift in Sources */,
 				0C7BD4F61B26C553D2D8AD89 /* WidgetBridgePlugin.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F72CB0D1AE984722B74CBA75 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4BD91E71BC404C499D2AC813 /* FaithfulDaysWidget.swift in Sources */,
+				ECE7C98568E5498E90222993 /* CheckInIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -324,6 +384,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 			};
 			name = Debug;
 		};
@@ -345,8 +406,55 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 			};
 			name = Release;
+		};
+		2CAA474A7FA84850B20EA540 /* Debug */ = {
+			name = Debug;
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = FaithfulDaysWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_NAME = "FaithfulDaysWidget";
+				SKIP_INSTALL = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "ca.ashbi.habittracker.FaithfulDaysWidget";
+				CODE_SIGN_ENTITLEMENTS = FaithfulDaysWidget/FaithfulDaysWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 510;
+				MARKETING_VERSION = 5.1.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+			};
+		};
+		060726CB3EB2448E97362ACE /* Release */ = {
+			name = Release;
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = FaithfulDaysWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_NAME = "FaithfulDaysWidget";
+				SKIP_INSTALL = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "ca.ashbi.habittracker.FaithfulDaysWidget";
+				CODE_SIGN_ENTITLEMENTS = FaithfulDaysWidget/FaithfulDaysWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 510;
+				MARKETING_VERSION = 5.1.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+			};
 		};
 /* End XCBuildConfiguration section */
 
@@ -369,6 +477,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		DB27A2C0483246368769B823 /* Build configuration list for PBXNativeTarget "FaithfulDaysWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2CAA474A7FA84850B20EA540 /* Debug */,
+				060726CB3EB2448E97362ACE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -385,6 +502,20 @@
 			productName = "CapApp-SPM";
 		};
 /* End XCSwiftPackageProductDependency section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E6FADE4864BB4902BA9B7FE4 /* Copy Files */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				705B555A0A3B43458F875079 /* FaithfulDaysWidget.appex in Copy Files */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			name = "Copy Files";
+			dstPath = "";
+			dstSubfolderSpec = 13;
+		};
+/* End PBXCopyFilesBuildPhase section */
 	};
 	rootObject = 504EC2FC1FED79650016851F /* Project object */;
 }
