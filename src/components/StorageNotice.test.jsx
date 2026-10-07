@@ -11,3 +11,16 @@ it('announces a failed save and opens backup settings', () => {
   fireEvent.click(screen.getByRole('button', { name: /backup/i }));
   expect(backup).toHaveBeenCalledOnce();
 });
+it('retains a failure that happened before the notice mounted', async () => {
+  const { safeSetItem } = await import('../utils/safeStorage.js');
+  const write = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+    throw Object.assign(new Error('full'), { name: 'QuotaExceededError' });
+  });
+  try {
+    expect(safeSetItem('jw-habits-v2', 'data')).toBe(false);
+  } finally {
+    write.mockRestore();
+  }
+  render(<StorageNotice onBackup={() => {}} />);
+  expect(screen.getByRole('alert')).toHaveTextContent('could not be saved');
+});

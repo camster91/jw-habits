@@ -21,6 +21,7 @@
 		705B555A0A3B43458F875079 /* FaithfulDaysWidget.appex in Copy Files */ = {isa = PBXBuildFile; fileRef = 74D2D4A1BDE14C05BA7EDC14 /* FaithfulDaysWidget.appex */; };
 		4BD91E71BC404C499D2AC813 /* FaithfulDaysWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D271C4A61374367BBC39E07 /* FaithfulDaysWidget.swift */; };
 		ECE7C98568E5498E90222993 /* CheckInIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CF6A93B2FF648C197C8C2CD /* CheckInIntent.swift */; };
+		4687C55B0DAB4572861AFCB7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 30DBA1CB58964E888A0EA1CF /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +42,7 @@
 		6D271C4A61374367BBC39E07 /* FaithfulDaysWidget.swift */ = {isa = PBXFileReference; name = "FaithfulDaysWidget.swift"; path = "FaithfulDaysWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
 		1CF6A93B2FF648C197C8C2CD /* CheckInIntent.swift */ = {isa = PBXFileReference; name = "CheckInIntent.swift"; path = "CheckInIntent.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
 		0DE92FEF95464011A28BCFDF /* FaithfulDaysWidget.entitlements */ = {isa = PBXFileReference; name = "FaithfulDaysWidget.entitlements"; path = "FaithfulDaysWidget.entitlements"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		30DBA1CB58964E888A0EA1CF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; name = "PrivacyInfo.xcprivacy"; path = "PrivacyInfo.xcprivacy"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,6 +107,7 @@
 				6D271C4A61374367BBC39E07 /* FaithfulDaysWidget.swift */,
 				1CF6A93B2FF648C197C8C2CD /* CheckInIntent.swift */,
 				0DE92FEF95464011A28BCFDF /* FaithfulDaysWidget.entitlements */,
+				30DBA1CB58964E888A0EA1CF /* PrivacyInfo.xcprivacy */,
 			);
 			name = FaithfulDaysWidget;
 			path = FaithfulDaysWidget;
@@ -208,6 +211,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4687C55B0DAB4572861AFCB7 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -29,7 +29,10 @@ vi.mock('../utils/native.js', () => ({
   },
 }));
 vi.mock('@capacitor/filesystem', () => ({
-  Filesystem: { writeFile: vi.fn(() => Promise.resolve({ uri: 'file:///cache/backup.json' })) },
+  Filesystem: {
+    writeFile: vi.fn(() => Promise.resolve({ uri: 'file:///cache/backup.json' })),
+    deleteFile: vi.fn(() => Promise.resolve()),
+  },
   Directory: { Cache: 'CACHE' },
   Encoding: { UTF8: 'utf8' },
 }));

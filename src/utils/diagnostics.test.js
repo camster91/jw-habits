@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearDiagnostics, pruneDiagnostics, recordDiagnostic } from './diagnostics.js';
 const NOW = Date.parse('2026-10-07T12:00:00Z');
 beforeEach(() => localStorage.clear());
@@ -31,4 +31,20 @@ describe('local diagnostics', () => {
     clearDiagnostics();
     expect(localStorage.getItem('jw-error-logs')).toBeNull();
   });
+});
+
+it('survives malformed storage and a failed diagnostic write without leaking an alert', () => {
+  localStorage.setItem('jw-error-logs', '{ broken');
+  const event = vi.spyOn(window, 'dispatchEvent');
+  const write = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+    throw new Error('full');
+  });
+  try {
+    expect(() => recordDiagnostic('component', NOW)).not.toThrow();
+    expect(pruneDiagnostics(NOW)).toEqual([]);
+    expect(event).not.toHaveBeenCalled();
+  } finally {
+    write.mockRestore();
+    event.mockRestore();
+  }
 });

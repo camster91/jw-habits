@@ -128,7 +128,8 @@
         "title": "Welcome to Faithful Days",
         "body": "A calm place to keep your spiritual routines: the daily text, Bible reading, meetings, family worship, personal study and the ministry.",
         "private": "Everything stays on your phone. There's no account and no sign-up.",
-        "start": "Get started"
+        "start": "Get started",
+        "storage": "Your day starts at 3 a.m. Check-ins and plans stay on this device; there is no account or sync. Clearing app data or uninstalling can remove your history. Export a private backup in Settings before changing devices."
       },
       "routines": {
         "title": "Your routines",
@@ -518,8 +519,23 @@
       "badge": "A new bloom · {{title}}"
     },
     "storage": {
-      "full": "Your device could not save the latest changes. Export a backup before closing the app, then free storage and reopen it.",
+      "full": "Your changes could not be saved on this device. Export a backup before closing the app, then free storage or check device settings.",
       "backup": "Open backup settings"
+    },
+    "recovery": {
+      "explanation": "The app could not open this screen. Reload first. We cannot verify your saved data from this error screen; save a recovery copy before resetting or reinstalling.",
+      "refresh": "Refresh app files and reload",
+      "refreshFailed": "Could not refresh app files. Try reloading or contact support.",
+      "copy": "Save a data recovery copy",
+      "noCopy": "No saved app data was found. This does not recover unsaved changes.",
+      "copyOffered": "A recovery copy was offered. Check that you saved the file before resetting. Keep it private.",
+      "copyCancelled": "Recovery copy cancelled.",
+      "copyFailed": "Could not save a recovery copy. Your stored data was not changed.",
+      "acceptReset": "I saved a recovery copy or accept losing my current app data.",
+      "reset": "Reset current app data and reload",
+      "resetConfirm": "Reset current Faithful Days routines, check-ins, reading, plans, notes, badges and settings? Existing recovery copies and other site data will remain. This cannot be undone without a saved backup.",
+      "resetFailed": "Could not reset the app data. Contact support before uninstalling.",
+      "support": "Avoid reinstalling until you have saved a recovery copy."
     }
   }
 }

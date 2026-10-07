@@ -11,6 +11,16 @@ import { Preferences } from '@capacitor/preferences';
 import { isNative } from './native.js';
 
 const EVICTABLE_KEYS = ['jw-error-logs'];
+let failedWrite = false;
+export const hasStorageFailure = () => failedWrite;
+function signalStorageFailure(key) {
+  failedWrite = true;
+  try {
+    window.dispatchEvent(new CustomEvent('jw-storage-full', { detail: { key } }));
+  } catch {
+    /* no UI surface */
+  }
+}
 
 export function isQuotaExceededError(error) {
   if (!error) return false;
@@ -33,7 +43,10 @@ export function safeSetItem(key, value) {
     localStorage.setItem(key, value);
     return true;
   } catch (error) {
-    if (!isQuotaExceededError(error)) return false;
+    if (!isQuotaExceededError(error)) {
+      signalStorageFailure(key);
+      return false;
+    }
     try {
       for (const evictKey of EVICTABLE_KEYS) {
         try {
@@ -45,11 +58,7 @@ export function safeSetItem(key, value) {
       localStorage.setItem(key, value);
       return true;
     } catch {
-      try {
-        window.dispatchEvent(new CustomEvent('jw-storage-full', { detail: { key } }));
-      } catch {
-        // SSR / non-window environments
-      }
+      signalStorageFailure(key);
       return false;
     }
   }
@@ -149,7 +158,12 @@ export async function durableGet(key) {
 export function durableSet(key, value) {
   return enqueue(async () => {
     if (isNative) {
-      await Preferences.set({ key, value });
+      try {
+        await Preferences.set({ key, value });
+      } catch (error) {
+        signalStorageFailure(key);
+        throw error;
+      }
     } else if (!safeSetItem(key, value)) {
       throw new Error(`Could not persist "${key}"`);
     }

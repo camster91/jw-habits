@@ -1,13 +1,21 @@
+import { hasStorageFailure } from '../utils/safeStorage.js';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export default function StorageNotice({ onBackup }) {
   const { t } = useTranslation();
-  const [full, setFull] = useState(false);
+  const [full, setFull] = useState(hasStorageFailure);
   useEffect(() => {
-    const warn = () => setFull(true);
+    let active = true;
+    const warn = () => {
+      if (active) setFull(true);
+    };
     window.addEventListener('jw-storage-full', warn);
-    return () => window.removeEventListener('jw-storage-full', warn);
+    if (hasStorageFailure()) queueMicrotask(warn);
+    return () => {
+      active = false;
+      window.removeEventListener('jw-storage-full', warn);
+    };
   }, []);
   if (!full) return null;
   return (
