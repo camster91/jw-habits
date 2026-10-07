@@ -96,6 +96,7 @@ export function finishedOn(plan) {
 export function createPlan(store, { title, kind, colour = 0, icon = 'book', steps = [] }, today) {
   const refused = { store, planId: null };
   const t = cleanTitle(title);
+  if (!isDay(today)) return refused;
   if (!t || !PLAN_KINDS.includes(kind) || !PLAN_ICONS.includes(icon)) return refused;
   if (!Number.isInteger(colour) || colour < 0 || colour >= PLAN_COLOURS) return refused;
   if (!Array.isArray(steps) || steps.length > MAX_STEPS) return refused;
@@ -215,7 +216,7 @@ export function setStepDone(store, planId, stepId, day) {
 
 export function archivePlan(store, planId, today) {
   const plan = store.plans.find((p) => p.id === planId);
-  if (!plan) return store;
+  if (!plan || !isDay(today)) return store;
   const next =
     plan.archivedOn === null ? mapPlan(store, planId, (p) => ({ ...p, archivedOn: today })) : store;
   return withoutActive(next, planId);

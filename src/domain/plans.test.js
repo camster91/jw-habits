@@ -346,6 +346,21 @@ describe('review fixes', () => {
   });
 });
 
+describe('lifecycle dates', () => {
+  it('createPlan and archivePlan refuse a malformed or missing today', () => {
+    const s = fresh();
+    for (const bad of [undefined, null, 'today', '2026-13-01', '2026-10-7', 20261007]) {
+      const r = createPlan(s, { title: 'a', kind: 'study' }, bad);
+      expect(r.planId).toBeNull();
+      expect(r.store).toBe(s);
+    }
+    const { store, planId } = planWith(1);
+    for (const bad of [undefined, null, 'today', '2026-02-30']) {
+      expect(archivePlan(store, planId, bad)).toBe(store);
+    }
+  });
+});
+
 describe('purity', () => {
   it('never mutates its input', () => {
     const { store, planId, plan } = planWith(3);
