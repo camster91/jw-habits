@@ -7,7 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- App metadata -->
-    <meta name="description" content="Track daily habits and routines. Add your own habits, set reminders, and keep a simple streak." />
+    <meta
+      name="description"
+      content="Track daily habits and routines. Add your own habits, set reminders, and keep a simple streak."
+    />
     <meta name="author" content="Ashbi Design" />
     <meta name="application-name" content="Faithful Days" />
 
@@ -40,11 +43,30 @@
 
     <title>Faithful Days</title>
 
+    <script>
+      (() => {
+        let theme = 'system';
+        try {
+          theme = localStorage.getItem('fd-boot-theme') || 'system';
+        } catch {}
+        const dark =
+          theme === 'dark' ||
+          (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        document.querySelector('meta[name="theme-color"]').content = dark ? '#000000' : '#f3f4f6';
+      })();
+    </script>
     <!-- Critical CSS for initial load -->
     <style>
       /* Prevent flash of unstyled content */
       html {
-        background-color: #e5e7eb;
+        background-color: #f3f4f6;
+        color: #171717;
+      }
+
+      html[data-theme='dark'] {
+        background-color: #000000;
+        color: #ffffff;
       }
 
       /* Safe area handling for notched devices */
@@ -62,14 +84,25 @@
         width: 40px;
         height: 40px;
         margin: 100px auto;
-        border: 3px solid #4A6FA4;
+        border: 3px solid #4a6fa4;
         border-top-color: transparent;
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
 
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto !important;
+        }
+        #root:empty::after {
+          animation: none;
+        }
       }
 
       /* Disable pull-to-refresh on mobile */
@@ -78,13 +111,25 @@
       }
 
       /* Safe area padding */
-      .safe-top { padding-top: env(safe-area-inset-top); }
-      .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-      .safe-left { padding-left: env(safe-area-inset-left); }
-      .safe-right { padding-right: env(safe-area-inset-right); }
+      .safe-top {
+        padding-top: env(safe-area-inset-top);
+      }
+      .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .safe-left {
+        padding-left: env(safe-area-inset-left);
+      }
+      .safe-right {
+        padding-right: env(safe-area-inset-right);
+      }
     </style>
   </head>
   <body>
+    <noscript
+      >Faithful Days needs JavaScript. Your saved app data is stored on this device.
+      <a href="/support/">Get support</a>.</noscript
+    >
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

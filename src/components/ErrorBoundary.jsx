@@ -1,6 +1,8 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw, Home, Trash2 } from 'lucide-react';
-import { safeClearAll } from '../utils/safeStorage.js';
+import i18n from 'i18next';
+import { recoveryCopy, resetCurrentStore, refreshAppShell } from '../utils/recovery.js';
+import { saveBackup, isShareCancel } from '../utils/backup.js';
 import { recordDiagnostic } from '../utils/diagnostics.js';
 
 /**
@@ -14,6 +16,8 @@ class ErrorBoundary extends Component {
       hasError: false,
       error: null,
       errorInfo: null,
+      recoveryStatus: '',
+      acceptReset: false,
     };
   }
 
@@ -47,29 +51,38 @@ class ErrorBoundary extends Component {
 
   handleClearAndReload = async () => {
     try {
-      // Clear service worker caches (but not localStorage to preserve user data)
-      if ('caches' in window) {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map((name) => caches.delete(name)));
-      }
-
-      // Unregister service workers
-      if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((reg) => reg.unregister()));
-      }
-
-      // Reload the page
-      window.location.reload();
+      await refreshAppShell();
+      this.handleReload();
     } catch {
-      window.location.reload();
+      this.setState({ recoveryStatus: i18n.t('fd.recovery.refreshFailed') });
     }
   };
 
-  handleClearAllAndReload = () => {
-    if (window.confirm('This will clear all app data including your progress. Continue?')) {
-      safeClearAll();
-      this.handleClearAndReload();
+  handleBackup = async () => {
+    try {
+      const raw = await recoveryCopy();
+      if (raw === null) {
+        this.setState({ recoveryStatus: i18n.t('fd.recovery.noCopy') });
+        return;
+      }
+      await saveBackup(raw, `faithful-days-recovery-${Date.now()}.json`, 'Faithful Days');
+      this.setState({ recoveryStatus: i18n.t('fd.recovery.copyOffered') });
+    } catch (error) {
+      this.setState({
+        recoveryStatus: i18n.t(
+          isShareCancel(error) ? 'fd.recovery.copyCancelled' : 'fd.recovery.copyFailed'
+        ),
+      });
+    }
+  };
+
+  handleClearAllAndReload = async () => {
+    if (!this.state.acceptReset || !window.confirm(i18n.t('fd.recovery.resetConfirm'))) return;
+    try {
+      await resetCurrentStore(i18n.resolvedLanguage || 'en');
+      this.handleReload();
+    } catch {
+      this.setState({ recoveryStatus: i18n.t('fd.recovery.resetFailed') });
     }
   };
 
@@ -92,8 +105,7 @@ class ErrorBoundary extends Component {
 
               {/* Error Description */}
               <p className="text-sm text-base-content/70 mt-2">
-                The app encountered an unexpected error. Your data is safe, and you can try
-                reloading the page.
+                {i18n.t('fd.recovery.explanation')}
               </p>
 
               {/* Error Details (Development Only) */}
@@ -125,21 +137,41 @@ class ErrorBoundary extends Component {
                   onClick={this.handleClearAndReload}
                   className="btn btn-ghost btn-sm text-base-content/70"
                 >
-                  Clear cache and reload
+                  {i18n.t('fd.recovery.refresh')}
                 </button>
 
                 <button
+                  type="button"
+                  className="btn btn-outline min-h-11"
+                  onClick={this.handleBackup}
+                >
+                  {i18n.t('fd.recovery.copy')}
+                </button>
+                <label className="flex items-center gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={this.state.acceptReset}
+                    onChange={(event) => this.setState({ acceptReset: event.target.checked })}
+                  />
+                  {i18n.t('fd.recovery.acceptReset')}
+                </label>
+                <p role="status">{this.state.recoveryStatus}</p>
+                <button
                   onClick={this.handleClearAllAndReload}
+                  disabled={!this.state.acceptReset}
                   className="btn btn-ghost btn-xs text-error/60 gap-1"
                 >
                   <Trash2 className="w-3 h-3" />
-                  Clear all data & reload
+                  {i18n.t('fd.recovery.reset')}
                 </button>
               </div>
 
               {/* Support Message */}
               <p className="text-xs text-base-content/70 mt-4">
-                If this problem persists, try clearing your browser cache or reinstalling the app.
+                {i18n.t('fd.recovery.support')}{' '}
+                <a href="https://jwhabits.ashbi.ca/support/" className="underline">
+                  {i18n.t('fd.settings.about.support')}
+                </a>
               </p>
             </div>
           </div>

@@ -1,8 +1,11 @@
+import { setCacheNameDetails } from 'workbox-core';
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
 import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+
+setCacheNameDetails({ prefix: 'faithful-days' });
 
 // Precache all assets from vite build
 precacheAndRoute(self.__WB_MANIFEST);
@@ -104,7 +107,7 @@ registerRoute(
     url.origin === self.location.origin &&
     /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/.test(url.pathname),
   new CacheFirst({
-    cacheName: 'images-cache',
+    cacheName: 'faithful-days-images',
     plugins: [
       new ExpirationPlugin({ maxEntries: 60, maxAgeSeconds: 30 * 24 * 60 * 60 }),
       new CacheableResponsePlugin({ statuses: [200] }),
@@ -117,7 +120,7 @@ registerRoute(
   ({ url }) =>
     url.origin === self.location.origin && /\.(?:woff|woff2|ttf|otf|eot)$/.test(url.pathname),
   new CacheFirst({
-    cacheName: 'fonts-cache',
+    cacheName: 'faithful-days-fonts',
     plugins: [
       new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 }),
       new CacheableResponsePlugin({ statuses: [200] }),
@@ -129,7 +132,7 @@ registerRoute(
 registerRoute(
   ({ url }) => url.origin === self.location.origin && url.pathname.endsWith('.webmanifest'),
   new StaleWhileRevalidate({
-    cacheName: 'manifest-cache',
+    cacheName: 'faithful-days-manifest',
     plugins: [new ExpirationPlugin({ maxEntries: 2, maxAgeSeconds: 7 * 24 * 60 * 60 })],
   })
 );

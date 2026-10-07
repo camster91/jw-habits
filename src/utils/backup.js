@@ -24,7 +24,15 @@ export async function saveBackup(text, fileName, title) {
       directory: Directory.Cache,
       encoding: Encoding.UTF8,
     });
-    await Share.share({ title, url: uri });
+    try {
+      await Share.share({ title, url: uri });
+    } finally {
+      try {
+        await Filesystem.deleteFile({ path: fileName, directory: Directory.Cache });
+      } catch {
+        /* Cache cleanup is best-effort; preserve the share outcome. */
+      }
+    }
     return;
   }
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));

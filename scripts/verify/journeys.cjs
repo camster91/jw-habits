@@ -365,6 +365,19 @@ const closeSettings = async (page) => {
     );
   }
 
+  // J10: before the application loads, persisted theme wins and motion is optional.
+  for (const theme of ['dark', 'light']) {
+    const ctx = await browser.newContext({ locale: 'en-CA', colorScheme: theme === 'dark' ? 'light' : 'dark', reducedMotion: 'reduce' });
+    await ctx.addInitScript((value) => localStorage.setItem('fd-boot-theme', value), theme);
+    const page = await ctx.newPage();
+    await page.route('**/*.js', route => route.abort());
+    await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+    const boot = await page.evaluate(() => ({ theme: document.documentElement.dataset.theme, background: getComputedStyle(document.documentElement).backgroundColor, motion: getComputedStyle(document.getElementById('root'), '::after').animationName, chrome: document.querySelector('meta[name="theme-color"]').content }));
+    step(`J10 ${theme} startup chrome respects persisted preference`, boot.theme === theme && boot.chrome === (theme === 'dark' ? '#000000' : '#f3f4f6'));
+    step(`J10 ${theme} startup has no reduced-motion spinner`, boot.motion === 'none');
+    await ctx.close();
+  }
+
   // J8: nothing went wrong, and nothing left the origin.
   step('J8 no console errors', sink.errors.length === 0, sink.errors.slice(0, 3).join(' | '));
   step(

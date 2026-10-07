@@ -1,3 +1,4 @@
+import { safeSetItemQuiet } from '../utils/safeStorage.js';
 /**
  * Theme and accent for the document. Accents are the six choices offered in
  * Settings; each gives at least 4.5:1 contrast with white text on top of it
@@ -63,9 +64,13 @@ export function accentText(index, mode) {
  */
 export function applyTheme(store) {
   const root = document.documentElement;
+  safeSetItemQuiet('fd-boot-theme', store.theme);
+
   root.style.setProperty('--fd-accent', ACCENTS[store.accent] ?? ACCENTS[0]);
   const set = (mode) => {
     root.setAttribute('data-theme', mode);
+    const chrome = document.querySelector('meta[name="theme-color"]');
+    if (chrome) chrome.content = mode === 'dark' ? '#000000' : '#f3f4f6';
     root.style.setProperty('--fd-accent-text', accentText(store.accent, mode));
   };
 
