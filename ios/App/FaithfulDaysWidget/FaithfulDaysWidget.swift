@@ -50,46 +50,10 @@ enum WidgetStore {
         return snapshot
     }
 
-    /// Mirrors currentDay: preserve an app's day one day ahead after westward travel.
-    static func isCurrentDay(_ day: String, at now: Date) -> Bool {
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) ?? now
-        return day == appDay(now) || day == appDay(tomorrow)
-    }
+    static func isCurrentDay(_ day: String, at now: Date) -> Bool { WidgetDay.isCurrentDay(day, at: now) }
+    static func appDay(_ now: Date) -> String { WidgetDay.appDay(now) }
+    static func nextRollover(after now: Date) -> Date { WidgetDay.nextRollover(after: now) }
 
-    /// Gregorian calendar in the device's time zone, whatever calendar the user prefers,
-    /// so the day string matches the app's 'YYYY-MM-DD'.
-    static var calendar: Calendar {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone.current
-        return cal
-    }
-
-    /// The app day for an instant: the local date, or the previous one before 03:00.
-    static func appDay(_ now: Date) -> String {
-        let cal = calendar
-        var date = now
-        if cal.component(.hour, from: now) < rolloverHour {
-            date = cal.date(byAdding: .day, value: -1, to: now) ?? now
-        }
-        let c = cal.dateComponents([.year, .month, .day], from: date)
-        return pad(c.year ?? 0, 4) + "-" + pad(c.month ?? 0, 2) + "-" + pad(c.day ?? 0, 2)
-    }
-
-    /// The next 03:00 after `now`, when the app day rolls over.
-    static func nextRollover(after now: Date) -> Date {
-        let cal = calendar
-        var parts = DateComponents()
-        parts.hour = rolloverHour
-        parts.minute = 0
-        parts.second = 0
-        return cal.nextDate(after: now, matching: parts, matchingPolicy: .nextTime)
-            ?? now.addingTimeInterval(6 * 60 * 60)
-    }
-
-    private static func pad(_ n: Int, _ width: Int) -> String {
-        let s = String(n)
-        return String(repeating: "0", count: max(0, width - s.count)) + s
-    }
 }
 
 // MARK: - Timeline

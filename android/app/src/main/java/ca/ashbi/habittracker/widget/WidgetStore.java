@@ -148,6 +148,10 @@ public final class WidgetStore {
     public static boolean isCurrentDay(String day, long millis) {
         GregorianCalendar tomorrow = new GregorianCalendar();
         tomorrow.setTimeInMillis(millis);
+        boolean beforeRollover = tomorrow.get(Calendar.HOUR_OF_DAY) < ROLLOVER_HOUR;
+        // Do date arithmetic at noon so a missing 02:30 during DST cannot skip a day.
+        tomorrow.set(Calendar.HOUR_OF_DAY, 12);
+        if (beforeRollover) tomorrow.add(Calendar.DAY_OF_MONTH, -1);
         tomorrow.add(Calendar.DAY_OF_MONTH, 1);
         return day != null && (day.equals(appDay(millis)) || day.equals(appDay(tomorrow.getTimeInMillis())));
     }

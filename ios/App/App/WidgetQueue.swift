@@ -54,3 +54,53 @@ final class WidgetQueue {
         }
     }
 }
+
+/// Native app-day arithmetic shared with the widget and standalone CI tests.
+enum WidgetDay {
+    static let rolloverHour = 3
+    /// Mirrors currentDay: preserve an app's day one day ahead after westward travel.
+    static func isCurrentDay(_ day: String, at now: Date, calendar: Calendar = calendar) -> Bool {
+        let clockDay = appDay(now, calendar: calendar)
+        let parts = clockDay.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3,
+              let noon = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)),
+              let tomorrow = calendar.date(byAdding: .day, value: 1, to: noon)
+        else { return day == clockDay }
+        return day == clockDay || day == appDay(tomorrow, calendar: calendar)
+    }
+
+    /// Gregorian calendar in the device's time zone, whatever calendar the user prefers,
+    /// so the day string matches the app's 'YYYY-MM-DD'.
+    static var calendar: Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone.current
+        return cal
+    }
+
+    /// The app day for an instant: the local date, or the previous one before 03:00.
+    static func appDay(_ now: Date, calendar: Calendar = calendar) -> String {
+        let cal = calendar
+        var date = now
+        if cal.component(.hour, from: now) < rolloverHour {
+            date = cal.date(byAdding: .day, value: -1, to: now) ?? now
+        }
+        let c = cal.dateComponents([.year, .month, .day], from: date)
+        return pad(c.year ?? 0, 4) + "-" + pad(c.month ?? 0, 2) + "-" + pad(c.day ?? 0, 2)
+    }
+
+    /// The next 03:00 after `now`, when the app day rolls over.
+    static func nextRollover(after now: Date, calendar: Calendar = calendar) -> Date {
+        let cal = calendar
+        var parts = DateComponents()
+        parts.hour = rolloverHour
+        parts.minute = 0
+        parts.second = 0
+        return cal.nextDate(after: now, matching: parts, matchingPolicy: .nextTime)
+            ?? now.addingTimeInterval(6 * 60 * 60)
+    }
+
+    private static func pad(_ n: Int, _ width: Int) -> String {
+        let s = String(n)
+        return String(repeating: "0", count: max(0, width - s.count)) + s
+    }
+}

@@ -13,6 +13,18 @@ struct QueueTest {
             }
             return
         }
+        for zone in ["America/Toronto", "America/Los_Angeles", "Asia/Tokyo", "Pacific/Auckland"] {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(identifier: zone)!
+            let before = calendar.date(from: DateComponents(year: 2026, month: 3, day: 7, hour: 2, minute: 30))!
+            precondition(WidgetDay.appDay(before, calendar: calendar) == "2026-03-06")
+            precondition(WidgetDay.isCurrentDay("2026-03-07", at: before, calendar: calendar))
+            precondition(!WidgetDay.isCurrentDay("2026-03-08", at: before, calendar: calendar))
+            precondition(!WidgetDay.isCurrentDay("2026-03-05", at: before, calendar: calendar))
+            let rollover = WidgetDay.nextRollover(after: before, calendar: calendar)
+            precondition(calendar.component(.hour, from: rollover) == 3)
+            precondition(WidgetDay.appDay(rollover, calendar: calendar) == "2026-03-07")
+        }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let queue = WidgetQueue(root: root)
@@ -55,6 +67,6 @@ struct QueueTest {
         } catch {}
         let preserved = try Data(contentsOf: file)
         precondition(preserved == corrupt)
-        print("Widget queue: duplicate taps, 400 cross-process concurrent taps/drains and corrupt-byte preservation passed")
+        print("Widget day/timezone checks and queue: duplicate taps, 400 cross-process concurrent taps/drains and corrupt-byte preservation passed")
     }
 }
