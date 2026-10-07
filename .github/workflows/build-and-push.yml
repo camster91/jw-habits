@@ -112,7 +112,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          required='["Build + Lint + Test", "Playwright smoke", "Android debug compile", "iOS simulator compile"]'
+          required='["Build + Lint + Test", "Playwright smoke", "Browser compatibility (firefox)", "Browser compatibility (webkit)", "Android debug compile", "iOS simulator compile"]'
           for attempt in $(seq 1 90); do
             curl -fsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" \
               "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > checks.json

@@ -69,3 +69,7 @@ These gates complement the digest-specific container/PWA/public probes in
 [production recovery](production-recovery.md), not store signing or a native
 device pilot. Historical audit and listing documents are explicitly marked as
 superseded by the current architecture and commitment ledger.
+
+## Browser-engine compatibility
+
+The Smoke workflow also runs independent Firefox and WebKit jobs against the real build: storage/onboarding smoke, complete user journeys and the same light/dark 320px axe/reflow matrix. Image publication requires both exact-commit checks in addition to Chromium and native compile checks. The service-worker update drill and screenshot generator remain Chromium-specific. These engine checks do not certify actual Safari/iOS WebViews, OS share targets, VoiceOver/TalkBack, or physical-device notifications.

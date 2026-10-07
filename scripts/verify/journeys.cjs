@@ -20,8 +20,7 @@
 //
 // Exits 1 if any journey fails.
 
-const { chromium } = require('playwright');
-const { openPage, go, hold, storeWhere, onboardSkip, routineButton } = require('./lib.cjs');
+const { launchBrowser, openPage, go, hold, storeWhere, onboardSkip, routineButton } = require('./lib.cjs');
 
 const BASE = process.env.JOURNEYS_BASE_URL || `http://localhost:${process.env.PORT || 4173}`;
 const MORNING = new Date(2026, 9, 6, 10, 0); // Tuesday 6 Oct 2026, 10:00
@@ -59,7 +58,7 @@ const closeSettings = async (page) => {
 };
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await launchBrowser();
   const sink = { errors: [], external: [] };
 
   // J1: every onboarding step, changing something on the way.

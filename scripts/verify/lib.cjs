@@ -4,6 +4,13 @@
 // browser clock pinned, driving onboarding, and the hold-to-check gesture.
 // Kept free of app imports: these suites drive the built UI only.
 
+/** Real engines for the release compatibility gate; reject accidental fallback. */
+async function launchBrowser() {
+  const name = process.env.PLAYWRIGHT_BROWSER || 'chromium';
+  if (!['chromium', 'firefox', 'webkit'].includes(name)) throw new Error(`Unsupported browser: ${name}`);
+  return require('playwright')[name].launch({ headless: true });
+}
+
 const STORE_KEY = 'jw-habits-v2';
 
 /**
@@ -81,6 +88,7 @@ async function onboardSkip(page) {
 const routineButton = (page, name) => page.getByRole('button', { name, exact: true });
 
 module.exports = {
+  launchBrowser,
   STORE_KEY,
   openPage,
   go,

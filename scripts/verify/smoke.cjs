@@ -29,7 +29,6 @@
 //
 // Exits 0 on success, 1 on any failure.
 
-const { chromium } = require('playwright');
 const { spawn } = require('child_process');
 const path = require('path');
 const lib = require('./lib.cjs');
@@ -264,7 +263,7 @@ async function maybeSpawnPreview() {
     process.exit(1);
   }
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await lib.launchBrowser();
   try {
     await runSmoke(browser);
   } finally {
