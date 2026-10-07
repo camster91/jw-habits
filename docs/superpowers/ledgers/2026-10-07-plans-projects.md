@@ -62,3 +62,26 @@ Task 6: ⚠️ finishedOn null for unfinished plans — verified in plans.js (fi
 Task 6: minor (deferred): undo/cap interaction and plan-finish XP not discriminated by tests (cap hides 85+); untested: plan finished after today, two family entries same day.
 Task 6: complete (commits bf6b9e0..058784a, review clean)
 Codex date fix: complete (4ed5ecf, re-review clean). Flake watch: one full-suite run reported 633/645 with no failure output; 12 further runs all 645/645 — likely a transient worker/timeout under concurrent load; recheck at the final review.
+- Task 7: implemented c7ce8a2 (670 tests); onStoreChange cb now (store, {update, today}); xp.js exports fullFamilyWeekDays. Task review dispatched.
+- Task 7 review: Spec ✅, Quality APPROVED; 5 Minor parked:
+  Ruling: park listener-ordering (#1), finishedPlans future-date guard (#2 — setStepDone already validates days, UI can't write future), test-driver/edge/fake-id notes (#3-5) — all minor, re-check at final review — cost if wrong: a badge dated oddly in a hand-edited import.
+Task 7: complete (c7ce8a2)
+- Codex P2 (malformed agenda week key): fixed ea1cf78 on release/v5.1-foundation (agenda uses store.js isMonday); merge release→feat after Task 8 lands.
+- Codex P2s (prune on clock day; pruning drops earned family-week XP): fixed 90c7490 on release (xp.js now exports familyWeekDays — merge with feat's fullFamilyWeekDays wrapper should be clean). Merge release→feat after Task 8.
+- Task 8: implemented e9bd4f6 (721 tests, smoke 7/7 + journeys green locally); task review dispatched.
+  Ruling: deleting a plan/step removes its derived XP (treated as undo) — spec: XP computed never stored; never-decreases covers missed days/grace/settings — cost if wrong: add an XP-floor record later.
+- PR #265 MERGED to main as 0a40fb6 (merge commit; foundation Tasks 1-6 + Codex fixes ea1cf78, 90c7490). Deploy check running.
+- Task 8 review: Spec ✅, Quality CHANGES (1 Important contrast + 9 Minor). Fix round 1 sent to implementer (items 1-6, 8-10).
+  Ruling: park #7 (SettingsSheet → Sheet refactor) — duplication only, no behaviour risk — cost if wrong: two focus-trap copies to keep in sync.
+  Ruling: park #8 domain part (undoing the auto-archiving step doesn't restore activePlan from the trail) — trail undo uses setStepDone; Today's undoStudy already restores — re-check at final review.
+- Deploy verified: container main-0a40fb6 healthy, jwhabits.ashbi.ca 200, valid TLS, title Faithful Days.
+Task 8: complete (e9bd4f6 + fix a52eb7d; re-review ALL ADDRESSED, #7 parked)
+- Merged origin/main (0a40fb6) into feat as fa805f1: 731 tests, lint clean. Task 9 BASE fa805f1.
+- Task 9: implemented 73c71e0 (742 tests). Ruling: free-item links use isSafeHttpUrl (http+https) like every other link field; brief's 'non-https' test uses ftp:// — consistency over brief wording — cost if wrong: one-line tightening.
+- Task 9 review: Spec ✅, Quality CHANGES (8 Minor). Fix round 1 sent (1-5, 7, 8).
+  Ruling: park #6 (cleared week has no "back to suggestions") — agenda.js design: empty array = cleared on purpose — cost if wrong: add a restore-suggestions action later.
+Task 9: complete (73c71e0 + fix 6449e1d; re-review ALL ADDRESSED, #6 parked). Task 10 BASE 6449e1d.
+- Task 10: implemented 3b4a6b2 (762 tests, smoke+journeys green). Review dispatched.
+- Task 10 review: Spec ✅, Quality CHANGES (1 Important: "Did something else" on a done row silently un-ticks). Fix round 1 sent (1-6).
+  Ruling: on a done row, "Did something else" is hidden; changing today's entry = undo then re-pick — avoids a silent replace — cost if wrong: one extra tap.
+Task 10: complete (3b4a6b2 + fix a6db8e7; re-review ALL ADDRESSED). Task 11 BASE a6db8e7.
