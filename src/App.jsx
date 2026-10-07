@@ -1,5 +1,5 @@
 import StorageNotice from './components/StorageNotice.jsx';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useLayoutEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import InstallPrompt from './components/InstallPrompt';
@@ -40,7 +40,8 @@ function Screens() {
   const openSettings = () => setSettingsOpen(true);
 
   const { accent, theme, onboardingDone } = store;
-  useEffect(() => applyTheme({ accent, theme }), [accent, theme]);
+  // Apply the stored appearance before newly loaded screens paint.
+  useLayoutEffect(() => applyTheme({ accent, theme }), [accent, theme]);
 
   const withTabs = (screen) => (
     <>
