@@ -25,17 +25,16 @@ import { addDays, appDay, weekday } from './day.js';
 import { BOOKS } from './bible.js';
 import { ROUTINE_IDS } from './routines.js';
 import { upgradeStore } from './upgrade.js';
+import { MAX_AGENDA_ITEMS, MAX_NOTE, MAX_STEPS, MAX_TITLE, newId } from './ids.js';
 import { isSafeHttpUrl } from '../utils/safeUrls.js';
+
+export { newId };
 
 export const STORE_VERSION = 3;
 
 export const PLAN_KINDS = ['study', 'family'];
 export const PLAN_ICONS = ['book', 'scroll', 'lamp', 'mountain', 'seedling', 'dove', 'sun', 'path'];
 export const PLAN_COLOURS = 8;
-export const MAX_TITLE = 60;
-export const MAX_NOTE = 280;
-export const MAX_STEPS = 200;
-export const MAX_AGENDA_ITEMS = 5;
 export const BADGE_IDS = [
   'firstStep',
   'firstProject',
@@ -56,14 +55,6 @@ export const BADGE_IDS = [
   'firstFullFamilyWeek',
   'level5',
 ];
-
-/** A fresh id for a plan, step or agenda item. */
-export function newId() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
-}
 
 /** Clock time each anchor phrase stands for. */
 export const ANCHOR_PHRASE_TIMES = {

@@ -7,7 +7,7 @@
  * no steps, set as the active study plan. `studyTopic` is removed and the v3
  * fields get their defaults. Everything else is carried over unchanged.
  */
-import { MAX_TITLE, newId } from './store.js';
+import { MAX_TITLE, newId } from './ids.js';
 
 const isObject = (x) => typeof x === 'object' && x !== null && !Array.isArray(x);
 
