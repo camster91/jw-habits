@@ -1,24 +1,21 @@
 # Release checklist (manual, on devices)
 
-Run before every store release, on **one Android device or emulator (API 24+; ideally one recent, API 34+)
-and one iPhone or simulator on iOS 17+**, from a fresh install of the release
-build unless a step says otherwise. Spec §6 ("Manual device checklist").
-Record the result of each line (pass / fail + note, device, OS version) in the
-release PR.
+Run before every store release on a physical Android device (API 24+; include a
+recent API 34+ device) and physical iPhone/iPad on a supported OS, including iOS
+17+ for interactive widgets. Record pass/fail, device, OS, signed build and notes
+in the release issue. Simulators/emulators complement these checks.
 
-## 0. Pending native verifications (do these first, once)
+## 0. Compilation and signing baseline
 
-These were written on a machine without a JDK, Android SDK or Mac, so they
-have **never been compiled**. Until both pass, the widget is unverified.
+- [x] Android debug app/widget compilation passes in the Native compile workflow.
+- [x] iOS simulator app/widget compilation passes; the extension target is embedded.
+- [ ] Produce a signed Android AAB with the replacement approved signing key.
+- [ ] Produce/upload a signed iOS build using the owner team and App Group.
+- [ ] Install those signed builds on the physical devices above.
 
-- [ ] **Android build:** `npm run build && npx cap sync android && cd android && ./gradlew assembleDebug`
-      ends in `BUILD SUCCESSFUL` (checks `WidgetBridgePlugin.java`,
-      `widget/TodayWidgetProvider.java`, `widget/CheckInReceiver.java`,
-      `widget/WidgetStore.java`, the widget layout/drawables and the manifest receivers).
-- [ ] **iOS Xcode setup:** follow `docs/ios-widget-setup.md` (create the
-      `FaithfulDaysWidget` extension target, App Group on both targets), then
-      `xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk iphonesimulator build`
-      succeeds. Commit the resulting `project.pbxproj`.
+Follow [widget setup](ios-widget-setup.md) for team/App Group configuration; do
+not create a duplicate widget target. Current compile evidence is #226/#267/#269.
+See [platform matrix](platform-matrix.md) and [store release pack](store-release-pack.md).
 
 ## 1. Reminders and the evening notification
 
