@@ -7,7 +7,6 @@ import { labelFor } from '../../domain/store.js';
 import { Toggle } from './controls.jsx';
 
 const MAX_LABEL = 30;
-const MAX_TOPIC = 60;
 
 /** New store with `id`'s custom label set, or removed when `text` is blank. */
 function withLabel(store, id, text) {
@@ -79,20 +78,6 @@ export default function StepRoutines({ store, change, today }) {
                     {t('fd.onboarding.routines.reset')}
                   </button>
                 </div>
-              )}
-              {id === 'personalStudy' && (
-                <label className="flex flex-col gap-1 pb-2 text-sm">
-                  {t('fd.onboarding.routines.topic')}
-                  <input
-                    type="text"
-                    className="input input-bordered min-h-11"
-                    maxLength={MAX_TOPIC}
-                    value={store.studyTopic}
-                    onChange={(e) =>
-                      change((s) => ({ ...s, studyTopic: e.target.value.slice(0, MAX_TOPIC) }))
-                    }
-                  />
-                </label>
               )}
             </li>
           );

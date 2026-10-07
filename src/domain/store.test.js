@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   STORE_VERSION,
   ANCHOR_PHRASE_TIMES,
@@ -9,6 +9,7 @@ import {
   exportJson,
   importJson,
   labelFor,
+  newId,
 } from './store.js';
 import { ROUTINE_IDS } from './routines.js';
 
@@ -21,7 +22,7 @@ describe('defaultStore', () => {
   it('seeds the spec defaults with schedule fields only inside store.schedule', () => {
     const s = fresh();
     expect(s.version).toBe(STORE_VERSION);
-    expect(STORE_VERSION).toBe(2);
+    expect(STORE_VERSION).toBe(3);
     expect(s.schedule).toEqual([
       {
         from: TODAY,
@@ -52,7 +53,13 @@ describe('defaultStore', () => {
     expect(s.accent).toBe(0);
     expect(s.theme).toBe('system');
     expect(s.labels).toEqual({});
-    expect(s.studyTopic).toBe('');
+    expect(s).not.toHaveProperty('studyTopic');
+    expect(s.plans).toEqual([]);
+    expect(s.activePlan).toEqual({ personalStudy: null });
+    expect(s.familyAgendas).toEqual({});
+    expect(s.badges).toEqual({});
+    expect(s.showGameLayer).toBe(true);
+    expect(s.showShare).toBe(true);
     expect(s.links).toEqual({});
     expect(s.whatsNew).toEqual({ enabled: true, lastCheck: null, seen: [], newCount: 0 });
     expect(s.onboardingDone).toBe(false);
@@ -97,8 +104,9 @@ describe('export / import', () => {
     expect(importJson('42').reason).toBe('notObject');
   });
 
-  it('version 3 is newerVersion, version 1 olderVersion, missing is badShape', () => {
-    expect(importJson(JSON.stringify({ ...fresh(), version: 3 })).reason).toBe('newerVersion');
+  it('version 4 is newerVersion, version 1 olderVersion, missing is badShape', () => {
+    expect(importJson(JSON.stringify({ ...fresh(), version: 4 })).reason).toBe('newerVersion');
+    expect(reasonOf({ ...fresh(), version: 2 })).toBe('olderVersion');
     expect(importJson(JSON.stringify({ ...fresh(), version: 1 })).reason).toBe('olderVersion');
     const noVersion = fresh();
     delete noVersion.version;
@@ -112,7 +120,7 @@ describe('export / import', () => {
   });
 
   it('never mutates its input and returns a deep copy', () => {
-    const bad = { ...fresh(), version: 3 };
+    const bad = { ...fresh(), version: 4 };
     const before = clone(bad);
     validateStore(bad);
     expect(bad).toEqual(before);
@@ -260,8 +268,10 @@ describe('validateStore remaining fields and log integrity', () => {
     expect(bad((s) => (s.wrapUpTime = '8pm'))).toBe('badShape');
     expect(bad((s) => (s.wrapUpNotification = 'no'))).toBe('badShape');
     expect(bad((s) => (s.onboardingDone = 0))).toBe('badShape');
-    expect(bad((s) => (s.studyTopic = 5))).toBe('badShape');
-    expect(bad((s) => (s.studyTopic = 'x'.repeat(61)))).toBe('badShape');
+    expect(bad((s) => (s.studyTopic = 'Daniel'))).toBe('badShape');
+    expect(bad((s) => (s.showGameLayer = 'yes'))).toBe('badShape');
+    expect(bad((s) => (s.showShare = null))).toBe('badShape');
+    expect(bad((s) => delete s.showShare)).toBe('badShape');
     expect(bad((s) => (s.lastSeenDay = 'yesterday'))).toBe('badShape');
     expect(bad((s) => (s.hoursGoal = -1))).toBe('badShape');
     expect(bad((s) => (s.hoursGoal = Infinity))).toBe('badShape');
@@ -371,5 +381,227 @@ describe('labels', () => {
     const s = addCheckIn(fresh(), { routine: 'dailyText', day: TODAY, value: true });
     const renamed = { ...s, labels: { ...s.labels, dailyText: 'Morning' } };
     expect(renamed.log).toEqual(s.log);
+  });
+});
+
+describe('newId', () => {
+  it('returns distinct non-empty strings', () => {
+    const ids = new Set(Array.from({ length: 50 }, () => newId()));
+    expect(ids.size).toBe(50);
+    for (const id of ids) {
+      expect(typeof id).toBe('string');
+      expect(id.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('falls back when crypto.randomUUID is unavailable', () => {
+    vi.stubGlobal('crypto', {});
+    try {
+      const a = newId();
+      const b = newId();
+      expect(typeof a).toBe('string');
+      expect(a.length).toBeGreaterThan(0);
+      expect(a).not.toBe(b);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe('validateStore v3 fields', () => {
+  const MONDAY = '2026-10-05';
+  const step = (id, extra = {}) => ({
+    id,
+    title: 'Chapter ' + id,
+    link: null,
+    note: null,
+    doneOn: null,
+    ...extra,
+  });
+  const plan = (id, extra = {}) => ({
+    id,
+    title: 'Daniel',
+    kind: 'study',
+    colour: 0,
+    icon: 'book',
+    steps: [step(id + '-s1'), step(id + '-s2')],
+    createdOn: TODAY,
+    archivedOn: null,
+    ...extra,
+  });
+  /** A v3 store using every new field. */
+  const full = () => ({
+    ...fresh(),
+    plans: [
+      plan('p1', {
+        steps: [
+          step('p1-s1', {
+            link: 'https://example.org/a',
+            note: 'n'.repeat(280),
+            doneOn: '2026-10-04',
+          }),
+          step('p1-s2'),
+        ],
+      }),
+      plan('p2', { kind: 'family', colour: 7, icon: 'path', archivedOn: TODAY }),
+    ],
+    activePlan: { personalStudy: 'p1' },
+    familyAgendas: {
+      [MONDAY]: [
+        { id: 'a1', kind: 'step', planId: 'p2', stepId: 'p2-s1' },
+        { id: 'a2', kind: 'free', title: 'Song practice', link: null },
+        { id: 'a3', kind: 'free', title: 'Video', link: 'https://example.org/v' },
+      ],
+    },
+    badges: { firstStep: '2026-10-04', level5: TODAY },
+    log: [
+      { routine: 'personalStudy', day: '2026-10-04', value: { stepId: 'p1-s1' } },
+      { routine: 'personalStudy', day: TODAY, value: true },
+    ],
+  });
+  const reason = (fn) => {
+    const s = full();
+    fn(s);
+    return reasonOf(s);
+  };
+  const ok = (fn) => reason(fn) === undefined;
+
+  it('accepts a store using every new field', () => {
+    expect(validateStore(full())).toMatchObject({ ok: true });
+  });
+
+  it('accepts every icon, colour and both kinds', () => {
+    for (const icon of ['book', 'scroll', 'lamp', 'mountain', 'seedling', 'dove', 'sun', 'path'])
+      expect(
+        ok((s) => (s.plans[0].icon = icon)),
+        icon
+      ).toBe(true);
+    for (let c = 0; c <= 7; c++) expect(ok((s) => (s.plans[0].colour = c))).toBe(true);
+    expect(ok((s) => (s.plans[0].kind = 'family'))).toBe(true);
+  });
+
+  it('checks plans', () => {
+    expect(reason((s) => (s.plans = {}))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].extra = 1))).toBe('badShape');
+    expect(reason((s) => delete s.plans[0].archivedOn)).toBe('badShape');
+    expect(reason((s) => (s.plans[0].id = ''))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].id = 5))).toBe('badShape');
+    expect(reason((s) => (s.plans[1].id = 'p1'))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].title = ''))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].title = 'x'.repeat(61)))).toBe('badShape');
+    expect(ok((s) => (s.plans[0].title = 'x'.repeat(60)))).toBe(true);
+    expect(reason((s) => (s.plans[0].kind = 'other'))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].colour = 8))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].colour = -1))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].colour = 1.5))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].icon = 'star'))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].steps = null))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].createdOn = 'today'))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].archivedOn = '2026-02-30'))).toBe('badShape');
+  });
+
+  it('checks steps', () => {
+    const steps = (n) => Array.from({ length: n }, (_, i) => step('s' + i));
+    expect(ok((s) => (s.plans[0].steps = steps(200)))).toBe(true);
+    expect(reason((s) => (s.plans[0].steps = steps(201)))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].steps[0].extra = 1))).toBe('badShape');
+    expect(reason((s) => delete s.plans[0].steps[0].note)).toBe('badShape');
+    expect(reason((s) => (s.plans[0].steps[0].id = ''))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].steps[1].id = 'p1-s1'))).toBe('badShape');
+    expect(reason((s) => (s.plans[1].steps[0].id = 'p1-s1'))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].steps[0].title = ''))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].steps[0].title = 'x'.repeat(61)))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].steps[0].note = 'n'.repeat(281)))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].steps[0].note = 5))).toBe('badShape');
+    expect(reason((s) => (s.plans[0].steps[0].doneOn = 'x'))).toBe('badShape');
+    for (const link of ['javascript:alert(1)', 'https://u:p@evil.com/', 'not a url', '', 5])
+      expect(
+        reason((s) => (s.plans[0].steps[0].link = link)),
+        String(link)
+      ).toBe('badShape');
+  });
+
+  it('checks activePlan, and lets a dangling one through', () => {
+    expect(ok((s) => (s.activePlan.personalStudy = 'gone'))).toBe(true);
+    expect(ok((s) => (s.activePlan.personalStudy = null))).toBe(true);
+    expect(reason((s) => (s.activePlan = null))).toBe('badShape');
+    expect(reason((s) => (s.activePlan = {}))).toBe('badShape');
+    expect(reason((s) => (s.activePlan.personalStudy = ''))).toBe('badShape');
+    expect(reason((s) => (s.activePlan.personalStudy = 3))).toBe('badShape');
+    expect(reason((s) => (s.activePlan.familyWorship = null))).toBe('badShape');
+  });
+
+  it('checks family agendas, and lets dangling step references through', () => {
+    const items = (s) => s.familyAgendas[MONDAY];
+    expect(ok((s) => (items(s)[0].planId = 'gone'))).toBe(true);
+    expect(ok((s) => (items(s)[0].stepId = 'gone'))).toBe(true);
+    expect(ok((s) => (s.familyAgendas[MONDAY] = []))).toBe(true);
+    expect(reason((s) => (s.familyAgendas = []))).toBe('badShape');
+    expect(reason((s) => (s.familyAgendas = { '2026-10-06': [] }))).toBe('badShape');
+    expect(reason((s) => (s.familyAgendas = { monday: [] }))).toBe('badShape');
+    expect(reason((s) => (s.familyAgendas[MONDAY] = {}))).toBe('badShape');
+    expect(
+      reason((s) => {
+        for (let i = 0; i < 3; i++)
+          items(s).push({ id: 'x' + i, kind: 'free', title: 'Free', link: null });
+      })
+    ).toBe('badShape');
+    expect(reason((s) => (items(s)[1].id = 'a1'))).toBe('badShape');
+    expect(reason((s) => (items(s)[0].id = ''))).toBe('badShape');
+    expect(reason((s) => (items(s)[0].kind = 'other'))).toBe('badShape');
+    expect(reason((s) => (items(s)[0].planId = ''))).toBe('badShape');
+    expect(reason((s) => (items(s)[0].stepId = 4))).toBe('badShape');
+    expect(reason((s) => (items(s)[0].title = 'x'))).toBe('badShape');
+    expect(reason((s) => delete items(s)[1].link)).toBe('badShape');
+    expect(reason((s) => (items(s)[1].title = ''))).toBe('badShape');
+    expect(reason((s) => (items(s)[1].title = 'x'.repeat(61)))).toBe('badShape');
+    expect(reason((s) => (items(s)[1].link = 'javascript:x'))).toBe('badShape');
+    expect(reason((s) => (items(s)[1].planId = 'p1'))).toBe('badShape');
+  });
+
+  it('checks badges', () => {
+    const ids = [
+      'firstStep',
+      'firstProject',
+      'firstFamilyPlan',
+      'familyWeeks4',
+      'familyWeeks12',
+      'familyWeeks52',
+      'dailyText30',
+      'dailyText100',
+      'dailyText365',
+      'study10',
+      'plans5',
+      'meetings10',
+      'pentateuch',
+      'gospels',
+      'greekScriptures',
+      'wholeBible',
+      'firstFullFamilyWeek',
+      'level5',
+    ];
+    expect(ok((s) => (s.badges = Object.fromEntries(ids.map((id) => [id, TODAY]))))).toBe(true);
+    expect(reason((s) => (s.badges = []))).toBe('badShape');
+    expect(reason((s) => (s.badges = { nope: TODAY }))).toBe('badShape');
+    expect(reason((s) => (s.badges = { firstStep: true }))).toBe('badShape');
+    expect(reason((s) => (s.badges = { firstStep: '2026-13-01' }))).toBe('badShape');
+  });
+
+  it('allows {stepId} only as a personalStudy log value', () => {
+    const entry = (routine, value) => (s) => (s.log = [{ routine, day: TODAY, value }]);
+    expect(ok(entry('personalStudy', { stepId: 'gone' }))).toBe(true);
+    expect(reason(entry('personalStudy', { stepId: '' }))).toBe('badShape');
+    expect(reason(entry('personalStudy', { stepId: 3 }))).toBe('badShape');
+    expect(reason(entry('personalStudy', { stepId: 'p1-s1', extra: 1 }))).toBe('badShape');
+    expect(reason(entry('personalStudy', {}))).toBe('badShape');
+    expect(reason(entry('dailyText', { stepId: 'p1-s1' }))).toBe('badShape');
+    expect(reason(entry('familyWorship', { stepId: 'p1-s1' }))).toBe('badShape');
+  });
+
+  it('round-trips a full v3 store through export and import', () => {
+    const s = full();
+    const r = importJson(exportJson(s), TODAY);
+    expect(r.ok).toBe(true);
+    expect(r.store).toEqual(s);
   });
 });

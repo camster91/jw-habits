@@ -1,6 +1,6 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-06.**
+**Last audited against source: 2026-10-07.**
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -42,7 +42,7 @@ user-editable slot instead.
 | i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (v2 strings are English only for now; es/fr fall back to en) |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
-| Testing | Vitest 4 + Testing Library + Playwright | 502 tests / 32 files, 7 smoke, 7 journeys + a clean-run check |
+| Testing | Vitest 4 + Testing Library + Playwright | 532 tests / 33 files, 7 smoke, 7 journeys + a clean-run check |
 | Linting | ESLint 9 + Prettier 3 | |
 
 ## Commands
@@ -73,7 +73,8 @@ src/
 │   └── useStore.js             # { store, update, today }
 ├── domain/                     # Pure logic, no React or storage (all unit-tested)
 │   ├── day.js                  # appDay: the 03:00 app day, date maths
-│   ├── store.js                # defaultStore, validateStore, addCheckIn/removeCheckIn, export/import, labelFor
+│   ├── store.js                # defaultStore, validateStore, newId, addCheckIn/removeCheckIn, export/import, labelFor
+│   ├── upgrade.js              # upgradeStore: v2 -> v3 (studyTopic becomes the active study plan)
 │   ├── schedule.js             # Dated schedule history: scheduleOn, withScheduleChange
 │   ├── routines.js             # The six routines, cadences, dueToday, isDone
 │   ├── today.js                # Today helpers: chapters, ministry entry, meeting day, study progress
@@ -108,7 +109,7 @@ scripts/verify/                 # smoke.cjs, journeys.cjs, lib.cjs (Playwright)
 | Bible reading | `bibleReading` | daily (or N days/week) | Chapters-read stepper; link to the day's first chapter |
 | Meeting prep | `meetingPrep` | meeting | Due the day before each meeting day; prompts for meeting days if none set |
 | Family worship | `familyWorship` | weekly | On the chosen weekday |
-| Personal study | `personalStudy` | weekly target | N per week; optional topic |
+| Personal study | `personalStudy` | weekly target | N per week; shows the active study plan (`activePlan.personalStudy`) |
 | Ministry | `ministry` | monthly | Shared-this-month toggle, studies count, hours goal for pioneers |
 
 `ROUTINE_IDS` and `dueToday` in `domain/routines.js` are the source of truth for what Today lists.
@@ -121,7 +122,8 @@ they ship in real installs, so renaming them silently discards user history.
 
 | Key | Shape | Purpose |
 |---|---|---|
-| `jw-habits-v2` | one JSON store (`version: 2`) | Everything v2: `schedule[]`, `log[]`, `reading`, `anchors`, `labels`, `links`, `whatsNew`, `onboardingDone`, … |
+| `jw-habits-v2` | one JSON store (`version: 3`; the key keeps its v2 name) | Everything: `schedule[]`, `log[]`, `reading`, `anchors`, `labels`, `links`, `whatsNew`, `onboardingDone`, and from v3 `plans`, `activePlan`, `familyAgendas`, `badges`, `showGameLayer`, `showShare`, … |
+| `jw-habits-v2-backup` | raw string | The original v2 value, written once before the first load upgrades it to v3 (`domain/upgrade.js`) |
 | `jw-habits-v2-corrupt-<ms>` | raw string | An unreadable `jw-habits-v2` kept aside before starting fresh |
 | `jw-daily-habits-state`, `jw-bible-reading-days`, `jw-user-settings` | v1 shapes | Read once by `migrateV1`; never written or deleted (rollback) |
 | `jw-error-logs` | `ErrorLog[]` (last 20) | Dev error capture |

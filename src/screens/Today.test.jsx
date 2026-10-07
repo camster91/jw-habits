@@ -94,10 +94,22 @@ describe('Today: the list', () => {
     expect(screen.getByText('Psalms 3')).toBeInTheDocument();
   });
 
-  it('shows weekly study progress and the topic', () => {
+  it('shows weekly study progress and the active study plan', () => {
     renderToday(
       makeStore({
-        studyTopic: 'Daniel',
+        plans: [
+          {
+            id: 'p1',
+            title: 'Daniel',
+            kind: 'study',
+            colour: 0,
+            icon: 'book',
+            steps: [],
+            createdOn: '2026-10-01',
+            archivedOn: null,
+          },
+        ],
+        activePlan: { personalStudy: 'p1' },
         log: [{ routine: 'personalStudy', day: '2026-10-05', value: true }],
       })
     );

@@ -1,5 +1,5 @@
 /**
- * The v2 store: its shape, defaults, validation, export and import.
+ * The v3 store: its shape, defaults, validation, export and import.
  * Everything here is pure. Functions return new stores and never mutate their
  * input; `validateStore` hands back a deep copy so a caller that adopts an
  * imported store cannot alias the text it came from.
@@ -9,14 +9,61 @@
  *
  * Log entries are `{routine, day, value}`, at most one per routine and day:
  * bibleReading `{chapters: number[]}` or `true`; ministry
- * `{shared: boolean, studies: number, hours?: number}`; the rest `true`.
- * An undone check-in is deleted, never stored as a falsy value.
+ * `{shared: boolean, studies: number, hours?: number}`; personalStudy
+ * `{stepId: string}` (the plan step that session completed) or `true`; the
+ * rest `true`. An undone check-in is deleted, never stored as a falsy value.
+ *
+ * v3 adds plans (study projects and family worship plans), the active study
+ * plan, weekly family agendas keyed by Monday, badge earn days, and the
+ * game-layer and share switches. References between them (an agenda step
+ * item, `activePlan.personalStudy`, a `{stepId}` log value) may dangle:
+ * validation checks only their shape, and a dangling one never makes a store
+ * unloadable. Stored v2 values and v2 backup files go through `upgradeStore`
+ * (upgrade.js) first.
  */
-import { addDays } from './day.js';
+import { addDays, appDay, weekday } from './day.js';
 import { BOOKS } from './bible.js';
 import { ROUTINE_IDS } from './routines.js';
+import { upgradeStore } from './upgrade.js';
+import { isSafeHttpUrl } from '../utils/safeUrls.js';
 
-export const STORE_VERSION = 2;
+export const STORE_VERSION = 3;
+
+export const PLAN_KINDS = ['study', 'family'];
+export const PLAN_ICONS = ['book', 'scroll', 'lamp', 'mountain', 'seedling', 'dove', 'sun', 'path'];
+export const PLAN_COLOURS = 8;
+export const MAX_TITLE = 60;
+export const MAX_NOTE = 280;
+export const MAX_STEPS = 200;
+export const MAX_AGENDA_ITEMS = 5;
+export const BADGE_IDS = [
+  'firstStep',
+  'firstProject',
+  'firstFamilyPlan',
+  'familyWeeks4',
+  'familyWeeks12',
+  'familyWeeks52',
+  'dailyText30',
+  'dailyText100',
+  'dailyText365',
+  'study10',
+  'plans5',
+  'meetings10',
+  'pentateuch',
+  'gospels',
+  'greekScriptures',
+  'wholeBible',
+  'firstFullFamilyWeek',
+  'level5',
+];
+
+/** A fresh id for a plan, step or agenda item. */
+export function newId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+}
 
 /** Clock time each anchor phrase stands for. */
 export const ANCHOR_PHRASE_TIMES = {
@@ -28,7 +75,6 @@ export const ANCHOR_PHRASE_TIMES = {
 const TONES = ['quiet', 'warm', 'scripture'];
 const THEMES = ['system', 'light', 'dark'];
 const MAX_LABEL = 30;
-const MAX_TOPIC = 60;
 const TOTAL_CHAPTERS = BOOKS.reduce((n, b) => n + b.chapters, 0);
 
 /**
@@ -68,11 +114,16 @@ export function defaultStore(today, locale) {
     accent: 0,
     theme: 'system',
     labels: {},
-    studyTopic: '',
     links: {},
     whatsNew: { enabled: true, lastCheck: null, seen: [], newCount: 0 },
     onboardingDone: false,
     log: [],
+    plans: [],
+    activePlan: { personalStudy: null },
+    familyAgendas: {},
+    badges: {},
+    showGameLayer: true,
+    showShare: true,
   };
 }
 
@@ -85,6 +136,10 @@ const isTime = (x) => typeof x === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(
 const isNonNegative = (x) => typeof x === 'number' && Number.isFinite(x) && x >= 0;
 const exactKeys = (o, keys) => Object.keys(o).length === keys.length && keys.every((k) => k in o);
 const isRoutineId = (x) => ROUTINE_IDS.includes(x);
+const isId = (x) => typeof x === 'string' && x !== '';
+const isTitle = (x) => typeof x === 'string' && x.length >= 1 && x.length <= MAX_TITLE;
+const isLink = (x) => x === null || isSafeHttpUrl(x);
+const isMonday = (x) => isDay(x) && weekday(x) === 1;
 
 function validScheduleEntry(e) {
   return (
@@ -112,6 +167,9 @@ function validValue(routine, value) {
     );
   }
   if (value === true) return true;
+  if (routine === 'personalStudy') {
+    return isObject(value) && exactKeys(value, ['stepId']) && isId(value.stepId);
+  }
   return (
     routine === 'bibleReading' &&
     isObject(value) &&
@@ -189,6 +247,87 @@ function validQuietHours(q) {
   return isObject(q) && exactKeys(q, ['start', 'end']) && isTime(q.start) && isTime(q.end);
 }
 
+function validStep(st) {
+  return (
+    isObject(st) &&
+    exactKeys(st, ['id', 'title', 'link', 'note', 'doneOn']) &&
+    isId(st.id) &&
+    isTitle(st.title) &&
+    isLink(st.link) &&
+    (st.note === null || (typeof st.note === 'string' && st.note.length <= MAX_NOTE)) &&
+    (st.doneOn === null || isDay(st.doneOn))
+  );
+}
+
+function validPlan(p) {
+  return (
+    isObject(p) &&
+    exactKeys(p, ['id', 'title', 'kind', 'colour', 'icon', 'steps', 'createdOn', 'archivedOn']) &&
+    isId(p.id) &&
+    isTitle(p.title) &&
+    PLAN_KINDS.includes(p.kind) &&
+    isInt(p.colour, 0, PLAN_COLOURS - 1) &&
+    PLAN_ICONS.includes(p.icon) &&
+    Array.isArray(p.steps) &&
+    p.steps.length <= MAX_STEPS &&
+    p.steps.every(validStep) &&
+    isDay(p.createdOn) &&
+    (p.archivedOn === null || isDay(p.archivedOn))
+  );
+}
+
+/** Every plan valid; plan ids unique, and step ids unique across all plans. */
+function validPlans(plans) {
+  if (!Array.isArray(plans) || !plans.every(validPlan)) return false;
+  const planIds = plans.map((p) => p.id);
+  const stepIds = plans.flatMap((p) => p.steps.map((st) => st.id));
+  return new Set(planIds).size === planIds.length && new Set(stepIds).size === stepIds.length;
+}
+
+function validActivePlan(a) {
+  return (
+    isObject(a) &&
+    exactKeys(a, ['personalStudy']) &&
+    (a.personalStudy === null || isId(a.personalStudy))
+  );
+}
+
+function validAgendaItem(item) {
+  if (!isObject(item) || !isId(item.id)) return false;
+  if (item.kind === 'step') {
+    return (
+      exactKeys(item, ['id', 'kind', 'planId', 'stepId']) && isId(item.planId) && isId(item.stepId)
+    );
+  }
+  return (
+    item.kind === 'free' &&
+    exactKeys(item, ['id', 'kind', 'title', 'link']) &&
+    isTitle(item.title) &&
+    isLink(item.link)
+  );
+}
+
+/** Keyed by Monday; at most five items a week, with ids unique within the week. */
+function validFamilyAgendas(agendas) {
+  return (
+    isObject(agendas) &&
+    Object.entries(agendas).every(
+      ([monday, items]) =>
+        isMonday(monday) &&
+        Array.isArray(items) &&
+        items.length <= MAX_AGENDA_ITEMS &&
+        items.every(validAgendaItem) &&
+        new Set(items.map((i) => i.id)).size === items.length
+    )
+  );
+}
+
+function validBadges(b) {
+  return (
+    isObject(b) && Object.entries(b).every(([id, day]) => BADGE_IDS.includes(id) && isDay(day))
+  );
+}
+
 function validShape(s) {
   return (
     Object.keys(s).every((k) => TOP_KEYS.includes(k)) &&
@@ -219,8 +358,12 @@ function validShape(s) {
     isTime(s.wrapUpTime) &&
     typeof s.wrapUpNotification === 'boolean' &&
     typeof s.onboardingDone === 'boolean' &&
-    typeof s.studyTopic === 'string' &&
-    s.studyTopic.length <= MAX_TOPIC &&
+    validPlans(s.plans) &&
+    validActivePlan(s.activePlan) &&
+    validFamilyAgendas(s.familyAgendas) &&
+    validBadges(s.badges) &&
+    typeof s.showGameLayer === 'boolean' &&
+    typeof s.showShare === 'boolean' &&
     (s.lastSeenDay === null || isDay(s.lastSeenDay))
   );
 }
@@ -255,15 +398,20 @@ export function exportJson(store) {
   return JSON.stringify(store, null, 2);
 }
 
-/** Parses and validates; returns a result and writes nowhere. */
-export function importJson(text) {
+/**
+ * Parses, upgrades a v2 file to v3, and validates; returns a result and
+ * writes nowhere.
+ * @param {string} text
+ * @param {string} [today] app day the upgrade dates a migrated plan from
+ */
+export function importJson(text, today = appDay(new Date())) {
   let parsed;
   try {
     parsed = JSON.parse(text);
   } catch {
     return { ok: false, reason: 'notObject' };
   }
-  return validateStore(parsed);
+  return validateStore(upgradeStore(parsed, today));
 }
 
 /** The custom label if one with more than whitespace is set, else the translated default. */

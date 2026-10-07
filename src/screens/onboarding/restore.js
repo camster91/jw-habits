@@ -21,7 +21,7 @@ const pick = (store, keys) => Object.fromEntries(keys.map((k) => [k, store[k]]))
 export const RESTORE = {
   routines: (draft, initial, today) => ({
     ...restoreSchedule(draft, initial, today, ['enabled']),
-    ...pick(initial, ['labels', 'studyTopic']),
+    ...pick(initial, ['labels']),
   }),
   week: (draft, initial, today) => ({
     ...restoreSchedule(draft, initial, today, ['meetingDays', 'familyWorshipDay']),
@@ -39,7 +39,6 @@ export const RESTORE = {
 export const ONBOARDING_FIELDS = [
   'schedule',
   'labels',
-  'studyTopic',
   'pioneer',
   'hoursGoal',
   'reading',

@@ -142,7 +142,8 @@ export default function Today({ onOpenSettings = () => {} }) {
     }
     if (id === 'personalStudy') {
       const progress = t('fd.wrapUp.studyMoved', studyProgress(store, today));
-      return store.studyTopic ? `${progress} · ${store.studyTopic}` : progress;
+      const topic = store.plans.find((p) => p.id === store.activePlan.personalStudy)?.title;
+      return topic ? `${progress} · ${topic}` : progress;
     }
     return null;
   };
