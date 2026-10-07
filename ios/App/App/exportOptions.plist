@@ -34,7 +34,7 @@
      signing against whichever distribution cert + provisioning
      profile the team's keychain has. With Apple's automatic
      signing, that resolves to the right profile for the
-     bundle id com.ashbi.jwnews without any manual setup.
+     bundle id ca.ashbi.habittracker without any manual setup.
      -->
     <key>signingStyle</key>
     <string>manual</string>

@@ -1,3 +1,8 @@
+> **HISTORICAL — superseded 2026-09-21.** This document describes the app before the
+> generic-habit-tracker refactor. Organisation-specific rows, the link library it
+> references, and the bundle id it names no longer exist. Kept for the record only;
+> do not treat it as current. See [CLAUDE.md](./CLAUDE.md).
+
 # jw-habits — Second Repo Review (2026-07-22 evening)
 
 **Repo:** `camster91/jw-habits` · branch `chore/security-followup-from-review-2026-07-22` (PR #130, unmerged)

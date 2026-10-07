@@ -1,25 +1,24 @@
 #!/usr/bin/env node
 // scripts/verify/smoke.cjs
 //
-// Automated smoke test for jw-habits. Complements the persona suite at
-// scripts/verify/jw-habits.cjs (T1-T17) — this one focuses on the
-// regressions caught in the 2026-07-22 repo review:
+// Automated smoke test for Faithful Days. Fast, seeded checks that the build
+// boots and that its storage rules hold; journeys.cjs drives the full UI.
 //
-//   S1: Per-day reset works (state from yesterday doesn't carry over)
-//   S2: Done state persists across page reload
-//   S3: P0-4 regression — a row with only a typed note (done: false,
-//       note: 'abc') does NOT count as done in the streak counter
-//   S4: Legacy boolean done shape (`true`/`false`) still works
-//       (backward compat with users on the old data shape)
-//   S5: New `{ done: boolean, note: string }` shape works end-to-end
-//   S6: First-launch hint hides after first checkbox tap
-//   S7: Home renders without console errors
+//   S1: a first run renders onboarding with no console errors
+//   S2: a v1 install (old jw- keys) is migrated and its check-in survives
+//   S3: an unreadable v2 store is kept aside and the app starts fresh
+//   S4: a check-in does not carry into the next app day
+//   S5: the app day rolls over at 03:00, not midnight
+//   S6: nothing leaves the origin (no third-party content)
+//   S7: the stored store survives a reload
+//
+// Time is pinned with page.clock, so every date below is deterministic.
 //
 // Run from repo root:
 //   node scripts/verify/smoke.cjs                    # uses default port 4173
 //   PORT=4173 node scripts/verify/smoke.cjs         # override port
-//   SMOKE_BASE_URL=https://jwhabits.ashbi.ca node scripts/verify/smoke.cjs
-//                                                    # hit prod instead of local
+//   SMOKE_BASE_URL=https://example.com node scripts/verify/smoke.cjs
+//                                                    # hit a deployed copy
 //
 // Pre-reqs:
 //   1. `npm install` (Playwright is a devDependency)
@@ -33,6 +32,7 @@
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
 const path = require('path');
+const lib = require('./lib.cjs');
 
 const BASE_URL =
   process.env.SMOKE_BASE_URL ||
@@ -53,273 +53,156 @@ function record(name, ok, detail) {
   console.log(`${ok ? '[PASS]' : '[FAIL]'} ${name}${detail ? ` — ${detail}` : ''}`);
 }
 
-async function freshContext(browser) {
-  const ctx = await browser.newContext({
-    viewport: { width: 375, height: 812 }, // iPhone-ish
-    ignoreHTTPSErrors: true,
-    serviceWorkers: 'block', // SW would interfere with state-reset tests
-  });
-  const page = await ctx.newPage();
-  const consoleErrors = [];
-  page.on('pageerror', (e) => consoleErrors.push('PAGEERR: ' + e.message.slice(0, 200)));
-  page.on('console', (m) => {
-    if (m.type() === 'error') consoleErrors.push('CONSOLE: ' + m.text().slice(0, 200));
-  });
-  return { ctx, page, consoleErrors };
+const DAY1 = new Date(2026, 9, 6, 10, 0); // Tuesday 6 Oct 2026, 10:00
+
+async function open(browser, at) {
+  const s = await lib.openPage(browser, { at, viewport: { width: 375, height: 812 } });
+  await lib.go(s.page, BASE_URL);
+  return s;
 }
 
-async function wipeJWState(page) {
-  await page.goto(BASE_URL);
-  await page.evaluate(() => {
-    Object.keys(localStorage)
-      .filter((k) => k.startsWith('jw-'))
-      .forEach((k) => localStorage.removeItem(k));
-  });
-}
-
-async function setTodayDone(page, doneShape) {
-  // Seed the localStorage state directly so we don't depend on UI interaction
-  // for every test. `doneShape` is the inner `done` object (e.g. {text: true}
-  // for legacy, or {text: {done: true, note: ''}} for new shape).
-  const today = new Date().toISOString().slice(0, 10);
-  await page.evaluate(
-    ({ today, doneShape }) => {
-      localStorage.setItem(
-        'jw-daily-habits-state',
-        JSON.stringify({
-          date: today,
-          done: doneShape,
-          history: [today],
-        }),
-      );
-      localStorage.setItem('jw-habits-first-done', '1'); // skip first-launch hint
-    },
-    { today, doneShape },
-  );
-}
+const pressed = (page, name) => lib.routineButton(page, name).getAttribute('aria-pressed');
 
 async function runSmoke(browser) {
-  // ---- S7: Home renders without console errors ----
+  // ---- S1: a first run renders onboarding with no console errors ----
   {
-    const { page, consoleErrors } = await freshContext(browser);
-    await wipeJWState(page);
-    await page.reload();
-    // Give React a tick to mount and any async work to settle
+    const { ctx, page, errors } = await open(browser, DAY1);
+    const onboarding = await page.getByTestId('onboarding').isVisible();
     await page.waitForTimeout(500);
     record(
-      'S7: Home renders without console errors',
-      consoleErrors.length === 0,
-      consoleErrors.length ? `${consoleErrors.length} errors: ${consoleErrors.slice(0, 2).join(' | ')}` : '',
+      'S1: First run shows onboarding without console errors',
+      onboarding && errors.length === 0,
+      `onboarding=${onboarding}${errors.length ? ` errors: ${errors.slice(0, 2).join(' | ')}` : ''}`,
     );
-    await page.context().close();
+    await ctx.close();
   }
 
-  // ---- S1: Per-day reset (state from yesterday doesn't carry over) ----
+  // ---- S2: v1 keys are migrated; the v1 keys themselves are left alone ----
   {
-    const { page } = await freshContext(browser);
-    const debugLog = [];
-    page.on('console', m => debugLog.push(m.text()));
+    const { ctx, page } = await lib.openPage(browser, {
+      at: DAY1,
+      viewport: { width: 375, height: 812 },
+    });
     await page.goto(BASE_URL);
-    // Seed yesterday's state with a checked habit.
-    // Compute yesterday as a calendar date, not Date.now()-86400000 —
-    // around midnight UTC the millisecond math can land on today's
-    // date and the per-day reset never triggers.
-    const todayDate = new Date();
-    const yesterdayDate = new Date(todayDate.getTime() - 24 * 60 * 60 * 1000);
-    // If the subtraction crossed midnight in UTC, step back another day
-    // to be safe (defensive — the math above is usually correct).
-    if (yesterdayDate.toISOString().slice(0, 10) === todayDate.toISOString().slice(0, 10)) {
-      yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-    }
-    const yesterday = yesterdayDate.toISOString().slice(0, 10);
-    await page.evaluate((yesterday) => {
+    // The first load already saved a fresh v2 store; remove it so only v1 data remains.
+    await page.evaluate((key) => {
+      localStorage.removeItem(key);
       localStorage.setItem(
         'jw-daily-habits-state',
         JSON.stringify({
-          date: yesterday,
-          done: { text: true, bible: true },
-          history: [yesterday],
+          date: '2026-10-06',
+          done: { text: { done: true, note: '' }, bible: false },
+          history: ['2026-10-06'],
         }),
       );
-    }, yesterday);
-    const stateBeforeReload = await page.evaluate(() => {
-      const raw = localStorage.getItem('jw-daily-habits-state');
-      return raw ? JSON.parse(raw) : null;
-    });
-    await page.reload();
-    // Wait a beat for React mount + visibility listener + any
-    // other async microtask that might mutate localStorage.
-    await page.waitForTimeout(800);
-    // After reload, today's date is different so done should be wiped.
-    // history is pruned to last 7 days, so yesterday's entry survives there.
-    const state = await page.evaluate(() => {
-      const raw = localStorage.getItem('jw-daily-habits-state');
-      return raw ? JSON.parse(raw) : null;
-    });
-    const today = new Date().toISOString().slice(0, 10);
-    const todayReset =
-      state &&
-      state.date === today &&
-      Object.keys(state.done).length === 0;
-    record(
-      'S1: Per-day reset wipes yesterday\'s done state',
-      todayReset,
-      todayReset
-        ? ''
-        : `beforeReload=${JSON.stringify(stateBeforeReload).slice(0, 100)} | afterReload=${JSON.stringify(state).slice(0, 200)}`,
-    );
-    await page.context().close();
-  }
-
-  // ---- S2: Done state persists across reload ----
-  {
-    const { page } = await freshContext(browser);
-    await wipeJWState(page);
-    await setTodayDone(page, { text: { done: true, note: '' } });
-    await page.reload();
-    const state = await page.evaluate(() => JSON.parse(localStorage.getItem('jw-daily-habits-state')));
-    const ok = state && state.done.text && state.done.text.done === true;
-    record(
-      'S2: Done state persists across reload (new shape)',
-      ok,
-      ok ? '' : `done.text after reload: ${JSON.stringify(state?.done?.text)}`,
-    );
-    await page.context().close();
-  }
-
-  // ---- S3: P0-4 regression — note-only row does NOT count as done ----
-  // This is the bug fixed in commit 9cf40aa. Before the fix, streak.js
-  // did `if (done[k])` which is truthy on `{done: false, note: 'abc'}`
-  // and falsely counted the row as done.
-  {
-    const { page } = await freshContext(browser);
-    await wipeJWState(page);
-    await setTodayDone(page, {
-      text: { done: true, note: '' },
-      bible: { done: false, note: 'in progress' }, // note-only — must NOT count
-      meeting: { done: false, note: '' },
-      family: { done: false, note: '' },
-      today: { done: false, note: '' },
-      thisWeek: { done: false, note: '' },
-      yearText: { done: false, note: '' },
-      sundayWatchtower: { done: false, note: '' },
-      conventions: { done: false, note: '' },
-    });
-    await page.reload();
-    // Find the today-progress text rendered in the streak line. After
-    // hiding the first-launch hint and showing the streak meta, it reads
-    // something like "1/9 today" (1 done out of 9 visible rows).
-    const progressText = await page
-      .getByText(/\d+\/\d+\s*today/i)
-      .first()
-      .textContent()
-      .catch(() => null);
-    const m = progressText && progressText.match(/(\d+)\/(\d+)/);
-    const ok = m && Number(m[1]) === 1;
-    record(
-      'S3: Note-only row (done:false, note:"in progress") does NOT count as done',
-      ok,
-      ok ? `progress text: "${progressText}"` : `expected "1/X" got: "${progressText}"`,
-    );
-    await page.context().close();
-  }
-
-  // ---- S4: Legacy boolean shape still works ----
-  // Users on the old data shape have `done: { text: true }` (boolean, not object).
-  // The isDone() helper in doneState.js must normalize this to {done: true, note: ''}.
-  {
-    const { page } = await freshContext(browser);
-    await wipeJWState(page);
-    await setTodayDone(page, {
-      text: true,           // LEGACY: bare boolean
-      bible: true,          // LEGACY
-      meeting: false,
-      family: false,
-      today: false,
-      thisWeek: false,
-      yearText: false,
-      sundayWatchtower: false,
-      conventions: false,
-    });
-    await page.reload();
-    const progressText = await page
-      .getByText(/\d+\/\d+\s*today/i)
-      .first()
-      .textContent()
-      .catch(() => null);
-    const m = progressText && progressText.match(/(\d+)\/(\d+)/);
-    const ok = m && Number(m[1]) === 2;
-    record(
-      'S4: Legacy boolean done shape (true/false) still counts correctly',
-      ok,
-      ok ? `progress text: "${progressText}"` : `expected "2/X" got: "${progressText}"`,
-    );
-    await page.context().close();
-  }
-
-  // ---- S5: New shape with notes round-trips correctly ----
-  {
-    const { page } = await freshContext(browser);
-    await wipeJWState(page);
-    const noteText = 'morning devotion reminder';
-    await setTodayDone(page, {
-      text: { done: true, note: noteText },
-      bible: { done: true, note: '' },
-      meeting: { done: true, note: 'midweek prep' },
-    });
-    await page.reload();
-    const stored = await page.evaluate(() =>
-      JSON.parse(localStorage.getItem('jw-daily-habits-state')),
-    );
-    const ok =
-      stored?.done?.text?.done === true &&
-      stored?.done?.text?.note === noteText &&
-      stored?.done?.meeting?.note === 'midweek prep';
-    record(
-      'S5: New {done, note} shape round-trips through localStorage',
-      ok,
-      ok ? '' : `stored: ${JSON.stringify(stored?.done).slice(0, 200)}`,
-    );
-    await page.context().close();
-  }
-
-  // ---- S6: First-launch hint hides after first checkbox tap ----
-  {
-    const { page } = await freshContext(browser);
-    await wipeJWState(page);
-    await page.goto(BASE_URL);
-    await page.waitForTimeout(300);
-    const hintBefore = await page
-      .getByText(/tap a row to open jw\.org/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    // Tap any checkbox — the first one on the page is sufficient.
-    const firstCheckbox = page.locator('button[aria-pressed]').first();
-    if (await firstCheckbox.isVisible().catch(() => false)) {
-      await firstCheckbox.click();
-      await page.waitForTimeout(200);
+    }, lib.STORE_KEY);
+    await page.reload({ waitUntil: 'networkidle' });
+    let ok = false;
+    let detail = '';
+    try {
+      await page.getByTestId('today').waitFor({ timeout: 5000 });
+      const state = await pressed(page, 'Daily text');
+      const v1Kept = await page.evaluate(() => !!localStorage.getItem('jw-daily-habits-state'));
+      ok = state === 'true' && v1Kept;
+      detail = `dailyText pressed=${state} v1KeyKept=${v1Kept}`;
+    } catch (e) {
+      detail = String(e.message).slice(0, 160);
     }
-    const hintAfter = await page
-      .getByText(/tap a row to open jw\.org/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    record(
-      'S6: First-launch hint visible before first tap, hidden after',
-      hintBefore && !hintAfter,
-      `before=${hintBefore} after=${hintAfter}`,
+    record('S2: v1 data migrates (Today shows the old check-in; v1 keys kept)', ok, detail);
+    await ctx.close();
+  }
+
+  // ---- S3: an unreadable v2 store is kept aside, the app starts fresh ----
+  {
+    const { ctx, page } = await lib.openPage(browser, {
+      at: DAY1,
+      viewport: { width: 375, height: 812 },
+    });
+    await page.goto(BASE_URL);
+    await page.evaluate(
+      (key) => localStorage.setItem(key, '{not json'),
+      lib.STORE_KEY,
     );
-    await page.context().close();
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    const result = await page.evaluate((key) => {
+      const keys = Object.keys(localStorage);
+      const corrupt = keys.find((k) => k.startsWith(key + '-corrupt-'));
+      return { corrupt: corrupt ? localStorage.getItem(corrupt) : null };
+    }, lib.STORE_KEY);
+    const onboarding = await page.getByTestId('onboarding').isVisible();
+    record(
+      'S3: Unreadable store is preserved under -corrupt- and onboarding starts',
+      result.corrupt === '{not json' && onboarding,
+      `copy=${JSON.stringify(result.corrupt)} onboarding=${onboarding}`,
+    );
+    await ctx.close();
+  }
+
+  // ---- S4 + S5 + S7 share one install: check in on Tue 6 Oct at 10:00 ----
+  {
+    const { ctx, page } = await open(browser, DAY1);
+    await lib.onboardSkip(page);
+    await lib.hold(page, lib.routineButton(page, 'Daily text'));
+    const saved = await lib.storeWhere(page, (x) => x.log.length > 0);
+
+    // S7: the store is in localStorage, and a reload shows the same state.
+    await page.reload({ waitUntil: 'networkidle' });
+    const after = await pressed(page, 'Daily text');
+    record(
+      'S7: Stored store survives a reload',
+      !!saved && saved.onboardingDone && after === 'true',
+      `entries=${saved ? saved.log.length : 'none'} pressed=${after}`,
+    );
+
+    // S5: 02:00 on the 7th is still the 6th (wrap-up is showing, so open the list).
+    await page.clock.setSystemTime(new Date(2026, 9, 7, 2, 0));
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.getByRole('button', { name: 'Show routines' }).click();
+    const before3 = await pressed(page, 'Daily text');
+    record(
+      'S5: Before 03:00 the app day is still yesterday (check-in still shown)',
+      before3 === 'true',
+      `pressed=${before3}`,
+    );
+
+    // S4: 03:30 is the 7th. The 6th's check-in does not count today.
+    await page.clock.setSystemTime(new Date(2026, 9, 7, 3, 30));
+    await page.reload({ waitUntil: 'networkidle' });
+    const next = await pressed(page, 'Daily text');
+    record(
+      'S4: A check-in does not carry into the next app day (reset at 03:00)',
+      next === 'false',
+      `pressed=${next}`,
+    );
+    await ctx.close();
+  }
+
+  // ---- S6: nothing leaves the origin ----
+  {
+    const { ctx, page, external } = await open(browser, DAY1);
+    await lib.onboardSkip(page);
+    await page.waitForTimeout(500);
+    record(
+      'S6: No third-party requests (no third-party content shipped)',
+      external.length === 0,
+      external.slice(0, 3).join(', '),
+    );
+    await ctx.close();
   }
 }
 
 async function maybeSpawnPreview() {
-  if (!process.env.SPAWN_PREVIEW) return null;
-  console.log(`[smoke] SPAWN_PREVIEW=1, spawning \`npm run preview\`...`);
-  const child = spawn('npm', ['run', 'preview'], {
+  if (!process.env.SPAWN_PREVIEW && !process.argv.includes('--spawn')) return null;
+  console.log(`[smoke] --spawn, spawning \`npm run preview\`...`);
+  const child = spawn(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'preview'], {
+    shell: process.platform === 'win32',
     cwd: path.resolve(__dirname, '..', '..'),
     stdio: ['ignore', 'pipe', 'pipe'],
+    // Own process group, so the cleanup below can stop vite as well as
+    // the npm wrapper. Killing only npm left vite holding the pipes and
+    // the script never exited.
+    detached: true,
   });
   // Wait for the server to be ready (preview prints a "Local:" line)
   return new Promise((resolve, reject) => {
@@ -331,8 +214,12 @@ async function maybeSpawnPreview() {
       const s = chunk.toString();
       process.stdout.write(`[preview] ${s}`);
       // Match "Local:   http://localhost:NNNN" — vite preview may pick
-      // a different port if the requested one is in use.
-      const m = s.match(/Local:\s+https?:\/\/localhost:(\d+)/i);
+      // a different port if the requested one is in use. Strip ANSI
+      // colour codes first: with CI=true vite colours the line and
+      // splits it ("Local\x1b[22m:", "localhost:\x1b[1m4173").
+      // eslint-disable-next-line no-control-regex
+      const plain = s.replace(/\x1b\[[0-9;]*m/g, '');
+      const m = plain.match(/Local:\s+https?:\/\/localhost:(\d+)/i);
       if (!resolved && m) {
         ACTIVE_PORT = Number(m[1]);
         resolved = true;
@@ -370,7 +257,11 @@ async function maybeSpawnPreview() {
   } finally {
     await browser.close();
     if (previewProcess) {
-      previewProcess.kill('SIGTERM');
+      try {
+        process.kill(process.platform === 'win32' ? previewProcess.pid : -previewProcess.pid, 'SIGTERM');
+      } catch {
+        previewProcess.kill('SIGTERM');
+      }
     }
   }
 
@@ -380,6 +271,7 @@ async function maybeSpawnPreview() {
     results.filter((r) => !r.ok).forEach((r) => console.log(`  - ${r.name}: ${r.detail}`));
     process.exit(1);
   }
+  process.exit(0);
 })().catch((e) => {
   console.error('[smoke] Fatal:', e);
   process.exit(1);

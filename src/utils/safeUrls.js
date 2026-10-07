@@ -4,8 +4,16 @@
  * `javascript:`, `data:`, and credentialed URLs are rejected.
  */
 
-/** Hosts the share-target "Open Link" button may navigate to. */
-const SHARE_ALLOWED_HOSTS = new Set(['jw.org', 'www.jw.org', 'wol.jw.org']);
+/**
+ * Hosts the share-target "Open Link" button may navigate to.
+ *
+ * Empty by default: the app ships no allowlisted third party, so a shared
+ * link can only be opened if the user explicitly saved that host as one of
+ * their own link slots. Hosts are matched exactly (plus their subdomains).
+ *
+ * @type {Set<string>}
+ */
+const SHARE_ALLOWED_HOSTS = new Set();
 
 /**
  * True when `raw` is an absolute http(s) URL without embedded credentials.
@@ -25,18 +33,29 @@ export function isSafeHttpUrl(raw) {
 }
 
 /**
- * Share-target open: safe http(s) AND hostname is a JW.org surface.
- * Blocks phishing assists via OS share → arbitrary external site.
+ * Share-target open: safe http(s) AND the hostname is one the caller
+ * explicitly allows.
+ *
+ * Blocks phishing assists via OS share -> arbitrary external site. With no
+ * hosts passed, nothing is allowed, which is the shipped default.
+ *
  * @param {string} raw
+ * @param {Iterable<string>} [allowedHosts] extra hosts to permit
  * @returns {boolean}
  */
-export function isAllowedShareUrl(raw) {
+export function isAllowedShareUrl(raw, allowedHosts) {
   if (!isSafeHttpUrl(raw)) return false;
+  const allowed = new Set([...SHARE_ALLOWED_HOSTS, ...(allowedHosts || [])]);
+  if (allowed.size === 0) return false;
   try {
     const host = new URL(raw.trim()).hostname.toLowerCase();
-    if (SHARE_ALLOWED_HOSTS.has(host)) return true;
-    // Future-proof subdomains like apps.jw.org — never bare "eviljw.org"
-    return host.endsWith('.jw.org');
+    if (allowed.has(host)) return true;
+    // Also permit subdomains of an allowed host, matched on a dot boundary
+    // so "evilexample.com" can never satisfy an allowance for "example.com".
+    for (const entry of allowed) {
+      if (host.endsWith('.' + entry)) return true;
+    }
+    return false;
   } catch {
     return false;
   }

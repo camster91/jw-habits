@@ -54,8 +54,12 @@ function UpdatePrompt() {
         <span className="text-xs font-medium truncate">New version available</span>
         <button
           onClick={handleUpdate}
+          // py-2 + text-xs clears a 32px hit area; min-h-[44px] would break
+          // the pill, so the vertical padding is the compromise while the
+          // dismiss button beside it stays a standard btn-xs circle.
           className="ml-auto shrink-0 text-xs font-semibold text-primary
-                     hover:text-primary/80 transition-colors px-2"
+                     hover:text-primary/80 transition-colors px-2 py-3 -my-2
+                     rounded-full"
         >
           Update
         </button>

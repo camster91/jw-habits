@@ -1,29 +1,205 @@
-# jw-habits — VPS deploy via camster91/ashbi-deploy reusable
+# jw-habits — production deploy to the ashbi VPS (jwhabits.ashbi.ca)
 #
-# Pull-only compose: image is prebuilt by build-and-push.yml and pushed
-# to ghcr.io. The reusable's SSH + pull + up flow handles the rest.
+# Self-contained. This used to call the reusable workflow in
+# camster91/ashbi-deploy, but that repo is private and archived, so every
+# run failed at startup with zero jobs. The steps below are the same ones
+# that reusable ran (ssh, write compose, pull, up, smoke test), inlined.
+#
+# What changed vs. the reusable:
+#   - Runs after "Build and Push Image" succeeds on main, not on every
+#     push, so it always has a fresh image to deploy.
+#   - Deploys the immutable image the build just pushed,
+#     ghcr.io/camster91/jw-habits:main-<sha7>, instead of the stale
+#     camster91/jw-habits:build-latest tag (issue #168).
+#   - The GHCR package is private, so the host logs in with this run's
+#     GITHUB_TOKEN (packages: read) just for the pull, then logs out.
+#   - The localhost wait loop gets its port (the reusable never passed
+#     PORT into that step, so it curled "127.0.0.1:/").
+#
+# The `jw-habits` names (project dir, container, network, image) are
+# real identifiers on the host and in GHCR. Do not rename them.
 name: Deploy (ashbi)
 
 on:
-  push:
+  workflow_run:
+    workflows: ['Build and Push Image']
+    types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit SHA on main to deploy (default: latest main)'
+        required: false
+        type: string
 
 concurrency:
   group: production-deploy-ashbi
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  packages: read
+
+env:
+  PROJECT_NAME: jw-habits
+  PROJECT_DIR: /opt/projects/jw-habits
+  PORT: '18080'
+  PUBLIC_URL: https://jwhabits.ashbi.ca
+  IMAGE_REPO: ghcr.io/camster91/jw-habits
+
 jobs:
-  deploy-ashbi:
+  deploy:
     name: Deploy jw-habits (ashbi)
-    uses: camster91/ashbi-deploy/.github/workflows/deploy.yml@main
-    with:
-      project_name: jw-habits
-      port: "18080"
-      public_url: https://jwhabits.ashbi.ca
-      compose_b64: IyBqdy1oYWJpdHMg4oCUIFZQUyBkZXBsb3kgKGNhbXN0ZXI5MS9hc2hiaS1kZXBsb3kgcmV1c2FibGUpCiMKIyBQdWxsLW9ubHk6IHRoZSBpbWFnZSBpcyBidWlsdCBieSAuZ2l0aHViL3dvcmtmbG93cy9idWlsZC1hbmQtcHVzaC55bWwKIyBpbiB0aGlzIHJlcG8gYW5kIHB1c2hlZCB0byBnaGNyLmlvLiBUaGlzIGZpbGUgZGVjbGFyZXMgdGhlIHJ1bm5pbmcKIyBjb250YWluZXI7IHRoZSByZXVzYWJsZSB3b3JrZmxvdyBoYW5kbGVzIHNzaCArIHB1bGwgKyB1cC4KIwojIGp3LWhhYml0cyBpcyBhIENhcGFjaXRvci9SZWFjdCBTUEEgc2VydmVkIGJ5IG5naW54IGluc2lkZSB0aGUKIyBpbWFnZS4gVGhlIGltYWdlIGV4cG9zZXMgcG9ydCA4MDsgd2UgbWFwIGl0IHRvIDEyNy4wLjAuMToxODA4MAojIG9uIHRoZSBob3N0IChwZXIgdGhlIGV4aXN0aW5nIENhZGR5IHZob3N0IGF0CiMgandoYWJpdHMuYXNoYmkuY2EgLT4gMTI3LjAuMC4xOjE4MDgwKS4gTm8gYXBwLWxldmVsIGVudiB2YXJzLgojCiMgVGhlIHJldXNhYmxlJ3MgYGRvY2tlciBjb21wb3NlIGJ1aWxkIC0tbm8tY2FjaGVgIGlzIGEgbm8tb3AKIyAobm8gYGJ1aWxkOmAgYmxvY2spLgoKc2VydmljZXM6CiAgYXBwOgogICAgaW1hZ2U6IGNhbXN0ZXI5MS9qdy1oYWJpdHM6YnVpbGQtbGF0ZXN0CiAgICBjb250YWluZXJfbmFtZToganctaGFiaXRzCiAgICByZXN0YXJ0OiB1bmxlc3Mtc3RvcHBlZAogICAgcG9ydHM6CiAgICAgIC0gIjEyNy4wLjAuMToxODA4MDo4MCIKICAgIG5ldHdvcmtzOgogICAgICAtIGp3LWhhYml0cy1uZXQKCm5ldHdvcmtzOgogIGp3LWhhYml0cy1uZXQ6CiAgICBuYW1lOiBqdy1oYWJpdHMtbmV0Cg==
-      env_b64: IyBqdy1oYWJpdHMg4oCUIHJ1bnRpbWUgZW52IChrZXB0IGZvciBwYXJpdHkgd2l0aCB0aGUgcmV1c2FibGUgd29ya2Zsb3cpCiMganctaGFiaXRzIGhhcyBubyBhcHAtbGV2ZWwgZW52IHZhcnMgKG5naW54ICsgc3RhdGljIFNQQSkuCiMgVGhpcyBmaWxlIGV4aXN0cyBzbyB0aGUgcmV1c2FibGUncyBlbnZfYjY0IGlucHV0IGhhcwojIHNvbWV0aGluZyB0byB3cml0ZS4gRW1wdHkgaXMgZmluZS4K
-    secrets:
-      vps_ssh_key: ${{ secrets.VPS_SSH_KEY }}
-      vps_host:    ${{ secrets.VPS_HOST }}
-      vps_user:    ${{ secrets.VPS_USER }}
+    # Only deploy builds that came from a push to main and succeeded.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - name: Resolve image
+        id: image
+        env:
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          SHA="${INPUT_SHA:-${RUN_SHA:-$GITHUB_SHA}}"
+          if ! echo "$SHA" | grep -qE '^[0-9a-f]{7,40}$'; then
+            echo "::error::Not a commit SHA: $SHA"
+            exit 1
+          fi
+          REF="${IMAGE_REPO}:main-${SHA:0:7}"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "Deploying $REF"
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Add host to known_hosts
+        # Host keys for 187.77.26.99, copied from camster91/ashbi-deploy
+        # (originally from `ssh-keyscan -H 187.77.26.99`).
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' \
+            '187.77.26.99 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCgYjXktFXJXIW/HIMKIviTkt02MIyQ5APspS+MvtwuMmolV2VcAySIWowy9qHZvy5iLxI26LRk9Lr29xDLt0CcLOrW7+eHvedlE/AxBtpUhcftenhzLvmyX0ZXmtqfmv6JclwG/vU+zwEj2uawyPzbXNheoEGI8G5bIZ885QDQVyIYR8LzQDQinTaHc92fNY3cIeaOwoAYUlcRFbeXwl/Jm4SSUB0DnvrJXfOUbP3EBOcUXCFlSP1AYtAO9urvqs4rZ/DDFbcEY8Z+URsNFMc238SmmwNnmfTpS8qs0PoFq1Z8H0EMgqn4zohqMkIbp/1fRBPKPE/FC40GThkbFoLecooxfy/gFejipLKPLiYQW3ZDTYqddf8XWA/9z/EYrccr966vTdDBp71VAGBuHypS1NuxH/wL98hJ91EytWn0bzDZZ3k9b8sZ/GU+oGmH9LFyaoVnEzwGp+vVLH8jnvfmHg0s1dePr3MhzfFAzANut1oQ99PWUZWUQhwPUxdyqeE=' \
+            '187.77.26.99 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJlCcQfxZM13+CjrEnMZhgwyjVk36K342Yzhv/E3xm7GUNthegor0435SNre1t1W9GGYsHpSyEwQ7ceShAmBgC0=' \
+            '187.77.26.99 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIS3KjJjSOq0gDvXghVLH8mxDqcwQi1DoAKWyRAbZvwt' \
+            >> ~/.ssh/known_hosts
+
+      - name: 'Pre-deploy: clear fail2ban self-ban'
+        # fail2ban on the VPS sometimes bans the runner after repeated
+        # SSH attempts. Best effort; never fails the job.
+        continue-on-error: true
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+        run: |
+          MY_IP=$(curl -sS --max-time 10 https://api.ipify.org || echo "")
+          if ! echo "$MY_IP" | grep -qE '^[0-9]{1,3}(\.[0-9]{1,3}){3}$'; then
+            echo "No usable runner IP; skipping fail2ban check"
+            exit 0
+          fi
+          for i in 1 2 3; do
+            ssh -o ConnectTimeout=10 -o BatchMode=yes "$USER@$HOST" \
+              "fail2ban-client set sshd unbanip \"$MY_IP\"" 2>/dev/null && break
+            sleep 5
+          done || true
+
+      - name: Pull and restart
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          IMAGE: ${{ steps.image.outputs.ref }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Compose file for the host. Same service, container, port and
+          # network as before; only the image changed.
+          COMPOSE_B64=$(base64 -w0 <<YAML
+          services:
+            app:
+              image: ${IMAGE}
+              container_name: ${PROJECT_NAME}
+              restart: unless-stopped
+              ports:
+                - "127.0.0.1:${PORT}:80"
+              networks:
+                - ${PROJECT_NAME}-net
+
+          networks:
+            ${PROJECT_NAME}-net:
+              name: ${PROJECT_NAME}-net
+          YAML
+          )
+          # The remote script travels base64-encoded in the ssh command;
+          # the registry token travels on stdin, so it never appears in a
+          # command line or process list.
+          SCRIPT_B64=$(base64 -w0 <<'REMOTE'
+          set -euo pipefail
+          read -r GHCR_TOKEN
+          mkdir -p "$PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          echo "$COMPOSE_B64" | base64 -d > docker-compose.yml
+          touch .env
+          echo "--- docker-compose.yml ---"
+          cat docker-compose.yml
+
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+          docker compose pull
+          docker logout ghcr.io >/dev/null 2>&1 || true
+
+          # Remove a same-named container left by an older deploy path;
+          # compose will not adopt a container it did not create.
+          docker rm -f "$PROJECT_NAME" 2>/dev/null || true
+          docker compose up -d
+
+          echo "Waiting for 127.0.0.1:$PORT..."
+          for i in $(seq 1 20); do
+            if curl -sf -o /dev/null --max-time 2 "http://127.0.0.1:$PORT/"; then
+              echo "  up after $((i * 3))s"
+              docker ps --filter "name=$PROJECT_NAME" --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::$PROJECT_NAME did not answer on 127.0.0.1:$PORT within 60s"
+          docker ps -a --filter "name=$PROJECT_NAME" --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
+          docker logs --tail 30 "$PROJECT_NAME" 2>&1 || true
+          exit 1
+          REMOTE
+          )
+          printf '%s\n' "$GHCR_TOKEN" | ssh -o ConnectTimeout=10 "$USER@$HOST" \
+            "export PROJECT_DIR='$PROJECT_DIR' PROJECT_NAME='$PROJECT_NAME' PORT='$PORT' GHCR_USER='$GHCR_USER' COMPOSE_B64='$COMPOSE_B64'
+             f=\$(mktemp); printf %s '$SCRIPT_B64' | base64 -d > \"\$f\"
+             bash \"\$f\"; rc=\$?; rm -f \"\$f\"; exit \$rc"
+
+      - name: Public URL check
+        # Reported, not enforced: as of 2026-10-04 the edge serves a
+        # self-signed certificate for jwhabits.ashbi.ca, which is an edge
+        # (Caddy/Traefik) problem, not something this deploy can fix.
+        run: |
+          sleep 5
+          HTTP=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$PUBLIC_URL/" || true)
+          echo "Public $PUBLIC_URL -> HTTP ${HTTP:-none}"
+          if [ "$HTTP" != "200" ]; then
+            echo "::warning::$PUBLIC_URL returned ${HTTP:-no response} (TLS or proxy problem at the edge?)"
+          fi
+
+      - name: Summary
+        if: always()
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+          STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "## Deploy $PROJECT_NAME"
+            echo "- **Image:** \`$IMAGE\`"
+            echo "- **Public URL:** $PUBLIC_URL/"
+            echo "- **Result:** $STATUS"
+          } >> "$GITHUB_STEP_SUMMARY"

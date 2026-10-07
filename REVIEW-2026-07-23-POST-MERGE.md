@@ -1,3 +1,8 @@
+> **HISTORICAL — superseded 2026-09-21.** This document describes the app before the
+> generic-habit-tracker refactor. Organisation-specific rows, the link library it
+> references, and the bundle id it names no longer exist. Kept for the record only;
+> do not treat it as current. See [CLAUDE.md](./CLAUDE.md).
+
 # jw-habits — Post-Merge Review (2026-07-23)
 
 **Repo:** `camster91/jw-habits` · main · v4.2.0 · iOS build 421
@@ -34,7 +39,7 @@
 
 | Fix | Verification | Result |
 |---|---|---|
-| P0-1 runbook | `grep -rE "jwnews2024*" . --exclude-dir=.git` → empty | ✅ no literal leaks |
+| P0-1 runbook | `grep -rE "<leaked-password-pattern>" . --exclude-dir=.git` → empty | ✅ no literal leaks (was wrong: `docs/keystore-rotation-2026-07.md` still listed them until 2026-10-04) |
 | P0-2 Dockerfile nginx | `COPY nginx.conf`, `USER nginx`, `HEALTHCHECK`, `nginx:1.27-alpine` | ✅ all present |
 | P0-3 deploy workflows | `git ls-files .github/workflows/` shows only the 6 expected | ✅ 4 deleted, 1 added (smoke.yml) |
 | P0-4 streak.js fix | `if (isDone(done, k)) count++` at line 112 | ✅ |
@@ -50,7 +55,7 @@
 | New: smoke suite | scripts/verify/smoke.cjs has 7 tests S1-S7 | ✅ |
 | New: smoke workflow | .github/workflows/smoke.yml runs on push + PR | ✅ |
 | New: gitleaks | `gitleaks/gitleaks-action@v2` step in ci.yml | ✅ |
-| Literal redaction | `grep -rE "jwnews2024(securerelease|secure|release)" . --exclude-dir=.git` → empty | ✅ |
+| Literal redaction | `grep -rE "<leaked-password-pattern>" . --exclude-dir=.git` → empty | ✅ |
 
 ---
 

@@ -2,6 +2,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Share2, ExternalLink, Home, Link as LinkIcon, FileText, ArrowLeft } from 'lucide-react';
 import { haptics } from '../utils/native';
 import { isAllowedShareUrl } from '../utils/safeUrls';
+import { loadSettings } from '../utils/settingsStore';
+import { userLinksFrom } from '../utils/userLinks';
 
 function SharePage() {
   const [searchParams] = useSearchParams();
@@ -10,9 +12,21 @@ function SharePage() {
   const title = searchParams.get('title') || '';
   const text = searchParams.get('text') || '';
   const url = searchParams.get('url') || '';
-  // Only open jw.org / wol.jw.org — share_target must not become a
-  // phishing trampoline for arbitrary https URLs.
-  const canOpenUrl = isAllowedShareUrl(url);
+  // Opening a shared link is a deliberate user action, but it must not
+  // become a phishing trampoline for arbitrary URLs. Only hosts the user
+  // has saved as their own link slots are permitted.
+  const savedLinks = userLinksFrom(loadSettings());
+  const allowedHosts = [savedLinks.primary, savedLinks.secondary]
+    .filter(Boolean)
+    .map((u) => {
+      try {
+        return new URL(u).hostname.toLowerCase();
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+  const canOpenUrl = isAllowedShareUrl(url, allowedHosts);
 
   const hasContent = title || text || url;
 
