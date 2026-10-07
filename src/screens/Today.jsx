@@ -1,3 +1,4 @@
+import Garden from '../components/fun/Garden.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../data/useStore.js';
@@ -381,7 +382,7 @@ export default function Today({ onOpenSettings = () => {} }) {
       className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-4">
-        <header>
+        <header className="flex items-center justify-between">
           <div>
             <h1 tabIndex={-1} className="text-3xl font-bold focus:outline-none">
               {t('fd.today.title')}
@@ -394,6 +395,7 @@ export default function Today({ onOpenSettings = () => {} }) {
               }).format(dateOf(today))}
             </p>
           </div>
+          <Garden stage={1} small />
         </header>
 
         {fresh && <p className="text-base-content/80">{t(`fd.today.${fresh}`)}</p>}

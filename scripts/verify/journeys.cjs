@@ -88,8 +88,13 @@ const closeSettings = async (page) => {
       const sched = s && lastSchedule(s);
       step(
         'J1 full onboarding reaches Today with the choices saved',
-        !!s && sched.enabled.personalStudy === false && sched.meetingDays.length === 1 && sched.meetingDays[0] === 3,
-        s ? JSON.stringify({ study: sched.enabled.personalStudy, days: sched.meetingDays }) : 'no store'
+        !!s &&
+          sched.enabled.personalStudy === false &&
+          sched.meetingDays.length === 1 &&
+          sched.meetingDays[0] === 3,
+        s
+          ? JSON.stringify({ study: sched.enabled.personalStudy, days: sched.meetingDays })
+          : 'no store'
       );
       step(
         'J1 the switched-off routine is not on Today',
@@ -137,9 +142,14 @@ const closeSettings = async (page) => {
       await check.dispatchEvent('pointerdown');
       await page.waitForTimeout(100);
       await check.dispatchEvent('pointerup');
-      step('J3 a short press does not check', (await check.getAttribute('aria-pressed')) === 'false');
+      step(
+        'J3 a short press does not check',
+        (await check.getAttribute('aria-pressed')) === 'false'
+      );
       await hold(page, check);
-      await page.waitForFunction(() => document.querySelector('button[aria-pressed="true"]') !== null);
+      await page.waitForFunction(
+        () => document.querySelector('button[aria-pressed="true"]') !== null
+      );
       step('J3 holding checks the routine', (await check.getAttribute('aria-pressed')) === 'true');
       await storeWhere(page, (x) => x.log.length > 0);
       await page.reload({ waitUntil: 'networkidle' });
@@ -173,7 +183,10 @@ const closeSettings = async (page) => {
         .getByRole('switch', { name: 'Daily text' })
         .uncheck();
       await closeSettings(page);
-      step('J4 the routine is gone from Today', (await routineButton(page, 'Daily text').count()) === 0);
+      step(
+        'J4 the routine is gone from Today',
+        (await routineButton(page, 'Daily text').count()) === 0
+      );
       const s = await storeWhere(page, (x) => lastSchedule(x).enabled.dailyText === false);
       step('J4 the change is saved', !!s && lastSchedule(s).enabled.dailyText === false);
     },
@@ -194,7 +207,10 @@ const closeSettings = async (page) => {
       await field.fill('Morning verse');
       await field.blur();
       await closeSettings(page);
-      step('J5 Today shows the new name', (await routineButton(page, 'Morning verse').count()) === 1);
+      step(
+        'J5 Today shows the new name',
+        (await routineButton(page, 'Morning verse').count()) === 1
+      );
       await storeWhere(page, (x) => x.labels.dailyText === 'Morning verse');
       await page.reload({ waitUntil: 'networkidle' });
       step(
@@ -256,6 +272,98 @@ const closeSettings = async (page) => {
     },
     sink
   );
+
+  // v5.1: real UI, no seeded store. Repeat layouts at representative widths.
+  for (const width of [390, 768, 1440]) {
+    await journey(
+      `J9 plans, badges and sharing at ${width}px`,
+      browser,
+      { at: MORNING, viewport: { width, height: 900 } },
+      async (page) => {
+        await onboardSkip(page);
+        await page.getByRole('link', { name: 'Plans', exact: true }).click();
+        await page.getByRole('button', { name: 'New project', exact: true }).click();
+        await page.getByLabel('Steps', { exact: true }).selectOption('bibleBook');
+        await page.getByLabel('Bible book', { exact: true }).selectOption('27');
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+        await page.getByRole('link', { name: 'Today', exact: true }).click();
+        await page.getByText('Daniel · Daniel 1', { exact: true }).waitFor();
+        await hold(page, routineButton(page, 'Personal study'));
+        await page.getByRole('status').filter({ hasText: 'First step' }).waitFor();
+        const checked = await storeWhere(page, (store) => store.plans[0]?.steps[0]?.doneOn);
+        step(
+          `J9 ${width}px check-in ticks the project step`,
+          Boolean(checked?.plans[0]?.steps[0]?.doneOn)
+        );
+        await page.getByRole('link', { name: 'Plans', exact: true }).click();
+        step(
+          `J9 ${width}px project shows 1 of 12`,
+          await page.getByText('1 of 12', { exact: true }).isVisible()
+        );
+        await page.getByRole('button', { name: 'New family plan', exact: true }).click();
+        await page.getByLabel('Title', { exact: true }).fill('Family study');
+        await page.getByLabel('Steps', { exact: true }).selectOption('lessons');
+        await page.getByLabel('How many', { exact: true }).fill('2');
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+        await page.locator('a[href="/plans/family"]').click();
+        await page.getByTestId('week-2026-10-12').getByRole('button', { name: /^Keep/ }).click();
+        const kept = await storeWhere(page, (store) => store.familyAgendas['2026-10-12']?.length);
+        step(
+          `J9 ${width}px next week's agenda is saved`,
+          Boolean(kept?.familyAgendas['2026-10-12']?.length)
+        );
+        await page.clock.setSystemTime(new Date(2026, 9, 18, 10, 0));
+        await page.reload();
+        await page.getByRole('link', { name: 'Today', exact: true }).click();
+        await hold(page, routineButton(page, 'Family worship'));
+        const family = await storeWhere(page, (store) =>
+          store.log.some((entry) => entry.routine === 'familyWorship' && entry.day === '2026-10-18')
+        );
+        step(
+          `J9 ${width}px family check-in records exact steps`,
+          family?.log.some(
+            (entry) => entry.routine === 'familyWorship' && entry.value.stepIds?.length > 0
+          )
+        );
+        await page.getByRole('link', { name: 'Progress', exact: true }).click();
+        await openSettings(page);
+        await page.getByRole('switch', { name: 'Show points and levels', exact: true }).uncheck();
+        await closeSettings(page);
+        step(
+          `J9 ${width}px hidden points keep the garden`,
+          (await page.getByText(/XP$/).count()) === 0 &&
+            (await page.getByRole('img', { name: /Your garden:/ }).isVisible())
+        );
+        const downloadPromise = page.waitForEvent('download');
+        await page.getByRole('button', { name: 'Share card', exact: true }).first().click();
+        const download = await downloadPromise;
+        const png = require('fs').readFileSync(await download.path());
+        step(
+          `J9 ${width}px share downloads a PNG`,
+          png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+        );
+        await page.getByRole('link', { name: 'Badges', exact: true }).click();
+        await page.getByRole('heading', { name: 'Badges', level: 1 }).waitFor();
+        await page.locator('time').first().waitFor();
+        step(
+          `J9 ${width}px badge collection has an earn date`,
+          (await page.locator('time').count()) > 0
+        );
+        step(
+          `J9 ${width}px no horizontal clipping`,
+          await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+        );
+        await openSettings(page);
+        await page.getByRole('switch', { name: 'Show share buttons', exact: true }).uncheck();
+        await closeSettings(page);
+        step(
+          `J9 ${width}px sharing toggle hides buttons`,
+          (await page.getByRole('button', { name: 'Share card', exact: true }).count()) === 0
+        );
+      },
+      sink
+    );
+  }
 
   // J8: nothing went wrong, and nothing left the origin.
   step('J8 no console errors', sink.errors.length === 0, sink.errors.slice(0, 3).join(' | '));

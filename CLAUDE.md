@@ -12,10 +12,10 @@ sets it up in six skippable steps. Reminders, a "What's New" count from jw.org's
 home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
-- **Version:** 5.0.0
+- **Version:** 5.1.0
 - **Node:** >= 18.0.0
 - **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
-  trail at `/plans/:planId`) and Progress (`/progress`) behind a tab bar; Settings is a modal
+  trail at `/plans/:planId`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
   sheet opened from the tab bar, not a route. `/share` (PWA share target) exists in the web
   build only.
 
@@ -35,15 +35,15 @@ user-editable slot instead.
 
 | Layer | Technology | Version |
 |---|---|---|
-| Frontend | React 19 + Vite 8 | `react: 19.2.8` (exact, with `react-dom`), `vite: ^8.1.5` |
-| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, web-only `/share`; `*` falls back to Today |
+| Frontend | React 19 + Vite 8 | `react: 19.3.0` (exact, with `react-dom`), `vite: ^8.1.5` |
+| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, `/progress/badges`, web-only `/share`; `*` falls back to Today |
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
 | i18n | i18next + react-i18next + i18next-browser-languagedetector | en / es / fr (v2 strings are English only for now; es/fr fall back to en) |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
-| Testing | Vitest 4 + Testing Library + Playwright | 532 tests / 33 files, 7 smoke, 7 journeys + a clean-run check |
+| Testing | Vitest 4 + Testing Library + Playwright | 793 tests / 51 files, 7 smoke, 7 journeys + a clean-run check |
 | Linting | ESLint 9 + Prettier 3 | |
 
 ## Commands
@@ -147,7 +147,7 @@ they ship in real installs, so renaming them silently discards user history.
   Preferences natively and localStorage on the web, plus quota handling and the
   `jw-storage-full` event). Do not call `localStorage` directly in `src/`.
 - **Wiring in `src/main.jsx`.** `registerReminderSync()`, `registerWhatsNewCheck()` and
-  `registerWidgetBridge()` each subscribe to the store from outside React using
+  `registerWidgetBridge()` and `registerBadgeAwards()` each subscribe to the store from outside React using
   `onForeground(cb)` (app opened / came to the foreground; gets `{ store, update, today }`) and
   `onStoreChange(cb)` (store changed), both exported from `data/StoreProvider.jsx`. New
   background behaviour should be another `register*()` of that shape, called from `main.jsx`.
@@ -197,3 +197,23 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   (`grep -n`, byte counts), not by trusting the tool's success message.
 - **`deploy-ashbi.yml` keeps its `jw-habits` identifiers** — they name a real container and
   a ghcr.io image. Renaming them breaks the deploy path.
+
+
+## v5.1 plans, garden and sharing
+
+Plans use store v3 with `plans`, `activePlan.personalStudy`, `familyAgendas`,
+`badges`, `showGameLayer` and `showShare`. The Plans tab provides study and family
+plans; Today checks in their steps with exact undo. `openLink` uses the system
+launcher on native devices and a browser tab on web.
+
+Progress has an original eight-stage garden and a derived XP/level bar. Awards
+are recorded once by `registerBadgeAwards`, announced through `fd-badge`, and
+listed at `/progress/badges`. XP has a 100-per-app-day cap. Quiet days incur no
+penalties; badges are retained after undo. There are no rankings, shops or comparisons.
+Hiding points removes XP/levels while keeping the garden and badges. Quiet tone
+suppresses level haptics/confetti; reduced motion suppresses confetti.
+
+Share buttons draw a 1080×1350 PNG locally, then open the native share sheet or
+download it on web. Nothing is sent automatically. Copy builders only read explicit
+public display fields; step notes and links never enter card copy. Temporary native
+files are removed when sharing finishes. `showShare` hides all share buttons.

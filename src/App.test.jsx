@@ -76,6 +76,19 @@ describe('App shell', () => {
     expect(await screen.findByTestId('progress')).toBeInTheDocument();
   });
 
+  it('opens the badge collection and keeps Progress active', async () => {
+    seed({ onboardingDone: true, badges: { firstStep: '2026-10-06' } });
+    window.history.pushState({}, '', '/progress/badges');
+    renderApp();
+    expect(await screen.findByRole('heading', { name: 'Badges', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('Earned 2026-10-06')).toBeInTheDocument();
+    expect(
+      screen
+        .getAllByRole('link', { name: 'Progress' })
+        .some((link) => link.getAttribute('aria-current') === 'page')
+    ).toBe(true);
+  });
+
   it('shows family weeks on /plans/family with the Plans tab active', async () => {
     seed({ onboardingDone: true });
     window.history.pushState({}, '', '/plans/family');

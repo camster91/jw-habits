@@ -7,6 +7,8 @@ import OfflineIndicator from './components/OfflineIndicator';
 import { PWAProvider } from './components/PWAProvider';
 import Share from './pages/Share';
 import Today from './screens/Today';
+import Badges from './screens/Badges.jsx';
+import BadgeToast from './components/fun/BadgeToast.jsx';
 import Progress from './screens/Progress';
 import Plans from './screens/Plans.jsx';
 import PlanTrail from './screens/PlanTrail.jsx';
@@ -58,11 +60,13 @@ function Screens() {
             <Route path="/plans" element={withTabs(<Plans />)} />
             <Route path="/plans/family" element={withTabs(<FamilyWeeks />)} />
             <Route path="/plans/:planId" element={withTabs(<PlanTrail />)} />
+            <Route path="/progress/badges" element={withTabs(<Badges />)} />
             <Route path="/progress" element={withTabs(<Progress />)} />
             <Route path="*" element={today} />
           </>
         )}
       </Routes>
+      {onboardingDone && <BadgeToast />}
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );

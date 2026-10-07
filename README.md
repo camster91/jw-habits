@@ -71,3 +71,17 @@ See [PRIVACY_POLICY.md](./PRIVACY_POLICY.md) for the privacy policy.
 ## License
 
 MIT, see [LICENSE](./LICENSE).
+
+
+### Faithful Days 5.1
+
+Create study projects and family worship plans from the Plans tab. Today shows
+the next study step and the week's agenda, with check-in and undo. Progress adds
+a growing garden, optional points and levels, and a collection of 18 badges.
+Share encouragement cards from a finished project, earned badge, Progress or
+Sunday recap. Cards are created on-device; the web version downloads PNGs.
+Settings → Look controls points/levels and sharing. Existing version 2 data
+upgrades automatically and the original is preserved as a backup.
+
+Native JW Library hand-off and card sharing need the device release checklist
+before a mobile release. The widget remains subject to its existing device checks.

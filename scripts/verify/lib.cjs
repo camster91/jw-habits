@@ -13,6 +13,7 @@ const STORE_KEY = 'jw-habits-v2';
  */
 async function openPage(browser, { at, viewport } = {}) {
   const ctx = await browser.newContext({
+    locale: 'en-CA',
     viewport: viewport || { width: 390, height: 844 },
     ignoreHTTPSErrors: true,
     serviceWorkers: 'block', // a service worker would interfere with state tests
@@ -79,4 +80,13 @@ async function onboardSkip(page) {
 
 const routineButton = (page, name) => page.getByRole('button', { name, exact: true });
 
-module.exports = { STORE_KEY, openPage, go, hold, readStore, storeWhere, onboardSkip, routineButton };
+module.exports = {
+  STORE_KEY,
+  openPage,
+  go,
+  hold,
+  readStore,
+  storeWhere,
+  onboardSkip,
+  routineButton,
+};

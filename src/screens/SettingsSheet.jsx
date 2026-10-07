@@ -155,6 +155,16 @@ function SettingsDialog({ onClose }) {
           </Section>
           <Section title={section('look')}>
             <StepLook {...props} />
+            <Toggle
+              label={t('fd.fun.showGameLayer')}
+              checked={store.showGameLayer}
+              onChange={(on) => update((s) => ({ ...s, showGameLayer: on }))}
+            />
+            <Toggle
+              label={t('fd.fun.showShare')}
+              checked={store.showShare}
+              onChange={(on) => update((s) => ({ ...s, showShare: on }))}
+            />
           </Section>
           <Section title={section('links')}>
             <LinksSection />

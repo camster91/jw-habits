@@ -1,3 +1,4 @@
+import ShareButton from '../fun/ShareButton.jsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PartyPopper } from 'lucide-react';
@@ -85,6 +86,7 @@ export default function PlanFinishedCard({ plan, tone, waiting, started, onStart
           )}
         </div>
       )}
+      <ShareButton kind="milestone" data={{ title: plan.title }} colour={plan.colour} />
     </section>
   );
 }

@@ -266,3 +266,62 @@ describe('domain writers keep the store valid', () => {
     expect(validateStore(migrated).ok).toBe(true);
   });
 });
+
+describe('v3 writers', () => {
+  it('keeps plans, check-ins, agendas, awards and toggles reloadable', async () => {
+    const plans = await import('./domain/plans.js');
+    const agenda = await import('./domain/agenda.js');
+    const checkins = await import('./domain/planCheckins.js');
+    const { awardBadges } = await import('./native/badgeAwards.js');
+    let s = defaultStore(TODAY, 'en');
+    const apply = (next) => {
+      s = next;
+      expect(validateStore(s).ok).toBe(true);
+    };
+    const made = plans.createPlan(
+      s,
+      { title: 'Study', kind: 'study', steps: plans.generateLessons(2) },
+      TODAY
+    );
+    apply(made.store);
+    const id = made.planId;
+    apply(plans.setActiveStudy(s, id));
+    const step = s.plans[0].steps[0].id;
+    apply(
+      plans.updateStep(s, id, step, {
+        title: 'Updated',
+        note: 'Private',
+        link: 'https://example.org',
+      })
+    );
+    apply(plans.moveStep(s, id, step, 1));
+    apply(checkins.checkInStudy(s, TODAY, step));
+    apply(checkins.undoStudy(s, TODAY));
+    apply(plans.addStep(s, id, { title: 'Extra' }));
+    apply(plans.setStepDone(s, id, step, TODAY));
+    apply(plans.archivePlan(s, id, TODAY));
+    apply(plans.restorePlan(s, id));
+    apply(plans.deleteStep(s, id, step));
+    const family = plans.createPlan(
+      s,
+      { title: 'Family', kind: 'family', steps: plans.generateLessons(2) },
+      TODAY
+    );
+    apply(family.store);
+    apply(agenda.setAgenda(s, '2026-10-05', agenda.autoFill(s, '2026-10-05')));
+    apply(agenda.addFreeItem(s, '2026-10-05', { title: 'Discussion' }));
+    apply(checkins.checkInFamily(s, TODAY));
+    apply(checkins.undoFamily(s, TODAY));
+    apply(agenda.removeAgendaItem(s, '2026-10-05', s.familyAgendas['2026-10-05'][0].id));
+    apply(agenda.pruneAgendas(s, TODAY));
+    apply(agenda.cleanReferences(s));
+    apply(addCheckIn(s, { routine: 'dailyText', day: TODAY, value: true }));
+    awardBadges(s, (fn) => apply(fn(s)), TODAY);
+    for (const key of ['showGameLayer', 'showShare'])
+      for (const value of [false, true]) apply({ ...s, [key]: value });
+    apply(plans.deletePlan(s, id));
+    apply(plans.deletePlan(s, family.planId));
+    // Falsification: a broken writer result really is caught by this validator.
+    expect(validateStore({ ...s, showShare: 'yes' }).ok).toBe(false);
+  });
+});
