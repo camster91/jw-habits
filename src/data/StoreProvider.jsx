@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import i18n from 'i18next';
 import { StoreContext } from './useStore.js';
 import { appDay, currentDay } from '../domain/day.js';
+import { cleanReferences, pruneAgendas } from '../domain/agenda.js';
 import { defaultStore, validateStore } from '../domain/store.js';
 import { migrateV1 } from '../domain/migrateV1.js';
 import { upgradeStore } from '../domain/upgrade.js';
@@ -230,12 +231,15 @@ export function StoreProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadStore().then(({ store: loaded, persisted, readOnly }) => {
+    loadStore().then(({ store: stored, persisted, readOnly }) => {
       if (cancelled) return;
+      // Drop references to deleted plans/steps and agenda weeks out of range.
+      // Both return the same object when nothing changed, so a clean store is not rewritten.
+      const loaded = pruneAgendas(cleanReferences(stored), appDay(new Date()));
       readOnlyRef.current = readOnly;
       storeRef.current = loaded;
       setStore(loaded);
-      if (!persisted) persist(loaded);
+      if (!persisted || loaded !== stored) persist(loaded);
       refreshDay();
       readyRef.current = true;
       latestArgs = getArgs;

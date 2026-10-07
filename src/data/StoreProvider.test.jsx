@@ -501,3 +501,41 @@ describe('upgrading a stored v2 value', () => {
     expect(copies.map((k) => prefs.get(k))).toEqual([raw]);
   });
 });
+
+describe('StoreProvider reference cleanup (Review Focus 1)', () => {
+  it('drops dangling agenda items and activePlan on load, and persists the cleaned store', async () => {
+    const base = defaultStore('2026-10-01', 'en');
+    const dangling = {
+      ...base,
+      activePlan: { personalStudy: 'a'.repeat(8) },
+      familyAgendas: {
+        '2026-10-05': [
+          { id: 'x1', kind: 'step', planId: 'gone-plan', stepId: 'gone-step' },
+          { id: 'x2', kind: 'free', title: 'Song', link: null },
+        ],
+        '2020-01-06': [{ id: 'x3', kind: 'free', title: 'Old', link: null }],
+      },
+    };
+    expect(validateStore(dangling).ok).toBe(true);
+    prefs.set(STORE_KEY, JSON.stringify(dangling));
+    await mount();
+    expect(latest.today).toBe('2026-10-06');
+    expect(latest.store.activePlan.personalStudy).toBe(null);
+    expect(latest.store.familyAgendas).toEqual({
+      '2026-10-05': [{ id: 'x2', kind: 'free', title: 'Song', link: null }],
+    });
+    const saved = JSON.parse(prefs.get(STORE_KEY));
+    expect(saved.familyAgendas['2020-01-06']).toBeUndefined();
+    expect(validateStore(saved).ok).toBe(true);
+  });
+
+  it('does not write a clean store back', async () => {
+    const set = vi.spyOn(Preferences, 'set');
+    prefs.set(
+      STORE_KEY,
+      JSON.stringify({ ...defaultStore('2026-10-06', 'en'), lastSeenDay: '2026-10-06' })
+    );
+    await mount();
+    expect(set).not.toHaveBeenCalledWith(expect.objectContaining({ key: STORE_KEY }));
+  });
+});
