@@ -26,3 +26,5 @@
 A “Shipped” web feature does not imply native/store certification. Broad tracking issues #184/#185/#200/#201/#239/#261 stay open until their remaining linked gates pass. Historical snapshots are retained rather than rewritten as current claims.
 
 Current automated validation contracts: [quality gates](quality-gates.md) and [production recovery](production-recovery.md). Shared-content preview is ephemeral and opens only hosts saved in the current app link settings; no attachment or shared text is persisted. Native capture is tracked separately in #264.
+
+Store copy/current UI generation and outstanding account/device declarations: [store release pack](store-release-pack.md). Operating probes and owner restore gates: [monitoring](operations-monitoring.md). New #263/#264 module boundaries await review in [capability map](../CAPABILITY-MAP.md).

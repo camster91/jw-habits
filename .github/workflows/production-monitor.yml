@@ -1,0 +1,38 @@
+name: Production metadata monitor
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  monitor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Validate metadata monitor failure paths
+        run: python3 scripts/ops/test_monitor.py
+      - name: Resolve last successfully deployed revision
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 3 -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/deploy-ashbi.yml/runs?status=success&per_page=1" > deployments.json
+          run_id=$(jq -r '.workflow_runs[0].id // empty' deployments.json)
+          [[ "$run_id" =~ ^[0-9]+$ ]] || { echo '::error::No successful deployment'; exit 1; }
+          get() { curl -fsSL --retry 3 -H "Authorization: Bearer $GH_TOKEN" "$1"; }
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY"
+          artifact=$(get "$api/actions/runs/$run_id/artifacts" | jq -r '[.artifacts[] | select(.name == "production-deployment" and .expired == false)][0].id // empty')
+          [[ "$artifact" =~ ^[0-9]+$ ]] || { echo '::error::Deployment record missing/expired'; exit 1; }
+          get "$api/actions/artifacts/$artifact/zip" > deployment.zip
+          unzip -p deployment.zip publication.json > deployment.json
+          revision=$(jq -r .revision deployment.json)
+          [[ "$revision" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::No successful deployment record'; exit 1; }
+          printf 'EXPECTED_REVISION=%s\n' "$revision" >> "$GITHUB_ENV"
+      - name: Check public HTTPS, TLS expiry, app/PWA and revision
+        run: python3 scripts/ops/monitor.py --revision "$EXPECTED_REVISION"

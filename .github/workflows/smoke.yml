@@ -82,5 +82,12 @@ jobs:
           node scripts/verify/journeys.cjs
           node scripts/verify/accessibility.cjs
           node scripts/verify/offline-update.cjs
+          node scripts/marketing/screenshot-store-assets.cjs
         env:
           CI: true
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: current-store-ui
+          path: store-screenshots/
+          retention-days: 90
