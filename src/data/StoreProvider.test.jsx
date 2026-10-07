@@ -86,29 +86,29 @@ describe('StoreProvider persistence', () => {
     );
     expect(view.container).toBeEmptyDOMElement();
     await flush();
-    expect(latest.store.version).toBe(2);
+    expect(latest.store.version).toBe(3);
     expect(latest.today).toBe('2026-10-06');
   });
 
   it('survives a remount with the same store', async () => {
     const first = await mount();
-    act(() => latest.update((s) => ({ ...s, studyTopic: 'Hope' })));
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Hope' } })));
     await flush();
     first.unmount();
     await mount();
-    expect(latest.store.studyTopic).toBe('Hope');
-    expect(JSON.parse(prefs.get(STORE_KEY)).studyTopic).toBe('Hope');
+    expect(latest.store.labels.dailyText).toBe('Hope');
+    expect(JSON.parse(prefs.get(STORE_KEY)).labels.dailyText).toBe('Hope');
   });
 
   it('persists two rapid updates, composing on the latest store', async () => {
     await mount();
     act(() => {
-      latest.update((s) => ({ ...s, studyTopic: 'Hope' }));
+      latest.update((s) => ({ ...s, labels: { dailyText: 'Hope' } }));
       latest.update((s) => ({ ...s, pioneer: true }));
     });
     await flush();
     const saved = JSON.parse(prefs.get(STORE_KEY));
-    expect(saved.studyTopic).toBe('Hope');
+    expect(saved.labels.dailyText).toBe('Hope');
     expect(saved.pioneer).toBe(true);
   });
 
@@ -135,7 +135,7 @@ describe('StoreProvider persistence', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     prefs.set(STORE_KEY, 'not json');
     await mount();
-    expect(latest.store.version).toBe(2);
+    expect(latest.store.version).toBe(3);
     expect([...prefs.keys()].some((k) => k.includes('-corrupt-'))).toBe(true);
   });
 
@@ -144,9 +144,9 @@ describe('StoreProvider persistence', () => {
     const { Preferences } = await import('@capacitor/preferences');
     await mount();
     vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('disk full'));
-    act(() => latest.update((s) => ({ ...s, studyTopic: 'Hope' })));
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Hope' } })));
     await flush();
-    expect(latest.store.studyTopic).toBe('Hope');
+    expect(latest.store.labels.dailyText).toBe('Hope');
     expect(warn).toHaveBeenCalled();
   });
 });
@@ -160,6 +160,23 @@ describe('today never moves backwards', () => {
     await mount();
     expect(latest.today).toBe('2026-10-07');
     expect(latest.store.lastSeenDay).toBe('2026-10-07');
+  });
+
+  it('prunes agendas against the app day, not the clock behind it (Codex P2)', async () => {
+    vi.setSystemTime(new Date(2026, 9, 11, 10, 0)); // Sunday; lastSeenDay is the Monday after
+    const ahead = '2026-12-07'; // 8 weeks after Monday 2026-10-12
+    const free = [{ id: 'f1', kind: 'free', title: 'Song', link: null }];
+    prefs.set(
+      STORE_KEY,
+      JSON.stringify({
+        ...defaultStore('2026-10-01', 'en'),
+        lastSeenDay: '2026-10-12',
+        familyAgendas: { [ahead]: free },
+      })
+    );
+    await mount();
+    expect(latest.today).toBe('2026-10-12');
+    expect(latest.store.familyAgendas[ahead]).toEqual(free);
   });
 
   it('ignores a lastSeenDay more than a day ahead (a clock once set forward) and resets it', async () => {
@@ -222,14 +239,14 @@ describe('today never moves backwards', () => {
 describe('onStoreChange', () => {
   it('runs after each update with the new store, not during the initial load', async () => {
     const seen = [];
-    const off = onStoreChange((store) => seen.push(store.studyTopic));
+    const off = onStoreChange((store) => seen.push(store.labels.dailyText));
     await mount();
     expect(seen).toEqual([]);
-    act(() => latest.update((s) => ({ ...s, studyTopic: 'Hope' })));
-    act(() => latest.update((s) => ({ ...s, studyTopic: 'Joy' })));
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Hope' } })));
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Joy' } })));
     expect(seen).toEqual(['Hope', 'Joy']);
     off();
-    act(() => latest.update((s) => ({ ...s, studyTopic: 'Peace' })));
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Peace' } })));
     expect(seen).toEqual(['Hope', 'Joy']);
   });
 
@@ -246,9 +263,9 @@ describe('onStoreChange', () => {
       onStoreChange(good),
     ];
     await mount();
-    act(() => latest.update((s) => ({ ...s, studyTopic: 'Kept' })));
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Kept' } })));
     await flush();
-    expect(latest.store.studyTopic).toBe('Kept');
+    expect(latest.store.labels.dailyText).toBe('Kept');
     expect(good).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledTimes(2);
     offs.forEach((off) => off());
@@ -259,25 +276,27 @@ describe('onForeground', () => {
   it('runs after load and on every resume with the latest values', async () => {
     const seen = [];
     const off = onForeground(({ store, today }) => {
-      seen.push([store.studyTopic, today]);
+      seen.push([store.labels.dailyText, today]);
     });
     await mount();
-    expect(seen).toEqual([['', '2026-10-06']]);
-    act(() => latest.update((s) => ({ ...s, studyTopic: 'Hope' })));
+    expect(seen).toEqual([[undefined, '2026-10-06']]);
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Hope' } })));
     act(() => lifecycle.handler({ isActive: true }));
     await flush();
     expect(seen).toEqual([
-      ['', '2026-10-06'],
+      [undefined, '2026-10-06'],
       ['Hope', '2026-10-06'],
     ]);
     off();
   });
 
   it('lets a callback update the store, and unsubscribe stops it', async () => {
-    const calls = vi.fn(({ update }) => update((s) => ({ ...s, studyTopic: 'From callback' })));
+    const calls = vi.fn(({ update }) =>
+      update((s) => ({ ...s, labels: { dailyText: 'From callback' } }))
+    );
     const off = onForeground(calls);
     await mount();
-    expect(latest.store.studyTopic).toBe('From callback');
+    expect(latest.store.labels.dailyText).toBe('From callback');
     off();
     act(() => lifecycle.handler({ isActive: true }));
     await flush();
@@ -299,7 +318,7 @@ describe('onForeground', () => {
     await mount();
     expect(good).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledTimes(2);
-    expect(latest.store.version).toBe(2);
+    expect(latest.store.version).toBe(3);
     offs.forEach((off) => off());
   });
 });
@@ -337,7 +356,7 @@ describe('late onForeground registration', () => {
     );
     await flush();
     expect(calls).toHaveBeenCalledTimes(1);
-    expect(calls.mock.calls[0][0].store.version).toBe(2);
+    expect(calls.mock.calls[0][0].store.version).toBe(3);
     act(() => lifecycle.handler({ isActive: true }));
     await flush();
     expect(calls).toHaveBeenCalledTimes(2);
@@ -346,22 +365,28 @@ describe('late onForeground registration', () => {
 
 describe('storage failures never overwrite stored data', () => {
   it('retries a failed read once and then uses the stored value', async () => {
-    const saved = JSON.stringify({ ...defaultStore('2026-10-01', 'en'), studyTopic: 'Kept' });
+    const saved = JSON.stringify({
+      ...defaultStore('2026-10-01', 'en'),
+      labels: { dailyText: 'Kept' },
+    });
     prefs.set(STORE_KEY, saved);
     vi.spyOn(Preferences, 'get').mockRejectedValueOnce(new Error('transient'));
     await mount();
-    expect(latest.store.studyTopic).toBe('Kept');
+    expect(latest.store.labels.dailyText).toBe('Kept');
   });
 
   it('does not persist anything when the read fails twice', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const saved = JSON.stringify({ ...defaultStore('2026-10-01', 'en'), studyTopic: 'Kept' });
+    const saved = JSON.stringify({
+      ...defaultStore('2026-10-01', 'en'),
+      labels: { dailyText: 'Kept' },
+    });
     prefs.set(STORE_KEY, saved);
     vi.spyOn(Preferences, 'get').mockRejectedValue(new Error('down'));
     await mount();
-    act(() => latest.update((s) => ({ ...s, studyTopic: 'Changed' })));
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Changed' } })));
     await flush();
-    expect(latest.store.studyTopic).toBe('Changed');
+    expect(latest.store.labels.dailyText).toBe('Changed');
     expect(prefs.get(STORE_KEY)).toBe(saved);
     expect(warn).toHaveBeenCalledTimes(1);
   });
@@ -371,9 +396,9 @@ describe('storage failures never overwrite stored data', () => {
     prefs.set(STORE_KEY, 'garbage');
     vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('full'));
     await mount();
-    act(() => latest.update((s) => ({ ...s, studyTopic: 'Changed' })));
+    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Changed' } })));
     await flush();
-    expect(latest.store.studyTopic).toBe('Changed');
+    expect(latest.store.labels.dailyText).toBe('Changed');
     expect(prefs.get(STORE_KEY)).toBe('garbage');
     expect(warn).toHaveBeenCalledTimes(2);
   });
@@ -396,5 +421,138 @@ describe('locale selection', () => {
     vi.spyOn(navigator, 'language', 'get').mockReturnValue('es-MX');
     await mount();
     expect(migrateV1.mock.calls.at(-1)[2]).toBe('es');
+  });
+});
+
+describe('upgrading a stored v2 value', () => {
+  const BACKUP_KEY = `${STORE_KEY}-backup`;
+  const v2Raw = (studyTopic) => {
+    // eslint-disable-next-line no-unused-vars
+    const { plans, activePlan, familyAgendas, badges, showGameLayer, showShare, ...rest } =
+      defaultStore('2026-09-01', 'en');
+    return JSON.stringify({
+      ...rest,
+      version: 2,
+      studyTopic,
+      onboardingDone: true,
+      log: [{ routine: 'dailyText', day: '2026-10-01', value: true }],
+    });
+  };
+  const backupWrites = (spy) => spy.mock.calls.filter(([{ key }]) => key === BACKUP_KEY).length;
+
+  it('loads it as v3, persists v3, and keeps the original once as a backup', async () => {
+    const raw = v2Raw('Daniel');
+    prefs.set(STORE_KEY, raw);
+    const set = vi.spyOn(Preferences, 'set');
+    await mount();
+    expect(latest.store.version).toBe(3);
+    expect(latest.store.onboardingDone).toBe(true);
+    expect(latest.store.log).toEqual([{ routine: 'dailyText', day: '2026-10-01', value: true }]);
+    expect(latest.store.plans.map((p) => [p.title, p.createdOn])).toEqual([
+      ['Daniel', '2026-10-06'],
+    ]);
+    expect(latest.store.activePlan.personalStudy).toBe(latest.store.plans[0].id);
+    const saved = JSON.parse(prefs.get(STORE_KEY));
+    expect(saved.version).toBe(3);
+    expect(saved).not.toHaveProperty('studyTopic');
+    expect(validateStore(saved).ok).toBe(true);
+    expect(prefs.get(BACKUP_KEY)).toBe(raw);
+    expect(backupWrites(set)).toBe(1);
+    expect([...prefs.keys()].some((k) => k.includes('-corrupt-'))).toBe(false);
+  });
+
+  it('writes the backup only once across launches', async () => {
+    const raw = v2Raw('');
+    prefs.set(STORE_KEY, raw);
+    const set = vi.spyOn(Preferences, 'set');
+    const first = await mount();
+    const planIds = latest.store.plans;
+    first.unmount();
+    await mount();
+    expect(backupWrites(set)).toBe(1);
+    expect(prefs.get(BACKUP_KEY)).toBe(raw);
+    expect(latest.store.plans).toEqual(planIds);
+  });
+
+  it('never overwrites an existing backup', async () => {
+    prefs.set(BACKUP_KEY, 'older backup');
+    prefs.set(STORE_KEY, v2Raw('Daniel'));
+    await mount();
+    expect(prefs.get(BACKUP_KEY)).toBe('older backup');
+    expect(JSON.parse(prefs.get(STORE_KEY)).version).toBe(3);
+  });
+
+  it('leaves the v2 value in place when the backup cannot be written', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const raw = v2Raw('Daniel');
+    prefs.set(STORE_KEY, raw);
+    vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('full'));
+    await mount();
+    expect(latest.store.version).toBe(3);
+    act(() => latest.update((s) => ({ ...s, pioneer: true })));
+    await flush();
+    expect(prefs.get(STORE_KEY)).toBe(raw);
+    expect(prefs.has(BACKUP_KEY)).toBe(false);
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets a v2 value that fails validation aside as corrupt, without a backup', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const raw = JSON.stringify({ ...JSON.parse(v2Raw('Daniel')), tone: 'loud' });
+    prefs.set(STORE_KEY, raw);
+    await mount();
+    expect(latest.store.onboardingDone).toBe(false);
+    expect(prefs.has(BACKUP_KEY)).toBe(false);
+    const copies = [...prefs.keys()].filter((k) => k.includes('-corrupt-'));
+    expect(copies.map((k) => prefs.get(k))).toEqual([raw]);
+  });
+
+  it('starts fresh, without a backup, when a stored value is a newer version', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const raw = JSON.stringify({ ...defaultStore('2026-10-01', 'en'), version: 4 });
+    prefs.set(STORE_KEY, raw);
+    await mount();
+    expect(latest.store.version).toBe(3);
+    expect(prefs.has(BACKUP_KEY)).toBe(false);
+    const copies = [...prefs.keys()].filter((k) => k.includes('-corrupt-'));
+    expect(copies.map((k) => prefs.get(k))).toEqual([raw]);
+  });
+});
+
+describe('StoreProvider reference cleanup (Review Focus 1)', () => {
+  it('drops dangling agenda items and activePlan on load, and persists the cleaned store', async () => {
+    const base = defaultStore('2026-10-01', 'en');
+    const dangling = {
+      ...base,
+      activePlan: { personalStudy: 'a'.repeat(8) },
+      familyAgendas: {
+        '2026-10-05': [
+          { id: 'x1', kind: 'step', planId: 'gone-plan', stepId: 'gone-step' },
+          { id: 'x2', kind: 'free', title: 'Song', link: null },
+        ],
+        '2020-01-06': [{ id: 'x3', kind: 'free', title: 'Old', link: null }],
+      },
+    };
+    expect(validateStore(dangling).ok).toBe(true);
+    prefs.set(STORE_KEY, JSON.stringify(dangling));
+    await mount();
+    expect(latest.today).toBe('2026-10-06');
+    expect(latest.store.activePlan.personalStudy).toBe(null);
+    expect(latest.store.familyAgendas).toEqual({
+      '2026-10-05': [{ id: 'x2', kind: 'free', title: 'Song', link: null }],
+    });
+    const saved = JSON.parse(prefs.get(STORE_KEY));
+    expect(saved.familyAgendas['2020-01-06']).toBeUndefined();
+    expect(validateStore(saved).ok).toBe(true);
+  });
+
+  it('does not write a clean store back', async () => {
+    const set = vi.spyOn(Preferences, 'set');
+    prefs.set(
+      STORE_KEY,
+      JSON.stringify({ ...defaultStore('2026-10-06', 'en'), lastSeenDay: '2026-10-06' })
+    );
+    await mount();
+    expect(set).not.toHaveBeenCalledWith(expect.objectContaining({ key: STORE_KEY }));
   });
 });

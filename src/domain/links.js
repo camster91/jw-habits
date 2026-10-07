@@ -4,14 +4,11 @@
  * uses en). Links are URLs only; nothing from jw.org is fetched or kept.
  */
 import { finderUrl } from './bible.js';
+import { dailyTextUrl } from './jwlinks.js';
+import { appDay } from './day.js';
 import { isSafeHttpUrl } from '../utils/safeUrls.js';
 
 const DEFAULTS = {
-  dailyText: {
-    en: 'https://wol.jw.org/en/wol/dt/r1/lp-e',
-    es: 'https://wol.jw.org/es/wol/dt/r4/lp-s',
-    fr: 'https://wol.jw.org/fr/wol/dt/r30/lp-f',
-  },
   meetingPrep: {
     en: 'https://wol.jw.org/en/wol/meetings/r1/lp-e',
     es: 'https://wol.jw.org/es/wol/meetings/r4/lp-s',
@@ -32,12 +29,14 @@ export function linkLocale(language) {
  * @param {import('./schedule.js').RoutineId} id
  * @param {string} language e.g. i18n.language
  * @param {{book: number, chapter: number}} [chapter] the first of today's chapters (bibleReading)
+ * @param {string} [day] the app day for the daily text; the current app day when absent
  * @returns {string|null} null when the routine has no link
  */
-export function routineLink(store, id, language, chapter) {
+export function routineLink(store, id, language, chapter, day) {
   const custom = store.links?.[id];
   if (typeof custom === 'string' && custom !== '' && isSafeHttpUrl(custom)) return custom.trim();
   const locale = linkLocale(language);
+  if (id === 'dailyText') return dailyTextUrl(locale, day ?? appDay(new Date()));
   if (DEFAULTS[id]) return DEFAULTS[id][locale];
   if (id === 'bibleReading' && chapter) return finderUrl(locale, chapter.book, chapter.chapter);
   return null;

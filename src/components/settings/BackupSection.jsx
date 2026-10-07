@@ -53,7 +53,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
       setStatus({ error: true, text: t('fd.settings.backup.readError') });
       return;
     }
-    const result = importJson(text);
+    const result = importJson(text, today);
     if (result.ok) setPending(result.store);
     else setStatus({ error: true, text: t(`fd.settings.backup.errors.${result.reason}`) });
   };

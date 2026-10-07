@@ -1,5 +1,5 @@
 /**
- * Loads the v2 store from durable storage, exposes it through `useStore`, and
+ * Loads the store from durable storage (upgrading a v2 value to v3), exposes it through `useStore`, and
  * persists every change. Nothing in here throws out to React: bad storage
  * falls back to a migrated or default store, and write failures are warned
  * about while the in-memory state stays current.
@@ -8,12 +8,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import i18n from 'i18next';
 import { StoreContext } from './useStore.js';
 import { appDay, currentDay } from '../domain/day.js';
+import { cleanReferences, pruneAgendas } from '../domain/agenda.js';
 import { defaultStore, validateStore } from '../domain/store.js';
 import { migrateV1 } from '../domain/migrateV1.js';
+import { upgradeStore } from '../domain/upgrade.js';
 import { appLifecycle } from '../utils/native.js';
 import { durableGet, durableSet, safeGetItem } from '../utils/safeStorage.js';
 
 export const STORE_KEY = 'jw-habits-v2';
+/** The original v2 text, kept once, the first time a v2 value is upgraded. */
+export const BACKUP_KEY = `${STORE_KEY}-backup`;
 
 const foregroundCallbacks = new Set();
 
@@ -109,10 +113,25 @@ async function readStored() {
 }
 
 /**
+ * Keeps the original v2 text under BACKUP_KEY unless a backup already exists.
+ * @returns {Promise<boolean>} false when the backup could not be checked or written
+ */
+async function keepV2Backup(raw) {
+  try {
+    if ((await durableGet(BACKUP_KEY)) == null) await durableSet(BACKUP_KEY, raw);
+    return true;
+  } catch (error) {
+    console.warn('Could not back up the data before upgrading it; not saving this session:', error);
+    return false;
+  }
+}
+
+/**
  * @returns {Promise<{store: object, persisted: boolean, readOnly: boolean}>}
  *   `persisted`: the store came from storage unchanged. `readOnly`: storage
- *   could not be read or the unreadable value could not be kept, so nothing
- *   may be written this session (the stored value must survive).
+ *   could not be read, the unreadable value could not be kept, or a v2 value
+ *   could not be backed up before its upgrade, so nothing may be written this
+ *   session (the stored value must survive).
  */
 async function loadStore() {
   const today = appDay(new Date());
@@ -126,11 +145,22 @@ async function loadStore() {
     console.warn('Could not read the stored data; running without saving this session:', error);
   }
   if (raw != null) {
+    let result = { ok: false };
+    let upgraded = false;
     try {
-      const result = validateStore(JSON.parse(raw));
-      if (result.ok) return { store: result.store, persisted: true, readOnly: false };
+      const parsed = JSON.parse(raw);
+      const current = upgradeStore(parsed, today);
+      upgraded = current !== parsed;
+      result = validateStore(current);
     } catch {
       // unparseable: handled as corrupt below
+    }
+    if (result.ok && !upgraded) return { store: result.store, persisted: true, readOnly: false };
+    if (result.ok) {
+      // Saving the upgraded store replaces the v2 text, so keep that first.
+      // Without a backup, leave storage alone and run read-only this session.
+      const backedUp = await keepV2Backup(raw);
+      return { store: result.store, persisted: false, readOnly: !backedUp };
     }
     console.warn('Stored data failed validation; keeping a copy and starting over.');
     try {
@@ -201,12 +231,16 @@ export function StoreProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadStore().then(({ store: loaded, persisted, readOnly }) => {
+    loadStore().then(({ store: stored, persisted, readOnly }) => {
       if (cancelled) return;
+      // Drop references to deleted plans/steps and agenda weeks out of range.
+      // Both return the same object when nothing changed, so a clean store is not rewritten.
+      // Prune against the provider's app day (non-regressing, like refreshDay), not the raw clock.
+      const loaded = pruneAgendas(cleanReferences(stored), computeToday(stored.lastSeenDay));
       readOnlyRef.current = readOnly;
       storeRef.current = loaded;
       setStore(loaded);
-      if (!persisted) persist(loaded);
+      if (!persisted || loaded !== stored) persist(loaded);
       refreshDay();
       readyRef.current = true;
       latestArgs = getArgs;

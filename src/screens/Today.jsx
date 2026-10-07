@@ -9,6 +9,7 @@ import { isWrapUpTime, wrapUp } from '../domain/wrapup.js';
 import { pickEncouragement } from '../domain/encouragement.js';
 import { whatsNewPageUrl } from '../domain/whatsNew.js';
 import { linkLocale, routineLink } from '../domain/links.js';
+import { openLink } from '../native/openLink.js';
 import {
   chaptersLabel,
   chaptersReadOn,
@@ -69,7 +70,7 @@ function useEncouragement(tone, today, t) {
 function ScriptureLink({ label, url }) {
   const open = (e) => {
     e.preventDefault();
-    window.open(url, '_blank', 'noopener');
+    openLink(url);
   };
   return (
     <a href={url} className="ml-2 italic text-base-content/70 underline" onClick={open}>
@@ -122,7 +123,7 @@ export default function Today({ onOpenSettings = () => {} }) {
 
   // Opening the page zeroes the count; the checks already keep every guid seen.
   const openWhatsNew = () => {
-    window.open(whatsNewPageUrl(linkLocale(language)), '_blank', 'noopener');
+    openLink(whatsNewPageUrl(linkLocale(language)));
     update((s) => ({ ...s, whatsNew: { ...s.whatsNew, newCount: 0 } }));
   };
 
@@ -142,7 +143,8 @@ export default function Today({ onOpenSettings = () => {} }) {
     }
     if (id === 'personalStudy') {
       const progress = t('fd.wrapUp.studyMoved', studyProgress(store, today));
-      return store.studyTopic ? `${progress} · ${store.studyTopic}` : progress;
+      const topic = store.plans.find((p) => p.id === store.activePlan.personalStudy)?.title;
+      return topic ? `${progress} · ${topic}` : progress;
     }
     return null;
   };
@@ -179,7 +181,7 @@ export default function Today({ onOpenSettings = () => {} }) {
         done={isDone(store, id, today)}
         onComplete={() => complete(id)}
         onUndo={() => undo(id)}
-        link={routineLink(store, id, language, firstChapter)}
+        link={routineLink(store, id, language, firstChapter, today)}
       >
         {id === 'bibleReading' && (
           <Stepper

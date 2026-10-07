@@ -1,5 +1,5 @@
 /**
- * One-time migration of the v1 localStorage keys into a v2 store.
+ * One-time migration of the v1 localStorage keys into a current (v3) store.
  * Pure: it is handed a `read(key)` function and never writes or deletes, so
  * the v1 keys survive for a rollback. Malformed keys count as absent.
  * Dropped on purpose: `jw-habits-best-streak` (streaks are recalculated) and
@@ -41,7 +41,7 @@ const isDone = (v) => v === true || (isObject(v) && v.done === true);
  * @param {(key: string) => string|null} read
  * @param {string} today app day 'YYYY-MM-DD'
  * @param {string} locale
- * @returns {object|null} a v2 store, or null when there is nothing to migrate
+ * @returns {object|null} a current store, or null when there is nothing to migrate
  */
 export function migrateV1(read, today, locale) {
   const state = readJson(read, STATE_KEY);

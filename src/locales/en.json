@@ -115,8 +115,7 @@
         "rename": "Rename {{label}}",
         "nameFor": "Name for {{label}}",
         "reset": "Reset to default",
-        "resetLabel": "Reset {{label}} to default",
-        "topic": "Study topic (optional)"
+        "resetLabel": "Reset {{label}} to default"
       },
       "week": {
         "title": "Your week",
@@ -233,6 +232,9 @@
         "support": "Support",
         "version": "Version {{version}}"
       }
+    },
+    "links": {
+      "opensInLibrary": "Opens in JW Library"
     },
     "tabs": {
       "label": "Main navigation",

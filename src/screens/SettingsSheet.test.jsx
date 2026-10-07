@@ -122,11 +122,11 @@ describe('SettingsSheet', () => {
     expect(scheduleOn(current, '2026-10-05').enabled.ministry).toBe(true);
   });
 
-  it('importing a file with version 3 explains why and changes nothing', async () => {
+  it('importing a file with version 4 explains why and changes nothing', async () => {
     const { initial } = renderSheet();
     const input = screen.getByLabelText('Import a backup');
     expect(input).toHaveAttribute('accept', '.json,application/json');
-    fireEvent.change(input, { target: { files: [backupFile({ ...initial, version: 3 })] } });
+    fireEvent.change(input, { target: { files: [backupFile({ ...initial, version: 4 })] } });
     expect(await screen.findByText(/from a newer version of Faithful Days/)).toBeInTheDocument();
     expect(current).toBe(initial);
     expect(screen.queryByText('Replace all data on this device?')).not.toBeInTheDocument();
@@ -167,6 +167,22 @@ describe('SettingsSheet', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(window.confirm).not.toHaveBeenCalled();
     expect(window.alert).not.toHaveBeenCalled();
+  });
+
+  it('Replace on a v2 backup adopts it upgraded to v3, its topic a plan made today', async () => {
+    const { initial } = renderSheet();
+    // eslint-disable-next-line no-unused-vars
+    const { plans, activePlan, familyAgendas, badges, showGameLayer, showShare, ...rest } = initial;
+    const v2 = { ...rest, version: 2, studyTopic: 'Daniel', tone: 'quiet' };
+    fireEvent.change(screen.getByLabelText('Import a backup'), {
+      target: { files: [backupFile(v2)] },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Replace' }));
+    expect(current.version).toBe(3);
+    expect(current.tone).toBe('quiet');
+    expect(current).not.toHaveProperty('studyTopic');
+    expect(current.plans.map((p) => [p.title, p.createdOn])).toEqual([['Daniel', TODAY]]);
+    expect(current.activePlan.personalStudy).toBe(current.plans[0].id);
   });
 
   it('exports on the web as a dated download', async () => {
@@ -230,7 +246,10 @@ describe('SettingsSheet', () => {
     });
     const links = section('Links');
     const daily = within(links).getByLabelText('Daily text');
-    expect(daily).toHaveAttribute('placeholder', 'https://wol.jw.org/en/wol/dt/r1/lp-e');
+    expect(daily).toHaveAttribute(
+      'placeholder',
+      'https://www.jw.org/finder?srcid=jwlshare&wtlocale=E&prefer=lang&alias=daily-text&date=20261006'
+    );
     expect(within(links).queryByRole('button')).not.toBeInTheDocument();
     fireEvent.change(daily, { target: { value: 'javascript:alert(1)' } });
     expect(current).toBe(initial);

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ExternalLink } from 'lucide-react';
 import HoldToCheck from './HoldToCheck.jsx';
+import { openLink } from '../native/openLink.js';
 
 /**
  * One routine on Today: the hold-to-check, its label and detail line, an
@@ -21,7 +22,7 @@ export default function RoutineRow({ label, detail, done, onComplete, onUndo, li
             type="button"
             className="btn btn-circle btn-ghost min-h-11 min-w-11 text-[var(--fd-accent-text)]"
             aria-label={t('fd.today.openLink', { label })}
-            onClick={() => window.open(link, '_blank', 'noopener')}
+            onClick={() => openLink(link)}
           >
             <ExternalLink aria-hidden="true" className="h-5 w-5" />
           </button>
