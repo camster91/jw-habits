@@ -12,7 +12,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+ARG APP_REVISION=local
+RUN APP_REVISION="$APP_REVISION" npm run build
 
 # Stage 2: Serve with nginx
 # Digest pinned 2026-07-23 (see update command above).
