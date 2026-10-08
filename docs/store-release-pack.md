@@ -1,4 +1,4 @@
-# Faithful Days 5.1 store release pack
+# Faithful Days 5.2 store release pack
 
 Current code and web release, not a claim that either store listing is live.
 Cameron / Ashbi Design owns name reservation, account declarations and submission.

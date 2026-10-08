@@ -364,6 +364,40 @@ const closeSettings = async (page) => {
     );
   }
 
+  // Notes/preparation are intentions and personal text, never fabricated activity.
+  for (const width of [320, 390, 768, 1440]) {
+    await journey(`J11 notes and preparation at ${width}px`, browser,
+      { at: MORNING, viewport: { width, height: 900 } }, async (page) => {
+        await onboardSkip(page);
+        await page.getByRole('link', { name: 'Plans', exact: true }).click();
+        await page.getByRole('link', { name: 'Prepare for meetings and assignments' }).click();
+        await page.getByLabel('Meeting type', { exact: true }).selectOption('weekend');
+        await page.getByRole('button', { name: 'Add meeting', exact: true }).click();
+        await page.getByLabel('Watchtower Study', { exact: true }).check();
+        await page.getByText('1 of 2 sections prepared', { exact: true }).waitFor();
+        await page.getByRole('link', { name: 'Add a meeting note' }).click();
+        await page.getByRole('dialog', { name: 'New note' }).waitFor();
+        await page.getByLabel('Title', { exact: true }).fill('Question for later');
+        await page.getByLabel('Your note', { exact: true }).fill('A personal thought');
+        await page.getByLabel('Tags (separate with commas)', { exact: true }).fill('study');
+        await page.getByRole('button', { name: 'Save note', exact: true }).click();
+        await page.getByRole('dialog').waitFor({ state: 'hidden' });
+        await page.reload();
+        await page.getByRole('button', { name: 'Question for later', exact: true }).waitFor();
+        const saved = await page.evaluate(() => ({ routines: JSON.parse(localStorage.getItem('jw-habits-v2')), workspace: JSON.parse(localStorage.getItem('faithful-days-workspace-v1')) }));
+        step(`J11 ${width}px notes and prepared sections survive reload`, saved.workspace.notes.length === 1 && saved.workspace.meetings[0].prepared.includes('Watchtower Study'));
+        step(`J11 ${width}px preparation creates no activity`, saved.routines.log.length === 0);
+        step(`J11 ${width}px no horizontal clipping`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+        await openSettings(page);
+        const downloading = page.waitForEvent('download');
+        await page.getByRole('button', { name: 'Export a backup', exact: true }).click();
+        const download = await downloading;
+        const backup = JSON.parse(require('node:fs').readFileSync(await download.path(), 'utf8'));
+        step(`J11 ${width}px combined backup includes both stores`, backup.routines.version === 3 && backup.workspace.notes.length === 1);
+        await closeSettings(page);
+      }, sink);
+  }
+
   // J10: before the application loads, persisted theme wins and motion is optional.
   for (const theme of ['dark', 'light']) {
     const ctx = await browser.newContext({ locale: 'en-CA', colorScheme: theme === 'dark' ? 'light' : 'dark', reducedMotion: 'reduce' });

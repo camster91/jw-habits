@@ -31,7 +31,7 @@ async function scan(page, label) {
       await page.getByRole('button',{name:'Settings',exact:true}).click();
       await scan(page,`${theme} Settings`);
       await page.getByRole('button',{name:'Close',exact:true}).click();
-      for (const route of ['plans','progress','progress/badges','share?text=Example%20shared%20text']) {
+      for (const route of ['plans','plans/preparation','notes','progress','progress/badges','share?text=Example%20shared%20text']) {
         await page.goto(`${BASE}/${route}`,{waitUntil:'networkidle'});
         await scan(page,`${theme} ${route}`);
       }

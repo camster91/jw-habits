@@ -212,6 +212,15 @@ export function StoreProvider({ children }) {
     [persist]
   );
 
+  // Backup replacement acknowledges the durable write, unlike routine edits.
+  const replace = useCallback(async (next) => {
+    if (readOnlyRef.current) throw new Error('Saving is paused; stored data was not replaced.');
+    if (!validateStore(next).ok) throw new Error('Invalid routine data');
+    await durableSet(STORE_KEY, JSON.stringify(next));
+    storeRef.current = next;
+    setStore(next);
+  }, []);
+
   // Recompute today and re-arm the 03:00 timer from the current clock, so a
   // resume after suspension or a timezone change never leaves a stale timer.
   const refreshDay = useCallback(
@@ -276,8 +285,8 @@ export function StoreProvider({ children }) {
   }, [loaded, refreshDay, runForeground, getArgs]);
 
   const value = useMemo(
-    () => ({ store, update, today, savingPaused: readOnlyRef.current }),
-    [store, update, today]
+    () => ({ store, update, replace, today, savingPaused: readOnlyRef.current }),
+    [store, update, replace, today]
   );
   if (newerStore) return <UpdateRequired raw={newerStore.raw} />;
   if (!loaded) return null;

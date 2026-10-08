@@ -18,8 +18,8 @@
 | Initial release language | Shipped | #259: English-only UI/document language; legacy language preferences preserved |
 | French/Spanish app UI | Deferred for initial release | Cameron / #46; revisit after current store release and fluent review; native widget chrome is separately localized |
 | Human usability/household research | Blocked | #199 / #252: recruit consenting participants; do not fabricate results |
-| Prepare ahead and assignments | Active, design first | #263; its own spec/plan after v5.1 |
-| Second brain / capture | Active, design first | #264; local notes/tags/search first, native share extension after device verification |
+| Prepare ahead and assignments | Active | #263; dated meeting preparation and assignment checklists implemented in v5.2; reading pace and device validation remain |
+| Second brain / capture | Active | #264; local notes/tags/search implemented in v5.2; native share extension after device verification |
 | Retire live web app | Blocked by store launch | #255: only after both store listings are live |
 | Remote accounts, sync, analytics, congregation content | Deferred | No authorization/product contract; revisit only with an explicit privacy-reviewed spec |
 | Earlier Goals / Service / Dashboard / Reading-tab promises (#39–#43) | Superseded | Current v5 product contract: Today, Plans and Progress; ministry and reading are routines, goals are not revived implicitly |
@@ -29,4 +29,4 @@ A “Shipped” web feature does not imply native/store certification. Broad tra
 
 Current automated validation contracts: [quality gates](quality-gates.md) and [production recovery](production-recovery.md). Shared-content preview is ephemeral and opens only hosts saved in the current app link settings; no attachment or shared text is persisted. Native capture is tracked separately in #264.
 
-Store copy/current UI generation and outstanding account/device declarations: [store release pack](store-release-pack.md). Operating probes and owner restore gates: [monitoring](operations-monitoring.md). New #263/#264 module boundaries await review in [capability map](../CAPABILITY-MAP.md).
+Store copy/current UI generation and outstanding account/device declarations: [store release pack](store-release-pack.md). Operating probes and owner restore gates: [monitoring](operations-monitoring.md). Current #263/#264 module boundaries are recorded in [capability map](../CAPABILITY-MAP.md).
