@@ -46,6 +46,7 @@ jobs:
     timeout-minutes: 40
     env:
       BUILD_INPUT: ${{ inputs.build_number }}
+      ANDROID_UPLOAD_CERT_SHA256: ${{ vars.ANDROID_UPLOAD_CERT_SHA256 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -56,6 +57,16 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/native/release_guard.py environment --environment android-signing
+      - name: Require approved upload certificate fingerprint before reading key material
+        run: |
+          python3 - <<'PY'
+          import os
+          from scripts.native.release_evidence import normalize_certificate_sha256
+          try:
+              normalize_certificate_sha256(os.environ.get('ANDROID_UPLOAD_CERT_SHA256', ''))
+          except ValueError:
+              raise SystemExit('Configure the independently approved upload certificate SHA-256')
+          PY
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '22'
@@ -145,6 +156,8 @@ jobs:
           name: faithful-days-approved-aab-${{ github.run_id }}-${{ github.run_attempt }}
           path: approved-bundle
       - name: Revalidate approved artifact before upload
+        env:
+          ANDROID_UPLOAD_CERT_SHA256: ${{ vars.ANDROID_UPLOAD_CERT_SHA256 }}
         run: |
           curl -fsSL --retry 3 https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar -o "$RUNNER_TEMP/bundletool.jar"
           python3 scripts/native/release_evidence.py record --metadata approved-bundle/native-version.json --artifact approved-bundle/android/app/build/outputs/bundle/release/app-release.aab --platform android-aab --bundletool "$RUNNER_TEMP/bundletool.jar" --output upload-native-artifact.json

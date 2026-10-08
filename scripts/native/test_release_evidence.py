@@ -1,8 +1,11 @@
 """Synthetic archives and metadata; no native build, signing or upload."""
+import base64
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
 import plistlib
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -12,6 +15,9 @@ spec = importlib.util.spec_from_file_location('release_evidence', Path(__file__)
 release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
 SHA = 'a' * 40
+CERT_BYTES = b'fabricated signer DER, not a certificate or key'
+CERT_SHA = hashlib.sha256(CERT_BYTES).hexdigest()
+CERT_OUTPUT = 'Signer #1:\n\nCertificate #1:\nCertificate owner: CN=Fabricated\n-----BEGIN CERTIFICATE-----\n' + base64.b64encode(CERT_BYTES).decode() + '\n-----END CERTIFICATE-----\n'
 
 
 class ReleaseEvidenceTests(unittest.TestCase):
@@ -143,28 +149,87 @@ class ReleaseEvidenceTests(unittest.TestCase):
         tool.write_text('not executable')
         self.process.reset_mock()
         with self.assertRaises(ValueError):
-            release.verify_aab(self.signed_fixture(), tool)
+            release.verify_aab(self.signed_fixture(), tool, CERT_SHA)
         self.process.assert_not_called()
 
     def test_unsigned_aab_refuses_verifier_execution(self):
         with patch.object(release, 'digest', return_value=release.BUNDLETOOL_SHA256):
             self.process.reset_mock()
             with self.assertRaises(ValueError):
-                release.verify_aab(self.ipa(), self.root / 'fake-tool.jar')
+                release.verify_aab(self.ipa(), self.root / 'fake-tool.jar', CERT_SHA)
             self.process.assert_not_called()
 
     def test_failed_or_partial_signature_stops_bundle_validation(self):
         for output in ('jar is unsigned.', 'jar verified.\nThis jar contains unsigned entries.'):
             with self.subTest(output=output), patch.object(release, 'digest', return_value=release.BUNDLETOOL_SHA256), patch.object(release.subprocess, 'check_output', return_value=output) as process:
                 with self.assertRaises(ValueError):
-                    release.verify_aab(self.signed_fixture(), self.root / 'fake-tool.jar')
+                    release.verify_aab(self.signed_fixture(), self.root / 'fake-tool.jar', CERT_SHA)
                 self.assertEqual(process.call_count, 1)
 
     def test_verified_signature_and_bundle_structure_yield_actual_manifest(self):
-        with patch.object(release, 'digest', return_value=release.BUNDLETOOL_SHA256), patch.object(release.subprocess, 'check_output', side_effect=['jar verified.', b'Bundle valid', self.manifest()]) as process:
-            manifest = release.verify_aab(self.signed_fixture(), self.root / 'fake-tool.jar')
+        with patch.object(release, 'digest', return_value=release.BUNDLETOOL_SHA256), patch.object(release.subprocess, 'check_output', side_effect=['jar verified.', CERT_OUTPUT, b'Bundle valid', self.manifest()]) as process:
+            manifest = release.verify_aab(self.signed_fixture(), self.root / 'fake-tool.jar', CERT_SHA)
             self.assertEqual(release.inspect_aab_manifest(manifest, self.metadata)[0]['version'], '5.2.0')
-            self.assertEqual(process.call_count, 3)
+            self.assertEqual(process.call_count, 4)
+
+    def test_expected_certificate_missing_or_malformed_refuses_all_execution(self):
+        for fingerprint in ('', 'a' * 63, 'aa:' * 32, 'a' * 64 + '\nINJECT=1', None):
+            with self.subTest(fingerprint=fingerprint), self.assertRaises(ValueError):
+                release.verify_aab(self.signed_fixture(), self.root / 'fake-tool.jar', fingerprint)
+        self.process.reset_mock()
+        with self.assertRaises(ValueError):
+            release.verify_aab(self.signed_fixture(), self.root / 'fake-tool.jar')
+        self.process.assert_not_called()
+
+    def test_certificate_accepts_colon_separated_uppercase_fingerprint(self):
+        formatted = ':'.join(CERT_SHA[i:i+2].upper() for i in range(0, 64, 2))
+        self.assertEqual(release.verify_upload_certificate(CERT_OUTPUT, formatted), CERT_SHA)
+
+    def test_certificate_rejects_wrong_leaf_even_when_chain_or_timestamp_matches(self):
+        other = base64.b64encode(b'other fabricated DER').decode()
+        wrong_leaf = CERT_OUTPUT.replace(base64.b64encode(CERT_BYTES).decode(), other)
+        with self.assertRaises(ValueError):
+            release.verify_upload_certificate(wrong_leaf, CERT_SHA)
+        for suffix in ('\nCertificate #2:\n', '\nTimestamp:\nCertificate #1:\n'):
+            with self.subTest(suffix=suffix), self.assertRaises(ValueError):
+                release.verify_upload_certificate(wrong_leaf + suffix + CERT_OUTPUT.split('Certificate #1:')[1], CERT_SHA)
+
+    def test_matching_leaf_remains_valid_with_a_chain_or_timestamp_certificate(self):
+        for suffix in ('\nCertificate #2:\n', '\nTimestamp:\nCertificate #1:\n'):
+            self.assertEqual(release.verify_upload_certificate(CERT_OUTPUT + suffix + CERT_OUTPUT.split('Certificate #1:')[1], CERT_SHA), CERT_SHA)
+
+    def test_certificate_rejects_missing_multiple_or_ambiguous_signers(self):
+        cases = ('Not a signed jar file', CERT_OUTPUT + CERT_OUTPUT.replace('Signer #1:', 'Signer #2:'),
+                 CERT_OUTPUT.replace('Signer #1:', 'Signer #2:'), CERT_OUTPUT.replace('Certificate #1:', 'Certificate #2:'),
+                 CERT_OUTPUT + CERT_OUTPUT.split('Certificate #1:')[1])
+        for output in cases:
+            with self.subTest(output=output), self.assertRaises(ValueError):
+                release.verify_upload_certificate(output, CERT_SHA)
+
+    def test_wrong_signer_blocks_bundletool_before_structure_or_manifest_inspection(self):
+        with patch.object(release, 'digest', return_value=release.BUNDLETOOL_SHA256), patch.object(release.subprocess, 'check_output', side_effect=['jar verified.', CERT_OUTPUT]) as process:
+            with self.assertRaises(ValueError):
+                release.verify_aab(self.signed_fixture(), self.root / 'fake-tool.jar', 'b' * 64)
+            self.assertEqual(process.call_count, 2)
+            self.assertEqual(process.call_args_list[1].args[0][0], 'keytool')
+
+    def test_cli_binds_verified_upload_certificate_to_replay_evidence(self):
+        metadata = self.root / 'version.json'
+        metadata.write_text(json.dumps(self.metadata))
+        output = self.root / 'artifact.json'
+        path = self.signed_fixture()
+        formatted = ':'.join(CERT_SHA[i:i+2].upper() for i in range(0, 64, 2))
+        args = ['release_evidence.py', 'record', '--metadata', str(metadata), '--artifact', str(path),
+                '--platform', 'android-aab', '--bundletool', str(self.root / 'fake-tool.jar'),
+                '--expected-upload-cert-sha256', formatted, '--output', str(output)]
+        with patch.object(sys, 'argv', args), patch.object(release, 'resolve', return_value=self.metadata), patch.object(release, 'verify_aab', return_value=self.manifest()) as verifier:
+            release.main()
+        verifier.assert_called_once_with(path, self.root / 'fake-tool.jar', formatted)
+        evidence = json.loads(output.read_text())
+        self.assertEqual(evidence['uploadCertificateSha256'], CERT_SHA)
+        self.assertEqual(evidence['signingVerification'], 'jar-signature-and-configured-upload-certificate-verified')
+        self.assertEqual(evidence['storeProcessing'], 'not-verified')
+        self.assertEqual(evidence['deviceInstallation'], 'not-verified')
 
 
 if __name__ == '__main__':

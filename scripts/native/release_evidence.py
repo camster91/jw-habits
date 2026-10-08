@@ -1,5 +1,6 @@
 """Native version resolution and artifact evidence; never signs or uploads."""
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -121,7 +122,36 @@ def inspect_aab_manifest(manifest, metadata):
     return [{'identifier': APP_ID, 'version': metadata['version'], 'buildNumber': str(metadata['buildNumber'])}]
 
 
-def verify_aab(path, tool):
+def normalize_certificate_sha256(value):
+    if not isinstance(value, str):
+        raise ValueError('Approved upload certificate SHA-256 is required')
+    value = value.strip()
+    if not re.fullmatch(r'(?:[0-9a-fA-F]{64}|(?:[0-9a-fA-F]{2}:){31}[0-9a-fA-F]{2})', value):
+        raise ValueError('Approved upload certificate SHA-256 is required')
+    return value.replace(':', '').lower()
+
+
+def verify_upload_certificate(output, expected):
+    expected = normalize_certificate_sha256(expected)
+    # JDK 21 English keytool -printcert -rfc output lists each signer and
+    # its certificate path in leaf-first order. Never match a chain/TSA cert.
+    if re.findall(r'^Signer #(\d+):\s*$', output, re.MULTILINE) != ['1']:
+        raise ValueError('Expected exactly one AAB signer')
+    leaf = re.split(r'^Certificate #1:\s*$', output, maxsplit=1, flags=re.MULTILINE)
+    if len(leaf) != 2:
+        raise ValueError('Missing upload signer certificate')
+    section = re.split(r'^(?:Certificate #\d+:|Timestamp:)\s*$', leaf[1], maxsplit=1, flags=re.MULTILINE)[0]
+    pem = re.findall(r'-----BEGIN CERTIFICATE-----\s+([A-Za-z0-9+/=\s]+?)\s+-----END CERTIFICATE-----', section)
+    if len(pem) != 1:
+        raise ValueError('Ambiguous upload signer certificate')
+    der = base64.b64decode(re.sub(r'\s+', '', pem[0]), validate=True)
+    if not der or hashlib.sha256(der).hexdigest() != expected:
+        raise ValueError('AAB signer differs from the approved upload certificate')
+    return expected
+
+
+def verify_aab(path, tool, expected_certificate=''):
+    normalize_certificate_sha256(expected_certificate)
     if digest(tool) != BUNDLETOOL_SHA256:
         raise ValueError('Bundletool checksum mismatch; refusing execution')
     with zipfile.ZipFile(path) as archive:
@@ -131,6 +161,8 @@ def verify_aab(path, tool):
     signature = subprocess.check_output(['jarsigner', '-J-Duser.language=en', '-J-Duser.country=US', '-verify', str(path)], text=True, stderr=subprocess.PIPE)
     if 'jar verified.' not in signature or 'unsigned entries' in signature.lower():
         raise ValueError('AAB JAR signature verification failed')
+    certificate = subprocess.check_output(['keytool', '-J-Duser.language=en', '-J-Duser.country=US', '-printcert', '-rfc', '-jarfile', str(path)], text=True, stderr=subprocess.PIPE)
+    verify_upload_certificate(certificate, expected_certificate)
     subprocess.check_output(['java', '-jar', str(tool), 'validate', '--bundle=' + str(path)], stderr=subprocess.PIPE)
     return subprocess.check_output(['java', '-jar', str(tool), 'dump', 'manifest', '--module=base', '--bundle=' + str(path)], text=True, stderr=subprocess.PIPE)
 
@@ -160,6 +192,7 @@ def main():
     recorder.add_argument('--platform', choices=['ios', 'android', 'android-aab'], required=True)
     recorder.add_argument('--aapt', default='')
     recorder.add_argument('--bundletool', default='')
+    recorder.add_argument('--expected-upload-cert-sha256', default=os.environ.get('ANDROID_UPLOAD_CERT_SHA256', ''))
     recorder.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
@@ -183,10 +216,11 @@ def main():
             if args.platform == 'android-aab':
                 if not args.bundletool:
                     raise ValueError('AAB evidence requires pinned bundletool')
-                badging = verify_aab(Path(args.artifact), Path(args.bundletool))
+                badging = verify_aab(Path(args.artifact), Path(args.bundletool), args.expected_upload_cert_sha256)
             result = record(Path(args.artifact), metadata, args.platform, badging)
             if args.platform == 'android-aab':
-                result['signingVerification'] = 'jar-signature-verified;certificate-identity-not-verified'
+                result['signingVerification'] = 'jar-signature-and-configured-upload-certificate-verified'
+                result['uploadCertificateSha256'] = normalize_certificate_sha256(args.expected_upload_cert_sha256)
         Path(args.output).write_text(json.dumps(result, indent=2) + '\n')
         if args.command == 'resolve' and args.github_env:
             with Path(args.github_env).open('a') as output:
