@@ -21,7 +21,7 @@ home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
   Progress retains the garden. Study plans use "Use on Today" and "Current plan".
 - **Node:** >= 22.12.0
 - **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
-  trail at `/plans/:planId`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
+  trail at `/plans/:planId`, family agendas at `/plans/family`, preparation at `/plans/preparation`), Notes (`/notes`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
   sheet opened from the tab bar, not a route. `/share` (lazy, preview-only PWA share target) exists in the web
   build only.
 
@@ -42,7 +42,7 @@ user-editable slot instead.
 | Layer | Technology | Version |
 |---|---|---|
 | Frontend | React 19 + Vite 8 | `react: 19.3.0` (exact, with `react-dom`), `vite: ^8.1.5` |
-| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, `/progress/badges`, web-only `/share`; `*` falls back to Today |
+| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/plans/preparation`, `/notes`, `/progress`, `/progress/badges`, web-only `/share`; `*` falls back to Today |
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |

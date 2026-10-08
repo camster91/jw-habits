@@ -6,7 +6,7 @@ assertion of full conformance or physical-device assistive-technology support.
 ## Accessibility and reflow
 
 `npm run a11y` scans the real build at 320 px in light/dark and reduced-motion
-mode: onboarding, Today, a completed routine, Settings, Plans, Progress, badges
+mode: onboarding, Today, a completed routine, Settings, Plans, Notes, preparation, Progress, badges
 and shared-content preview, plus newer-schema recovery. The recovery case
 downloads an actual byte-exact copy and checks that reload preserves the primary
 value. Axe A/AA checks include color contrast; page-width
@@ -44,8 +44,8 @@ The `/share` preview is a real lazy import. With workers disabled, startup must
 not request its chunk. Installation intentionally precaches its approximately
 3 kB raw chunk so an installed PWA can receive shared content while offline.
 Vite explicitly empties the output directory to prevent stale bundles from
-inflating an update. Other screens remain eager; no broad lazy-route claim is
-made.
+inflating an update. Notes and Preparation are also real lazy routes, precached for offline
+navigation. The remaining screens are eager; no broad lazy-route claim is made.
 
 ## Worker install and update
 

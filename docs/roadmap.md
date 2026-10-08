@@ -29,4 +29,6 @@ A “Shipped” web feature does not imply native/store certification. Broad tra
 
 Current automated validation contracts: [quality gates](quality-gates.md) and [production recovery](production-recovery.md). Shared-content preview is ephemeral and opens only hosts saved in the current app link settings; no attachment or shared text is persisted. Native capture is tracked separately in #264.
 
+Device/household acceptance procedures and blank result records: [release checklist](release-checklist.md), [device results](device-release-results-template.md), [household pilot](household-pilot.md). These are prepared protocols, not device or participant results.
+
 Store copy/current UI generation and outstanding account/device declarations: [store release pack](store-release-pack.md). Operating probes and owner restore gates: [monitoring](operations-monitoring.md). Current #263/#264 module boundaries are recorded in [capability map](../CAPABILITY-MAP.md).
