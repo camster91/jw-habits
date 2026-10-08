@@ -282,7 +282,7 @@ const closeSettings = async (page) => {
         await onboardSkip(page);
         await page.getByRole('link', { name: 'Plans', exact: true }).click();
         await page.getByRole('button', { name: 'New study plan', exact: true }).click();
-        await page.getByLabel('Steps', { exact: true }).selectOption('bibleBook');
+        await page.getByLabel('How would you like to organise it?', { exact: true }).selectOption('bibleBook');
         await page.getByLabel('Bible book', { exact: true }).selectOption('27');
         await page.getByRole('button', { name: 'Create', exact: true }).click();
         await page.getByRole('link', { name: 'Today', exact: true }).click();
@@ -301,8 +301,8 @@ const closeSettings = async (page) => {
         );
         await page.getByRole('button', { name: 'New family plan', exact: true }).click();
         await page.getByLabel('Title', { exact: true }).fill('Family study');
-        await page.getByLabel('Steps', { exact: true }).selectOption('lessons');
-        await page.getByLabel('How many', { exact: true }).fill('2');
+        await page.getByLabel('How would you like to organise it?', { exact: true }).selectOption('lessons');
+        await page.getByLabel('Number of steps', { exact: true }).fill('2');
         await page.getByRole('button', { name: 'Create', exact: true }).click();
         await page.locator('a[href="/plans/family"]').click();
         await page.getByTestId('week-2026-10-12').getByRole('button', { name: /^Keep/ }).click();
