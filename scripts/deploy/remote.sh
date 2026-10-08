@@ -43,9 +43,17 @@ cleanup() {
   exit "$rc"
 }
 trap cleanup EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
 printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 unset GHCR_TOKEN
-docker pull "$IMAGE"
+pull_timeout=${PULL_TIMEOUT_SECONDS:-240}
+[[ "$pull_timeout" =~ ^[1-9][0-9]*$ ]] && (( pull_timeout <= 600 )) || { echo '::error::Invalid image pull deadline'; exit 1; }
+echo 'Pulling the immutable image before touching production (bounded deadline).'
+timeout --kill-after=10s "${pull_timeout}s" docker pull "$IMAGE" || {
+  echo '::error::Image pull failed or exceeded its deadline; production was not touched'
+  exit 1
+}
 docker logout ghcr.io >/dev/null 2>&1 || true
 # Never attach the staged container to production traffic.
 docker rm -f "$stage" >/dev/null 2>&1 || true

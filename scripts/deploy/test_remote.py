@@ -33,6 +33,9 @@ if cmd == 'docker':
     elif op in ('stop', 'start'): s['containers'][args[1]]['running'] = op == 'start'
     elif op == 'compose': s['containers']['jw-habits'] = {'image': os.environ['IMAGE'], 'running': True}
     elif op == 'login': sys.stdin.read()
+    elif op == 'pull' and os.environ.get('HANG_PULL'):
+        import time
+        time.sleep(10)
 elif cmd == 'curl':
     url = args[-1]
     stage = ':18081' in url
@@ -77,6 +80,21 @@ class DeployRecovery(unittest.TestCase):
         self.assertEqual(state['containers']['jw-habits']['image'], 'old-digest')
         self.assertTrue(state['containers']['jw-habits']['running'])
         self.assertFalse(any(call[:2] == ['docker', 'stop'] for call in state['calls']))
+        self.assertEqual(compose, 'old compose\n')
+
+    def test_image_pull_deadline_leaves_production_serving(self):
+        result, state, compose = self.run_case(HANG_PULL='1', PULL_TIMEOUT_SECONDS='1')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('production was not touched', result.stdout)
+        self.assertTrue(state['containers']['jw-habits']['running'])
+        self.assertEqual(state['containers']['jw-habits']['image'], 'old-digest')
+        self.assertFalse(any(call[:2] == ['docker', 'stop'] for call in state['calls']))
+        self.assertEqual(compose, 'old compose\n')
+
+    def test_invalid_image_pull_deadline_is_refused(self):
+        result, state, compose = self.run_case(PULL_TIMEOUT_SECONDS='0')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(state['containers']['jw-habits']['running'])
         self.assertEqual(compose, 'old compose\n')
 
     def test_failed_public_validation_restores_previous_container(self):
