@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       bundle_version:
-        description: 'Build number override (default: workflow run number)'
+        description: 'Build number override (default: committed native-release.json; verify store history)'
         required: false
         type: string
       marketing_version:
-        description: 'Version override (default: tag or package version)'
+        description: 'Version assertion (must match package.json and version tag)'
         required: false
         type: string
       skip_upload:
@@ -29,7 +29,6 @@ jobs:
     env:
       VERSION_INPUT: ${{ inputs.marketing_version }}
       BUILD_INPUT: ${{ inputs.bundle_version }}
-      RUN_BUILD: ${{ github.run_number }}
       SKIP_UPLOAD: ${{ inputs.skip_upload && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -43,20 +42,7 @@ jobs:
       - run: npm run lint && npm test && npm run format:check && npm run build
       - run: npx cap sync ios
       - name: Resolve matching app and widget versions
-        run: |
-          set -euo pipefail
-          version="$VERSION_INPUT"
-          if [[ -z "$version" ]]; then
-            if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-              version="${GITHUB_REF_NAME#v}"
-            else
-              version="$(node -p 'JSON.parse(require("fs").readFileSync("package.json", "utf8")).version')"
-            fi
-          fi
-          build="${BUILD_INPUT:-$RUN_BUILD}"
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo '::error::Version must be major.minor.patch'; exit 1; }
-          [[ "$build" =~ ^[1-9][0-9]*$ ]] || { echo '::error::Build must be a positive integer'; exit 1; }
-          printf 'MARKETING_VERSION=%s\nCURRENT_PROJECT_VERSION=%s\n' "$version" "$build" >> "$GITHUB_ENV"
+        run: python3 scripts/native/release_evidence.py resolve --output native-version.json --github-env "$GITHUB_ENV"
       - name: Unsigned simulator compile
         if: env.SKIP_UPLOAD == 'true'
         run: >-
@@ -110,6 +96,23 @@ jobs:
           ipa="$(find "$GITHUB_WORKSPACE/ios/App/build/ipa" -name '*.ipa' -type f -print -quit)"
           [[ -n "$ipa" ]] || { echo '::error::No signed IPA was produced'; exit 1; }
           printf 'path=%s\n' "$ipa" >> "$GITHUB_OUTPUT"
+      - name: Verify IPA app/widget versions and record checksum
+        if: env.SKIP_UPLOAD != 'true'
+        env:
+          IPA_PATH: ${{ steps.ipa.outputs.path }}
+        run: >-
+          python3 scripts/native/release_evidence.py record --metadata native-version.json
+          --artifact "$IPA_PATH" --platform ios --output native-artifact.json
+      - name: Retain source and artifact evidence
+        if: env.SKIP_UPLOAD != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: faithful-days-ios-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            native-version.json
+            native-artifact.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Upload to TestFlight
         if: env.SKIP_UPLOAD != 'true'
         uses: apple-actions/upload-testflight-build@14df18fee5a4ff3b76971dd382f033494a0194e9 # v5.5.0

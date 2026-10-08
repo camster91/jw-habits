@@ -62,6 +62,10 @@ jobs:
         run: |
           bash -n scripts/generate-android-keystore.sh
           python3 scripts/native/test_keystore_generator.py
+      - name: Native release evidence safety
+        run: |
+          python3 scripts/native/test_release_evidence.py
+          python3 scripts/native/release_evidence.py check-defaults
 
       # Hard fail on high/critical advisories. The overrides block in
       # package.json pins fixed floors, but those go stale as soon as a

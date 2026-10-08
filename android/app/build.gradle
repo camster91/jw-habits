@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+// Canonical marketing version and shared default build. Release overrides must
+// be allocated against actual store history; workflow run numbers are not that.
+def releasePackage = new groovy.json.JsonSlurper().parse(rootProject.file('../package.json'))
+def releaseConfig = new groovy.json.JsonSlurper().parse(rootProject.file('../native-release.json'))
+def nativeVersion = releasePackage.version
+def baselineBuild = releaseConfig.buildNumber.toString()
+def nativeBuild = System.getenv('FD_NATIVE_BUILD') ?: baselineBuild
+if (!(nativeVersion instanceof String) || !(nativeVersion ==~ /(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)/)) {
+    throw new GradleException('package.json version must have three canonical numeric components')
+}
+if (!(baselineBuild ==~ /[1-9][0-9]*/) || !(nativeBuild ==~ /[1-9][0-9]*/) ||
+        nativeBuild.toBigInteger() < baselineBuild.toBigInteger() || nativeBuild.toBigInteger() > 2100000000) {
+    throw new GradleException('Native build must be a positive integer at or above the committed build, within the Play limit')
+}
+
 // Release signing: prefer android/keystore.properties (gitignored)
 // or KEYSTORE_* env vars. Never commit passwords. See
 // docs/keystore-rotation-2026-07.md.
@@ -17,8 +32,8 @@ android {
         applicationId "ca.ashbi.habittracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 520
-        versionName "5.2.0"
+        versionCode nativeBuild.toInteger()
+        versionName nativeVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

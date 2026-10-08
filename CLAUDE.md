@@ -266,3 +266,7 @@ Remaining #263/#264 work: native share transport after first-device verification
 Local year-plan pace comparison, extra-reading activity dates and cross-content search are implemented. OS capture extensions, replay receipts and signing are
 not claimed by a local Notes screen or an unsigned compile. Physical devices,
 account/signing, assistive technology and household research remain release gates.
+
+## Native version and artifact evidence
+
+`package.json` supplies the canonical numeric marketing version; `native-release.json` supplies the shared default build. Android Gradle reads these directly and validates optional `FD_NATIVE_BUILD`. `scripts/native/release_evidence.py` rejects mismatched version tags/overrides, regressing builds and drift in the four checked-in Xcode app/widget defaults; native workflows pass the resolved settings to both iOS targets. Owners must allocate unused higher build numbers against actual store history; run numbers are not release allocation. APK/IPA metadata and SHA-256 evidence are prepared in workflows, with signing/processing/device fields explicitly unverified. See `docs/native-release-evidence.md`. No new native compilation or signed/device proof is implied by this local wiring.

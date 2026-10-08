@@ -31,15 +31,25 @@ jobs:
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools
-      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.1.0'
       - run: npm ci
+      - name: Resolve canonical native versions
+        run: python3 scripts/native/release_evidence.py resolve --output native-version.json --github-env "$GITHUB_ENV"
       - run: npm run build
       - run: npx cap sync android
       - run: chmod +x android/gradlew && cd android && ./gradlew testDebugUnitTest assembleDebug --no-daemon
+      - name: Verify debug APK identity and record checksum
+        run: >-
+          python3 scripts/native/release_evidence.py record --metadata native-version.json
+          --artifact android/app/build/outputs/apk/debug/app-debug.apk --platform android
+          --aapt "$ANDROID_HOME/build-tools/36.1.0/aapt" --output native-artifact.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: faithful-days-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            native-version.json
+            native-artifact.json
           retention-days: 7
   ios:
     name: iOS simulator compile
@@ -54,6 +64,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - name: Resolve canonical native versions
+        run: python3 scripts/native/release_evidence.py resolve --output native-version.json --github-env "$GITHUB_ENV"
       - run: npm run build
       - run: npx cap sync ios
       - name: Verify cross-process widget queue
@@ -67,3 +79,4 @@ jobs:
           -destination 'generic/platform=iOS Simulator'
           -derivedDataPath /tmp/faithful-days-build
           build CODE_SIGNING_ALLOWED=NO
+          MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION"

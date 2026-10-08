@@ -20,7 +20,7 @@ The locally prepared `scripts/generate-android-keystore.sh` requires one absolut
 
 `python3 scripts/native/test_keystore_generator.py` uses a fabricated keytool and nonsecret fixtures to check argument/output redaction, private permissions, failure cleanup and destination races. It never creates real signing material. The hidden interactive prompt and real keytool generation have not been exercised; those remain approved owner-run verification, not an outcome of the fabricated test suite.
 
-Current Gradle reads ignored `android/keystore.properties` or `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`; that is configuration support, not signing proof. Android currently hardcodes versionName 5.2.0 and versionCode 520 and has no release workflow. Reproducible versions, protected credentials, artifact/SHA linkage and closed-testing processing remain #174/#249 work.
+Current Gradle reads ignored `android/keystore.properties` or `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`; that is configuration support, not signing proof. Android now reads version from `package.json` and default build from `native-release.json`, with validated `FD_NATIVE_BUILD` overrides. Shared version/checksum evidence wiring is prepared locally; there is still no Android signed-release workflow or accepted closed-testing proof. Protected credentials, real native verification and track processing remain #174/#249 work. See [native release evidence](native-release-evidence.md).
 
 ## Prove replacement and retire the affected key
 
