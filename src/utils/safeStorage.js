@@ -151,7 +151,10 @@ export async function durableGet(key) {
     const { value } = await Preferences.get({ key });
     return value ?? null;
   }
-  return safeGetItem(key);
+  // A missing value is different from an unreadable value. The provider must
+  // receive read errors so it cannot replace existing history with defaults.
+  if (typeof localStorage === 'undefined') throw new Error('Device storage is unavailable');
+  return localStorage.getItem(key);
 }
 
 /** @returns {Promise<void>} rejects when the write could not be stored */

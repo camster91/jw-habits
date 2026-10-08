@@ -110,6 +110,9 @@ describe('safeGetItem / session helpers', () => {
 });
 
 describe('durable storage (web)', () => {
+  afterEach(() => {
+    restoreLocalStorageMock();
+  });
   beforeEach(() => {
     restoreLocalStorageMock();
     localStorage.clear();
@@ -129,6 +132,14 @@ describe('durable storage (web)', () => {
     const { durableSet, durableGet } = await import('./safeStorage');
     await Promise.all([durableSet('w', '1'), durableSet('w', '2'), durableSet('w', '3')]);
     expect(await durableGet('w')).toBe('3');
+  });
+
+  it('rejects an unreadable value instead of reporting it as missing', async () => {
+    const { durableGet } = await import('./safeStorage');
+    localStorage.getItem = () => {
+      throw new Error('temporary read failure');
+    };
+    await expect(durableGet('jw-habits-v2')).rejects.toThrow('temporary read failure');
   });
 
   it('rejects when a web write fails, and later writes still run', async () => {

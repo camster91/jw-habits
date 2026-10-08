@@ -520,7 +520,8 @@
     },
     "storage": {
       "full": "Your changes could not be saved on this device. Export a backup before closing the app, then free storage or check device settings.",
-      "backup": "Open backup settings"
+      "backup": "Open backup settings",
+      "paused": "Saving is paused to protect your stored data. Changes in this session will not be saved. Export this session before closing, or reload the app to try again."
     },
     "recovery": {
       "explanation": "The app could not open this screen. Reload first. We cannot verify your saved data from this error screen; save a recovery copy before resetting or reinstalling.",
