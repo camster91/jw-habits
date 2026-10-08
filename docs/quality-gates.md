@@ -7,7 +7,9 @@ assertion of full conformance or physical-device assistive-technology support.
 
 `npm run a11y` scans the real build at 320 px in light/dark and reduced-motion
 mode: onboarding, Today, a completed routine, Settings, Plans, Progress, badges
-and shared-content preview. Axe A/AA checks include color contrast; page-width
+and shared-content preview, plus newer-schema recovery. The recovery case
+downloads an actual byte-exact copy and checks that reload preserves the primary
+value. Axe A/AA checks include color contrast; page-width
 checks reject horizontal overflow. Essential routine details and project context
 wrap. Completed labels retain full text contrast, with a checked control as the
 completion cue. VoiceOver, TalkBack, keyboard across browser engines, dynamic

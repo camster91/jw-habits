@@ -1,13 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useEffect } from 'react';
-import { render, act } from '@testing-library/react';
+import { render, act, fireEvent } from '@testing-library/react';
 import i18n from 'i18next';
 
 const prefs = vi.hoisted(() => new Map());
 const lifecycle = vi.hoisted(() => ({ handler: null, unsubscribed: 0 }));
+const backup = vi.hoisted(() => vi.fn());
+
+vi.mock('../utils/backup.js', () => ({
+  saveBackup: backup,
+  isShareCancel: (error) => /cancel/i.test(String(error?.message ?? error)),
+}));
 
 vi.mock('../utils/native.js', () => ({
   isNative: true,
+  isWeb: false,
   appLifecycle: {
     onStateChange: (cb) => {
       lifecycle.handler = cb;
@@ -68,6 +75,8 @@ beforeEach(() => {
   latest = undefined;
   lifecycle.handler = null;
   lifecycle.unsubscribed = 0;
+  backup.mockReset();
+  backup.mockResolvedValue(undefined);
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
   vi.setSystemTime(new Date(2026, 9, 6, 10, 0));
 });
@@ -519,15 +528,56 @@ describe('upgrading a stored v2 value', () => {
     expect(copies.map((k) => prefs.get(k))).toEqual([raw]);
   });
 
-  it('starts fresh, without a backup, when a stored value is a newer version', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const raw = JSON.stringify({ ...defaultStore('2026-10-01', 'en'), version: 4 });
+  it('blocks an unknown newer store without replacing or copying its raw bytes', async () => {
+    const raw = '{ "version": 4, "privateFutureNotes": ["Keep exactly"] }';
     prefs.set(STORE_KEY, raw);
-    await mount();
-    expect(latest.store.version).toBe(3);
-    expect(prefs.has(BACKUP_KEY)).toBe(false);
-    const copies = [...prefs.keys()].filter((k) => k.includes('-corrupt-'));
-    expect(copies.map((k) => prefs.get(k))).toEqual([raw]);
+    const foreground = vi.fn();
+    const unsubscribe = onForeground(foreground);
+    try {
+      const view = await mount();
+      expect(
+        view.getByRole('heading', { name: 'Update Faithful Days to open your data' })
+      ).toBeTruthy();
+      expect(latest).toBeUndefined();
+      await act(async () => vi.advanceTimersByTime(24 * 60 * 60 * 1000));
+      await flush();
+      expect([...prefs.entries()]).toEqual([[STORE_KEY, raw]]);
+      expect(foreground).not.toHaveBeenCalled();
+      expect(lifecycle.handler).toBeNull();
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it('exports a newer store byte-for-byte without adopting or replacing it', async () => {
+    const raw = '{ "version": 99, "future": {"body":"Private notes"} }';
+    prefs.set(STORE_KEY, raw);
+    const view = await mount();
+    fireEvent.click(view.getByRole('button', { name: 'Save a copy of your data' }));
+    await flush();
+    expect(backup).toHaveBeenCalledWith(
+      raw,
+      'faithful-days-saved-data-2026-10-06.json',
+      'Faithful Days saved data'
+    );
+    expect(view.getByRole('status').textContent).toContain('Copy offered');
+    expect([...prefs.entries()]).toEqual([[STORE_KEY, raw]]);
+  });
+
+  it('announces a failed or cancelled newer-store export and preserves the original', async () => {
+    const raw = '{"version":4,"future":"Keep me"}';
+    prefs.set(STORE_KEY, raw);
+    backup.mockRejectedValueOnce(new Error('File write failed'));
+    const view = await mount();
+    const button = view.getByRole('button', { name: 'Save a copy of your data' });
+    fireEvent.click(button);
+    await flush();
+    expect(view.getByRole('status').textContent).toContain('Could not offer a copy');
+    backup.mockRejectedValueOnce(new Error('User cancelled'));
+    fireEvent.click(button);
+    await flush();
+    expect(view.getByRole('status').textContent).toContain('Copy cancelled');
+    expect([...prefs.entries()]).toEqual([[STORE_KEY, raw]]);
   });
 });
 

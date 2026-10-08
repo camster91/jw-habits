@@ -35,6 +35,24 @@ async function scan(page, label) {
         await page.goto(`${BASE}/${route}`,{waitUntil:'networkidle'});
         await scan(page,`${theme} ${route}`);
       }
+      const newerRaw=JSON.stringify({version:4,theme,futureNotes:['Synthetic private note']},null,2);
+      await page.evaluate(raw=>localStorage.setItem('jw-habits-v2',raw),newerRaw);
+      await page.goto(BASE,{waitUntil:'networkidle'});
+      await page.getByRole('heading',{name:'Update Faithful Days to open your data'}).waitFor();
+      await scan(page,`${theme} newer-data recovery`);
+      const downloadPromise=page.waitForEvent('download');
+      await page.getByRole('button',{name:'Save a copy of your data'}).click();
+      const download=await downloadPromise;
+      const copied=require('node:fs').readFileSync(await download.path(),'utf8');
+      const saved=await page.evaluate(()=>localStorage.getItem('jw-habits-v2'));
+      if(copied!==newerRaw||saved!==newerRaw) {
+        failures++; console.error(`${theme} newer-data copy changed raw bytes`);
+      }
+      await page.reload({waitUntil:'networkidle'});
+      await page.getByRole('heading',{name:'Update Faithful Days to open your data'}).waitFor();
+      if(await page.evaluate(()=>localStorage.getItem('jw-habits-v2'))!==newerRaw) {
+        failures++; console.error(`${theme} newer-data reload changed raw bytes`);
+      }
       await ctx.close();
     }
   } finally { await browser.close(); }
