@@ -9,10 +9,12 @@ import re
 import subprocess
 import sys
 import zipfile
+import xml.etree.ElementTree as ET
 
 APP_ID = 'ca.ashbi.habittracker'
 WIDGET_ID = APP_ID + '.FaithfulDaysWidget'
 ROOT = Path(__file__).resolve().parents[2]
+BUNDLETOOL_SHA256 = 'a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29'
 
 
 def digest(path):
@@ -111,11 +113,33 @@ def inspect_android(badging, metadata):
     return [{'identifier': APP_ID, 'version': fields['versionName'], 'buildNumber': fields['versionCode']}]
 
 
+def inspect_aab_manifest(manifest, metadata):
+    root = ET.fromstring(manifest)
+    android = '{http://schemas.android.com/apk/res/android}'
+    if root.tag != 'manifest' or root.get('package') != APP_ID or root.get(android + 'versionName') != metadata['version'] or root.get(android + 'versionCode') != str(metadata['buildNumber']):
+        raise ValueError('AAB identity/version/build does not match resolved inputs')
+    return [{'identifier': APP_ID, 'version': metadata['version'], 'buildNumber': str(metadata['buildNumber'])}]
+
+
+def verify_aab(path, tool):
+    if digest(tool) != BUNDLETOOL_SHA256:
+        raise ValueError('Bundletool checksum mismatch; refusing execution')
+    with zipfile.ZipFile(path) as archive:
+        names = archive.namelist()
+        if len(set(names)) != len(names) or not any(re.fullmatch(r'META-INF/[^/]+\.SF', n) for n in names) or not any(re.fullmatch(r'META-INF/[^/]+\.RSA', n) for n in names):
+            raise ValueError('AAB lacks an unambiguous RSA JAR signature')
+    signature = subprocess.check_output(['jarsigner', '-J-Duser.language=en', '-J-Duser.country=US', '-verify', str(path)], text=True, stderr=subprocess.PIPE)
+    if 'jar verified.' not in signature or 'unsigned entries' in signature.lower():
+        raise ValueError('AAB JAR signature verification failed')
+    subprocess.check_output(['java', '-jar', str(tool), 'validate', '--bundle=' + str(path)], stderr=subprocess.PIPE)
+    return subprocess.check_output(['java', '-jar', str(tool), 'dump', 'manifest', '--module=base', '--bundle=' + str(path)], text=True, stderr=subprocess.PIPE)
+
+
 def record(path, metadata, platform, badging=''):
     validate_metadata(metadata)
     if not path.is_file() or path.stat().st_size == 0:
         raise ValueError('Artifact must be a nonempty regular file')
-    bundles = inspect_ipa(path, metadata) if platform == 'ios' else inspect_android(badging, metadata)
+    bundles = inspect_ipa(path, metadata) if platform == 'ios' else (inspect_aab_manifest(badging, metadata) if platform == 'android-aab' else inspect_android(badging, metadata))
     return dict(metadata, platform=platform, artifact={'filename': path.name, 'bytes': path.stat().st_size,
                 'sha256': digest(path)}, bundles=bundles, signingVerification='not-performed',
                 storeProcessing='not-verified', deviceInstallation='not-verified')
@@ -133,8 +157,9 @@ def main():
     recorder = sub.add_parser('record')
     recorder.add_argument('--metadata', required=True)
     recorder.add_argument('--artifact', required=True)
-    recorder.add_argument('--platform', choices=['ios', 'android'], required=True)
+    recorder.add_argument('--platform', choices=['ios', 'android', 'android-aab'], required=True)
     recorder.add_argument('--aapt', default='')
+    recorder.add_argument('--bundletool', default='')
     recorder.add_argument('--output', required=True)
     args = parser.parse_args()
     try:
@@ -155,13 +180,19 @@ def main():
             if args.platform == 'android' and not args.aapt:
                 raise ValueError('Android evidence requires the SDK aapt tool')
             badging = subprocess.check_output([args.aapt, 'dump', 'badging', args.artifact], text=True, stderr=subprocess.PIPE) if args.platform == 'android' else ''
+            if args.platform == 'android-aab':
+                if not args.bundletool:
+                    raise ValueError('AAB evidence requires pinned bundletool')
+                badging = verify_aab(Path(args.artifact), Path(args.bundletool))
             result = record(Path(args.artifact), metadata, args.platform, badging)
+            if args.platform == 'android-aab':
+                result['signingVerification'] = 'jar-signature-verified;certificate-identity-not-verified'
         Path(args.output).write_text(json.dumps(result, indent=2) + '\n')
         if args.command == 'resolve' and args.github_env:
             with Path(args.github_env).open('a') as output:
                 output.write('MARKETING_VERSION=' + result['version'] + '\nCURRENT_PROJECT_VERSION=' + str(result['buildNumber']) + '\nFD_NATIVE_BUILD=' + str(result['buildNumber']) + '\n')
         print('Native ' + args.command + ' evidence written; no signing/upload performed')
-    except (ValueError, KeyError, OSError, zipfile.BadZipFile, plistlib.InvalidFileException, subprocess.CalledProcessError):
+    except (ValueError, KeyError, OSError, ET.ParseError, zipfile.BadZipFile, plistlib.InvalidFileException, subprocess.CalledProcessError):
         print('Native release validation failed; check canonical inputs and artifact identity/version privately', file=sys.stderr)
         raise SystemExit(1)
 

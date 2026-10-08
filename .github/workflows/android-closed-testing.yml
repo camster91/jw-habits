@@ -1,0 +1,174 @@
+name: Android closed testing
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Unused build number allocated from Play history (default: native-release.json)'
+        required: false
+        type: string
+      upload:
+        description: 'Request separately approved upload to configured closed track'
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+  actions: read
+  checks: read
+concurrency:
+  group: android-closed-testing
+  cancel-in-progress: false
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high && npm run lint && npm run test:coverage && npm run format:check && npm run build && npm run budgets
+      - run: python3 scripts/native/test_release_evidence.py && python3 scripts/native/test_keystore_generator.py
+      - name: Require exact-source web and native checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          required='["Build + Lint + Test","Playwright smoke","Browser compatibility (firefox)","Browser compatibility (webkit)","Android debug compile","iOS simulator compile"]'
+          for attempt in $(seq 1 90); do
+            gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > checks.json
+            jq '[.check_runs | group_by(.name)[] | max_by(.id)]' checks.json > latest-checks.json
+            if jq -e --argjson required "$required" 'any(.[]; .name as $name | ($required | index($name)) != null and .status == "completed" and .conclusion != "success")' latest-checks.json >/dev/null; then
+              echo '::error::A required exact-source check failed'; exit 1
+            fi
+            if jq -e --argjson required "$required" '. as $checks | all($required[]; . as $name | any($checks[]; .name == $name and .app.id == 15368 and .status == "completed" and .conclusion == "success"))' latest-checks.json >/dev/null; then exit 0; fi
+            sleep 10
+          done
+          echo '::error::Required source checks did not complete'; exit 1
+  bundle:
+    needs: preflight
+    environment: android-signing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      BUILD_INPUT: ${{ inputs.build_number }}
+    steps:
+      - name: Require independent environment approval policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/environments/android-signing" | jq -e 'any(.protection_rules[]; .type == "required_reviewers" and .prevent_self_review == true and (.reviewers | length) > 0)' >/dev/null
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.1.0'
+      - run: npm ci
+      - run: python3 scripts/native/release_evidence.py resolve --output native-version.json --github-env "$GITHUB_ENV"
+      - run: npm run build && npx cap sync android
+      - name: Prepare approved upload keystore
+        env:
+          ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          try:
+              raw = base64.b64decode(os.environ['ANDROID_UPLOAD_KEYSTORE_BASE64'], validate=True)
+              if not raw: raise ValueError()
+              Path(os.environ['RUNNER_TEMP'], 'faithful-days-upload.jks').write_bytes(raw)
+          except (KeyError, ValueError):
+              raise SystemExit('Missing or invalid approved upload keystore')
+          PY
+      - name: Build signed bundle
+        env:
+          KEYSTORE_FILE: ${{ runner.temp }}/faithful-days-upload.jks
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            [[ -n "${!name}" ]] || { echo "::error::Missing signing input: $name"; exit 1; }
+          done
+          [[ ! -e android/keystore.properties ]] || { echo '::error::Unexpected local signing properties'; exit 1; }
+          chmod +x android/gradlew
+          cd android
+          ./gradlew bundleRelease --no-daemon
+      - name: Validate actual signed bundle and retain checksum
+        run: |
+          curl -fsSL --retry 3 https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar -o "$RUNNER_TEMP/bundletool.jar"
+          python3 scripts/native/release_evidence.py record --metadata native-version.json --artifact android/app/build/outputs/bundle/release/app-release.aab --platform android-aab --bundletool "$RUNNER_TEMP/bundletool.jar" --output native-artifact.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: faithful-days-approved-aab-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            native-version.json
+            native-artifact.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove temporary key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/faithful-days-upload.jks"
+  upload:
+    needs: bundle
+    if: github.event_name == 'push' || inputs.upload
+    environment: play-closed-testing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Require independent upload approval and closed-track configuration
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/environments/play-closed-testing" | jq -e 'any(.protection_rules[]; .type == "required_reviewers" and .prevent_self_review == true and (.reviewers | length) > 0)' >/dev/null
+          [[ "$CLOSED_TRACK" =~ ^[a-zA-Z0-9_-]+$ && "$CLOSED_TRACK" != production && "$CLOSED_TRACK" != internal && "$CLOSED_TRACK" != internalsharing && "$CLOSED_TRACK" != beta ]] || { echo '::error::Configure one verified closed track'; exit 1; }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: faithful-days-approved-aab-${{ github.run_id }}-${{ github.run_attempt }}
+          path: approved-bundle
+      - name: Revalidate approved artifact before upload
+        run: |
+          curl -fsSL --retry 3 https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar -o "$RUNNER_TEMP/bundletool.jar"
+          python3 scripts/native/release_evidence.py record --metadata approved-bundle/native-version.json --artifact approved-bundle/android/app/build/outputs/bundle/release/app-release.aab --platform android-aab --bundletool "$RUNNER_TEMP/bundletool.jar" --output upload-native-artifact.json
+          cmp approved-bundle/native-artifact.json upload-native-artifact.json
+      - name: Upload approved bundle to closed testing
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ca.ashbi.habittracker
+          releaseFiles: approved-bundle/android/app/build/outputs/bundle/release/app-release.aab
+          tracks: ${{ vars.PLAY_CLOSED_TRACK }}
+          status: completed
+          changesNotSentForReview: true
+      - name: Record upload boundary
+        run: echo 'Upload action completed. Confirm Play edit/review, processing, closed-track availability and physical installation in the release issue.' >> "$GITHUB_STEP_SUMMARY"

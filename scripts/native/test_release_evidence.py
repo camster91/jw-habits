@@ -23,7 +23,7 @@ class ReleaseEvidenceTests(unittest.TestCase):
         (self.root / 'native-release.json').write_text(json.dumps({'buildNumber': 520}))
         (self.root / 'package-lock.json').write_text('{}')
         self.git = patch.object(release.subprocess, 'check_output', return_value=SHA + '\n')
-        self.git.start()
+        self.process = self.git.start()
         self.addCleanup(self.git.stop)
         self.metadata = release.resolve(self.root)
 
@@ -121,6 +121,50 @@ class ReleaseEvidenceTests(unittest.TestCase):
         path.write_text(canonical.replace('520', '519', 1))
         with self.assertRaises(ValueError):
             release.check_xcode_defaults(self.metadata, self.root)
+
+    def manifest(self, package=release.APP_ID, build='520', version='5.2.0'):
+        return '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="' + package + '" android:versionCode="' + build + '" android:versionName="' + version + '" />'
+
+    def test_aab_manifest_mismatch_blocks_evidence(self):
+        self.assertEqual(release.inspect_aab_manifest(self.manifest(), self.metadata)[0]['identifier'], release.APP_ID)
+        for xml in (self.manifest(package='other.app'), self.manifest(build='519'), self.manifest(version='5.1.0'), '<manifest />'):
+            with self.subTest(xml=xml), self.assertRaises(ValueError):
+                release.inspect_aab_manifest(xml, self.metadata)
+
+    def signed_fixture(self):
+        path = self.root / 'synthetic.aab'
+        with zipfile.ZipFile(path, 'w') as archive:
+            archive.writestr('META-INF/UPLOAD.SF', 'fabricated, not a signature')
+            archive.writestr('META-INF/UPLOAD.RSA', 'fabricated, not a key')
+        return path
+
+    def test_bundletool_checksum_mismatch_refuses_execution(self):
+        tool = self.root / 'fake-tool.jar'
+        tool.write_text('not executable')
+        self.process.reset_mock()
+        with self.assertRaises(ValueError):
+            release.verify_aab(self.signed_fixture(), tool)
+        self.process.assert_not_called()
+
+    def test_unsigned_aab_refuses_verifier_execution(self):
+        with patch.object(release, 'digest', return_value=release.BUNDLETOOL_SHA256):
+            self.process.reset_mock()
+            with self.assertRaises(ValueError):
+                release.verify_aab(self.ipa(), self.root / 'fake-tool.jar')
+            self.process.assert_not_called()
+
+    def test_failed_or_partial_signature_stops_bundle_validation(self):
+        for output in ('jar is unsigned.', 'jar verified.\nThis jar contains unsigned entries.'):
+            with self.subTest(output=output), patch.object(release, 'digest', return_value=release.BUNDLETOOL_SHA256), patch.object(release.subprocess, 'check_output', return_value=output) as process:
+                with self.assertRaises(ValueError):
+                    release.verify_aab(self.signed_fixture(), self.root / 'fake-tool.jar')
+                self.assertEqual(process.call_count, 1)
+
+    def test_verified_signature_and_bundle_structure_yield_actual_manifest(self):
+        with patch.object(release, 'digest', return_value=release.BUNDLETOOL_SHA256), patch.object(release.subprocess, 'check_output', side_effect=['jar verified.', b'Bundle valid', self.manifest()]) as process:
+            manifest = release.verify_aab(self.signed_fixture(), self.root / 'fake-tool.jar')
+            self.assertEqual(release.inspect_aab_manifest(manifest, self.metadata)[0]['version'], '5.2.0')
+            self.assertEqual(process.call_count, 3)
 
 
 if __name__ == '__main__':

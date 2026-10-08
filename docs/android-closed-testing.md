@@ -1,0 +1,34 @@
+# Android signed bundle and closed testing
+
+Prepared workflow: `.github/workflows/android-closed-testing.yml` (#174/#249). No signing, key generation, account change, artifact upload or Play submission has run from this preparation. The incident in #132/#133 remains open.
+
+## Execution path
+
+A `v<package-version>` tag requests signing then closed-track upload through separate environments. A manual dispatch requests signing; `upload` defaults false and must be true to request the second stage. Both paths require exact source web/native checks plus local preflight quality gates. Inputs resolve through the shared native version policy. Release concurrency is serialized and in-flight operations are not cancelled by later runs.
+
+The `android-signing` job requires a configured reviewer rule with self-review prevention before reading signing inputs. It builds the AAB with Gradle, verifies the bundletool 1.18.3 JAR against its pinned upstream SHA-256 before execution, validates bundle structure and checks actual base manifest package/version/build. Jarsigner must report successful verification; absent RSA signature entries or unsigned entries fail validation. Certificate identity/trust remains a private owner comparison, not an outcome of this structural verification. [Google bundletool](https://developer.android.com/tools/bundletool), [pinned bundletool release](https://github.com/google/bundletool/releases/tag/1.18.3).
+
+A seven-day Actions artifact contains only the AAB and version/artifact JSON, never the keystore. The upload stage downloads that exact run/attempt artifact, repeats signature/bundle/metadata inspection and compares the new evidence byte-for-byte with the approved evidence. A mismatch prevents upload.
+
+The `play-closed-testing` job separately requires reviewer/self-review policy and one configured closed-track identifier. Production, internal sharing, internal and conventional open beta targets are rejected. The owner must verify the configured track is actually closed in this app's console; a string alone cannot establish track type. The pinned upload action targets only `ca.ashbi.habittracker`, with `completed` track status and `changesNotSentForReview: true`. This commits the upload/edit without automatically requesting review. Review submission remains an explicitly authorized console action. [Pinned uploader inputs](https://github.com/r0adkll/upload-google-play/blob/e738b9dd8f2476ea806d921b64aacd24f34515a5/action.yml).
+
+## Owner setup before any execution
+
+1. Privately reconcile the old/new package signing lineage under #132/#249. Confirm the new listing, Play App Signing, approved upload certificate and store-allocated unused build number. API access may need console bootstrap/initial app setup; absence of a listing is not solved by this workflow.
+2. Choose an eligible independent reviewer. Current repository collaborator inventory has only Cameron; self-review prevention cannot be satisfied by the initiating owner alone. Invitations require separate authorization.
+3. Authorize and configure `android-signing` and `play-closed-testing`, required reviewers, self-review prevention, disallow administrative review bypass, and allowed release refs. Read back the configuration. Workflows check reviewer/self-review presence, but do not prove actual reviewer identity, administrator bypass disabled, ref restrictions or the human approval record. Owner must establish these before execution. [GitHub environment protections](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).
+4. Put only approved fresh signing material in `android-signing`: `ANDROID_UPLOAD_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Protect the original/recovery copy outside the repository. The decoded key is owner-only runner temporary data and removed on success/failure cleanup. Runner termination may interrupt cleanup; use ephemeral trusted hosted runners. No credentials belong in artifacts, chat or public issue evidence.
+5. Put app-scoped least-privilege `PLAY_SERVICE_ACCOUNT_JSON` and verified `PLAY_CLOSED_TRACK` in `play-closed-testing`. The signing job never receives the Play account key; upload never receives the signing passwords. Review this third-party action pin before granting it access. Do not grant production release permissions unnecessarily.
+6. Obtain exact push/config/sign/artifact-upload/Play-upload authorization for the reviewed revision and track. A protected environment approval is an execution gate, not permission inferred from this planning goal. A tag also triggers existing image/iOS workflows; review all tag-triggered side effects before authorizing a tag. Prefer a specifically approved manual signing-only dispatch for first verification.
+
+## Evidence and exit conditions
+
+Record source SHA, run/attempt, build/version, artifact SHA-256, independently reviewed credential lineage, reviewer approvals and approved closed track. Successful uploader exit means its operation completed; independently inspect Play edit/review status, processing and tester availability. Then install the Play-delivered build on physical Android and run the full routine/workspace/widget/reminder/backup checklist. Verify the installed package/build and update behavior. Never infer these from an AAB or hosted check.
+
+Local verification uses fabricated archives/process results only. It does not exercise JDK cryptography, real bundletool parsing, Gradle signing, GitHub reviewer enforcement or Play API acceptance. Exact-commit native CI and authorized signing/upload runs remain required. AAB evidence reports `jar-signature-verified;certificate-identity-not-verified` only after actual verifier execution; store processing and device installation remain unverified.
+
+This pipeline closes no issue until #249's accepted/processed closed-testing and target-device criteria pass. #132's old listing incident and #133's history/copies criteria must be resolved independently. Do not reuse exposed material or rewrite history to make this workflow pass.
+
+## Failure and recovery
+
+Missing/failed source checks, environment rules, signing inputs, pinned-tool digest or artifact metadata stop the run. No fallback to debug signing, production tracks or unprotected execution exists. An upload rerun alone may have a new attempt number and therefore cannot find the original signing artifact; this deliberately avoids silently selecting another run. Inspect console state after any partial/ambiguous upload before deciding whether to rerun all jobs, reuse an explicitly reviewed artifact or allocate a new build. A signed bundle cannot undo a Play edit or release; any console recovery is a separately authorized owner action. Preserve the prior accepted build and private signing recovery materials.
