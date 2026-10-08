@@ -90,7 +90,7 @@ describe('Progress', () => {
     ];
     const log = days.map((day) => ({ routine: 'meetingPrep', day, value: true }));
     renderProgress(makeStore({ log }));
-    const card = screen.getByRole('heading', { name: 'Meeting prep' }).closest('li');
+    const card = screen.getByRole('heading', { name: 'Meeting preparation' }).closest('li');
     expect(within(card).getByText('8 of the last 8 meetings')).toBeInTheDocument();
     expect(within(card).getByText('8 in a row')).toBeInTheDocument();
     expect(within(card).getByText('8 days this year')).toBeInTheDocument();

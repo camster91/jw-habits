@@ -13,6 +13,9 @@ home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
 - **Version:** 5.1.0
+- **Current product contract:** `docs/feature-ui-reconciliation.md` records the
+  approved UI and notes/preparation boundaries. Today has no garden illustration;
+  Progress retains the garden. Study plans use "Use on Today" and "Current plan".
 - **Node:** >= 22.12.0
 - **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
   trail at `/plans/:planId`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal

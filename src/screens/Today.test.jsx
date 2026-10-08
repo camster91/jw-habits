@@ -97,7 +97,7 @@ describe('Today: the list', () => {
     renderToday(makeStore());
     expect(screen.getByRole('button', { name: 'Daily text' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Bible reading' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Meeting prep' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Meeting preparation' })).toBeInTheDocument();
     expect(screen.queryByText('Family worship')).not.toBeInTheDocument();
     expect(screen.getByText("for Tuesday's meeting")).toBeInTheDocument();
   });
@@ -586,28 +586,28 @@ describe('Today: personal study with an active project', () => {
     hold(checkButton('Personal study'));
     expect(current.plans[0].archivedOn).toBe('2026-10-06');
     expect(current.activePlan.personalStudy).toBeNull();
-    expect(screen.getByText('Project finished: Daniel. Well done.')).toBeInTheDocument();
+    expect(screen.getByText('Study plan finished: Daniel. Well done.')).toBeInTheDocument();
     // No waiting project: no offer.
-    expect(screen.queryByRole('button', { name: 'Start next project' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Start next study plan' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Personal study', pressed: true }));
     expect(current.plans[0].archivedOn).toBeNull();
     expect(current.activePlan.personalStudy).toBe('pd');
     expect(stepById('d12').doneOn).toBeNull();
-    expect(screen.queryByText('Project finished: Daniel. Well done.')).toBeNull();
+    expect(screen.queryByText('Study plan finished: Daniel. Well done.')).toBeNull();
     expect(screen.getByText('Daniel · Daniel 12')).toBeInTheDocument();
   });
 
   it('finishing with one waiting project offers it, and accepting makes it active', () => {
     renderToday(studyStore([daniel(11), acts()]));
     hold(checkButton('Personal study'));
-    expect(screen.getByText('Project finished: Daniel. Well done.')).toBeInTheDocument();
-    const picker = screen.getByRole('combobox', { name: 'Next project' });
+    expect(screen.getByText('Study plan finished: Daniel. Well done.')).toBeInTheDocument();
+    const picker = screen.getByRole('combobox', { name: 'Next study plan' });
     expect(within(picker).getByRole('option', { name: 'Acts' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Start next project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start next study plan' }));
     expect(current.activePlan.personalStudy).toBe('pa');
-    expect(screen.getByText('Acts is now your active project.')).toBeInTheDocument();
+    expect(screen.getByText('Acts is now your current study plan.')).toBeInTheDocument();
     // Focus moves to the confirmation, never to the page body.
-    expect(document.activeElement).toBe(screen.getByText('Acts is now your active project.'));
+    expect(document.activeElement).toBe(screen.getByText('Acts is now your current study plan.'));
     // The done row still shows the step today's check-in ticked.
     expect(screen.getByText('Daniel · Daniel 12')).toBeInTheDocument();
   });
@@ -751,14 +751,14 @@ describe('Today: fix round 1', () => {
     expect(live.textContent).toBe('');
     hold(checkButton('Personal study'));
     expect(screen.getByTestId('plan-finished-live')).toBe(live);
-    expect(live.textContent).toContain('Project finished: Daniel. Well done.');
+    expect(live.textContent).toContain('Study plan finished: Daniel. Well done.');
   });
 
   it('"Not now" closes the card and focuses the study row', () => {
     renderToday(studyStore([daniel(11), acts()]));
     hold(checkButton('Personal study'));
     fireEvent.click(screen.getByRole('button', { name: 'Not now' }));
-    expect(screen.queryByText('Project finished: Daniel. Well done.')).toBeNull();
+    expect(screen.queryByText('Study plan finished: Daniel. Well done.')).toBeNull();
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: 'Personal study', pressed: true })
     );
@@ -844,7 +844,7 @@ describe('Today: fix round 1', () => {
     });
     hold(checkButton('Family worship'));
     expect(screen.getByText('Family plan finished: Proverbs. Well done.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Start next project' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Start next study plan' })).toBeNull();
   });
 
   it('the next-project picker leaves out family, archived and active plans', () => {
@@ -852,13 +852,13 @@ describe('Today: fix round 1', () => {
     const romans = plan('pr', 'Romans', 'study', steps('r', 'Romans', 16));
     renderToday(studyStore([daniel(11), acts(), old, family(), romans]));
     hold(checkButton('Personal study'));
-    const picker = screen.getByRole('combobox', { name: 'Next project' });
+    const picker = screen.getByRole('combobox', { name: 'Next study plan' });
     const names = within(picker)
       .getAllByRole('option')
       .map((o) => o.textContent);
     expect(names).toEqual(['Acts', 'Romans']);
     fireEvent.change(picker, { target: { value: 'pr' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Start next project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start next study plan' }));
     expect(current.activePlan.personalStudy).toBe('pr');
   });
 });

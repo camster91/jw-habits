@@ -35,7 +35,7 @@ describe('fun layer', () => {
     );
     expect(screen.getByRole('status')).toHaveTextContent('First step');
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
-    expect(screen.getByRole('status')).toHaveTextContent('First project finished');
+    expect(screen.getByRole('status')).toHaveTextContent('First study plan finished');
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });

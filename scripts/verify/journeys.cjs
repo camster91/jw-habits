@@ -281,7 +281,7 @@ const closeSettings = async (page) => {
       async (page) => {
         await onboardSkip(page);
         await page.getByRole('link', { name: 'Plans', exact: true }).click();
-        await page.getByRole('button', { name: 'New project', exact: true }).click();
+        await page.getByRole('button', { name: 'New study plan', exact: true }).click();
         await page.getByLabel('Steps', { exact: true }).selectOption('bibleBook');
         await page.getByLabel('Bible book', { exact: true }).selectOption('27');
         await page.getByRole('button', { name: 'Create', exact: true }).click();

@@ -261,7 +261,7 @@ describe('PlanTrail', () => {
   it('makes a waiting project active', () => {
     const { store, planId } = danielStore();
     renderTrail(store, planId);
-    const button = screen.getByRole('button', { name: 'Make this the active project' });
+    const button = screen.getByRole('button', { name: 'Use this plan on Today' });
     // Solid white with plan-coloured text (every plan colour is >= 4.5:1 on
     // white, see planColours.test.js), never translucent white over the colour.
     expect(button.className.split(' ')).toContain('bg-white');
@@ -270,7 +270,7 @@ describe('PlanTrail', () => {
     expect(PLAN_COLOURS[2]).toBe('#7B5EA7');
     fireEvent.click(button);
     expect(current.activePlan.personalStudy).toBe(planId);
-    expect(screen.getByText('Active project')).toBeInTheDocument();
+    expect(screen.getByText('Current study plan')).toBeInTheDocument();
   });
 
   it('deletes the plan after a confirmation and goes back to Plans', () => {

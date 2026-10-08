@@ -1,4 +1,3 @@
-import Garden from '../components/fun/Garden.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../data/useStore.js';
@@ -395,7 +394,6 @@ export default function Today({ onOpenSettings = () => {} }) {
               }).format(dateOf(today))}
             </p>
           </div>
-          <Garden stage={1} small />
         </header>
 
         {fresh && <p className="text-base-content/80">{t(`fd.today.${fresh}`)}</p>}

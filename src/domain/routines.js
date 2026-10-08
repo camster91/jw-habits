@@ -21,7 +21,7 @@ export const ROUTINE_IDS = [
 export const DEFAULT_LABELS = {
   dailyText: 'Daily text',
   bibleReading: 'Bible reading',
-  meetingPrep: 'Meeting prep',
+  meetingPrep: 'Meeting preparation',
   familyWorship: 'Family worship',
   personalStudy: 'Personal study',
   ministry: 'Ministry',

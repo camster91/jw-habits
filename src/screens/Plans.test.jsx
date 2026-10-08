@@ -52,22 +52,24 @@ describe('Plans', () => {
   it('has the three sections', () => {
     renderPlans();
     expect(screen.getByRole('heading', { level: 1, name: 'Plans' })).toBeInTheDocument();
-    expect(section('Study projects')).toBeInTheDocument();
+    expect(section('Personal study')).toBeInTheDocument();
     expect(section('Family worship')).toBeInTheDocument();
     expect(section('Completed')).toBeInTheDocument();
   });
 
   it('creates "Daniel" with the Bible-book generator and lists it with 0 of 12', () => {
     renderPlans();
-    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
-    const dialog = screen.getByRole('dialog', { name: 'New project' });
-    fireEvent.change(within(dialog).getByLabelText('Steps'), { target: { value: 'bibleBook' } });
+    fireEvent.click(screen.getByRole('button', { name: 'New study plan' }));
+    const dialog = screen.getByRole('dialog', { name: 'New study plan' });
+    fireEvent.change(within(dialog).getByLabelText('How would you like to organise it?'), {
+      target: { value: 'bibleBook' },
+    });
     fireEvent.change(within(dialog).getByLabelText('Bible book'), { target: { value: '27' } });
     expect(within(dialog).getByLabelText('Title')).toHaveValue('Daniel');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    const link = within(section('Study projects')).getByRole('link', { name: /Daniel/ });
+    const link = within(section('Personal study')).getByRole('link', { name: /Daniel/ });
     expect(link).toHaveTextContent('0 of 12');
     expect(link).toHaveTextContent('Next: Daniel 1');
 
@@ -87,8 +89,11 @@ describe('Plans', () => {
     fireEvent.change(within(dialog).getByLabelText('Title'), {
       target: { value: 'Evenings together' },
     });
-    fireEvent.change(within(dialog).getByLabelText('Steps'), { target: { value: 'weekly' } });
-    fireEvent.change(within(dialog).getByLabelText('How many'), { target: { value: '4' } });
+    fireEvent.change(within(dialog).getByLabelText('How would you like to organise it?'), {
+      target: { value: 'weekly' },
+    });
+    fireEvent.change(within(dialog).getByLabelText('Number of steps'), { target: { value: '4' } });
+    fireEvent.click(within(dialog).getByText('Colour and icon (optional)'));
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Green' }));
     fireEvent.click(within(dialog).getByRole('radio', { name: 'Dove' }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
@@ -109,8 +114,8 @@ describe('Plans', () => {
 
   it('can start blank, and needs a title', () => {
     renderPlans();
-    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
-    const dialog = screen.getByRole('dialog', { name: 'New project' });
+    fireEvent.click(screen.getByRole('button', { name: 'New study plan' }));
+    const dialog = screen.getByRole('dialog', { name: 'New study plan' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
     expect(within(dialog).getByText('Give it a title')).toBeInTheDocument();
     expect(current.plans).toHaveLength(0);
@@ -119,19 +124,23 @@ describe('Plans', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
     expect(current.plans[0].steps).toEqual([]);
     expect(
-      within(section('Study projects')).getByRole('link', { name: /Jeremiah/ })
+      within(section('Personal study')).getByRole('link', { name: /Jeremiah/ })
     ).toHaveTextContent('No steps yet');
   });
 
   it('refuses a step count outside 1 to 200', () => {
     renderPlans();
-    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
-    const dialog = screen.getByRole('dialog', { name: 'New project' });
+    fireEvent.click(screen.getByRole('button', { name: 'New study plan' }));
+    const dialog = screen.getByRole('dialog', { name: 'New study plan' });
     fireEvent.change(within(dialog).getByLabelText('Title'), { target: { value: 'A book' } });
-    fireEvent.change(within(dialog).getByLabelText('Steps'), { target: { value: 'chapters' } });
-    fireEvent.change(within(dialog).getByLabelText('How many'), { target: { value: '201' } });
+    fireEvent.change(within(dialog).getByLabelText('How would you like to organise it?'), {
+      target: { value: 'chapters' },
+    });
+    fireEvent.change(within(dialog).getByLabelText('Number of steps'), {
+      target: { value: '201' },
+    });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
-    const howMany = within(dialog).getByLabelText('How many');
+    const howMany = within(dialog).getByLabelText('Number of steps');
     expect(howMany).toHaveAttribute('aria-invalid', 'true');
     expect(howMany).toHaveAccessibleDescription('Choose a number from 1 to 200');
     expect(current.plans).toHaveLength(0);
@@ -139,9 +148,9 @@ describe('Plans', () => {
 
   it('drops the auto-filled book title when leaving the Bible-book generator', () => {
     renderPlans();
-    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
-    const dialog = screen.getByRole('dialog', { name: 'New project' });
-    const steps = within(dialog).getByLabelText('Steps');
+    fireEvent.click(screen.getByRole('button', { name: 'New study plan' }));
+    const dialog = screen.getByRole('dialog', { name: 'New study plan' });
+    const steps = within(dialog).getByLabelText('How would you like to organise it?');
     fireEvent.change(steps, { target: { value: 'bibleBook' } });
     expect(within(dialog).getByLabelText('Title')).toHaveValue('Genesis');
     fireEvent.change(steps, { target: { value: 'chapters' } });
@@ -156,22 +165,22 @@ describe('Plans', () => {
 
   it('keeps the sheet open with a message when createPlan refuses', () => {
     renderPlans();
-    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
-    const dialog = screen.getByRole('dialog', { name: 'New project' });
+    fireEvent.click(screen.getByRole('button', { name: 'New study plan' }));
+    const dialog = screen.getByRole('dialog', { name: 'New study plan' });
     fireEvent.change(within(dialog).getByLabelText('Title'), { target: { value: 'Refused' } });
     createPlan.mockImplementationOnce((s) => ({ store: s, planId: null }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
-    expect(screen.getByRole('dialog', { name: 'New project' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'New study plan' })).toBeInTheDocument();
     expect(within(dialog).getByText(/couldn.t be made/)).toBeInTheDocument();
     expect(current.plans).toHaveLength(0);
   });
 
   it('closes the sheet with Cancel and Escape without creating anything', () => {
     renderPlans();
-    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New study plan' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New study plan' }));
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(current.plans).toHaveLength(0);
@@ -185,25 +194,22 @@ describe('Plans', () => {
     s = setActiveStudy(s, s.plans[1].id);
     renderPlans(s);
 
-    const study = section('Study projects');
+    const study = section('Personal study');
     const links = within(study).getAllByRole('link');
     expect(links[0]).toHaveTextContent('Current one');
-    expect(links[0]).toHaveTextContent('Active');
+    expect(links[0]).toHaveTextContent('Current plan');
     expect(links[1]).toHaveTextContent('Waiting one');
-    expect(links[1]).toHaveTextContent('Waiting');
+    expect(links[1]).toHaveTextContent('Up next');
 
-    fireEvent.click(
-      within(study).getByRole('button', { name: 'Make Waiting one the active project' })
-    );
+    fireEvent.click(within(study).getByRole('button', { name: 'Use Waiting one on Today' }));
     expect(current.activePlan.personalStudy).toBe(waitingId);
   });
 
   it('links to the family weeks view', () => {
     renderPlans();
-    expect(within(section('Family worship')).getByRole('link', { name: /next 8/ })).toHaveAttribute(
-      'href',
-      '/plans/family'
-    );
+    expect(
+      within(section('Family worship')).getByRole('link', { name: /Plan this week/ })
+    ).toHaveAttribute('href', '/plans/family');
   });
 
   it('puts finished plans on the Completed shelf, where they can be restored', () => {
@@ -213,13 +219,13 @@ describe('Plans', () => {
     s = setStepDone(s, plan.id, plan.steps[0].id, '2026-10-01');
     renderPlans(s);
 
-    expect(within(section('Study projects')).queryByRole('link', { name: /Done book/ })).toBeNull();
+    expect(within(section('Personal study')).queryByRole('link', { name: /Done book/ })).toBeNull();
     const shelf = section('Completed');
     expect(within(shelf).getByRole('link', { name: /Done book/ })).toHaveTextContent('1 of 1');
     fireEvent.click(within(shelf).getByRole('button', { name: 'Restore Done book' }));
     expect(current.plans[0].archivedOn).toBeNull();
     expect(
-      within(section('Study projects')).getByRole('link', { name: /Done book/ })
+      within(section('Personal study')).getByRole('link', { name: /Done book/ })
     ).toBeInTheDocument();
   });
 
@@ -228,7 +234,7 @@ describe('Plans', () => {
     ({ store: s } = add(s, { title: 'Daniel', kind: 'study', steps: generateChapters(2) }));
     renderPlans(s);
     expect(document.body.textContent).not.toMatch(BANNED);
-    fireEvent.click(screen.getByRole('button', { name: 'New project' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New study plan' }));
     expect(document.body.textContent).not.toMatch(BANNED);
   });
 });
