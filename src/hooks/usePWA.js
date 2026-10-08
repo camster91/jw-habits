@@ -59,7 +59,8 @@ export function usePWA() {
 
   // Listen for service worker updates
   useEffect(() => {
-    if (!isPWACapable()) return;
+    // Updating an installed worker is independent of beforeinstallprompt.
+    if (!('serviceWorker' in navigator)) return;
 
     let hadController = Boolean(navigator.serviceWorker.controller);
     let disposed = false;

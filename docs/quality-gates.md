@@ -57,6 +57,11 @@ byte-for-byte unchanged through update and offline reload. Initial installation
 must not announce an available update. Workbox's revision-aware `matchPrecache`
 serves the offline navigation fallback.
 
+The worker drill disables install-prompt support and also activates an update
+from newer-data recovery, then reloads offline and checks the unknown raw store
+byte-for-byte. Service-worker update detection is independent of the optional
+install-prompt API used by some browsers.
+
 ## Workflow and runtime policy
 
 `node scripts/verify/workflow-policy.cjs` rejects mutable remote action/reusable
