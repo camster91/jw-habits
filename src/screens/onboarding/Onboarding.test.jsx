@@ -105,11 +105,11 @@ describe('Onboarding', () => {
     expect(current).toBe(initial);
   });
 
-  it('renaming Meeting prep shows the new label on Today and leaves the log alone', () => {
+  it('renaming Meeting preparation shows the new label on Today and leaves the log alone', () => {
     renderOnboarding();
     click('Get started');
-    click('Rename Meeting prep');
-    fireEvent.change(screen.getByLabelText('Name for Meeting prep'), {
+    click('Rename Meeting preparation');
+    fireEvent.change(screen.getByLabelText('Name for Meeting preparation'), {
       target: { value: 'Prepare comments' },
     });
     click('Next');
@@ -247,7 +247,7 @@ describe('Onboarding', () => {
         'Faithful Days is an independent app. It is not affiliated with, endorsed by, or sponsored by Watch Tower Bible and Tract Society or jw.org, and contains no content from jw.org.'
       )
     ).toBeInTheDocument();
-    expect(screen.getByText(/Everything stays on your phone/)).toBeInTheDocument();
+    expect(screen.getByText(/Your routines stay on this device/)).toBeInTheDocument();
   });
 
   it('setting copy never says missed, broke, failed or lost', () => {

@@ -47,7 +47,7 @@ describe('routine constants', () => {
     expect(DEFAULT_LABELS).toEqual({
       dailyText: 'Daily text',
       bibleReading: 'Bible reading',
-      meetingPrep: 'Meeting prep',
+      meetingPrep: 'Meeting preparation',
       familyWorship: 'Family worship',
       personalStudy: 'Personal study',
       ministry: 'Ministry',

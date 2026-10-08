@@ -275,7 +275,9 @@ describe('SettingsSheet', () => {
       meetingPrep: 'https://old.example',
       dailyText: 'https://example.org/text',
     });
-    fireEvent.change(within(links).getByLabelText('Meeting prep'), { target: { value: '' } });
+    fireEvent.change(within(links).getByLabelText('Meeting preparation'), {
+      target: { value: '' },
+    });
     expect(current.links).toEqual({ dailyText: 'https://example.org/text' });
   });
 
@@ -295,7 +297,7 @@ describe('SettingsSheet', () => {
     const master = within(reminders).getByRole('switch', { name: 'Reminders' });
     expect(master).toBeChecked();
     // One switch per enabled routine.
-    for (const name of ['Daily text', 'Bible reading', 'Meeting prep', 'Ministry']) {
+    for (const name of ['Daily text', 'Bible reading', 'Meeting preparation', 'Ministry']) {
       expect(within(reminders).getByRole('switch', { name: `Reminder: ${name}` })).toBeChecked();
     }
     fireEvent.click(within(reminders).getByRole('switch', { name: 'Reminder: Bible reading' }));

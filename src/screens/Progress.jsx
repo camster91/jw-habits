@@ -41,7 +41,9 @@ function RoutineCard({ title, s, daysThisYear }) {
       <p className="text-sm text-base-content/70">
         {t('fd.progress.daysThisYear', { count: daysThisYear })}
       </p>
-      <ShareButton kind="streak" data={{ title, streak: s.current, days: daysThisYear }} />
+      {daysThisYear > 0 && (
+        <ShareButton kind="streak" data={{ title, streak: s.current, days: daysThisYear }} />
+      )}
     </li>
   );
 }

@@ -3,7 +3,7 @@
     "routine": {
       "dailyText": "Daily text",
       "bibleReading": "Bible reading",
-      "meetingPrep": "Meeting prep",
+      "meetingPrep": "Meeting preparation",
       "familyWorship": "Family worship",
       "personalStudy": "Personal study",
       "ministry": "Ministry"
@@ -82,7 +82,7 @@
       "ministrySummary_other": "Shared this month · {{count}} Bible studies",
       "ministryEdit": "Edit",
       "setMeetingDays": "Set your meeting days",
-      "setMeetingDaysBody": "Meeting prep appears the day before each meeting.",
+      "setMeetingDaysBody": "Choose your meeting days. Preparation appears the day before each meeting.",
       "whatsNew": "{{count}} new on jw.org",
       "newWeek": "A new week, a fresh start.",
       "newMonth": "A new month, a fresh start.",
@@ -105,13 +105,13 @@
         "otherSteps": "Or tick a different step"
       },
       "finished": {
-        "study": "Project finished: {{title}}. Well done.",
+        "study": "Study plan finished: {{title}}. Well done.",
         "family": "Family plan finished: {{title}}. Well done.",
-        "nextLabel": "Next project",
-        "startNext": "Start next project",
+        "nextLabel": "Next study plan",
+        "startNext": "Start next study plan",
         "notNow": "Not now",
-        "started": "{{title}} is now your active project.",
-        "refused": "That project could not be started."
+        "started": "{{title}} is now your current study plan.",
+        "refused": "That study plan could not be started."
       },
       "agenda": {
         "label": "This week's family worship"
@@ -127,7 +127,7 @@
       "welcome": {
         "title": "Welcome to Faithful Days",
         "body": "A calm place to keep your spiritual routines: the daily text, Bible reading, meetings, family worship, personal study and the ministry.",
-        "private": "Everything stays on your phone. There's no account and no sign-up.",
+        "private": "Your routines stay on this device. There is no account or sign-up.",
         "start": "Get started",
         "storage": "Your day starts at 3 a.m. Check-ins and plans stay on this device; there is no account or sync. Clearing app data or uninstalling can remove your history. Export a private backup in Settings before changing devices."
       },
@@ -142,7 +142,7 @@
       "week": {
         "title": "Your week",
         "meetingDays": "Meeting days",
-        "meetingHint": "Meeting prep appears the day before each meeting.",
+        "meetingHint": "Choose the days you normally attend meetings. Preparation appears the day before.",
         "familyDay": "Family worship day",
         "pioneer": "Are you a pioneer?",
         "pioneerHint": "Shows your ministry hours each month.",
@@ -301,18 +301,18 @@
       "title": "Plans",
       "close": "Close",
       "study": {
-        "heading": "Study projects",
-        "empty": "No projects yet. Start one for a book, a brochure or anything you want to study.",
-        "new": "New project",
-        "active": "Active",
-        "waiting": "Waiting",
-        "makeActive": "Make {{title}} the active project",
-        "makeActiveShort": "Make active"
+        "heading": "Personal study",
+        "empty": "Choose a Bible book, publication or topic, then break it into manageable steps.",
+        "new": "New study plan",
+        "active": "Current plan",
+        "waiting": "Up next",
+        "makeActive": "Use {{title}} on Today",
+        "makeActiveShort": "Use on Today"
       },
       "family": {
         "heading": "Family worship",
-        "weeks": "This week and the next 8",
-        "empty": "No family plans yet.",
+        "weeks": "Plan this week’s family worship",
+        "empty": "Add topics for one evening, or create a plan to follow over several weeks.",
         "new": "New family plan"
       },
       "completed": {
@@ -325,7 +325,7 @@
       "next": "Next: {{title}}",
       "noSteps": "No steps yet",
       "kinds": {
-        "study": "Study project",
+        "study": "Personal study",
         "family": "Family worship plan"
       },
       "colours": {
@@ -349,27 +349,29 @@
         "path": "Path"
       },
       "new": {
-        "titleStudy": "New project",
+        "titleStudy": "New study plan",
         "titleFamily": "New family plan",
         "name": "Title",
-        "kind": "Kind",
+        "kind": "Plan type",
         "colour": "Colour",
         "icon": "Icon",
-        "generator": "Steps",
-        "count": "How many",
+        "generator": "How would you like to organise it?",
+        "count": "Number of steps",
         "book": "Bible book",
         "create": "Create",
         "cancel": "Cancel",
         "generators": {
-          "blank": "Start blank (add steps yourself)",
-          "chapters": "Chapters 1 to N",
-          "lessons": "Lessons 1 to N",
-          "bibleBook": "Bible book by chapter",
-          "weekly": "Weekly, N weeks"
+          "blank": "Choose my own topics",
+          "chapters": "One step per chapter",
+          "lessons": "One step per lesson",
+          "bibleBook": "Read a Bible book",
+          "weekly": "One step per week"
         },
         "titleNeeded": "Give it a title",
         "countRange": "Choose a number from 1 to 200",
-        "refused": "That plan couldn't be made. Check the details and try again."
+        "refused": "That plan couldn't be made. Check the details and try again.",
+        "appearance": "Colour and icon (optional)",
+        "titleHint": "For example: Study the book of James"
       },
       "trail": {
         "back": "Plans",
@@ -383,8 +385,8 @@
         "empty": "No steps yet. Add the first one below.",
         "addStep": "Add a step",
         "add": "Add",
-        "makeActive": "Make this the active project",
-        "active": "Active project",
+        "makeActive": "Use this plan on Today",
+        "active": "Current study plan",
         "completed": "Completed. Restore it to carry on.",
         "restore": "Restore",
         "deletePlan": "Delete plan",
@@ -414,7 +416,8 @@
         "openInLibrary": "Open in JW Library",
         "openLink": "Open link",
         "refused": "That change couldn't be saved. The step may have changed; close and open it again."
-      }
+      },
+      "intro": "Plan your personal study and family worship here. Today records what you actually do; planning ahead does not mark a routine complete."
     },
     "family": {
       "title": "Family worship weeks",
@@ -488,7 +491,7 @@
       "showShare": "Show share buttons",
       "badges": {
         "firstStep": "First step",
-        "firstProject": "First project finished",
+        "firstProject": "First study plan finished",
         "firstFamilyPlan": "First family plan finished",
         "familyWeeks4": "4 weeks of family worship",
         "familyWeeks12": "12 weeks of family worship",

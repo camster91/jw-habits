@@ -121,6 +121,7 @@ export default function NewPlanSheet({ kind: initialKind = 'study', onClose }) {
           id={ids.title}
           type="text"
           maxLength={MAX_TITLE}
+          placeholder={kind === 'study' ? t('fd.plans.new.titleHint') : undefined}
           className="input input-bordered min-h-11 w-full"
           value={title}
           aria-invalid={Boolean(errors.title)}
@@ -148,48 +149,6 @@ export default function NewPlanSheet({ kind: initialKind = 'study', onClose }) {
               onChange={() => setKind(k)}
             />
             <span>{t(`fd.plans.kinds.${k}`)}</span>
-          </label>
-        ))}
-      </Choices>
-
-      <Choices legend={t('fd.plans.new.colour')}>
-        {PLAN_COLOURS.map((hex, i) => (
-          <label key={hex} className="relative cursor-pointer">
-            <input
-              type="radio"
-              name="plan-colour"
-              className="peer sr-only"
-              aria-label={t(`fd.plans.colours.${PLAN_COLOUR_NAMES[i]}`)}
-              checked={colour === i}
-              onChange={() => setColour(i)}
-            />
-            <span
-              aria-hidden="true"
-              className="block h-11 w-11 rounded-full ring-offset-2 ring-offset-base-100 peer-checked:ring-4 peer-checked:ring-base-content peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4"
-              style={{ backgroundColor: hex }}
-            />
-          </label>
-        ))}
-      </Choices>
-
-      <Choices legend={t('fd.plans.new.icon')}>
-        {PLAN_ICONS.map((id) => (
-          <label key={id} className="cursor-pointer">
-            <input
-              type="radio"
-              name="plan-icon"
-              className="peer sr-only"
-              aria-label={t(`fd.plans.icons.${id}`)}
-              checked={icon === id}
-              onChange={() => setIcon(id)}
-            />
-            <span
-              aria-hidden="true"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-base-content/20 text-base-content/70 peer-checked:border-transparent peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2"
-              style={icon === id ? { backgroundColor: PLAN_COLOURS[colour] } : undefined}
-            >
-              <PlanIcon icon={id} />
-            </span>
           </label>
         ))}
       </Choices>
@@ -256,6 +215,55 @@ export default function NewPlanSheet({ kind: initialKind = 'study', onClose }) {
           </select>
         </div>
       )}
+
+      <details className="rounded-2xl border border-base-300 p-3">
+        <summary className="min-h-11 cursor-pointer font-medium">
+          {t('fd.plans.new.appearance')}
+        </summary>
+        <div className="space-y-3 pt-3">
+          <Choices legend={t('fd.plans.new.colour')}>
+            {PLAN_COLOURS.map((hex, i) => (
+              <label key={hex} className="relative cursor-pointer">
+                <input
+                  type="radio"
+                  name="plan-colour"
+                  className="peer sr-only"
+                  aria-label={t(`fd.plans.colours.${PLAN_COLOUR_NAMES[i]}`)}
+                  checked={colour === i}
+                  onChange={() => setColour(i)}
+                />
+                <span
+                  aria-hidden="true"
+                  className="block h-11 w-11 rounded-full ring-offset-2 ring-offset-base-100 peer-checked:ring-4 peer-checked:ring-base-content peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4"
+                  style={{ backgroundColor: hex }}
+                />
+              </label>
+            ))}
+          </Choices>
+
+          <Choices legend={t('fd.plans.new.icon')}>
+            {PLAN_ICONS.map((id) => (
+              <label key={id} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="plan-icon"
+                  className="peer sr-only"
+                  aria-label={t(`fd.plans.icons.${id}`)}
+                  checked={icon === id}
+                  onChange={() => setIcon(id)}
+                />
+                <span
+                  aria-hidden="true"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-base-content/20 text-base-content/70 peer-checked:border-transparent peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2"
+                  style={icon === id ? { backgroundColor: PLAN_COLOURS[colour] } : undefined}
+                >
+                  <PlanIcon icon={id} />
+                </span>
+              </label>
+            ))}
+          </Choices>
+        </div>
+      </details>
 
       {errors.form && <p className="text-sm text-error">{errors.form}</p>}
       <div className="flex gap-2 pt-2">

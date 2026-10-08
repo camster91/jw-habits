@@ -111,6 +111,7 @@ export default function Plans() {
     >
       <div className="mx-auto max-w-md space-y-6">
         <h1 className="text-3xl font-bold">{t('fd.plans.title')}</h1>
+        <p className="text-base-content/80">{t('fd.plans.intro')}</p>
 
         <Section title={t('fd.plans.study.heading')}>
           {active || waiting.length > 0 ? (
