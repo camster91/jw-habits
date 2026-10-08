@@ -24,9 +24,11 @@ const server=http.createServer((req,res)=>{
   const browser=await chromium.launch();
   try {
     const context=await browser.newContext({locale:'en-CA',serviceWorkers:'allow'});
+    await context.addInitScript(()=>{ delete window.BeforeInstallPromptEvent; });
     const page=await context.newPage();
     await page.clock.install({time:new Date(2026,9,6,10)});
     await page.goto(base,{waitUntil:'networkidle'});
+    assert.equal(await page.evaluate(()=> 'BeforeInstallPromptEvent' in window),false,'test must run without install-prompt support');
     await page.evaluate(()=>navigator.serviceWorker.ready);
     await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
     assert.equal(await page.getByText('New version available',{exact:true}).count(),0,'first install must not claim an update');
@@ -59,6 +61,24 @@ const server=http.createServer((req,res)=>{
     await page.reload({waitUntil:'domcontentloaded'});
     await page.getByTestId('today').waitFor();
     assert.equal(await page.evaluate(key=>localStorage.getItem(key),STORE_KEY),saved,'activated update and offline reload retained state');
+    await context.setOffline(false);
+    const newerRaw=JSON.stringify({...JSON.parse(saved),version:4,futureNotes:['Synthetic note']},null,2);
+    await page.evaluate(({key,raw})=>localStorage.setItem(key,raw),{key:STORE_KEY,raw:newerRaw});
+    await page.reload({waitUntil:'networkidle'});
+    await page.getByRole('heading',{name:'Update Faithful Days to open your data'}).waitFor();
+    generation=3;
+    await page.evaluate(async()=>{const reg=await navigator.serviceWorker.getRegistration();await reg.update();});
+    await page.getByText('New version available',{exact:true}).waitFor();
+    await Promise.all([
+      page.waitForNavigation({waitUntil:'networkidle'}),
+      page.getByRole('button',{name:'Update',exact:true}).click()
+    ]);
+    await page.getByRole('heading',{name:'Update Faithful Days to open your data'}).waitFor();
+    await context.setOffline(true);
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.getByRole('heading',{name:'Update Faithful Days to open your data'}).waitFor();
+    assert.equal(await page.evaluate(key=>localStorage.getItem(key),STORE_KEY),newerRaw,'recovery update and offline reload retained unknown newer data exactly');
+    console.log('Recovery worker update without install-prompt support retained newer data.');
     console.log('SW install, offline deep links/lazy Share, waiting update, activation and retained state passed.');
     await context.close();
   } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}

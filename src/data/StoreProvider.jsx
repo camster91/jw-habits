@@ -14,6 +14,7 @@ import { migrateV1 } from '../domain/migrateV1.js';
 import { upgradeStore } from '../domain/upgrade.js';
 import { appLifecycle } from '../utils/native.js';
 import { durableGet, durableSet, safeGetItem } from '../utils/safeStorage.js';
+import UpdateRequired from '../components/UpdateRequired.jsx';
 
 export const STORE_KEY = 'jw-habits-v2';
 /** The original v2 text, kept once, the first time a v2 value is upgraded. */
@@ -153,6 +154,9 @@ async function loadStore() {
       const current = upgradeStore(parsed, today);
       upgraded = current !== parsed;
       result = validateStore(current);
+      // An older app cannot interpret a newer schema. Preserve its raw value
+      // and block the normal app before defaults, cleanup or timers can write.
+      if (result.reason === 'newerVersion') return { newer: { raw } };
     } catch {
       // unparseable: handled as corrupt below
     }
@@ -183,6 +187,7 @@ async function loadStore() {
 export function StoreProvider({ children }) {
   const [store, setStore] = useState(null);
   const [today, setToday] = useState(null);
+  const [newerStore, setNewerStore] = useState(null);
   const storeRef = useRef(null);
   const todayRef = useRef(null);
   const readOnlyRef = useRef(false);
@@ -232,8 +237,12 @@ export function StoreProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadStore().then(({ store: stored, persisted, readOnly }) => {
+    loadStore().then(({ store: stored, persisted, readOnly, newer }) => {
       if (cancelled) return;
+      if (newer) {
+        setNewerStore(newer);
+        return;
+      }
       // Drop references to deleted plans/steps and agenda weeks out of range.
       // Both return the same object when nothing changed, so a clean store is not rewritten.
       // Prune against the provider's app day (non-regressing, like refreshDay), not the raw clock.
@@ -267,6 +276,7 @@ export function StoreProvider({ children }) {
   }, [loaded, refreshDay, runForeground, getArgs]);
 
   const value = useMemo(() => ({ store, update, today }), [store, update, today]);
+  if (newerStore) return <UpdateRequired raw={newerStore.raw} />;
   if (!loaded) return null;
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

@@ -46,11 +46,17 @@ global.Notification = {
 };
 
 // ── Mock Service Worker ───────────────────────────────
-global.navigator.serviceWorker = {
-  ready: Promise.resolve({
-    showNotification: vi.fn(),
-  }),
-};
+global.navigator.serviceWorker = Object.assign(new EventTarget(), {
+  controller: null,
+  getRegistration: vi.fn().mockResolvedValue(undefined),
+  ready: Promise.resolve(
+    Object.assign(new EventTarget(), {
+      showNotification: vi.fn(),
+      waiting: null,
+      installing: null,
+    })
+  ),
+});
 
 // ── Reset mocks between tests ─────────────────────────
 beforeEach(() => {

@@ -1,6 +1,6 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-07.**
+**Last audited against source: 2026-10-08.**
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -184,6 +184,11 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   follow `docs/ios-widget-setup.md` and `docs/release-checklist.md` before store release.
 - **Storage failures are visible.** `StorageNotice` listens for `jw-storage-full` and offers
   backup settings so the current in-memory history can be exported before closing.
+- **Newer stored schemas block startup.** `UpdateRequired` offers a byte-exact raw
+  export and retains the web update prompt. The provider does not initialize routines,
+  cleanup, rollover or foreground callbacks, and leaves the primary stored value intact.
+  This startup guard does not prevent a previously loaded old tab from writing; a
+  compatible multiple-client policy still gates any future store-v4 rollout.
 - **The initial release UI is English-only (#259).** The document language, dates and
   notifications use English. Legacy Spanish/French detector preferences and user data
   remain untouched. Native widget chrome has es/fr resources, but full app localization
