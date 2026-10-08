@@ -152,6 +152,45 @@ describe('Notes UI', () => {
   });
 });
 describe('Preparation UI', () => {
+  it('collapses creation forms when saved records hydrate after the first render', () => {
+    const tree = (workspace, ready) => (
+      <StoreContext.Provider value={{ today }}>
+        <WorkspaceContext.Provider value={{ workspace, ready, save: vi.fn(), error: '' }}>
+          <MemoryRouter>
+            <Preparation />
+          </MemoryRouter>
+        </WorkspaceContext.Provider>
+      </StoreContext.Provider>
+    );
+    const { rerender } = render(tree(emptyWorkspace(), false));
+    rerender(
+      tree(
+        {
+          ...emptyWorkspace(),
+          meetings: [{ id: 'm', type: 'weekend', date: today, prepared: [] }],
+          assignments: [
+            {
+              id: 'a',
+              title: 'Saved assignment',
+              type: 'Talk',
+              date: today,
+              details: '',
+              tasks: [],
+            },
+          ],
+        },
+        true
+      )
+    );
+    expect(screen.getByLabelText('Meeting date')).not.toBeVisible();
+    expect(screen.getByLabelText('Assignment title')).not.toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Saved assignment' })).toBeVisible();
+    button('New meeting');
+    expect(screen.getByLabelText('Meeting date')).toBeVisible();
+    button('New assignment');
+    expect(screen.getByLabelText('Assignment title')).toBeVisible();
+  });
+
   it('adds a dated meeting, prepares and undoes a section, refuses duplicates and removes it deliberately', async () => {
     render(
       <Harness>
@@ -164,6 +203,7 @@ describe('Preparation UI', () => {
     await screen.findByText('1 of 6 sections prepared');
     fireEvent.click(screen.getByLabelText(MEETING_PARTS.midweek[0]));
     await screen.findByText('0 of 6 sections prepared');
+    button('New meeting');
     button('Add meeting');
     expect(screen.getByText('That meeting is already listed below.')).toBeInTheDocument();
     expect(current.meetings.length).toBe(1);
@@ -196,6 +236,7 @@ describe('Preparation UI', () => {
     button('Add assignment');
     await screen.findByText('Read James');
     expect(screen.getByLabelText('Assignment title')).toHaveValue('');
+    expect(screen.getByLabelText('Assignment title')).not.toBeVisible();
     fireEvent.click(screen.getByLabelText('Read'));
     await waitFor(() => expect(current.assignments[0].tasks[0].done).toBe(true));
     fireEvent.click(screen.getByLabelText('Practise'));
@@ -203,6 +244,8 @@ describe('Preparation UI', () => {
     fireEvent.click(screen.getByLabelText('Read'));
     await screen.findByText('Prepare at your own pace.');
     button('Edit assignment');
+    expect(screen.getByLabelText('Assignment title')).toHaveFocus();
+    expect(screen.getByLabelText('Assignment title')).toBeVisible();
     field('Assignment title', 'Read James revised');
     field('Assignment date', '2026-10-16');
     button('Save assignment');
@@ -228,6 +271,12 @@ describe('Preparation UI', () => {
     field('Assignment title', 'Draft');
     button('Add assignment');
     await waitFor(() => expect(screen.getByLabelText('Assignment title')).toHaveValue('Draft'));
+    expect(screen.getByLabelText('Assignment title')).toBeVisible();
+    button('Close assignment form');
+    expect(screen.getByLabelText('Assignment title')).not.toBeVisible();
+    button('New assignment');
+    expect(screen.getByLabelText('Assignment title')).toHaveValue('Draft');
+    expect(screen.getByLabelText('Assignment title')).toBeVisible();
   });
 });
 

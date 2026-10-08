@@ -1,6 +1,8 @@
 # CLAUDE.md — Faithful Days
 
 **Last audited against source: 2026-10-08.**
+
+Preparation creation forms start open for an empty collection and collapse after a successful save. Saved records remain accessible; closing a form retains its draft, and Edit opens and focuses the assignment title. Failed saves keep forms and drafts open.
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
