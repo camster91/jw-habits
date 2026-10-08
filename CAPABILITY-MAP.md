@@ -1,8 +1,10 @@
 # Capability map: prepare ahead and personal memory
 
-Proposed scope for #263 and #264, following the shipped v5.1 plans. This is a
-reviewable module map; module specifications and implementation have not yet
-been approved. Existing v5.1 app/release fixes are independent of this map.
+Scope for #263 and #264, following the shipped v5.1 plans. Cameron's
+2026-10-08 instruction to keep working, following presentation of this map,
+authorizes continuing from these boundaries and build order. Module-specific
+specifications remain separate review gates. Existing v5.1 app/release fixes
+are independent of this map.
 
 Assumptions: user-written content only; local storage and JSON backup; no
 accounts, cloud sync, imported publication text or automatic third-party
@@ -24,6 +26,19 @@ through a Notes tab; preparation stays under Plans.
 
 Build order: store-v4 → local-memory, meeting-parts, assignment-plans and
 reading-ahead → local-search and prepare-board → native-capture.
+
+## Specification index
+
+| Module | Specification | Status |
+|---|---|---|
+| store-v4 | [SPEC-store-v4.md](SPEC-store-v4.md) | Draft for human review; no schema change implemented |
+| local-memory | Not written | Depends on the store-v4 boundary contract |
+| meeting-parts | Not written | Depends on the store-v4 boundary contract |
+| assignment-plans | Not written | Depends on the store-v4 boundary contract |
+| reading-ahead | Not written | Existing reading/catch-up semantics need a focused spec |
+| local-search | Not written | Depends on approved searchable record contracts |
+| native-capture | Not written | Depends on durable save acknowledgement and physical-device gates |
+| prepare-board | Not written | Depends on approved preparation and ahead semantics |
 
 Provider boundaries own validation and persistence; UI modules never write raw
 storage. Search consumes records and never changes them. Native capture owns
