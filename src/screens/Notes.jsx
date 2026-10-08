@@ -241,9 +241,10 @@ export default function Notes() {
           />
         </label>
         <label className="block">
-          <span>Filter by tag</span>
+          <span id="notes-tag-label">Filter by tag</span>
           <select
             className="select min-h-11 w-full"
+            aria-labelledby="notes-tag-label"
             value={tag}
             onChange={(e) => setTag(e.target.value)}
           >

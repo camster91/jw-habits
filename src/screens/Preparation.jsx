@@ -122,9 +122,10 @@ export default function Preparation() {
           </h2>
           <form className="space-y-3 rounded-2xl bg-base-100 p-4" onSubmit={addMeeting}>
             <label className="block">
-              <span>Meeting type</span>
+              <span id="meeting-type-label">Meeting type</span>
               <select
                 className="select min-h-11 w-full"
+                aria-labelledby="meeting-type-label"
                 value={meetingType}
                 onChange={(e) => setMeetingType(e.target.value)}
               >
@@ -204,9 +205,10 @@ export default function Preparation() {
               />
             </label>
             <label className="block">
-              <span>Assignment type</span>
+              <span id="assignment-type-label">Assignment type</span>
               <select
                 className="select min-h-11 w-full"
+                aria-labelledby="assignment-type-label"
                 value={type}
                 onChange={(e) => setType(e.target.value)}
               >
