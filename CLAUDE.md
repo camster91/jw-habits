@@ -3,6 +3,7 @@
 **Last audited against source: 2026-10-08.**
 
 Preparation creation forms start open for an empty collection and collapse after a successful save. Saved records remain accessible; closing a form retains its draft, and Edit opens and focuses the assignment title. Failed saves keep forms and drafts open.
+Widget foreground processing reads native pending taps, flushes the current routine store durably, then acknowledges only those taps; a failed save leaves them pending. Read/ack methods require the updated native bridge.
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is

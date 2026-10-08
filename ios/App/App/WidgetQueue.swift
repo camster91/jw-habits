@@ -56,6 +56,14 @@ final class WidgetQueue {
         }
     }
 
+    func acknowledge(_ items: [WidgetCheckIn]) throws {
+        try locked { file in
+            let acknowledged = Set(items)
+            let remaining = try load(file).filter { !acknowledged.contains($0) }
+            try JSONEncoder().encode(remaining).write(to: file, options: .atomic)
+        }
+    }
+
     func drain() throws -> [WidgetCheckIn] {
         try locked { file in
             let items = try load(file)

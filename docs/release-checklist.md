@@ -84,6 +84,17 @@ See [platform matrix](platform-matrix.md) and [store release pack](store-release
 - [ ] After 03:00 the widget shows "Open Faithful Days to start today" and no ticks.
 - [ ] Light and dark: readable in both; the ring uses the chosen accent.
 
+## Widget durable handoff failure checks
+
+- [ ] With fabricated data in an isolated instrumented QA build, fail the routine
+      write after a widget tap. The native queue remains pending; relaunch/retry
+      records it once. An optimistic UI tick is not a durable acknowledgement.
+- [ ] Delay the app save, add a different widget tap, then complete the save:
+      acknowledging the earlier read preserves the later tap. Failed queue
+      acknowledgement retries without duplicate routine history.
+- [ ] Verify both updated native bridge methods exist in the signed Android/iOS
+      candidate. An older/missing bridge must not destructively drain pending taps.
+
 ## 3. Haptics
 
 - [ ] Checking in a routine gives haptic feedback; finishing everything gives the celebration

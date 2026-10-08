@@ -221,6 +221,15 @@ export function StoreProvider({ children }) {
     setStore(next);
   }, []);
 
+  // Widget taps stay queued until this snapshot has a durable acknowledgement.
+  const flush = useCallback(async () => {
+    if (readOnlyRef.current) throw new Error('Saving is paused; widget taps remain queued.');
+    const current = storeRef.current;
+    if (!validateStore(current).ok) throw new Error('Invalid routine data');
+    await durableSet(STORE_KEY, JSON.stringify(current));
+    return current;
+  }, []);
+
   // Recompute today and re-arm the 03:00 timer from the current clock, so a
   // resume after suspension or a timezone change never leaves a stale timer.
   const refreshDay = useCallback(
@@ -236,8 +245,8 @@ export function StoreProvider({ children }) {
   );
 
   const getArgs = useCallback(
-    () => ({ store: storeRef.current, update, today: todayRef.current }),
-    [update]
+    () => ({ store: storeRef.current, update, flush, today: todayRef.current }),
+    [update, flush]
   );
 
   const runForeground = useCallback(() => {

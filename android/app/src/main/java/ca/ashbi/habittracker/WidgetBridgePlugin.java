@@ -32,6 +32,27 @@ public class WidgetBridgePlugin extends Plugin {
         call.resolve();
     }
 
+    @PluginMethod
+    public void peekQueue(PluginCall call) {
+        JSObject result = new JSObject();
+        try {
+            result.put("items", new JSArray(WidgetStore.peekQueue(getContext()).toString()));
+            call.resolve(result);
+        } catch (org.json.JSONException error) {
+            call.reject("Could not read widget taps");
+        }
+    }
+
+    @PluginMethod
+    public void acknowledgeQueue(PluginCall call) {
+        JSArray items = call.getArray("items");
+        if (items == null || !WidgetStore.acknowledgeQueue(getContext(), items)) {
+            call.reject("Could not acknowledge widget taps");
+            return;
+        }
+        call.resolve();
+    }
+
     /** drainQueue() -> {items}: the queued {routine, day} check-ins; clears the queue. */
     @PluginMethod
     public void drainQueue(PluginCall call) {

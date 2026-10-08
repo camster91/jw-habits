@@ -3,7 +3,8 @@ import i18n from 'i18next';
 
 const plugin = vi.hoisted(() => ({
   setSnapshot: vi.fn(),
-  drainQueue: vi.fn(),
+  peekQueue: vi.fn(),
+  acknowledgeQueue: vi.fn(),
 }));
 const registered = vi.hoisted(() => ({ names: [] }));
 const native = vi.hoisted(() => ({ isNative: true }));
@@ -38,7 +39,7 @@ vi.mock('../utils/native.js', () => ({
 import {
   buildSnapshot,
   publishSnapshot,
-  drainWidgetCheckIns,
+  readWidgetCheckIns,
   registerWidgetBridge,
 } from './widgetBridge.js';
 import { defaultStore, addCheckIn, validateStore } from '../domain/store.js';
@@ -60,7 +61,8 @@ function provider(initial) {
   const update = vi.fn((fn) => {
     state.store = fn(state.store);
   });
-  return { state, update };
+  const flush = vi.fn(async () => state.store);
+  return { state, update, flush };
 }
 
 function sentSnapshot(call = 0) {
@@ -70,7 +72,8 @@ function sentSnapshot(call = 0) {
 beforeEach(() => {
   native.isNative = true;
   plugin.setSnapshot.mockReset().mockResolvedValue(undefined);
-  plugin.drainQueue.mockReset().mockResolvedValue({ items: [] });
+  plugin.peekQueue.mockReset().mockResolvedValue({ items: [] });
+  plugin.acknowledgeQueue.mockReset().mockResolvedValue(undefined);
   hooks.foreground = null;
   hooks.change = null;
   vi.useFakeTimers();
@@ -137,22 +140,22 @@ describe('publishSnapshot', () => {
   });
 });
 
-describe('drainWidgetCheckIns', () => {
+describe('readWidgetCheckIns', () => {
   it('returns the queued items', async () => {
-    plugin.drainQueue.mockResolvedValue({
+    plugin.peekQueue.mockResolvedValue({
       items: [
         { routine: 'dailyText', day: TODAY },
         { routine: 'bibleReading', day: TODAY },
       ],
     });
-    expect(await drainWidgetCheckIns()).toEqual([
+    expect(await readWidgetCheckIns()).toEqual([
       { routine: 'dailyText', day: TODAY },
       { routine: 'bibleReading', day: TODAY },
     ]);
   });
 
   it('drops malformed items and survives a plugin failure', async () => {
-    plugin.drainQueue.mockResolvedValue({
+    plugin.peekQueue.mockResolvedValue({
       items: [
         { routine: 'dailyText' },
         { routine: 'dailyText', day: '6 Oct 2026' },
@@ -161,10 +164,10 @@ describe('drainWidgetCheckIns', () => {
         'x',
       ],
     });
-    expect(await drainWidgetCheckIns()).toEqual([]);
-    plugin.drainQueue.mockRejectedValue(new Error('boom'));
+    expect(await readWidgetCheckIns()).toEqual([]);
+    plugin.peekQueue.mockRejectedValue(new Error('boom'));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    expect(await drainWidgetCheckIns()).toEqual([]);
+    expect(await readWidgetCheckIns()).toEqual([]);
     warn.mockRestore();
   });
 });
@@ -173,23 +176,74 @@ describe('on web', () => {
   it('both functions are no-ops', async () => {
     native.isNative = false;
     await publishSnapshot(store(), TODAY, t);
-    expect(await drainWidgetCheckIns()).toEqual([]);
+    expect(await readWidgetCheckIns()).toEqual([]);
     expect(plugin.setSnapshot).not.toHaveBeenCalled();
-    expect(plugin.drainQueue).not.toHaveBeenCalled();
+    expect(plugin.peekQueue).not.toHaveBeenCalled();
   });
 });
 
 describe('registerWidgetBridge', () => {
+  it('retains pending taps on failed save and only acknowledges after a retry succeeds', async () => {
+    const queued = [{ routine: 'dailyText', day: TODAY }];
+    plugin.peekQueue.mockImplementation(async () => ({ items: queued.slice() }));
+    plugin.acknowledgeQueue.mockImplementation(async () => {
+      queued.length = 0;
+    });
+    const off = registerWidgetBridge();
+    const { state, update, flush } = provider(store());
+    flush.mockRejectedValueOnce(new Error('storage full'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
+    expect(queued).toHaveLength(1);
+    expect(plugin.acknowledgeQueue).not.toHaveBeenCalled();
+    // In-memory optimistic activity already exists; still flush it before acknowledging.
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
+    expect(flush).toHaveBeenCalledTimes(2);
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(queued).toHaveLength(0);
+    expect(state.store.log).toHaveLength(1);
+    warn.mockRestore();
+    off();
+  });
+
+  it('does not acknowledge while saving is pending or when acknowledgement fails', async () => {
+    plugin.peekQueue.mockResolvedValue({ items: [{ routine: 'dailyText', day: TODAY }] });
+    const off = registerWidgetBridge();
+    const { state, update, flush } = provider(store());
+    let resolve;
+    flush.mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        })
+    );
+    const pending = hooks.foreground({ store: state.store, update, flush, today: TODAY });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(plugin.acknowledgeQueue).not.toHaveBeenCalled();
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
+    expect(plugin.peekQueue).toHaveBeenCalledTimes(1);
+    plugin.acknowledgeQueue.mockRejectedValueOnce(new Error('native disk full'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    resolve(state.store);
+    await pending;
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
+    expect(flush).toHaveBeenCalledTimes(2);
+    expect(state.store.log).toHaveLength(1);
+    warn.mockRestore();
+    off();
+  });
+
   it('applies 2 drained check-ins as 2 log entries, then publishes', async () => {
-    plugin.drainQueue.mockResolvedValue({
+    plugin.peekQueue.mockResolvedValue({
       items: [
         { routine: 'dailyText', day: TODAY },
         { routine: 'bibleReading', day: TODAY },
       ],
     });
     const off = registerWidgetBridge();
-    const { state, update } = provider(store());
-    await hooks.foreground({ store: state.store, update, today: TODAY });
+    const { state, update, flush } = provider(store());
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
 
     expect(state.store.log).toHaveLength(2);
     expect(state.store.log).toEqual([
@@ -207,15 +261,15 @@ describe('registerWidgetBridge', () => {
       day: TODAY,
       value: { chapters: [0, 1] },
     });
-    plugin.drainQueue.mockResolvedValue({
+    plugin.peekQueue.mockResolvedValue({
       items: [
         { routine: 'ministry', day: TODAY },
         { routine: 'bibleReading', day: TODAY },
       ],
     });
     const off = registerWidgetBridge();
-    const { state, update } = provider(existing);
-    await hooks.foreground({ store: state.store, update, today: TODAY });
+    const { state, update, flush } = provider(existing);
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
 
     expect(update).not.toHaveBeenCalled();
     expect(state.store.log).toEqual([
@@ -227,15 +281,15 @@ describe('registerWidgetBridge', () => {
 
   it("applies yesterday's tap to yesterday when the app opens after 03:00", async () => {
     const yesterday = '2026-10-05';
-    plugin.drainQueue.mockResolvedValue({
+    plugin.peekQueue.mockResolvedValue({
       items: [
         { routine: 'dailyText', day: yesterday },
         { routine: 'bibleReading', day: yesterday },
       ],
     });
     const off = registerWidgetBridge();
-    const { state, update } = provider(store());
-    await hooks.foreground({ store: state.store, update, today: TODAY });
+    const { state, update, flush } = provider(store());
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
     expect(state.store.log).toEqual([
       { routine: 'dailyText', day: yesterday, value: true },
       { routine: 'bibleReading', day: yesterday, value: true },
@@ -244,7 +298,7 @@ describe('registerWidgetBridge', () => {
   });
 
   it('drops taps more than 3 days old, before history, in the future, or repeated', async () => {
-    plugin.drainQueue.mockResolvedValue({
+    plugin.peekQueue.mockResolvedValue({
       items: [
         { routine: 'dailyText', day: '2026-10-01' }, // 5 days old
         { routine: 'familyWorship', day: '2026-10-07' }, // tomorrow
@@ -253,36 +307,41 @@ describe('registerWidgetBridge', () => {
       ],
     });
     const off = registerWidgetBridge();
-    const { state, update } = provider(store());
-    await hooks.foreground({ store: state.store, update, today: TODAY });
+    const { state, update, flush } = provider(store());
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
     expect(state.store.log).toEqual([{ routine: 'personalStudy', day: '2026-10-03', value: true }]);
 
     // A 3-day-old tap from before the store's history began is dropped too.
     const young = provider(defaultStore('2026-10-05', 'en'));
-    plugin.drainQueue.mockResolvedValue({ items: [{ routine: 'dailyText', day: '2026-10-04' }] });
-    await hooks.foreground({ store: young.state.store, update: young.update, today: TODAY });
+    plugin.peekQueue.mockResolvedValue({ items: [{ routine: 'dailyText', day: '2026-10-04' }] });
+    await hooks.foreground({
+      store: young.state.store,
+      update: young.update,
+      flush: young.flush,
+      today: TODAY,
+    });
     expect(young.update).not.toHaveBeenCalled();
     off();
   });
 
   it("does not overwrite yesterday's existing entry", async () => {
     const y = { routine: 'bibleReading', day: '2026-10-05', value: { chapters: [4] } };
-    plugin.drainQueue.mockResolvedValue({
+    plugin.peekQueue.mockResolvedValue({
       items: [{ routine: 'bibleReading', day: '2026-10-05' }],
     });
     const off = registerWidgetBridge();
-    const { state, update } = provider(addCheckIn(store(), y));
-    await hooks.foreground({ store: state.store, update, today: TODAY });
+    const { state, update, flush } = provider(addCheckIn(store(), y));
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
     expect(update).not.toHaveBeenCalled();
     expect(state.store.log).toEqual([y]);
     off();
   });
 
   it("a widget Bible check-in survives the next day's hold-to-check", async () => {
-    plugin.drainQueue.mockResolvedValue({ items: [{ routine: 'bibleReading', day: TODAY }] });
+    plugin.peekQueue.mockResolvedValue({ items: [{ routine: 'bibleReading', day: TODAY }] });
     const off = registerWidgetBridge();
-    const { state, update } = provider(store());
-    await hooks.foreground({ store: state.store, update, today: TODAY });
+    const { state, update, flush } = provider(store());
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
     const tomorrow = '2026-10-07';
     // Today's hold-to-check, then undo, then the stepper: none may touch yesterday.
     const held = setChaptersRead(state.store, tomorrow, portionSize(state.store, tomorrow));
@@ -298,14 +357,14 @@ describe('registerWidgetBridge', () => {
 
   it('every drained store passes validateStore', async () => {
     const days = ['2026-10-02', '2026-10-03', '2026-10-05', TODAY, '2026-10-07'];
-    plugin.drainQueue.mockResolvedValue({
+    plugin.peekQueue.mockResolvedValue({
       items: days.flatMap((day) =>
         ['dailyText', 'bibleReading', 'ministry'].map((routine) => ({ routine, day }))
       ),
     });
     const off = registerWidgetBridge();
-    const { state, update } = provider(store());
-    await hooks.foreground({ store: state.store, update, today: TODAY });
+    const { state, update, flush } = provider(store());
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
     expect(update).toHaveBeenCalledTimes(1);
     expect(validateStore(state.store).ok).toBe(true);
     off();
@@ -313,8 +372,8 @@ describe('registerWidgetBridge', () => {
 
   it('publishes on foreground even when the queue is empty', async () => {
     const off = registerWidgetBridge();
-    const { state, update } = provider(store());
-    await hooks.foreground({ store: state.store, update, today: TODAY });
+    const { state, update, flush } = provider(store());
+    await hooks.foreground({ store: state.store, update, flush, today: TODAY });
     expect(update).not.toHaveBeenCalled();
     expect(plugin.setSnapshot).toHaveBeenCalledTimes(1);
     off();
