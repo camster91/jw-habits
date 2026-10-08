@@ -100,7 +100,8 @@ See [platform matrix](platform-matrix.md) and [store release pack](store-release
       new items (or none, if there are none).
 - [ ] Tapping the badge opens jw.org's What's New page externally and clears the badge.
 - [ ] Offline or with the feature off in Settings: no badge and no error.
-- [ ] A second foreground within 24 h makes no request.
+- [ ] After a successful non-empty feed check, a second foreground within 24 h makes no request.
+      Failed/empty checks may retry on a later foreground; verify the feature-off switch stops requests.
 
 ## 6. Accent and theme
 

@@ -32,7 +32,7 @@ Bible book names and chapter counts are public facts (`domain/bible.js`); encour
 carry scripture *references* as data, never verse text. Link buttons open jw.org / JW Library
 URLs built from those facts, or a link the user typed (`links` in the store, validated by
 `isSafeHttpUrl`). The one network call is the What's New feed check (dates and counts only, at
-most daily, can be switched off in Settings).
+least 24 hours after a successful check; failed/empty checks may retry on later foregrounds; can be switched off in Settings).
 
 Do not add bundled third-party content. If a feature seems to need some, it needs a
 user-editable slot instead.

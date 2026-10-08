@@ -1,6 +1,6 @@
 /**
- * Once-a-day check of jw.org's official RSS feed through native HTTP (the
- * feed sends no CORS header, so a WebView fetch would fail). Best-effort:
+ * Checks jw.org's RSS feed through native HTTP, waiting 24 hours after success.
+ * The feed sends no CORS header, so a WebView fetch would fail. Best-effort:
  * any failure, including an unparseable or empty response, resolves null and
  * leaves lastCheck alone so the next foreground retries.
  */
@@ -61,7 +61,7 @@ export async function checkWhatsNew(store, now, locale) {
 
 let inFlight = false;
 
-/** Check on every foreground; the check itself rate-limits to once a day. */
+/** Check on foreground; successful checks wait 24 hours, failures may retry. */
 export function registerWhatsNewCheck() {
   return onForeground(async ({ store, update }) => {
     if (inFlight) return;
