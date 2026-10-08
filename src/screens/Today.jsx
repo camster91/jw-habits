@@ -434,6 +434,7 @@ export default function Today({ onOpenSettings = () => {} }) {
             </p>
           </div>
         </header>
+        <p className="text-sm text-base-content/70">{t('fd.today.checkHint')}</p>
 
         {fresh && <p className="text-base-content/80">{t(`fd.today.${fresh}`)}</p>}
 

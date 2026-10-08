@@ -84,6 +84,18 @@ describe('Onboarding', () => {
     expect(current).toEqual({ ...initial, onboardingDone: true });
   });
 
+  it('starts directly from welcome without resetting existing history or asking for permission', () => {
+    platform.isNative = true;
+    const initial = initialStore();
+    initial.labels.dailyText = 'Morning reading';
+    initial.log = [{ day: TODAY, routine: 'dailyText', value: true }];
+    renderOnboarding(initial);
+    click('Start with defaults');
+    expect(screen.getByTestId('today')).toBeInTheDocument();
+    expect(current).toEqual({ ...initial, onboardingDone: true });
+    expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
+  });
+
   it('announces the step and allows going back', () => {
     renderOnboarding();
     click('Get started');
@@ -247,7 +259,7 @@ describe('Onboarding', () => {
         'Faithful Days is an independent app. It is not affiliated with, endorsed by, or sponsored by Watch Tower Bible and Tract Society or jw.org, and contains no content from jw.org.'
       )
     ).toBeInTheDocument();
-    expect(screen.getByText(/Your routines stay on this device/)).toBeInTheDocument();
+    expect(screen.getByText(/Routines, plans and notes stay on this device/)).toBeInTheDocument();
   });
 
   it('setting copy never says missed, broke, failed or lost', () => {

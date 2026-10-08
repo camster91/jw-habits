@@ -103,11 +103,9 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
           } ${done ? 'opacity-100' : 'opacity-60'}`}
           style={{ transitionDuration: holding ? `${holdMs}ms` : '150ms' }}
         />
-        <Check
-          aria-hidden="true"
-          className={`relative h-5 w-5 ${done ? 'text-white' : 'text-[var(--fd-accent-text)] opacity-40'}`}
-          strokeWidth={3}
-        />
+        {filled && (
+          <Check aria-hidden="true" className="relative h-5 w-5 text-white" strokeWidth={3} />
+        )}
       </button>
       <span id={hintId} className="sr-only">
         {done ? t('fd.today.tapToUndo') : t('fd.today.holdToCheck')}

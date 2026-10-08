@@ -73,6 +73,15 @@ export default function Onboarding() {
         </h1>
         <Body store={draft} change={setDraft} today={today} askPermission preview />
         <div className="flex flex-wrap items-center gap-2 pt-2">
+          {index === 0 && (
+            <button
+              type="button"
+              className="btn btn-outline min-h-11"
+              onClick={() => update((s) => ({ ...s, onboardingDone: true }))}
+            >
+              {t('fd.onboarding.welcome.defaults')}
+            </button>
+          )}
           {index > 0 && (
             <button
               type="button"
