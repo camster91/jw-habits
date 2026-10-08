@@ -326,6 +326,12 @@ export default function PlanTrail() {
       )}
 
       <div style={planStyle(plan.colour)} className="rounded-3xl bg-base-100 px-2 py-4">
+        <Link
+          className="inline-flex min-h-11 items-center px-2 underline"
+          to={`/notes?new=1&context=plan&id=${encodeURIComponent(plan.id)}`}
+        >
+          Keep a note about this plan
+        </Link>
         {total > 0 ? (
           <Trail plan={plan} onOpen={setOpen} />
         ) : (

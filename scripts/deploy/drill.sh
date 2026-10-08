@@ -14,6 +14,9 @@ for attempt in $(seq 1 20); do
   sleep 1
 done
 original=$(docker inspect --format '{{.Id}}' "$PROJECT_NAME")
+for path in / /notes /release.json /manifest.webmanifest; do
+  curl -fsSI "$PUBLIC_URL$path" | grep -qi '^cache-control:.*no-cache'
+done
 assert_restored() {
   [[ "$(docker inspect --format '{{.Id}}' "$PROJECT_NAME")" == "$original" ]]
   [[ "$(docker inspect --format '{{.State.Running}}' "$PROJECT_NAME")" == true ]]

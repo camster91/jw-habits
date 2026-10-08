@@ -6,6 +6,7 @@ import { deleteStep, moveStep, setStepDone, updateStep } from '../../domain/plan
 import { MAX_NOTE, MAX_TITLE } from '../../domain/ids.js';
 import { isJwFinderLink, linkLabel } from '../../domain/jwlinks.js';
 import { openLink } from '../../native/openLink.js';
+import { Link } from 'react-router-dom';
 import { isSafeHttpUrl } from '../../utils/safeUrls.js';
 import { planStyle } from '../../theme/planColours.js';
 import Sheet from './Sheet.jsx';
@@ -153,6 +154,14 @@ export default function StepSheet({ planId, stepId, onClose, fallbackFocus }) {
         )}
 
         {step.link && <LinkButton url={step.link} />}
+        {title === step.title && link === (step.link ?? '') && note === (step.note ?? '') && (
+          <Link
+            className="inline-flex min-h-11 items-center underline"
+            to={`/notes?new=1&context=step&id=${encodeURIComponent(step.id)}`}
+          >
+            Keep a separate note about this step
+          </Link>
+        )}
 
         {readOnly ? (
           step.note && <p className="whitespace-pre-wrap break-words">{step.note}</p>

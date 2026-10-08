@@ -23,6 +23,8 @@ it('offers a recovery copy and requires acknowledgement before scoped reset', ()
   fireEvent.click(screen.getByRole('checkbox'));
   fireEvent.click(reset);
   expect(confirm).toHaveBeenCalledExactlyOnceWith(
-    expect.stringContaining('Existing recovery copies and other site data will remain')
+    expect.stringContaining(
+      'Notes, meeting preparation, assignments, recovery copies and other site data will remain'
+    )
   );
 });

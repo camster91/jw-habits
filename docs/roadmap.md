@@ -18,7 +18,7 @@
 | Initial release language | Shipped | #259: English-only UI/document language; legacy language preferences preserved |
 | French/Spanish app UI | Deferred for initial release | Cameron / #46; revisit after current store release and fluent review; native widget chrome is separately localized |
 | Human usability/household research | Blocked | #199 / #252: recruit consenting participants; do not fabricate results |
-| Prepare ahead and assignments | Active | #263; dated meeting preparation and assignment checklists implemented in v5.2; reading pace and device validation remain |
+| Prepare ahead and assignments | Active | #263; dated meeting preparation and assignment checklists implemented in v5.2; year-plan pace comparison and actual activity dates implemented; device validation remains |
 | Second brain / capture | Active | #264; local notes/tags/search implemented in v5.2; native share extension after device verification |
 | Retire live web app | Blocked by store launch | #255: only after both store listings are live |
 | Remote accounts, sync, analytics, congregation content | Deferred | No authorization/product contract; revisit only with an explicit privacy-reviewed spec |

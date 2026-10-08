@@ -140,12 +140,12 @@ describe('Today: the list', () => {
     expect(checkButton('Daily text')).toBeInTheDocument();
   });
 
-  it('undoing Bible reading takes back the catch-up it made', () => {
+  it('undoing extra Bible reading leaves yesterday untouched', () => {
     renderToday(makeStore());
     const stepper = screen.getByRole('group', { name: 'Chapters read today' });
     fireEvent.click(within(stepper).getByRole('button', { name: 'One more' }));
     fireEvent.click(within(stepper).getByRole('button', { name: 'One more' }));
-    expect(entry('bibleReading', '2026-10-05').value).toEqual({ chapters: [] });
+    expect(entry('bibleReading', '2026-10-05')).toBeUndefined();
     fireEvent.click(screen.getByRole('button', { name: 'Bible reading', pressed: true }));
     expect(entry('bibleReading')).toBeUndefined();
     expect(entry('bibleReading', '2026-10-05')).toBeUndefined();
@@ -157,14 +157,14 @@ describe('Today: the list', () => {
     expect(entry('bibleReading').value).toEqual({ chapters: [chapterIndex(19, 3)] });
   });
 
-  it('the Bible stepper records chapters read and catches up a due yesterday', () => {
+  it('the Bible stepper records extra chapters on today', () => {
     renderToday(makeStore());
     const stepper = screen.getByRole('group', { name: 'Chapters read today' });
     fireEvent.click(within(stepper).getByRole('button', { name: 'One more' }));
     expect(entry('bibleReading').value).toEqual({ chapters: [chapterIndex(19, 3)] });
     fireEvent.click(within(stepper).getByRole('button', { name: 'One more' }));
     expect(entry('bibleReading').value.chapters).toHaveLength(2);
-    expect(entry('bibleReading', '2026-10-05')).toBeDefined();
+    expect(entry('bibleReading', '2026-10-05')).toBeUndefined();
     expect(screen.getByText('Psalms 3–4')).toBeInTheDocument();
     expect(within(stepper).getByText('2')).toBeInTheDocument();
   });

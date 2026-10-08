@@ -104,6 +104,24 @@ export function portionSize(store, day) {
   return Math.floor(((k + 1) * TOTAL) / YEAR_DAYS) - Math.floor((k * TOTAL) / YEAR_DAYS);
 }
 
+/** Counts dated chapter records against the selected year plan, across cycles.
+ * Legacy bare check-ins/empty catch-up markers have no measurable chapters.
+ * Own-pace readers get recorded counts with no invented target or lateness.
+ */
+export function readingPace(store, day) {
+  const recorded = (store.log ?? [])
+    .filter((e) => e.routine === 'bibleReading' && e.day >= store.reading.startedOn && e.day <= day)
+    .reduce((n, e) => n + (Array.isArray(e.value?.chapters) ? e.value.chapters.length : 0), 0);
+  if (store.reading.plan === 'ownPace') return { recorded, planned: null, daysAhead: null };
+  const elapsed = Math.max(0, dayNumber(day) - dayNumber(store.reading.startedOn) + 1);
+  const planned = Math.floor((elapsed * TOTAL) / YEAR_DAYS);
+  return {
+    recorded,
+    planned,
+    daysAhead: Math.max(0, Math.floor((recorded * YEAR_DAYS) / TOTAL) - elapsed),
+  };
+}
+
 // Global chapter indices from bibleReading log entries. `true` values
 // (legacy days with no chapter info) contribute nothing.
 function loggedChapters(log) {

@@ -261,7 +261,7 @@ Settings. Two-key writes are not atomic: a workspace failure attempts routine
 rollback and reports failure even if rollback fails. Recovery copies contain
 private plain text and are never pruned as diagnostics.
 
-Remaining #263/#264 work: reading-pace comparison, cross-content search and
-native share transport. OS capture extensions, replay receipts and signing are
+Remaining #263/#264 work: native share transport after first-device verification.
+Local year-plan pace comparison, extra-reading activity dates and cross-content search are implemented. OS capture extensions, replay receipts and signing are
 not claimed by a local Notes screen or an unsigned compile. Physical devices,
 account/signing, assistive technology and household research remain release gates.

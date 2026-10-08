@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWorkspace } from '../data/useWorkspace.js';
 import { useStore } from '../data/useStore.js';
-import { putNote, searchNotes } from '../domain/workspace.js';
+import { putNote, searchNotes, searchRelated } from '../domain/workspace.js';
 import { saveBackup } from '../utils/backup.js';
 import Sheet from '../components/plans/Sheet.jsx';
 
@@ -232,7 +232,7 @@ export default function Notes() {
           New note
         </button>
         <label className="block">
-          <span>Search notes</span>
+          <span>Search notes and plans</span>
           <input
             type="search"
             className="input min-h-11 w-full"
@@ -282,6 +282,25 @@ export default function Notes() {
             </li>
           ))}
         </ul>
+        {!tag && searchRelated(workspace, store, query).length > 0 && (
+          <section aria-labelledby="related-results">
+            <h2 id="related-results" className="text-xl font-semibold">
+              Plans and preparation
+            </h2>
+            <ul>
+              {searchRelated(workspace, store, query).map((r) => (
+                <li key={r.key}>
+                  <Link
+                    className="block min-h-11 rounded-2xl bg-base-100 p-3 my-2 break-words underline"
+                    to={r.url}
+                  >
+                    {r.title} · {r.kind}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {ready && searchNotes(workspace, query, tag).length === 0 && (
           <p>
             {workspace.notes.length

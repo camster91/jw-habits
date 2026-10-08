@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars -- JSX imports and test harness */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { useState } from 'react';
@@ -9,6 +9,7 @@ import { emptyWorkspace, putNote, MEETING_PARTS } from '../domain/workspace.js';
 import { defaultStore } from '../domain/store.js';
 import Notes from './Notes.jsx';
 import Preparation from './Preparation.jsx';
+import Today from './Today.jsx';
 import { saveBackup } from '../utils/backup.js';
 vi.mock('../utils/backup.js', () => ({ saveBackup: vi.fn(async () => {}) }));
 const today = '2026-10-08';
@@ -46,6 +47,7 @@ function Harness({
 }
 const field = (name, value) => fireEvent.change(screen.getByLabelText(name), { target: { value } });
 const button = (name) => fireEvent.click(screen.getByRole('button', { name, exact: true }));
+afterEach(() => vi.useRealTimers());
 beforeEach(() => {
   fail = false;
   vi.clearAllMocks();
@@ -66,9 +68,9 @@ describe('Notes UI', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(current.notes[0].context).toEqual({ kind: 'day', id: today });
     expect(screen.getByText(`Recorded on ${today}`)).toBeInTheDocument();
-    field('Search notes', 'missing');
+    field('Search notes and plans', 'missing');
     expect(screen.getByText(/No notes match/)).toBeInTheDocument();
-    field('Search notes', '');
+    field('Search notes and plans', '');
     field('Filter by tag', 'study');
     button('Question');
     field('Title', 'Updated');
@@ -224,4 +226,75 @@ describe('Preparation UI', () => {
     button('Add assignment');
     await waitFor(() => expect(screen.getByLabelText('Assignment title')).toHaveValue('Draft'));
   });
+});
+
+it.each(['midweek', 'weekend'])(
+  'Today uses explicit %s meeting preparation without recording activity',
+  (type) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 8, 10));
+    const initial = {
+      ...emptyWorkspace(),
+      meetings: [
+        { id: 'past', type, date: '2026-10-01', prepared: [] },
+        { id: 'future', type, date: today, prepared: [MEETING_PARTS[type][0]] },
+        { id: 'later', type, date: '2026-10-15', prepared: [] },
+      ],
+    };
+    render(
+      <Harness initial={initial}>
+        <Today />
+      </Harness>
+    );
+    expect(screen.getByRole('link', { name: 'Open preparation checklists' })).toHaveAttribute(
+      'href',
+      '/plans/preparation'
+    );
+    expect(
+      screen.getByText(new RegExp(`${today}.*1 of ${MEETING_PARTS[type].length}`))
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Meeting preparation', pressed: false })
+    ).toBeInTheDocument();
+  }
+);
+
+it('finds a related plan step and retains context labels for available records', () => {
+  const store = {
+    ...defaultStore(today, 'en'),
+    plans: [{ id: 'p', title: 'James', steps: [{ id: 's', title: 'Chapter 1', note: 'Wisdom' }] }],
+  };
+  const initial = {
+    ...emptyWorkspace(),
+    meetings: [{ id: 'm', type: 'weekend', date: today, prepared: [] }],
+    assignments: [{ id: 'a', title: 'Talk', type: 'Talk', date: today, details: '', tasks: [] }],
+  };
+  for (const [kind, id] of [
+    ['plan', 'p'],
+    ['step', 's'],
+    ['meeting', 'm'],
+    ['assignment', 'a'],
+  ])
+    Object.assign(
+      initial,
+      putNote(
+        initial,
+        { title: `Note ${kind}`, body: '', tags: [], links: [], context: { kind, id } },
+        today
+      )
+    );
+  render(
+    <Harness initial={initial} store={store}>
+      <Notes />
+    </Harness>
+  );
+  expect(screen.getByText('plan: James')).toBeInTheDocument();
+  expect(screen.getByText('step: Chapter 1')).toBeInTheDocument();
+  expect(screen.getByText('assignment: Talk')).toBeInTheDocument();
+  expect(screen.getByText(`meeting: weekend meeting · ${today}`)).toBeInTheDocument();
+  field('Search notes and plans', 'wisdom');
+  expect(screen.getByRole('link', { name: 'Chapter 1 · Plan step' })).toHaveAttribute(
+    'href',
+    '/plans/p'
+  );
 });

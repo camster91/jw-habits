@@ -92,18 +92,18 @@ describe('setChaptersRead', () => {
     expect(entry(s, 'bibleReading', TUE)).toBeUndefined();
   });
 
-  it('fills in a skipped yesterday when two portions are read', () => {
+  it('keeps extra reading on its actual day without inventing yesterday', () => {
     const s = setChaptersRead(base(), TUE, 2);
-    expect(entry(s, 'bibleReading', '2026-10-05')).toEqual({
-      routine: 'bibleReading',
-      day: '2026-10-05',
-      value: { chapters: [] },
-    });
+    expect(entry(s, 'bibleReading', '2026-10-05')).toBeUndefined();
     expect(entry(s, 'bibleReading', TUE).value).toEqual({ chapters: [ps(3), ps(4)] });
   });
 
   it('takes the catch-up back when today drops below two portions', () => {
-    const two = setChaptersRead(base(), TUE, 2);
+    const two = setChaptersRead(
+      base({ log: [{ routine: 'bibleReading', day: '2026-10-05', value: { chapters: [] } }] }),
+      TUE,
+      2
+    );
     expect(entry(setChaptersRead(two, TUE, 1), 'bibleReading', '2026-10-05')).toBeUndefined();
     expect(entry(setChaptersRead(two, TUE, 0), 'bibleReading', '2026-10-05')).toBeUndefined();
   });
@@ -143,11 +143,11 @@ describe('setChaptersRead', () => {
     expect(entry(s, 'bibleReading', '2026-10-05')).toBeUndefined();
   });
 
-  it('catches up only when yesterday was due', () => {
+  it('never invents activity even when yesterday was due', () => {
     // One reading day a week.
     const weekly = withScheduleChange(base(), '2026-09-01', { bibleDaysPerWeek: 1 });
     // Nothing yet this week, so Monday was due.
-    expect(entry(setChaptersRead(weekly, TUE, 2), 'bibleReading', '2026-10-05')).toBeDefined();
+    expect(entry(setChaptersRead(weekly, TUE, 2), 'bibleReading', '2026-10-05')).toBeUndefined();
     // Friday met the week's target, so Saturday was not due.
     const met = { ...weekly, log: [{ routine: 'bibleReading', day: '2026-10-09', value: true }] };
     expect(

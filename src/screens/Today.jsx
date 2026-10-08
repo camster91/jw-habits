@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useWorkspace } from '../data/useWorkspace.js';
+import { MEETING_PARTS } from '../domain/workspace.js';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../data/useStore.js';
-import { BOOKS, finderUrl, portionSize } from '../domain/bible.js';
+import { BOOKS, finderUrl, portionSize, readingPace } from '../domain/bible.js';
 import { dueToday, isDone } from '../domain/routines.js';
 import { scheduleOn } from '../domain/schedule.js';
 import { addCheckIn, labelFor, removeCheckIn } from '../domain/store.js';
-import { weekStart } from '../domain/day.js';
+import { addDays, weekStart } from '../domain/day.js';
 import { agendaFor } from '../domain/agenda.js';
 import { progress, setActiveStudy } from '../domain/plans.js';
 import {
@@ -116,6 +119,12 @@ function ScriptureLink({ label, url }) {
 export default function Today({ onOpenSettings = () => {} }) {
   const { t, i18n } = useTranslation();
   const { store, update, today } = useStore();
+  const workspaceState = useWorkspace();
+  const nextMeeting = workspaceState?.ready
+    ? workspaceState.workspace.meetings
+        .filter((m) => m.date >= today)
+        .sort((a, b) => a.date.localeCompare(b.date))[0]
+    : null;
   const now = useNow();
   const [line, encourage] = useEncouragement(store.tone, today, t);
   const [expanded, setExpanded] = useState(false);
@@ -139,6 +148,7 @@ export default function Today({ onOpenSettings = () => {} }) {
 
   const language = i18n.language;
   const schedule = scheduleOn(store, today);
+  const pace = readingPace(store, today);
   const due = dueToday(store, today);
   const label = (id) => labelFor(store, id, t);
   const wrapping = isWrapUpTime(store, now);
@@ -260,6 +270,8 @@ export default function Today({ onOpenSettings = () => {} }) {
   const detailOf = (id) => {
     if (id === 'bibleReading') return chaptersLabel(todaysChapters(store, today));
     if (id === 'meetingPrep') {
+      if (nextMeeting)
+        return `${nextMeeting.type === 'midweek' ? 'Midweek meeting' : 'Weekend meeting'} · ${nextMeeting.date} · ${nextMeeting.prepared.length} of ${MEETING_PARTS[nextMeeting.type].length} sections prepared`;
       const day = new Intl.DateTimeFormat(language, { weekday: 'long' }).format(
         dateOf(meetingDayFor(store, today))
       );
@@ -293,10 +305,17 @@ export default function Today({ onOpenSettings = () => {} }) {
   // all month so the studies count stays editable.
   const month = ministryEntry(store, today);
   const sharedEarlier = month?.value.shared === true && month.day < today;
+  const visibleDue =
+    nextMeeting &&
+    nextMeeting.date <= addDays(today, 7) &&
+    schedule.enabled.meetingPrep &&
+    !due.includes('meetingPrep')
+      ? [...due, 'meetingPrep']
+      : due;
   const rows =
     schedule.enabled.ministry && sharedEarlier && !due.includes('ministry')
-      ? [...due, 'ministry']
-      : due;
+      ? [...visibleDue, 'ministry']
+      : visibleDue;
 
   const renderRow = (id) => {
     if (id === 'ministry') {
@@ -363,13 +382,33 @@ export default function Today({ onOpenSettings = () => {} }) {
           </p>
         )}
         {agenda.length > 0 && <TodayAgenda rows={agenda} />}
+        {id === 'meetingPrep' && workspaceState && (
+          <Link
+            className="inline-flex min-h-11 items-center underline text-sm"
+            to="/plans/preparation"
+          >
+            Open preparation checklists
+          </Link>
+        )}
         {id === 'bibleReading' && (
-          <Stepper
-            label={t('fd.today.chaptersRead')}
-            value={chaptersReadOn(store, today)}
-            max={Math.max(3, portionSize(store, today) * 3)}
-            onChange={setChapters}
-          />
+          <>
+            <Stepper
+              label={t('fd.today.chaptersRead')}
+              value={chaptersReadOn(store, today)}
+              max={Math.max(3, portionSize(store, today) * 3)}
+              onChange={setChapters}
+            />
+            <p className="text-sm text-base-content/70">
+              {pace.planned === null
+                ? t('fd.today.readingPaceOwn', pace)
+                : t('fd.today.readingPaceYear', pace)}
+            </p>
+            {pace.daysAhead > 0 && (
+              <p className="text-sm text-base-content/70">
+                {t('fd.today.readingAhead', { count: pace.daysAhead })}
+              </p>
+            )}
+          </>
         )}
       </RoutineRow>
     );
@@ -433,7 +472,7 @@ export default function Today({ onOpenSettings = () => {} }) {
           )}
         </div>
 
-        {schedule.enabled.meetingPrep && schedule.meetingDays.length === 0 && (
+        {schedule.enabled.meetingPrep && schedule.meetingDays.length === 0 && !nextMeeting && (
           <MeetingDaysCard onOpen={onOpenSettings} />
         )}
 

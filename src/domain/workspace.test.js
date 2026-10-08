@@ -4,6 +4,7 @@ import {
   validateWorkspace,
   putNote,
   searchNotes,
+  searchRelated,
   exportBundle,
   importBundle,
   MEETING_PARTS,
@@ -185,4 +186,29 @@ describe('workspace records', () => {
       ).ok
     ).toBe(false);
   });
+});
+
+it('searches plans, short step notes, dated meetings and assignment checklists locally', () => {
+  const workspace = { ...emptyWorkspace(), meetings: [meeting], assignments: [assignment] };
+  const store = {
+    plans: [
+      {
+        id: 'p1',
+        title: 'James',
+        steps: [
+          { id: 's1', title: 'Chapter 1', note: 'Wisdom' },
+          { id: 's2', title: 'Chapter 2', note: null },
+        ],
+      },
+    ],
+  };
+  expect(searchRelated(workspace, store, '')).toEqual([]);
+  expect(searchRelated(workspace, store, 'JAMES')).toHaveLength(3);
+  expect(searchRelated(workspace, store, 'wisdom')[0]).toMatchObject({
+    kind: 'Plan step',
+    url: '/plans/p1',
+  });
+  expect(searchRelated(workspace, store, 'midweek 2026-10-08')[0].kind).toBe('Meeting preparation');
+  expect(searchRelated(workspace, store, 'practise')[0].kind).toBe('Assignment');
+  expect(searchRelated(workspace, store, 'missing')).toEqual([]);
 });
