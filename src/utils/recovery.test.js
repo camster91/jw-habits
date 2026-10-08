@@ -7,11 +7,13 @@ describe('scoped recovery', () => {
     localStorage.setItem('jw-habits-v2', '{ damaged');
     localStorage.setItem('jw-habits-v2-backup', 'original');
     localStorage.setItem('other-site-data', 'keep');
+    localStorage.setItem('faithful-days-workspace-v1', 'keep notes');
     expect(await recoveryCopy()).toBe('{ damaged');
     await resetCurrentStore('en');
     expect(validateStore(JSON.parse(localStorage.getItem('jw-habits-v2'))).ok).toBe(true);
     expect(localStorage.getItem('jw-habits-v2-backup')).toBe('original');
     expect(localStorage.getItem('other-site-data')).toBe('keep');
+    expect(localStorage.getItem('faithful-days-workspace-v1')).toBe('keep notes');
   });
   it.each(['/plans/example', '/progress/badges'])(
     'refreshes only app-owned caches and workers from nested route %s',

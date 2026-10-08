@@ -5,6 +5,7 @@ import {
   chapterAt,
   nextChapters,
   portionSize,
+  readingPace,
   booksCompleted,
   finderUrl,
 } from './bible.js';
@@ -198,5 +199,47 @@ describe('finderUrl', () => {
     expect(finderUrl('es', 1, 1)).toContain('wtlocale=S');
     expect(finderUrl('fr', 66, 22)).toContain('wtlocale=F&prefer=lang&bible=66022001');
     expect(finderUrl('de', 1, 1)).toContain('wtlocale=E');
+  });
+});
+
+describe('reading pace', () => {
+  it('shows actual own-pace chapter counts without a target', () => {
+    expect(readingPace({ reading: reading(), log: readLog(0, 1) }, '2026-01-01')).toEqual({
+      recorded: 2,
+      planned: null,
+      daysAhead: null,
+    });
+    expect(readingPace({ reading: reading() }, '2026-01-01').recorded).toBe(0);
+  });
+  it('compares dated extra reading against the year pace without rewriting dates', () => {
+    const store = {
+      reading: reading({ plan: 'year' }),
+      log: readLog(...Array.from({ length: 14 }, (_, i) => i)),
+    };
+    expect(readingPace(store, '2026-01-01')).toEqual({ recorded: 14, planned: 3, daysAhead: 3 });
+    expect(store.log).toHaveLength(1);
+    expect(store.log[0].day).toBe('2026-01-01');
+  });
+  it('ignores pre-plan, future, other-routine and chapterless activity', () => {
+    const store = {
+      reading: reading({ plan: 'year' }),
+      log: [
+        ...readLog(0, 1, 2),
+        { routine: 'bibleReading', day: '2025-12-31', value: { chapters: [3] } },
+        { routine: 'bibleReading', day: '2026-01-02', value: { chapters: [4] } },
+        { routine: 'dailyText', day: '2026-01-01', value: true },
+        { routine: 'bibleReading', day: '2026-01-01', value: true },
+        { routine: 'bibleReading', day: '2026-01-01', value: { chapters: [] } },
+      ],
+    };
+    expect(readingPace(store, '2026-01-01')).toEqual({ recorded: 3, planned: 3, daysAhead: 0 });
+    expect(readingPace(store, '2025-12-30')).toEqual({ recorded: 0, planned: 0, daysAhead: 0 });
+  });
+  it('uses calendar days across annual cycles and restarts at a changed start day', () => {
+    const store = { reading: reading({ plan: 'year' }), log: [] };
+    expect(readingPace(store, '2026-12-31').planned).toBe(1189);
+    expect(readingPace(store, '2027-12-31').planned).toBe(2378);
+    store.reading.startedOn = '2027-12-31';
+    expect(readingPace(store, '2027-12-31').planned).toBe(3);
   });
 });

@@ -122,6 +122,45 @@ export function searchNotes(workspace, query, tag = '') {
     .sort((a, b) => b.updatedOn.localeCompare(a.updatedOn));
 }
 
+/** Search related local records without mutating them or indexing remotely. */
+export function searchRelated(workspace, store, query) {
+  const words = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  const records = [
+    ...store.plans.flatMap((p) => [
+      {
+        key: `plan-${p.id}`,
+        title: p.title,
+        text: p.title,
+        kind: 'Study/family plan',
+        url: `/plans/${encodeURIComponent(p.id)}`,
+      },
+      ...p.steps.map((s) => ({
+        key: `step-${s.id}`,
+        title: s.title,
+        text: `${p.title} ${s.title} ${s.note ?? ''}`,
+        kind: 'Plan step',
+        url: `/plans/${encodeURIComponent(p.id)}`,
+      })),
+    ]),
+    ...workspace.meetings.map((m) => ({
+      key: `meeting-${m.id}`,
+      title: `${m.type} meeting · ${m.date}`,
+      text: `${m.type} ${m.date} ${m.prepared.join(' ')}`,
+      kind: 'Meeting preparation',
+      url: '/plans/preparation',
+    })),
+    ...workspace.assignments.map((a) => ({
+      key: `assignment-${a.id}`,
+      title: a.title,
+      text: `${a.title} ${a.type} ${a.date} ${a.details} ${a.tasks.map((t) => t.title).join(' ')}`,
+      kind: 'Assignment',
+      url: '/plans/preparation',
+    })),
+  ];
+  return records.filter((r) => words.every((w) => r.text.toLocaleLowerCase().includes(w)));
+}
+
 export function exportBundle(routines, workspace) {
   return JSON.stringify(
     { format: 'faithful-days-backup', version: 1, routines, workspace },

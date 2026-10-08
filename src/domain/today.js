@@ -4,7 +4,7 @@
  */
 import { addDays, monthKey, weekday, weekStart } from './day.js';
 import { BOOKS, chapterAt, chapterIndex, nextChapters, portionSize } from './bible.js';
-import { ROUTINE_IDS, checkInDays, countIn, dueToday, weeklyTarget } from './routines.js';
+import { ROUTINE_IDS, checkInDays, countIn, weeklyTarget } from './routines.js';
 import { scheduleOn } from './schedule.js';
 import { addCheckIn, removeCheckIn } from './store.js';
 
@@ -45,32 +45,18 @@ const isCatchUp = (entry) =>
   entry.value.chapters.length === 0 &&
   Object.keys(entry.value).length === 1;
 
-/**
- * Record `n` chapters read on `day`, starting at the next unread chapter
- * (0 removes the day's entry). Reading two portions or more also checks in a
- * yesterday that was due, inside history, and has no entry (catch-up), with
- * the marker `{chapters: []}`. Dropping below two portions takes that marker
- * back; a real check-in on yesterday is never touched.
- */
+/** Record chapters on their actual activity day; extra reading never invents yesterday. */
 export function setChaptersRead(store, day, n) {
   const yesterday = addDays(day, -1);
-  const catchUp = n >= 2 * portionSize(store, day);
   let before = removeCheckIn(store, 'bibleReading', day);
-  if (!catchUp && isCatchUp(findEntry(before, 'bibleReading', yesterday))) {
+  // Editing/undoing the associated day removes only the legacy synthetic
+  // marker. Actual chapter records and bare widget check-ins remain intact.
+  if (isCatchUp(findEntry(before, 'bibleReading', yesterday))) {
     before = removeCheckIn(before, 'bibleReading', yesterday);
   }
   if (n <= 0) return before;
   const chapters = nextChapters(before, n).map((c) => chapterIndex(c.book, c.chapter));
-  let next = addCheckIn(before, { routine: 'bibleReading', day, value: { chapters } });
-  if (
-    catchUp &&
-    yesterday >= store.schedule[0].from &&
-    findEntry(before, 'bibleReading', yesterday) === null &&
-    dueToday(before, yesterday).includes('bibleReading')
-  ) {
-    next = addCheckIn(next, { routine: 'bibleReading', day: yesterday, value: { chapters: [] } });
-  }
-  return next;
+  return addCheckIn(before, { routine: 'bibleReading', day, value: { chapters } });
 }
 
 /** This calendar month's ministry entry (on or before `day`), or null. */
