@@ -3,15 +3,20 @@ on:
   workflow_dispatch:
     inputs:
       bundle_version:
-        description: 'Build number override (default: committed native-release.json; verify store history)'
+        description: 'Unused build number (default: committed native-release.json; verify store history)'
         required: false
         type: string
       marketing_version:
-        description: 'Version assertion (must match package.json and version tag)'
+        description: 'Version assertion (must match package.json and tag)'
         required: false
         type: string
       skip_upload:
-        description: 'Unsigned simulator compile only'
+        description: 'Unsigned simulator compile only; no signing or upload'
+        required: false
+        type: boolean
+        default: false
+      upload:
+        description: 'Request separately approved TestFlight upload after signing'
         required: false
         type: boolean
         default: false
@@ -19,17 +24,18 @@ on:
     tags: ['v*']
 permissions:
   contents: read
+  actions: read
+  checks: read
 concurrency:
-  group: ios-testflight-${{ github.ref }}
+  group: ios-testflight
   cancel-in-progress: false
+env:
+  VERSION_INPUT: ${{ inputs.marketing_version }}
+  BUILD_INPUT: ${{ inputs.bundle_version }}
 jobs:
-  ios:
-    runs-on: macos-latest
-    timeout-minutes: 60
-    env:
-      VERSION_INPUT: ${{ inputs.marketing_version }}
-      BUILD_INPUT: ${{ inputs.bundle_version }}
-      SKIP_UPLOAD: ${{ inputs.skip_upload && 'true' || 'false' }}
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -39,19 +45,59 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run lint && npm test && npm run format:check && npm run build
-      - run: npx cap sync ios
-      - name: Resolve matching app and widget versions
-        run: python3 scripts/native/release_evidence.py resolve --output native-version.json --github-env "$GITHUB_ENV"
-      - name: Unsigned simulator compile
-        if: env.SKIP_UPLOAD == 'true'
+      - run: npm audit --audit-level=high && npm run lint && npm run test:coverage && npm run format:check && npm run build && npm run budgets
+      - run: python3 scripts/native/test_release_guard.py && python3 scripts/native/test_release_evidence.py && python3 scripts/native/test_keystore_generator.py
+      - run: python3 scripts/native/release_evidence.py resolve --output native-version.json
+      - name: Require exact-source checks before signing
+        if: inputs.skip_upload != true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/native/release_guard.py source
+  simulator:
+    needs: preflight
+    if: inputs.skip_upload == true
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: python3 scripts/native/release_evidence.py resolve --output native-version.json --github-env "$GITHUB_ENV"
+      - run: npm run build && npx cap sync ios
+      - name: Compile app and widget without signing
         run: >-
           xcodebuild -project ios/App/App.xcodeproj -scheme App
           -sdk iphonesimulator -configuration Debug
           -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
           MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION"
+      - run: echo 'Unsigned simulator compile passed; signing, upload and device behavior remain unverified.' >> "$GITHUB_STEP_SUMMARY"
+  archive:
+    needs: preflight
+    if: inputs.skip_upload != true
+    environment: ios-signing
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Require independent signing approval policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/native/release_guard.py environment --environment ios-signing
+      - run: npm ci
+      - run: python3 scripts/native/release_evidence.py resolve --output native-version.json --github-env "$GITHUB_ENV"
+      - run: npm run build && npx cap sync ios
       - name: Prepare signing authentication
-        if: env.SKIP_UPLOAD != 'true'
         env:
           ASC_API_PRIVATE_KEY: ${{ secrets.ASC_API_PRIVATE_KEY }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -60,7 +106,7 @@ jobs:
         run: |
           set -euo pipefail
           for name in ASC_API_PRIVATE_KEY ASC_KEY_ID ASC_ISSUER_ID ASC_TEAM_ID; do
-            [[ -n "${!name}" ]] || { echo "::error::Missing repository secret: $name"; exit 1; }
+            [[ -n "${!name}" ]] || { echo "::error::Missing protected signing input: $name"; exit 1; }
           done
           umask 077
           printf '%s' "$ASC_API_PRIVATE_KEY" > "$RUNNER_TEMP/AuthKey_ci.p8"
@@ -70,7 +116,6 @@ jobs:
               plistlib.dump({'method': 'app-store-connect', 'signingStyle': 'automatic', 'teamID': os.environ['ASC_TEAM_ID'], 'destination': 'export', 'uploadSymbols': True}, output)
           PY
       - name: Archive and export signed app with matching widget version
-        if: env.SKIP_UPLOAD != 'true'
         working-directory: ios/App
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -88,23 +133,29 @@ jobs:
             -exportOptionsPlist App/exportOptions.plist -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/AuthKey_ci.p8" \
             -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
-      - name: Locate signed IPA
-        if: env.SKIP_UPLOAD != 'true'
-        id: ipa
+      - name: Normalize exported IPA and record actual bundle metadata
         run: |
           set -euo pipefail
-          ipa="$(find "$GITHUB_WORKSPACE/ios/App/build/ipa" -name '*.ipa' -type f -print -quit)"
-          [[ -n "$ipa" ]] || { echo '::error::No signed IPA was produced'; exit 1; }
-          printf 'path=%s\n' "$ipa" >> "$GITHUB_OUTPUT"
-      - name: Verify IPA app/widget versions and record checksum
-        if: env.SKIP_UPLOAD != 'true'
-        env:
-          IPA_PATH: ${{ steps.ipa.outputs.path }}
-        run: >-
-          python3 scripts/native/release_evidence.py record --metadata native-version.json
-          --artifact "$IPA_PATH" --platform ios --output native-artifact.json
-      - name: Retain source and artifact evidence
-        if: env.SKIP_UPLOAD != 'true'
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          candidates = list(Path('ios/App/build/ipa').glob('*.ipa'))
+          if len(candidates) != 1: raise SystemExit('Expected exactly one exported IPA')
+          Path('release-candidate').mkdir()
+          shutil.copyfile(candidates[0], 'release-candidate/app.ipa')
+          PY
+          python3 scripts/native/release_evidence.py record --metadata native-version.json --artifact release-candidate/app.ipa --platform ios --output native-artifact.json
+      - name: Retain approved candidate for separate upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: faithful-days-approved-ipa-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            release-candidate/app.ipa
+            native-version.json
+            native-artifact.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Retain sanitized source and checksum evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: faithful-days-ios-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
@@ -113,23 +164,48 @@ jobs:
             native-artifact.json
           if-no-files-found: error
           retention-days: 90
-      - name: Upload to TestFlight
-        if: env.SKIP_UPLOAD != 'true'
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey_ci.p8"
+  upload:
+    needs: archive
+    if: inputs.skip_upload != true && (github.event_name == 'push' || inputs.upload)
+    environment: testflight-upload
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Require independent TestFlight upload approval policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/native/release_guard.py environment --environment testflight-upload
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: faithful-days-approved-ipa-${{ github.run_id }}-${{ github.run_attempt }}
+          path: approved-ipa
+      - name: Revalidate the exact approved IPA before upload
+        run: |
+          set -euo pipefail
+          python3 scripts/native/release_evidence.py record --metadata approved-ipa/native-version.json --artifact approved-ipa/release-candidate/app.ipa --platform ios --output upload-native-artifact.json
+          cmp approved-ipa/native-artifact.json upload-native-artifact.json
+      - name: Require protected upload authentication
+        env:
+          ASC_API_PRIVATE_KEY: ${{ secrets.ASC_API_PRIVATE_KEY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          for name in ASC_API_PRIVATE_KEY ASC_KEY_ID ASC_ISSUER_ID; do
+            [[ -n "${!name}" ]] || { echo "::error::Missing protected upload input: $name"; exit 1; }
+          done
+      - name: Upload approved IPA to TestFlight
         uses: apple-actions/upload-testflight-build@14df18fee5a4ff3b76971dd382f033494a0194e9 # v5.5.0
         with:
-          app-path: ${{ steps.ipa.outputs.path }}
+          app-path: approved-ipa/release-candidate/app.ipa
           app-type: ios
           issuer-id: ${{ secrets.ASC_ISSUER_ID }}
           api-key-id: ${{ secrets.ASC_KEY_ID }}
           api-private-key: ${{ secrets.ASC_API_PRIVATE_KEY }}
-      - name: Remove temporary signing key
-        if: always()
-        run: rm -f "$RUNNER_TEMP/AuthKey_ci.p8"
-      - name: Summary
-        if: success()
-        run: |
-          if [[ "$SKIP_UPLOAD" == true ]]; then
-            echo 'Unsigned simulator compilation passed; no TestFlight upload requested.' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo 'Upload accepted by the TestFlight action; confirm processing and installation in App Store Connect.' >> "$GITHUB_STEP_SUMMARY"
-          fi
+      - run: echo 'Upload action completed. Confirm Apple processing, TestFlight availability and physical installation; no App Review submission was requested.' >> "$GITHUB_STEP_SUMMARY"

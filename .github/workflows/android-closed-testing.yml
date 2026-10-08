@@ -34,23 +34,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --audit-level=high && npm run lint && npm run test:coverage && npm run format:check && npm run build && npm run budgets
-      - run: python3 scripts/native/test_release_evidence.py && python3 scripts/native/test_keystore_generator.py
+      - run: python3 scripts/native/test_release_guard.py && python3 scripts/native/test_release_evidence.py && python3 scripts/native/test_keystore_generator.py
       - name: Require exact-source web and native checks
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          required='["Build + Lint + Test","Playwright smoke","Browser compatibility (firefox)","Browser compatibility (webkit)","Android debug compile","iOS simulator compile"]'
-          for attempt in $(seq 1 90); do
-            gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > checks.json
-            jq '[.check_runs | group_by(.name)[] | max_by(.id)]' checks.json > latest-checks.json
-            if jq -e --argjson required "$required" 'any(.[]; .name as $name | ($required | index($name)) != null and .status == "completed" and .conclusion != "success")' latest-checks.json >/dev/null; then
-              echo '::error::A required exact-source check failed'; exit 1
-            fi
-            if jq -e --argjson required "$required" '. as $checks | all($required[]; . as $name | any($checks[]; .name == $name and .app.id == 15368 and .status == "completed" and .conclusion == "success"))' latest-checks.json >/dev/null; then exit 0; fi
-            sleep 10
-          done
-          echo '::error::Required source checks did not complete'; exit 1
+        run: python3 scripts/native/release_guard.py source
   bundle:
     needs: preflight
     environment: android-signing
@@ -59,15 +47,15 @@ jobs:
     env:
       BUILD_INPUT: ${{ inputs.build_number }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - name: Require independent environment approval policy
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/environments/android-signing" | jq -e 'any(.protection_rules[]; .type == "required_reviewers" and .prevent_self_review == true and (.reviewers | length) > 0)' >/dev/null
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
+          python3 scripts/native/release_guard.py environment --environment android-signing
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '22'
@@ -137,17 +125,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - name: Require independent upload approval and closed-track configuration
         env:
           GH_TOKEN: ${{ github.token }}
           CLOSED_TRACK: ${{ vars.PLAY_CLOSED_TRACK }}
         run: |
           set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/environments/play-closed-testing" | jq -e 'any(.protection_rules[]; .type == "required_reviewers" and .prevent_self_review == true and (.reviewers | length) > 0)' >/dev/null
+          python3 scripts/native/release_guard.py environment --environment play-closed-testing
           [[ "$CLOSED_TRACK" =~ ^[a-zA-Z0-9_-]+$ && "$CLOSED_TRACK" != production && "$CLOSED_TRACK" != internal && "$CLOSED_TRACK" != internalsharing && "$CLOSED_TRACK" != beta ]] || { echo '::error::Configure one verified closed track'; exit 1; }
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
