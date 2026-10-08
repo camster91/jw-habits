@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkspace } from '../data/useWorkspace.js';
 import { useStore } from '../data/useStore.js';
@@ -18,17 +18,24 @@ export default function Preparation() {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [deleting, setDeleting] = useState(null);
+  const [editingAssignment, setEditingAssignment] = useState(null);
+  const assignmentTitle = useRef(null);
+  const [pendingPart, setPendingPart] = useState(null);
+  const [pendingTask, setPendingTask] = useState(null);
   const change = async (fn, onSaved = () => {}) => {
     setBusy(true);
-    setStatus('');
+    setStatus('Saving…');
     try {
       await save(fn);
       setStatus('Saved on this device.');
       onSaved();
     } catch {
+      setStatus('');
       /* provider displays error; draft fields are retained */
     } finally {
       setBusy(false);
+      setPendingPart(null);
+      setPendingTask(null);
     }
   };
   const addMeeting = (e) => {
@@ -48,9 +55,9 @@ export default function Preparation() {
       (w) => ({
         ...w,
         assignments: [
-          ...w.assignments,
+          ...w.assignments.filter((a) => a.id !== editingAssignment),
           {
-            id: newId(),
+            id: editingAssignment ?? newId(),
             title: title.trim(),
             type,
             date: due,
@@ -59,18 +66,27 @@ export default function Preparation() {
               .split('\n')
               .map((t) => t.trim())
               .filter(Boolean)
-              .map((t) => ({ id: newId(), title: t, done: false })),
+              .map((t, i) => {
+                const existing = w.assignments.find((a) => a.id === editingAssignment)?.tasks[i];
+                return existing?.title === t ? existing : { id: newId(), title: t, done: false };
+              }),
           },
         ],
       }),
       () => {
         setTitle('');
         setDetails('');
+        setEditingAssignment(null);
       }
     );
   };
-  const togglePart = (id, part) =>
-    change((w) => ({
+  const togglePart = (id, part) => {
+    setPendingPart({
+      id,
+      part,
+      checked: !workspace.meetings.find((m) => m.id === id).prepared.includes(part),
+    });
+    return change((w) => ({
       ...w,
       meetings: w.meetings.map((m) =>
         m.id === id
@@ -83,8 +99,15 @@ export default function Preparation() {
           : m
       ),
     }));
-  const toggleTask = (id, taskId) =>
-    change((w) => ({
+  };
+  const toggleTask = (id, taskId) => {
+    setPendingTask({
+      id,
+      taskId,
+      checked: !workspace.assignments.find((a) => a.id === id).tasks.find((t) => t.id === taskId)
+        .done,
+    });
+    return change((w) => ({
       ...w,
       assignments: w.assignments.map((a) =>
         a.id === id
@@ -92,6 +115,7 @@ export default function Preparation() {
           : a
       ),
     }));
+  };
   const remove = () =>
     change(
       (w) => ({
@@ -167,7 +191,11 @@ export default function Preparation() {
                       type="checkbox"
                       className="checkbox shrink-0"
                       disabled={busy || !ready}
-                      checked={m.prepared.includes(part)}
+                      checked={
+                        pendingPart?.id === m.id && pendingPart.part === part
+                          ? pendingPart.checked
+                          : m.prepared.includes(part)
+                      }
                       onChange={() => togglePart(m.id, part)}
                     />
                     <span>{part}</span>
@@ -197,6 +225,7 @@ export default function Preparation() {
             <label className="block">
               <span>Assignment title</span>
               <input
+                ref={assignmentTitle}
                 required
                 maxLength={120}
                 className="input min-h-11 w-full"
@@ -247,8 +276,22 @@ export default function Preparation() {
             </label>
             <p className="text-sm text-base-content/70">Up to 30 items, 120 characters each.</p>
             <button className="btn btn-primary min-h-11" disabled={busy || !ready}>
-              Add assignment
+              {editingAssignment ? 'Save assignment' : 'Add assignment'}
             </button>
+            {editingAssignment && (
+              <button
+                type="button"
+                className="btn min-h-11"
+                disabled={busy}
+                onClick={() => {
+                  setEditingAssignment(null);
+                  setTitle('');
+                  setDetails('');
+                }}
+              >
+                Cancel assignment edit
+              </button>
+            )}
           </form>
           {[...workspace.assignments]
             .sort((a, b) => a.date.localeCompare(b.date))
@@ -265,7 +308,11 @@ export default function Preparation() {
                       type="checkbox"
                       className="checkbox shrink-0"
                       disabled={busy || !ready}
-                      checked={t.done}
+                      checked={
+                        pendingTask?.id === a.id && pendingTask.taskId === t.id
+                          ? pendingTask.checked
+                          : t.done
+                      }
                       onChange={() => toggleTask(a.id, t.id)}
                     />
                     <span>{t.title}</span>
@@ -282,6 +329,21 @@ export default function Preparation() {
                 >
                   Add an assignment note
                 </Link>
+                <button
+                  className="btn btn-ghost min-h-11"
+                  disabled={busy}
+                  onClick={() => {
+                    setEditingAssignment(a.id);
+                    setTitle(a.title);
+                    setType(a.type);
+                    setDue(a.date);
+                    setDetails(a.details);
+                    setTasks(a.tasks.map((t) => t.title).join('\n'));
+                    assignmentTitle.current?.focus();
+                  }}
+                >
+                  Edit assignment
+                </button>
                 <button
                   className="btn btn-ghost min-h-11"
                   disabled={busy}

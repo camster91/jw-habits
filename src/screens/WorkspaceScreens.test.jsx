@@ -197,6 +197,15 @@ describe('Preparation UI', () => {
     await screen.findByText(/Checklist prepared/);
     fireEvent.click(screen.getByLabelText('Read'));
     await screen.findByText('Prepare at your own pace.');
+    button('Edit assignment');
+    field('Assignment title', 'Read James revised');
+    field('Assignment date', '2026-10-16');
+    button('Save assignment');
+    await screen.findByText('Read James revised');
+    expect(current.assignments[0].tasks[1].done).toBe(true);
+    expect(current.assignments[0].date).toBe('2026-10-16');
+    button('Edit assignment');
+    button('Cancel assignment edit');
     button('Remove assignment');
     button('Remove record');
     await waitFor(() => expect(current.assignments).toEqual([]));
