@@ -20,6 +20,9 @@ import SettingsSheet from './screens/SettingsSheet';
 import { useStore } from './data/useStore.js';
 import { applyTheme } from './theme/theme.js';
 import { isWeb } from './utils/native.js';
+import WorkspaceProvider from './data/WorkspaceProvider.jsx';
+const Notes = lazy(() => import('./screens/Notes.jsx'));
+const Preparation = lazy(() => import('./screens/Preparation.jsx'));
 
 // Faithful Days shell: onboarding until it is done, then Today, Plans
 // (and each plan's trail) and Progress. The install/update/offline chrome and the /share route exist
@@ -70,6 +73,22 @@ function Screens() {
             <Route path="/" element={today} />
             <Route path="/plans" element={withTabs(<Plans />)} />
             <Route path="/plans/family" element={withTabs(<FamilyWeeks />)} />
+            <Route
+              path="/plans/preparation"
+              element={withTabs(
+                <Suspense fallback={<p role="status">Loading preparation…</p>}>
+                  <Preparation />
+                </Suspense>
+              )}
+            />
+            <Route
+              path="/notes"
+              element={withTabs(
+                <Suspense fallback={<p role="status">Loading notes…</p>}>
+                  <Notes />
+                </Suspense>
+              )}
+            />
             <Route path="/plans/:planId" element={withTabs(<PlanTrail />)} />
             <Route path="/progress/badges" element={withTabs(<Badges />)} />
             <Route path="/progress" element={withTabs(<Progress />)} />
@@ -87,7 +106,9 @@ function Screens() {
 function App() {
   const shell = (
     <Router basename={routerBasename()}>
-      <Screens />
+      <WorkspaceProvider>
+        <Screens />
+      </WorkspaceProvider>
     </Router>
   );
 

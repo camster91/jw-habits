@@ -1,0 +1,300 @@
+import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useWorkspace } from '../data/useWorkspace.js';
+import { useStore } from '../data/useStore.js';
+import { putNote, searchNotes } from '../domain/workspace.js';
+import { saveBackup } from '../utils/backup.js';
+import Sheet from '../components/plans/Sheet.jsx';
+
+function NoteEditor({ note, context, onClose }) {
+  const { save } = useWorkspace();
+  const { today } = useStore();
+  const [title, setTitle] = useState(note?.title ?? '');
+  const [body, setBody] = useState(note?.body ?? '');
+  const [tags, setTags] = useState(note?.tags.join(', ') ?? '');
+  const [links, setLinks] = useState(note?.links.join('\n') ?? '');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [discard, setDiscard] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const exportDraft = async () => {
+    try {
+      await saveBackup(
+        JSON.stringify({ title, body, tags, links, context: note?.context ?? context }, null, 2),
+        'faithful-days-note-draft.json',
+        'Unsaved note draft'
+      );
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+  const close = () => {
+    if (busy) return;
+    if (
+      title !== (note?.title ?? '') ||
+      body !== (note?.body ?? '') ||
+      tags !== (note?.tags.join(', ') ?? '') ||
+      links !== (note?.links.join('\n') ?? '')
+    )
+      setDiscard(true);
+    else onClose();
+  };
+  const persist = async (remove = false) => {
+    setBusy(true);
+    try {
+      await save((w) =>
+        remove
+          ? { ...w, notes: w.notes.filter((n) => n.id !== note.id) }
+          : putNote(
+              w,
+              {
+                id: note?.id,
+                title,
+                body,
+                tags: tags.split(','),
+                links: links.split('\n'),
+                context: note?.context ?? context,
+              },
+              today
+            )
+      );
+      onClose();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Sheet title={note ? 'Edit note' : 'New note'} onClose={close}>
+      <form
+        className="space-y-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          persist();
+        }}
+      >
+        <label className="block space-y-1">
+          <span>Title</span>
+          <input
+            required
+            maxLength={120}
+            className="input min-h-11 w-full"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </label>
+        <label className="block space-y-1">
+          <span>Your note</span>
+          <textarea
+            maxLength={8000}
+            rows={7}
+            className="textarea w-full"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+          />
+        </label>
+        <label className="block space-y-1">
+          <span>Tags (separate with commas)</span>
+          <input
+            className="input min-h-11 w-full"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
+        </label>
+        <p className="text-sm text-base-content/70">Up to 10 tags, 32 characters each.</p>
+        <label className="block space-y-1">
+          <span>Links (one per line)</span>
+          <textarea
+            rows={2}
+            className="textarea w-full"
+            value={links}
+            onChange={(e) => setLinks(e.target.value)}
+          />
+        </label>
+        <p className="text-sm text-base-content/70">
+          Up to 5 web links. Add your own references; publication text is not supplied.
+        </p>
+        <p role="alert" className="text-error">
+          {error}
+        </p>
+        <button disabled={busy} className="btn btn-primary min-h-11" type="submit">
+          {busy ? 'Saving…' : 'Save note'}
+        </button>
+        {note && (
+          <button
+            disabled={busy}
+            className="btn btn-ghost min-h-11"
+            type="button"
+            onClick={() => setDeleting(true)}
+          >
+            Delete note
+          </button>
+        )}
+      </form>
+      {error && (
+        <button type="button" className="btn min-h-11" onClick={exportDraft}>
+          Export this draft
+        </button>
+      )}
+      {deleting && (
+        <div role="group" aria-label="Delete note confirmation">
+          <p>Delete this note? This cannot be undone.</p>
+          <button disabled={busy} className="btn btn-error min-h-11" onClick={() => persist(true)}>
+            Delete permanently
+          </button>
+          <button className="btn min-h-11" onClick={() => setDeleting(false)}>
+            Keep note
+          </button>
+        </div>
+      )}
+      {discard && (
+        <div role="group" aria-label="Unsaved note">
+          <p>Discard your unsaved changes?</p>
+          <button className="btn min-h-11" onClick={onClose}>
+            Discard changes
+          </button>
+          <button className="btn min-h-11" onClick={() => setDiscard(false)}>
+            Keep editing
+          </button>
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+function contextLabel(context, store, workspace) {
+  if (!context) return null;
+  if (context.kind === 'day') return `Recorded on ${context.id}`;
+  const item =
+    context.kind === 'meeting'
+      ? workspace.meetings.find((m) => m.id === context.id)
+      : context.kind === 'assignment'
+        ? workspace.assignments.find((a) => a.id === context.id)
+        : context.kind === 'plan'
+          ? store.plans.find((p) => p.id === context.id)
+          : store.plans.flatMap((p) => p.steps).find((s) => s.id === context.id);
+  return item
+    ? `${context.kind}: ${item.title ?? `${item.type} meeting · ${item.date}`}`
+    : 'Original context is no longer available. Your note is kept.';
+}
+
+export default function Notes() {
+  const { workspace, ready, error, rawExport } = useWorkspace();
+  const { store, today } = useStore();
+  const [params, setParams] = useSearchParams();
+  const context =
+    ['day', 'plan', 'step', 'meeting', 'assignment'].includes(params.get('context')) &&
+    params.get('id')
+      ? { kind: params.get('context'), id: params.get('id') }
+      : { kind: 'day', id: today };
+  const [editing, setEditing] = useState(params.has('new') ? {} : null);
+  const [query, setQuery] = useState('');
+  const [tag, setTag] = useState('');
+  const [exportError, setExportError] = useState('');
+  const close = () => {
+    setEditing(null);
+    setParams({});
+  };
+  const exportOriginal = async () => {
+    try {
+      const raw = await rawExport();
+      await saveBackup(
+        raw ?? '{}',
+        'faithful-days-workspace-original.json',
+        'Original notes and preparation'
+      );
+    } catch (e) {
+      setExportError(e.message);
+    }
+  };
+  return (
+    <main className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]">
+      <div className="mx-auto max-w-md space-y-4">
+        <h1 className="text-3xl font-bold">Notes</h1>
+        <p>
+          Your thoughts, questions and references. Notes stay on this device and do not mark a
+          routine complete.
+        </p>
+        <p role="alert" className="text-error">
+          {error || exportError}
+        </p>
+        {!ready && (
+          <button className="btn min-h-11" onClick={exportOriginal}>
+            Export original notes and preparation
+          </button>
+        )}
+        <button
+          disabled={!ready}
+          className="btn btn-primary min-h-11"
+          onClick={() => setEditing({})}
+        >
+          New note
+        </button>
+        <label className="block">
+          <span>Search notes</span>
+          <input
+            type="search"
+            className="input min-h-11 w-full"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span>Filter by tag</span>
+          <select
+            className="select min-h-11 w-full"
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+          >
+            <option value="">All tags</option>
+            {[...new Set(workspace.notes.flatMap((n) => n.tags))].sort().map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </label>
+        <ul className="space-y-3">
+          {searchNotes(workspace, query, tag).map((n) => (
+            <li key={n.id} className="space-y-2 rounded-2xl bg-base-100 p-4 break-words">
+              <button
+                className="min-h-11 text-left text-lg font-semibold underline"
+                onClick={() => setEditing(n)}
+              >
+                {n.title}
+              </button>
+              <p className="whitespace-pre-wrap">{n.body}</p>
+              <p className="text-sm text-base-content/70">{n.tags.join(' · ')}</p>
+              <p className="text-sm text-base-content/70">
+                {contextLabel(n.context, store, workspace)}
+              </p>
+              {n.links.map((url) => (
+                <a
+                  key={url}
+                  className="block min-h-11 break-all underline"
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {url}
+                </a>
+              ))}
+            </li>
+          ))}
+        </ul>
+        {ready && searchNotes(workspace, query, tag).length === 0 && (
+          <p>
+            {workspace.notes.length
+              ? 'No notes match. Try another word or tag.'
+              : 'Keep a question, a scripture reference or an idea you want to revisit.'}
+          </p>
+        )}
+        <Link className="inline-flex min-h-11 items-center underline" to="/plans">
+          Go to Plans
+        </Link>
+      </div>
+      {editing && (
+        <NoteEditor note={editing.id ? editing : null} context={context} onClose={close} />
+      )}
+    </main>
+  );
+}

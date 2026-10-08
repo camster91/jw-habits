@@ -12,7 +12,7 @@ sets it up in six skippable steps. Reminders, a "What's New" count from jw.org's
 home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
-- **Version:** 5.1.0
+- **Version:** 5.2.0
 - **Current product contract:** `docs/feature-ui-reconciliation.md` records the
   approved UI and notes/preparation boundaries. Today has no garden illustration;
   Progress retains the garden. Study plans use "Use on Today" and "Current plan".
@@ -238,3 +238,30 @@ files are removed when sharing finishes. `showShare` hides all share buttons.
 ## Current release evidence and ownership
 
 [Commitment ledger](docs/roadmap.md) records the shipped, active, blocked, deferred and superseded directions, including #39–#43. [Quality gates](docs/quality-gates.md) defines automated evidence; [platform matrix](docs/platform-matrix.md) distinguishes targets from verified engines/devices. [Store release pack](docs/store-release-pack.md) supersedes historical listing claims. Signing rotation/history remediation (#132/#133), account reservations, device checks, governance administration and research remain human-owned gates. Do not claim store availability from a successful unsigned compile.
+
+## v5.2 notes and preparation
+
+`/notes` owns user-written notes, comma-separated tags, safe links, contextual
+capture and local text/tag search. `/plans/preparation` owns explicitly dated
+midweek/weekend preparation and assignments with user-written checklists. Neither
+writes routine activity. Supported labels were checked against current English
+JW meeting instructions; no assigned publication text is supplied.
+
+`faithful-days-workspace-v1` is a separate version-1 store, validated by
+`domain/workspace.js`, with notes, meetings, assignments and a revision counter.
+`data/workspaceClient.js` serializes writes, checks the previously read raw bytes,
+and uses Web Locks where available. Unknown schemas, malformed records, failed
+reads and stale windows cannot overwrite that store. Forms retain failed-save
+drafts; notes offer a draft export. Main routine store/key remains version 3.
+
+Settings exports a combined versioned bundle and validates both payloads before
+import. Routine-only imports explicitly leave workspace records alone. Durable
+replacement retains `faithful-days-before-import`; it can be exported from
+Settings. Two-key writes are not atomic: a workspace failure attempts routine
+rollback and reports failure even if rollback fails. Recovery copies contain
+private plain text and are never pruned as diagnostics.
+
+Remaining #263/#264 work: reading-pace comparison, cross-content search and
+native share transport. OS capture extensions, replay receipts and signing are
+not claimed by a local Notes screen or an unsigned compile. Physical devices,
+account/signing, assistive technology and household research remain release gates.

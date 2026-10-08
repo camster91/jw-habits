@@ -112,6 +112,14 @@ export default function Plans() {
       <div className="mx-auto max-w-md space-y-6">
         <h1 className="text-3xl font-bold">{t('fd.plans.title')}</h1>
         <p className="text-base-content/80">{t('fd.plans.intro')}</p>
+        <Link
+          to="/plans/preparation"
+          className="flex min-h-11 items-center gap-3 rounded-2xl bg-base-100 p-4 font-medium shadow-sm"
+        >
+          <CalendarDays aria-hidden="true" className="h-5 w-5" />
+          <span className="flex-1">Prepare for meetings and assignments</span>
+          <ChevronRight aria-hidden="true" className="h-5 w-5" />
+        </Link>
 
         <Section title={t('fd.plans.study.heading')}>
           {active || waiting.length > 0 ? (

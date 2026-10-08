@@ -1,9 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
-import { CalendarCheck, ChartNoAxesColumn, Route as RouteIcon, Settings } from 'lucide-react';
+import {
+  CalendarCheck,
+  ChartNoAxesColumn,
+  NotebookPen,
+  Route as RouteIcon,
+  Settings,
+} from 'lucide-react';
 
 const itemClass =
-  'flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 px-3 py-1 text-xs';
+  'flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 text-xs';
 
 /** Bottom navigation: Today, Plans, Progress, and a button that opens Settings. */
 export default function TabBar({ onOpenSettings }) {
@@ -23,6 +29,10 @@ export default function TabBar({ onOpenSettings }) {
         <NavLink to="/plans" className={tab}>
           <RouteIcon aria-hidden="true" className="h-6 w-6" />
           {t('fd.tabs.plans')}
+        </NavLink>
+        <NavLink to="/notes" className={tab}>
+          <NotebookPen aria-hidden="true" className="h-6 w-6" />
+          Notes
         </NavLink>
         <NavLink to="/progress" className={tab}>
           <ChartNoAxesColumn aria-hidden="true" className="h-6 w-6" />

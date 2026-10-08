@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useStore } from '../../data/useStore.js';
 import { exportJson, importJson } from '../../domain/store.js';
 import { isShareCancel, saveBackup } from '../../utils/backup.js';
+import { useWorkspace } from '../../data/useWorkspace.js';
+import { exportBundle, importBundle } from '../../domain/workspace.js';
+import { durableGet, durableSet } from '../../utils/safeStorage.js';
 
 /**
  * Export everything as a dated JSON file, or import one. An import is only
@@ -12,7 +15,9 @@ import { isShareCancel, saveBackup } from '../../utils/backup.js';
  */
 export default function BackupSection({ onReplaced = () => {} }) {
   const { t } = useTranslation();
-  const { store, update, today } = useStore();
+  const { store, update, replace: replaceStore, today } = useStore();
+  const workspaceState = useWorkspace();
+  const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null); // {error: boolean, text: string}
   const [pending, setPending] = useState(null);
   const confirmId = useId();
@@ -27,7 +32,13 @@ export default function BackupSection({ onReplaced = () => {} }) {
     setStatus(null);
     try {
       await saveBackup(
-        exportJson(store),
+        workspaceState
+          ? workspaceState.ready
+            ? exportBundle(store, workspaceState.workspace)
+            : (() => {
+                throw new Error('Workspace unreadable; export its original data separately.');
+              })()
+          : exportJson(store),
         `faithful-days-backup-${today}.json`,
         t('fd.settings.backup.shareTitle')
       );
@@ -53,16 +64,57 @@ export default function BackupSection({ onReplaced = () => {} }) {
       setStatus({ error: true, text: t('fd.settings.backup.readError') });
       return;
     }
-    const result = importJson(text, today);
-    if (result.ok) setPending(result.store);
+    const result = workspaceState ? importBundle(text, today) : importJson(text, today);
+    if (result.ok) setPending(result);
     else setStatus({ error: true, text: t(`fd.settings.backup.errors.${result.reason}`) });
   };
 
-  const replace = () => {
-    const next = pending;
-    update(() => next);
-    setPending(null);
-    onReplaced();
+  const replace = async () => {
+    setBusy(true);
+    let routinesReplaced = false;
+    try {
+      if (workspaceState) {
+        if (!workspaceState.ready)
+          throw new Error('Notes and preparation cannot be read; import is paused.');
+        await workspaceState.save(
+          (current) => pending.workspace ?? current,
+          async (current) => {
+            await durableSet('faithful-days-before-import', exportBundle(store, current));
+            await replaceStore(pending.store);
+            routinesReplaced = true;
+          }
+        );
+      } else if (replaceStore) await replaceStore(pending.store);
+      else update(() => pending.store);
+      setPending(null);
+      onReplaced();
+    } catch (error) {
+      // Multi-key writes are not atomic. Recover the previous routines when
+      // the workspace write fails, and retain the recovery bundle regardless.
+      if (routinesReplaced) {
+        try {
+          await replaceStore(store);
+        } catch {
+          /* recovery bundle remains */
+        }
+      }
+      setStatus({ error: true, text: error.message + ' The pre-import backup is retained.' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const exportRecovery = async () => {
+    try {
+      const raw = await durableGet('faithful-days-before-import');
+      if (!raw) {
+        setStatus({ error: false, text: 'There is no pre-import backup on this device yet.' });
+        return;
+      }
+      await saveBackup(raw, 'faithful-days-before-import.json', 'Pre-import backup');
+    } catch (e) {
+      setStatus({ error: true, text: e.message });
+    }
   };
 
   const cancel = () => {
@@ -87,6 +139,11 @@ export default function BackupSection({ onReplaced = () => {} }) {
           />
         </label>
       </div>
+      {workspaceState && (
+        <button className="btn min-h-11" disabled={busy} onClick={exportRecovery}>
+          Export pre-import backup
+        </button>
+      )}
       {pending && (
         <div
           role="group"
@@ -97,11 +154,28 @@ export default function BackupSection({ onReplaced = () => {} }) {
             {t('fd.settings.backup.confirmTitle')}
           </p>
           <p className="text-sm">{t('fd.settings.backup.confirmBody')}</p>
+          {workspaceState && (
+            <p className="text-sm">
+              {pending.legacy
+                ? 'This older backup replaces routines only. Your notes and preparation stay here.'
+                : 'This replaces routines, notes and preparation. A pre-import backup will be retained.'}
+            </p>
+          )}
           <div className="flex gap-2">
-            <button type="button" className="btn btn-error min-h-11" onClick={replace}>
+            <button
+              type="button"
+              disabled={busy}
+              className="btn btn-error min-h-11"
+              onClick={replace}
+            >
               {t('fd.settings.backup.replace')}
             </button>
-            <button type="button" className="btn btn-ghost min-h-11" onClick={cancel}>
+            <button
+              type="button"
+              disabled={busy}
+              className="btn btn-ghost min-h-11"
+              onClick={cancel}
+            >
               {t('fd.settings.backup.cancel')}
             </button>
           </div>

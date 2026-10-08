@@ -25,11 +25,12 @@ describe('TabBar', () => {
     expect(screen.getByRole('link', { name: 'Today' })).not.toHaveAttribute('aria-current');
   });
 
-  it('lists Today, Plans and Progress in that order', () => {
+  it('lists Today, Plans, Notes and Progress in that order', () => {
     renderBar('/');
     expect(screen.getAllByRole('link').map((a) => a.textContent)).toEqual([
       'Today',
       'Plans',
+      'Notes',
       'Progress',
     ]);
   });
