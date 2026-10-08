@@ -107,7 +107,7 @@ jobs:
             exit 0
           fi
           for i in 1 2 3; do
-            ssh -o ConnectTimeout=10 -o BatchMode=yes "$USER@$HOST" \
+            timeout --kill-after=5s 15s ssh -o ConnectTimeout=10 -o BatchMode=yes "$USER@$HOST" \
               "fail2ban-client set sshd unbanip \"$MY_IP\"" 2>/dev/null && break
             sleep 5
           done || true
