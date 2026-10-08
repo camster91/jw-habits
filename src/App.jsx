@@ -35,7 +35,7 @@ function routerBasename() {
 }
 
 function Screens() {
-  const { store } = useStore();
+  const { store, savingPaused } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const openSettings = () => setSettingsOpen(true);
 
@@ -78,7 +78,7 @@ function Screens() {
         )}
       </Routes>
       {onboardingDone && <BadgeToast />}
-      <StorageNotice onBackup={openSettings} />
+      <StorageNotice onBackup={openSettings} savingPaused={savingPaused} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );

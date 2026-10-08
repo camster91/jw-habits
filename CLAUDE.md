@@ -184,6 +184,9 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   follow `docs/ios-widget-setup.md` and `docs/release-checklist.md` before store release.
 - **Storage failures are visible.** `StorageNotice` listens for `jw-storage-full` and offers
   backup settings so the current in-memory history can be exported before closing.
+  Browser durable reads propagate errors instead of treating them as missing data.
+  A failed startup read or upgrade backup pauses saving for the session and shows an
+  explicit warning; the original stored value is never replaced in that state.
 - **Newer stored schemas block startup.** `UpdateRequired` offers a byte-exact raw
   export and retains the web update prompt. The provider does not initialize routines,
   cleanup, rollover or foreground callbacks, and leaves the primary stored value intact.
