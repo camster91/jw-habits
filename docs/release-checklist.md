@@ -47,6 +47,9 @@ See [platform matrix](platform-matrix.md) and [store release pack](store-release
       the wrap-up time and names no routine; on a meeting eve the one notification carries both lines.
 - [ ] Never more than 2 notifications in a day; none inside quiet hours.
 - [ ] Turning a routine's reminder off (and all reminders off) stops it.
+- [ ] In isolated instrumented QA, delay a reminder schedule while switching all reminders off;
+      after both operations finish, no reminder remains pending. Return to the foreground during
+      a pending settings debounce and verify only the current settings apply.
 - [ ] **After reboot:** restart the device without opening the app; the next morning
       invitation (and evening one, if due) still arrives.
 - [ ] Changing a time in Settings reschedules (the next notification uses the new time).

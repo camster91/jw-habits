@@ -120,9 +120,61 @@ describe('syncReminders', () => {
     expect(await syncReminders(store(), t)).toEqual({ scheduled: 0 });
     expect(plugin.checkPermissions).not.toHaveBeenCalled();
   });
+
+  it('a delayed older schedule cannot outlive a newer request to turn reminders off', async () => {
+    let releaseSchedule;
+    const delayed = new Promise((resolve) => {
+      releaseSchedule = resolve;
+    });
+    let pending = [{ id: 99 }];
+    plugin.getPending.mockImplementation(async () => ({ notifications: [...pending] }));
+    plugin.cancel.mockImplementation(async () => {
+      pending = [];
+    });
+    plugin.schedule.mockImplementation(async ({ notifications }) => {
+      await delayed;
+      pending = notifications;
+    });
+    const first = syncReminders(store(), t);
+    await vi.waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1));
+    const disabled = { ...store(), reminders: { enabled: false, off: [] } };
+    const second = syncReminders(disabled, t);
+    await Promise.resolve();
+    expect(plugin.getPending).toHaveBeenCalledTimes(1);
+    releaseSchedule();
+    expect(await first).toEqual({ scheduled: 7 });
+    expect(await second).toEqual({ scheduled: 0 });
+    expect(plugin.getPending).toHaveBeenCalledTimes(2);
+    expect(pending).toEqual([]);
+  });
+
+  it('a failed cancellation does not prevent the next sync from applying newer settings', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    plugin.cancel.mockRejectedValueOnce(new Error('cancel unavailable'));
+    const first = syncReminders(store(), t);
+    const newer = store();
+    newer.anchors.dailyText.time = '09:00';
+    const second = syncReminders(newer, t);
+    expect(await first).toEqual({ scheduled: 0 });
+    expect(await second).toEqual({ scheduled: 7 });
+    expect(plugin.schedule).toHaveBeenCalledTimes(1);
+    expect(plugin.schedule.mock.calls[0][0].notifications[0].body).toContain('09:00');
+    warn.mockRestore();
+  });
 });
 
 describe('registerReminderSync', () => {
+  it('foreground supersedes a pending debounce with the current settings', async () => {
+    const unsubscribe = registerReminderSync();
+    hooks.change(store());
+    const disabled = { ...store(), reminders: { enabled: false, off: [] } };
+    await hooks.foreground({ store: disabled });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(plugin.getPending).toHaveBeenCalledTimes(1);
+    expect(plugin.schedule).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
   it('syncs on foreground and, debounced, on store changes with the latest store', async () => {
     registerReminderSync();
     const s1 = { ...store(), studyTopic: 'one' };

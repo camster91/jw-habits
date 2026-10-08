@@ -1,7 +1,8 @@
 /**
  * Applies the notification plan through @capacitor/local-notifications.
- * Reminders are best-effort: a denied permission or a plugin failure leaves
- * the app working and just schedules nothing.
+ * Reminders are best-effort: denied permission or plugin failure leaves
+ * the app working. A failed cancellation may leave earlier reminders pending;
+ * later foreground/settings sync can retry.
  */
 import i18n from 'i18next';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -9,7 +10,7 @@ import { planNotifications } from '../domain/notifications.js';
 import { onForeground, onStoreChange } from '../data/StoreProvider.jsx';
 import { isNative } from '../utils/native.js';
 
-/** Permission is only ever checked here; it is requested during onboarding. */
+/** Permission is checked here; only explicit onboarding/settings actions request it. */
 async function permitted() {
   const { display } = await LocalNotifications.checkPermissions();
   return display === 'granted';
@@ -21,7 +22,7 @@ async function permitted() {
  * resolves how many notifications were scheduled.
  * @returns {Promise<{scheduled: number}>}
  */
-export async function syncReminders(store, t) {
+async function applyReminders(store, t) {
   if (!isNative) return { scheduled: 0 };
   try {
     const plan = planNotifications(store, new Date(), t);
@@ -47,6 +48,15 @@ export async function syncReminders(store, t) {
   }
 }
 
+// Native cancel/schedule must be one transaction at a time: an older sync
+// must not schedule after a newer request has disabled reminders.
+let pendingSync = Promise.resolve();
+export function syncReminders(store, t) {
+  const result = pendingSync.then(() => applyReminders(store, t));
+  pendingSync = result.catch(() => {});
+  return result;
+}
+
 const RESCHEDULE_DELAY_MS = 1000;
 
 /**
@@ -57,8 +67,11 @@ const RESCHEDULE_DELAY_MS = 1000;
  */
 export function registerReminderSync() {
   const sync = (store) => syncReminders(store, i18n.t.bind(i18n));
-  const offForeground = onForeground(({ store }) => sync(store));
   let timer = null;
+  const offForeground = onForeground(({ store }) => {
+    clearTimeout(timer);
+    return sync(store);
+  });
   const offChange = onStoreChange((store) => {
     clearTimeout(timer);
     timer = setTimeout(() => void sync(store), RESCHEDULE_DELAY_MS);
