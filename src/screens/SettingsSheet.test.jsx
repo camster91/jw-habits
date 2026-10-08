@@ -116,6 +116,16 @@ afterEach(() => {
 });
 
 describe('SettingsSheet', () => {
+  it('jumps from the top shortcut to Backup without changing any data', () => {
+    const { initial } = renderSheet();
+    fireEvent.click(within(sheet()).getByRole('button', { name: 'Go to Backup' }));
+    expect(within(section('Backup')).getByRole('heading', { name: 'Backup' })).toHaveFocus();
+    expect(current).toEqual(initial);
+    expect(
+      within(section('Backup')).getByRole('button', { name: 'Export a backup' })
+    ).toBeEnabled();
+  });
+
   it('changing meeting days appends a schedule entry and keeps the past intact', () => {
     const { initial } = renderSheet();
     fireEvent.click(within(section('Your week')).getByRole('button', { name: 'Wednesday' }));

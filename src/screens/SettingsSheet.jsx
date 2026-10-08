@@ -17,11 +17,16 @@ import { onBack } from '../utils/backStack.js';
 const FOCUSABLE = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
 const DEFAULT_QUIET = { start: '22:00', end: '07:00' };
 
-function Section({ title, children }) {
+function Section({ title, children, headingRef }) {
   const id = useId();
   return (
     <section aria-labelledby={id} className="space-y-3 border-t border-base-300 pt-4">
-      <h3 id={id} className="text-lg font-semibold">
+      <h3
+        ref={headingRef}
+        tabIndex={headingRef ? -1 : undefined}
+        id={id}
+        className="text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
         {title}
       </h3>
       {children}
@@ -65,6 +70,7 @@ function SettingsDialog({ onClose }) {
   const titleId = useId();
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
+  const backupRef = useRef(null);
 
   // Focus moves in on open and back to whatever opened the sheet on close.
   // While open, focus that lands outside the sheet (however it got there) is
@@ -135,6 +141,13 @@ function SettingsDialog({ onClose }) {
           </button>
         </div>
         <div className="mx-auto max-w-md space-y-4">
+          <button
+            type="button"
+            className="btn btn-outline min-h-11"
+            onClick={() => backupRef.current?.focus()}
+          >
+            {t('fd.settings.goToBackup')}
+          </button>
           <Section title={section('routines')}>
             <StepRoutines {...props} />
           </Section>
@@ -177,7 +190,7 @@ function SettingsDialog({ onClose }) {
               onChange={(on) => update((s) => ({ ...s, whatsNew: { ...s.whatsNew, enabled: on } }))}
             />
           </Section>
-          <Section title={section('backup')}>
+          <Section title={section('backup')} headingRef={backupRef}>
             <BackupSection onReplaced={onClose} />
           </Section>
           <Section title={section('about')}>

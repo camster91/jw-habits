@@ -13,6 +13,7 @@ home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
 - **Version:** 5.2.0
+- **Progress and backup:** Progress starts with recorded routine check-ins for the current Monday-Sunday week (distinct routine/day pairs, currently enabled routines only), followed by a compact garden. Garden sharing requires earned XP. Settings has a top shortcut focusing Backup without exporting or importing.
 - **Current product contract:** `docs/feature-ui-reconciliation.md` records the
   approved UI and notes/preparation boundaries. Today has no garden illustration;
   Progress retains the garden. Study plans use "Use on Today" and "Current plan".

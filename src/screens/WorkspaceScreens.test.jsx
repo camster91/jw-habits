@@ -93,7 +93,10 @@ describe('Notes UI', () => {
     field('Title', 'Keep me');
     fail = true;
     button('Save note');
-    await screen.findAllByText('Storage is full');
+    // The provider reports failure before the editor settles its save promise.
+    // Wait for editor recovery before closing; a busy editor deliberately ignores Close.
+    await screen.findByRole('button', { name: 'Export this draft' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save note' })).toBeEnabled());
     expect(screen.getByLabelText('Title')).toHaveValue('Keep me');
     button('Close');
     expect(screen.getByText('Discard your unsaved changes?')).toBeInTheDocument();

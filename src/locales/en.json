@@ -265,7 +265,8 @@
         "noDiagnostics": "No diagnostic history.",
         "clearedDiagnostics": "Diagnostic history cleared.",
         "diagnosticFailure": "Could not clear diagnostic history."
-      }
+      },
+      "goToBackup": "Go to Backup"
     },
     "links": {
       "opensInLibrary": "Opens in JW Library"
@@ -300,7 +301,13 @@
       "books_other": "{{count}} of 66 books",
       "mapTitle": "Bible books",
       "mapRead": "{{name}}, read",
-      "mapNotYet": "{{name}}, not yet"
+      "mapNotYet": "{{name}}, not yet",
+      "thisWeek": "This week",
+      "checkIns_one": "1 routine check-in",
+      "checkIns_other": "{{count}} routine check-ins",
+      "activeDays_one": "Recorded on 1 day this week",
+      "activeDays_other": "Recorded on {{count}} days this week",
+      "weekEmpty": "Your check-ins appear here as you record them."
     },
     "plans": {
       "title": "Plans",

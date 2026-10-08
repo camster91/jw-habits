@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { occurrences, streak, totals } from './progress.js';
+import { occurrences, streak, totals, weeklyActivity } from './progress.js';
 import { addDays } from './day.js';
 import { withScheduleChange } from './schedule.js';
 import { chapterIndex } from './bible.js';
@@ -485,5 +485,37 @@ describe('switching a routine off or on part-way through a period', () => {
       { key: '2026-09-14', status: 'done' },
     ]);
     expect(streak(store, 'familyWorship', '2026-09-21').current).toBe(1);
+  });
+});
+
+describe('weekly recorded activity', () => {
+  it('counts distinct routine/day pairs, excluding future, previous-week, hidden and unshared entries', () => {
+    const store = makeStore({
+      schedule: [entry('2026-01-01', { enabled: { personalStudy: false } })],
+      log: [
+        log('dailyText', '2026-10-05'),
+        log('dailyText', '2026-10-05'),
+        log('bibleReading', '2026-10-05'),
+        log('dailyText', '2026-10-06'),
+        log('dailyText', '2026-10-04'),
+        log('dailyText', '2026-10-07'),
+        log('personalStudy', '2026-10-06'),
+        log('ministry', '2026-10-06', { shared: false }),
+        log('ministry', '2026-10-05', { shared: true }),
+      ],
+    });
+    expect(weeklyActivity(store, '2026-10-06')).toEqual({ checkIns: 4, activeDays: 2 });
+  });
+
+  it('does not count entries before history starts, including across a year boundary', () => {
+    const store = makeStore({
+      schedule: [entry('2026-01-01')],
+      log: [log('dailyText', '2025-12-31'), log('bibleReading', '2026-01-01')],
+    });
+    expect(weeklyActivity(store, '2026-01-02')).toEqual({ checkIns: 1, activeDays: 1 });
+    expect(weeklyActivity({ ...store, log: [] }, '2026-01-02')).toEqual({
+      checkIns: 0,
+      activeDays: 0,
+    });
   });
 });
