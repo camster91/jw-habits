@@ -50,17 +50,25 @@ navigation. The remaining screens are eager; no broad lazy-route claim is made.
 ## Worker install and update
 
 `npm run offline:verify` serves the real build/worker from an isolated local
-HTTP server. It installs the worker, records a routine, navigates deep links and
-lazy Share offline, supplies a changed worker, checks the waiting update and
-activates it through the actual Update button. The persisted store must remain
-byte-for-byte unchanged through update and offline reload. Initial installation
-must not announce an available update. Workbox's revision-aware `matchPrecache`
-serves the offline navigation fallback.
+HTTP server with no-store responses. It installs the worker, records a routine,
+and visits lazy Share, Notes and Preparation for the first time offline. Using
+fabricated UI input, it creates a note/tags, a dated meeting with a prepared
+section, and an assignment with a checked task. Reload and route changes must
+retain the workspace, and preparation must not create routine activity.
 
-The worker drill disables install-prompt support and also activates an update
-from newer-data recovery, then reloads offline and checks the unknown raw store
-byte-for-byte. Service-worker update detection is independent of the optional
-install-prompt API used by some browsers.
+The drill supplies a changed worker, checks the waiting update and activates it
+through the actual Update button. Both routine and workspace values must remain
+byte-for-byte unchanged through waiting, activation and offline route/reload
+checks. Initial installation must not announce an available update. Workbox's
+revision-aware `matchPrecache` serves the offline navigation fallback.
+
+With install-prompt support disabled, updates also run from unknown/newer routine
+recovery and separately from unknown/newer workspace recovery. The unknown bytes
+and the other store must remain untouched. Offline Notes must retain its disabled
+New note control and download an actual byte-exact copy of the unsupported
+workspace. Service-worker update detection is independent of the optional
+install-prompt API used by some browsers. These browser drills do not certify
+native persistence, signed installs or physical-device update behaviour.
 
 ## Workflow and runtime policy
 
