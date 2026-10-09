@@ -20,8 +20,6 @@ on:
         required: false
         type: boolean
         default: false
-  push:
-    tags: ['v*']
 permissions:
   contents: read
   actions: read
@@ -90,7 +88,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - name: Require independent signing approval policy
+      - name: Require solo-owner signing approval policy
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/native/release_guard.py environment --environment ios-signing
@@ -169,7 +167,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/AuthKey_ci.p8"
   upload:
     needs: archive
-    if: inputs.skip_upload != true && (github.event_name == 'push' || inputs.upload)
+    if: inputs.skip_upload != true && inputs.upload
     environment: testflight-upload
     runs-on: macos-latest
     timeout-minutes: 30

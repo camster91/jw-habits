@@ -11,8 +11,6 @@ on:
         required: false
         type: boolean
         default: false
-  push:
-    tags: ['v*']
 permissions:
   contents: read
   actions: read
@@ -51,7 +49,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - name: Require independent environment approval policy
+      - name: Require solo-owner environment approval policy
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -131,7 +129,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/faithful-days-upload.jks"
   upload:
     needs: bundle
-    if: github.event_name == 'push' || inputs.upload
+    if: inputs.upload
     environment: play-closed-testing
     runs-on: ubuntu-24.04
     timeout-minutes: 30

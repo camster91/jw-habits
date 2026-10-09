@@ -1,6 +1,6 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-08.**
+**Last audited against source: 2026-10-09.**
 
 Preparation creation forms start open for an empty collection and collapse after a successful save. Saved records remain accessible; closing a form retains its draft, and Edit opens and focuses the assignment title. Failed saves keep forms and drafts open.
 Widget foreground processing reads native pending taps, flushes the current routine store durably, then acknowledges only those taps; a failed save leaves them pending. Read/ack methods require the updated native bridge.
@@ -277,4 +277,4 @@ account/signing, assistive technology and household research remain release gate
 
 The prepared `android-closed-testing.yml` separates preflight, `android-signing` and `play-closed-testing` environments. AAB metadata/signature checks and run/attempt artifact replay precede the pinned closed-track uploader. Owner environment/reviewer/credential/lineage setup and exact execution authorization remain gates; no store/device proof exists. See `docs/android-closed-testing.md`.
 
-The iOS TestFlight candidate now separates credential-free preflight/simulator, `ios-signing` archive and `testflight-upload`. Manual upload is opt-in; version tags request both protected stages. Shared read-only `release_guard.py` validates latest exact-source checks and independent environment rules for both native release workflows. The IPA is replayed from the exact run/attempt and version/hash evidence rechecked before upload. Owner setup and real enforcement/signature/processing/device evidence remain incomplete; see `docs/ios-testflight-approval.md`.
+The iOS TestFlight candidate now separates credential-free preflight/simulator, `ios-signing` archive and `testflight-upload`. Both native release workflows are manual-only, with upload opt-in. Shared read-only `release_guard.py` validates latest exact-source checks and the sole-owner environment policy: Cameron (`camster91`, ID `33962910`) initiates dispatch on `agent/261-launch-candidate-review` and approves separate signing/upload pauses. Each environment requires that one User reviewer, self-review prevention disabled, and exactly that custom branch policy. Administrative bypass and actual approval records require separate authenticated verification; the REST guard cannot establish them. The IPA is replayed from the exact run/attempt and version/hash evidence rechecked before upload. Owner setup and real enforcement/signature/processing/device evidence remain incomplete; see `docs/ios-testflight-approval.md`.

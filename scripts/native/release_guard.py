@@ -36,16 +36,56 @@ def source_state(payload):
     return all(name in latest and latest[name].get('status') == 'completed' and latest[name].get('conclusion') == 'success' for name in REQUIRED)
 
 
+OWNER_LOGIN = 'camster91'
+OWNER_ID = 33962910
+RELEASE_BRANCH = 'agent/261-launch-candidate-review'
+
+
+def require_owner_dispatch(context):
+    if not isinstance(context, dict) or any(context.get(key) != value for key, value in {
+        'GITHUB_REPOSITORY': 'camster91/jw-habits',
+        'GITHUB_EVENT_NAME': 'workflow_dispatch',
+        'GITHUB_ACTOR': OWNER_LOGIN,
+        'GITHUB_ACTOR_ID': str(OWNER_ID),
+        'GITHUB_TRIGGERING_ACTOR': OWNER_LOGIN,
+        'GITHUB_REF': 'refs/heads/' + RELEASE_BRANCH,
+    }.items()):
+        raise ValueError('Only the approved owner manual release branch is allowed')
+
+
 def require_environment(payload):
     rules = payload.get('protection_rules') if isinstance(payload, dict) else None
     if not isinstance(rules, list):
         raise ValueError('Invalid environment response')
-    if not any(isinstance(rule, dict) and rule.get('type') == 'required_reviewers' and
-               rule.get('prevent_self_review') is True and isinstance(rule.get('reviewers'), list) and
-               any(isinstance(actor, dict) and actor.get('type') in ('User', 'Team') and
-                   isinstance(actor.get('reviewer'), dict) and isinstance(actor['reviewer'].get('id'), int) and
-                   actor['reviewer']['id'] > 0 for actor in rule['reviewers']) for rule in rules):
-        raise ValueError('Independent reviewer/self-review protection is missing')
+    reviewer_rules = [rule for rule in rules if isinstance(rule, dict) and rule.get('type') == 'required_reviewers']
+    if len(reviewer_rules) != 1:
+        raise ValueError('Exactly one owner review rule is required')
+    rule = reviewer_rules[0]
+    if rule.get('prevent_self_review') is not False:
+        raise ValueError('Solo-owner policy must explicitly allow owner review')
+    reviewers = rule.get('reviewers')
+    if not isinstance(reviewers, list) or len(reviewers) != 1:
+        raise ValueError('Only the approved owner may review')
+    actor = reviewers[0]
+    if not isinstance(actor, dict) or actor.get('type') != 'User':
+        raise ValueError('Owner user reviewer is required')
+    reviewer = actor.get('reviewer')
+    if not isinstance(reviewer, dict) or type(reviewer.get('id')) is not int or reviewer.get('id') != OWNER_ID or reviewer.get('login') != OWNER_LOGIN:
+        raise ValueError('Reviewer identity does not match the approved owner')
+    policy = payload.get('deployment_branch_policy')
+    if not isinstance(policy, dict) or policy.get('protected_branches') is not False or policy.get('custom_branch_policies') is not True:
+        raise ValueError('Explicit release branch restriction is required')
+    # The documented REST response omits the administrator-bypass setting.
+    # Owner must verify it is disabled in the settings UI before credential use.
+
+
+def require_branch_policy(payload):
+    policies = payload.get('branch_policies') if isinstance(payload, dict) else None
+    if not isinstance(policies, list) or payload.get('total_count') != 1 or len(policies) != 1:
+        raise ValueError('Exactly one approved release branch policy is required')
+    policy = policies[0]
+    if not isinstance(policy, dict) or policy.get('name') != RELEASE_BRANCH or policy.get('type') != 'branch':
+        raise ValueError('Unexpected branch or tag policy')
 
 
 def api(repository, endpoint):
@@ -77,12 +117,14 @@ def main():
         if args.mode == 'source':
             wait_source(repository, os.environ['GITHUB_SHA'])
         else:
+            require_owner_dispatch(dict(os.environ))
             if not args.environment:
                 raise ValueError('Environment is required')
             require_environment(api(repository, 'environments/' + args.environment))
+            require_branch_policy(api(repository, 'environments/' + args.environment + '/deployment-branch-policies?per_page=100'))
         print('Native release ' + args.mode + ' guard passed; no external mutation performed')
     except (ValueError, KeyError, OSError, subprocess.CalledProcessError):
-        print('Native release guard failed; verify required checks or independent environment protections', file=sys.stderr)
+        print('Native release guard failed; verify required checks or approved solo-owner environment protections', file=sys.stderr)
         raise SystemExit(1)
 
 
