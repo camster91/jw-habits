@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 import unittest
 
@@ -53,6 +54,11 @@ sys.exit(rc)
 
 
 class DeployRecovery(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if shutil.which('timeout') is None:
+            raise RuntimeError('Deployment simulations require GNU timeout on PATH; missing tooling is not rollback evidence')
+
     def run_case(self, **flags):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -77,6 +83,8 @@ class DeployRecovery(unittest.TestCase):
     def test_bad_staged_image_never_stops_production(self):
         result, state, compose = self.run_case(FAIL_STAGE='1')
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Staged revision failed', result.stdout)
+        self.assertTrue(any(call[:2] == ['docker', 'run'] for call in state['calls']))
         self.assertEqual(state['containers']['jw-habits']['image'], 'old-digest')
         self.assertTrue(state['containers']['jw-habits']['running'])
         self.assertFalse(any(call[:2] == ['docker', 'stop'] for call in state['calls']))
@@ -86,6 +94,8 @@ class DeployRecovery(unittest.TestCase):
         result, state, compose = self.run_case(HANG_PULL='1', PULL_TIMEOUT_SECONDS='1')
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('production was not touched', result.stdout)
+        self.assertIn('Image pull failed or exceeded its deadline', result.stdout)
+        self.assertNotIn('timeout: command not found', result.stderr)
         self.assertTrue(state['containers']['jw-habits']['running'])
         self.assertEqual(state['containers']['jw-habits']['image'], 'old-digest')
         self.assertFalse(any(call[:2] == ['docker', 'stop'] for call in state['calls']))
@@ -94,12 +104,15 @@ class DeployRecovery(unittest.TestCase):
     def test_invalid_image_pull_deadline_is_refused(self):
         result, state, compose = self.run_case(PULL_TIMEOUT_SECONDS='0')
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Invalid image pull deadline', result.stdout)
         self.assertTrue(state['containers']['jw-habits']['running'])
         self.assertEqual(compose, 'old compose\n')
 
     def test_failed_public_validation_restores_previous_container(self):
         result, state, compose = self.run_case(FAIL_PUBLIC='1')
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Local/public revision or TLS check failed', result.stdout)
+        self.assertIn(['docker', 'rename', 'jw-habits-previous', 'jw-habits'], state['calls'])
         self.assertEqual(state['containers']['jw-habits']['image'], 'old-digest')
         self.assertTrue(state['containers']['jw-habits']['running'])
         self.assertEqual(compose, 'old compose\n')
@@ -108,6 +121,8 @@ class DeployRecovery(unittest.TestCase):
     def test_failed_start_restores_previous_container(self):
         result, state, compose = self.run_case(FAIL_START='1')
         self.assertNotEqual(result.returncode, 0)
+        self.assertIn(['docker', 'rename', 'jw-habits-previous', 'jw-habits'], state['calls'])
+        self.assertTrue(any(call[:2] == ['docker', 'run'] and '--name' in call and call[call.index('--name') + 1] == 'jw-habits' for call in state['calls']))
         self.assertEqual(state['containers']['jw-habits']['image'], 'old-digest')
         self.assertTrue(state['containers']['jw-habits']['running'])
         self.assertEqual(compose, 'old compose\n')

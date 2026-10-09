@@ -53,7 +53,10 @@ need an operations policy and an actual drill (#179).
 
 `python3 scripts/deploy/test_remote.py` exercises isolated simulated failures:
 bad staged image, failed production start, failed public probe, and successful
-retention. These prove script sequencing. The image workflow additionally runs the
+retention. GNU `timeout` must be on PATH; absent tooling fails the suite rather
+than counting early exits as successful failure-path checks. Negative cases
+verify that their intended stage or rollback was actually reached. These prove
+script sequencing. The image workflow additionally runs the
 published digest on an isolated Docker runner: mismatched staged revision,
 invalid public HTTPS, successful deployment and manual rollback must preserve
 or restore the original container ID. This is a real Docker drill, not a VPS
