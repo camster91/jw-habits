@@ -62,7 +62,7 @@ The journey suite drives the real UI with the browser clock pinned: onboarding (
 ## Design notes
 
 - **No backend, no auth, no sync.** The app is a personal memory aid and keeps everything on the device. Clearing site data clears your history.
-- **No third-party content.** Links to jw.org and JW Library are built from public facts or entered by the user; the optional What's New check reads only dates from jw.org's public feed.
+- **No third-party content.** Links to jw.org and JW Library are built from public facts or entered by the user; the optional What's New shortcut opens the official page only when tapped, with no automatic feed collection.
 - **Storage keys are stable.** The `jw-` prefixed storage keys are persistence keys used by existing installs and are kept for backward compatibility.
 - **No analytics, telemetry, ads or in-app purchases.**
 

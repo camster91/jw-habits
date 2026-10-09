@@ -108,14 +108,13 @@ See [platform matrix](platform-matrix.md) and [store release pack](store-release
 - [ ] Airplane mode, force-quit, relaunch: the app opens to Today with all data, no error.
 - [ ] Check-ins made offline are still there after a relaunch.
 
-## 5. What's New badge
+## 5. What's New shortcut
 
-- [ ] Online, first foreground of the day: the badge "N new on jw.org" appears when there are
-      new items (or none, if there are none).
-- [ ] Tapping the badge opens jw.org's What's New page externally and clears the badge.
-- [ ] Offline or with the feature off in Settings: no badge and no error.
-- [ ] After a successful non-empty feed check, a second foreground within 24 h makes no request.
-      Failed/empty checks may retry on a later foreground; verify the feature-off switch stops requests.
+- [ ] Today offers What's New on jw.org even before any site check, with no unseen-count claim.
+- [ ] Tapping opens the official page externally; closing it returns to the app with data intact.
+- [ ] Offline, the shortcut remains available without claiming a network result; destination loading is handled by the browser.
+- [ ] Switching it off in Settings hides the shortcut.
+- [ ] No automated jw.org feed request occurs at launch or foreground on the actual signed device build.
 
 ## 6. Accent and theme
 

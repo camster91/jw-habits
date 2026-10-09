@@ -1,5 +1,7 @@
+import QuickGuide from '../components/QuickGuide.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Sun, Sparkles } from 'lucide-react';
 import { useWorkspace } from '../data/useWorkspace.js';
 import { MEETING_PARTS } from '../domain/workspace.js';
 import { useTranslation } from 'react-i18next';
@@ -255,10 +257,9 @@ export default function Today({ onOpenSettings = () => {} }) {
     update((s) => setMinistry(s, today, patch));
   };
 
-  // Opening the page zeroes the count; the checks already keep every guid seen.
+  // Open the official page only on request; never fetch or copy its content.
   const openWhatsNew = () => {
     openLink(whatsNewPageUrl(linkLocale(language)));
-    update((s) => ({ ...s, whatsNew: { ...s.whatsNew, newCount: 0 } }));
   };
 
   const dismiss = () => {
@@ -340,6 +341,7 @@ export default function Today({ onOpenSettings = () => {} }) {
     return (
       <RoutineRow
         key={id}
+        routineId={id}
         testId={`row-${id}`}
         label={label(id)}
         detail={detailOf(id)}
@@ -420,29 +422,58 @@ export default function Today({ onOpenSettings = () => {} }) {
       className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-4">
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 tabIndex={-1} className="text-3xl font-bold focus:outline-none">
-              {t('fd.today.title')}
-            </h1>
-            <p className="text-sm text-base-content/70">
-              {new Intl.DateTimeFormat(language, {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-              }).format(dateOf(today))}
-            </p>
+        <header className="fd-today-header space-y-3 rounded-3xl p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h1 tabIndex={-1} className="text-3xl font-bold focus:outline-none">
+                {t('fd.today.title')}
+              </h1>
+              <p className="text-sm text-base-content/70">
+                {new Intl.DateTimeFormat(language, {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                }).format(dateOf(today))}
+              </p>
+            </div>
+            <Sun aria-hidden="true" className="fd-today-sun h-10 w-10 shrink-0" />
           </div>
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" />
+            {rows.length > 0
+              ? t('fd.today.dailySteps', {
+                  done: rows.filter((id) =>
+                    id === 'ministry' ? month?.value.shared : isDone(store, id, today)
+                  ).length,
+                  total: rows.length,
+                })
+              : t('fd.today.gentleDay')}
+          </p>
         </header>
         <p className="text-sm text-base-content/70">{t('fd.today.checkHint')}</p>
+        <QuickGuide
+          title="Make Today your own"
+          steps={[
+            {
+              title: 'Take one small step',
+              body: 'Hold an empty circle to check off a routine. Tap a checked circle to undo. Keyboard and assistive controls can activate it too.',
+            },
+            {
+              title: 'Open your references',
+              body: 'The arrow beside a routine opens its linked reference. What’s New opens the official jw.org page when you choose.',
+            },
+            {
+              title: 'Find your rhythm',
+              body: 'Change routine days, reading pace, colours and reminders in Settings. Your day rolls over at 3 a.m.',
+            },
+          ]}
+        />
 
         {fresh && <p className="text-base-content/80">{t(`fd.today.${fresh}`)}</p>}
 
-        {store.whatsNew.enabled && store.whatsNew.newCount > 0 && (
-          <WhatsNewBadge count={store.whatsNew.newCount} onOpen={openWhatsNew} />
-        )}
+        {store.whatsNew.enabled && <WhatsNewBadge onOpen={openWhatsNew} />}
 
-        <div role="status" aria-live="polite" className="min-h-6 text-[var(--fd-accent-text)]">
+        <div role="status" aria-live="polite" className="empty:hidden text-[var(--fd-accent-text)]">
           {line && (
             <>
               {line.text}

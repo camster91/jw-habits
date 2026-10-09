@@ -1,3 +1,5 @@
+import QuickGuide from '../components/QuickGuide.jsx';
+import ScreenIntro from '../components/ScreenIntro.jsx';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -110,7 +112,29 @@ export default function Plans() {
       className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-6">
-        <h1 className="text-3xl font-bold">{t('fd.plans.title')}</h1>
+        <ScreenIntro
+          title={t('fd.plans.title')}
+          subtitle="Make room for what matters. One small step is a good start."
+          art="plans"
+          tone="lavender"
+        />
+        <QuickGuide
+          title="Build your first plan"
+          steps={[
+            {
+              title: 'Choose a focus',
+              body: 'Start a study or family plan. Give it a title that means something to you.',
+            },
+            {
+              title: 'Make it manageable',
+              body: 'Add your own steps, or use the chapter, lesson or weekly step generator. You can add safe links to your references.',
+            },
+            {
+              title: 'Bring it into your day',
+              body: 'Use on Today makes a study plan current. Hold Personal study on Today to record the next step; planning alone never records activity.',
+            },
+          ]}
+        />
         <p className="text-base-content/80">{t('fd.plans.intro')}</p>
         <Link
           to="/plans/preparation"

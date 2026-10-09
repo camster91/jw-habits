@@ -1,3 +1,4 @@
+import QuickGuide from '../components/QuickGuide.jsx';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -259,6 +260,23 @@ export default function PlanTrail() {
   return shell(
     <>
       <BackLink />
+      <QuickGuide
+        title="Take your plan one step at a time"
+        steps={[
+          {
+            title: 'Shape the trail',
+            body: 'Add or edit steps in your own words, with reference links when helpful.',
+          },
+          {
+            title: 'Use on Today',
+            body: 'A current study plan supplies the next Personal study step. Today records what you actually do.',
+          },
+          {
+            title: 'Pause when you need',
+            body: 'Planning is not a commitment to a streak. Return to your next step at your own pace.',
+          },
+        ]}
+      />
       <header
         style={{ ...planStyle(plan.colour), backgroundColor: 'var(--plan)' }}
         className="space-y-3 rounded-3xl p-5 text-white"

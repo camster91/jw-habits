@@ -183,8 +183,9 @@ describe('Progress', () => {
     const none = Object.fromEntries(Object.keys(base.schedule[0].enabled).map((k) => [k, false]));
     renderProgress({ ...base, schedule: [{ ...base.schedule[0], enabled: none }] });
     expect(screen.queryByRole('heading', { name: 'Daily text' })).not.toBeInTheDocument();
-    // Only the Bible-map list remains.
-    expect(screen.getAllByRole('list')).toHaveLength(1);
+    // Guides and the Bible map remain; there is no routine-progress list.
+    expect(screen.queryByRole('list', { name: 'Routine progress' })).toBeNull();
+    expect(screen.getByRole('list', { name: 'Bible books' })).toBeInTheDocument();
   });
 
   it('shows the reading totals', () => {

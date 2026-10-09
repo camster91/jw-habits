@@ -53,6 +53,27 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 describe('Notes UI', () => {
+  it('starts an editable question draft and writes nothing before Save', async () => {
+    const store = defaultStore(today, 'en');
+    const before = structuredClone(store);
+    render(
+      <Harness store={store}>
+        <Notes />
+      </Harness>
+    );
+    button('A question');
+    expect(current.notes).toHaveLength(0);
+    expect(screen.getByLabelText('Title')).toHaveValue('A question to explore');
+    expect(screen.getByLabelText('Your note').value).toContain('My question:');
+    field('Your note', 'My own question and reflection');
+    button('Save note');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(current.notes).toHaveLength(1);
+    expect(current.notes[0].body).toBe('My own question and reflection');
+    expect(current.notes[0].context).toEqual({ kind: 'day', id: today });
+    expect(store).toEqual(before);
+  });
+
   it('creates, searches, edits and deletes a durable note without routine activity', async () => {
     render(
       <Harness>

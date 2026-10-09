@@ -1,3 +1,5 @@
+import QuickGuide from '../components/QuickGuide.jsx';
+import ScreenIntro from '../components/ScreenIntro.jsx';
 import ShareButton from '../components/fun/ShareButton.jsx';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -64,7 +66,28 @@ export default function Progress() {
       className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-4">
-        <h1 className="text-3xl font-bold">{t('fd.progress.title')}</h1>
+        <ScreenIntro
+          title={t('fd.progress.title')}
+          subtitle="Little moments add up. Your pace is welcome here."
+          tone="teal"
+        />
+        <QuickGuide
+          title="Understand your progress"
+          steps={[
+            {
+              title: 'Start with this week',
+              body: 'The weekly card counts the routine check-ins you actually recorded, for routines currently enabled.',
+            },
+            {
+              title: 'Watch your garden grow',
+              body: 'Recorded activity earns points and garden milestones. Quiet days carry no penalty; there is no leaderboard.',
+            },
+            {
+              title: 'Make it comfortable',
+              body: 'Settings lets you hide points, choose a quiet tone and change your routine rhythm.',
+            },
+          ]}
+        />
         <section
           aria-label={t('fd.progress.thisWeek')}
           className="card space-y-2 bg-base-100 p-4 shadow-sm"
@@ -107,7 +130,7 @@ export default function Progress() {
           </Link>
         </section>
         {cards.length > 0 && (
-          <ul className="space-y-3">
+          <ul aria-label="Routine progress" className="space-y-3">
             {cards.map((id) => (
               <RoutineCard
                 key={id}

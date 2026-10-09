@@ -1,3 +1,5 @@
+import QuickGuide from '../components/QuickGuide.jsx';
+import ScreenIntro from '../components/ScreenIntro.jsx';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWorkspace } from '../data/useWorkspace.js';
@@ -6,11 +8,11 @@ import { putNote, searchNotes, searchRelated } from '../domain/workspace.js';
 import { saveBackup } from '../utils/backup.js';
 import Sheet from '../components/plans/Sheet.jsx';
 
-function NoteEditor({ note, context, onClose }) {
+function NoteEditor({ note, seed, context, onClose }) {
   const { save } = useWorkspace();
   const { today } = useStore();
-  const [title, setTitle] = useState(note?.title ?? '');
-  const [body, setBody] = useState(note?.body ?? '');
+  const [title, setTitle] = useState(note?.title ?? seed?.title ?? '');
+  const [body, setBody] = useState(note?.body ?? seed?.body ?? '');
   const [tags, setTags] = useState(note?.tags.join(', ') ?? '');
   const [links, setLinks] = useState(note?.links.join('\n') ?? '');
   const [error, setError] = useState('');
@@ -211,7 +213,29 @@ export default function Notes() {
   return (
     <main className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]">
       <div className="mx-auto max-w-md space-y-4">
-        <h1 className="text-3xl font-bold">Notes</h1>
+        <ScreenIntro
+          title="Notes"
+          subtitle="A little home for your ideas."
+          art="notes"
+          tone="rose"
+        />
+        <QuickGuide
+          title="Keep an idea you can find again"
+          steps={[
+            {
+              title: 'Capture it in your words',
+              body: 'Write a question, reflection or takeaway. Notes are private on this device.',
+            },
+            {
+              title: 'Give it a home',
+              body: 'Add comma-separated tags and your own reference links. Search can find matching notes and plan steps.',
+            },
+            {
+              title: 'Keep a copy',
+              body: 'Use Settings → Backup before changing devices. Saving a note does not check off a routine.',
+            },
+          ]}
+        />
         <p>
           Your thoughts, questions and references. Notes stay on this device and do not mark a
           routine complete.
@@ -231,6 +255,38 @@ export default function Notes() {
         >
           New note
         </button>
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Need a starting point?</p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              {
+                label: 'A question',
+                title: 'A question to explore',
+                body: 'My question:\n\nReferences to revisit:\n\nWhat I learn:',
+              },
+              {
+                label: 'A takeaway',
+                title: 'Something to remember',
+                body: 'What stood out:\n\nWhy it matters to me:\n\nOne thing to try:',
+              },
+              {
+                label: 'Family idea',
+                title: 'An idea for family worship',
+                body: 'Something we could discuss:\n\nQuestions to ask:\n\nAn activity to try:',
+              },
+            ].map((seed) => (
+              <button
+                key={seed.label}
+                disabled={!ready}
+                type="button"
+                className="btn btn-outline btn-sm min-h-11"
+                onClick={() => setEditing({ seed })}
+              >
+                {seed.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <label className="block">
           <span>Search notes and plans</span>
           <input
@@ -313,7 +369,12 @@ export default function Notes() {
         </Link>
       </div>
       {editing && (
-        <NoteEditor note={editing.id ? editing : null} context={context} onClose={close} />
+        <NoteEditor
+          note={editing.id ? editing : null}
+          seed={editing.seed}
+          context={context}
+          onClose={close}
+        />
       )}
     </main>
   );

@@ -22,6 +22,7 @@ const server = http.createServer((req, res) => {
       '.webmanifest': 'application/manifest+json',
       '.json': 'application/json',
       '.png': 'image/png',
+      '.webp': 'image/webp',
     }[path.extname(file)] || 'application/octet-stream';
   res.setHeader('Content-Type', type);
   res.setHeader('Cache-Control', 'no-store');
@@ -67,6 +68,15 @@ const server = http.createServer((req, res) => {
     assert.ok(JSON.parse(saved).log.length > 0, 'completed routine persisted');
     console.log('Testing offline navigation');
     await context.setOffline(true);
+    for (const name of ['welcome', 'plans', 'notes']) {
+      const artwork = await page.evaluate(async (url) => {
+        const response = await fetch(url);
+        const bitmap = await createImageBitmap(await response.blob());
+        return { ok: response.ok, width: bitmap.width, height: bitmap.height };
+      }, `/illustrations/${name}.webp`);
+      assert.ok(artwork.ok && artwork.width > 0 && artwork.height > 0, `${name} artwork is decodable offline`);
+    }
+    console.log('All original illustrations available offline');
     await page.goto(`${base}/plans`, { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { name: 'Plans', exact: true }).waitFor();
     assert.equal(

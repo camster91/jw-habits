@@ -1,3 +1,5 @@
+import QuickGuide from '../components/QuickGuide.jsx';
+import ScreenIntro from '../components/ScreenIntro.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkspace } from '../data/useWorkspace.js';
@@ -142,7 +144,29 @@ export default function Preparation() {
         <Link className="inline-flex min-h-11 items-center underline" to="/plans">
           Back to Plans
         </Link>
-        <h1 className="text-3xl font-bold">Prepare ahead</h1>
+        <ScreenIntro
+          title="Prepare ahead"
+          subtitle="A calmer meeting day starts with a small step today."
+          art="plans"
+          tone="amber"
+        />
+        <QuickGuide
+          title="Get ready, without rushing"
+          steps={[
+            {
+              title: 'Pick the real date',
+              body: 'Add a midweek or weekend meeting. Keep its checklist with that meeting, even when you prepare early.',
+            },
+            {
+              title: 'Break an assignment down',
+              body: 'Add your assignment and edit its checklist: read, practise and check timing are a starting point, not required steps.',
+            },
+            {
+              title: 'Capture your thinking',
+              body: 'Open a linked note for your ideas and references. Preparation stays separate from routine activity on Today.',
+            },
+          ]}
+        />
         <p>
           Choose the actual meeting or assignment date. Prepared items stay separate from activity
           recorded on Today.

@@ -1,3 +1,5 @@
+import QuickGuide from '../components/QuickGuide.jsx';
+import ScreenIntro from '../components/ScreenIntro.jsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -405,7 +407,29 @@ export default function FamilyWeeks() {
           <ArrowLeft aria-hidden="true" className="h-5 w-5" />
           {t('fd.family.back')}
         </Link>
-        <h1 className="text-2xl font-bold">{t('fd.family.title')}</h1>
+        <ScreenIntro
+          title={t('fd.family.title')}
+          subtitle="A little time together, made your own."
+          art="plans"
+          tone="rose"
+        />
+        <QuickGuide
+          title="Plan an evening together"
+          steps={[
+            {
+              title: 'Choose your week',
+              body: 'Add your own topic or a step from a family plan to the week you want.',
+            },
+            {
+              title: 'Keep it simple',
+              body: 'A question, a discussion and one thing to try can be enough. You decide the content and timing.',
+            },
+            {
+              title: 'Record it on Today',
+              body: 'Planning an evening does not mark it done. Use the Family worship routine when you actually meet.',
+            },
+          ]}
+        />
         {!hasFamilyPlan && <p className="text-base-content/70">{t('fd.family.noPlans')}</p>}
         {planWeeks(today).map((w) => (
           <WeekCard key={w} week={w} today={today} />

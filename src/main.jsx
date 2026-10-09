@@ -11,7 +11,6 @@ import { initializeNative, isNative, isWeb, appLifecycle } from './utils/native.
 import { consumeBack } from './utils/backStack.js';
 import { StoreProvider } from './data/StoreProvider.jsx';
 import { registerReminderSync } from './native/reminders.js';
-import { registerWhatsNewCheck } from './native/whatsNewClient.js';
 import { registerWidgetBridge } from './native/widgetBridge.js';
 import { registerBadgeAwards } from './native/badgeAwards.js';
 
@@ -52,8 +51,6 @@ window.onunhandledrejection = function (event) {
 
 // Reschedule local notifications on every app open
 registerReminderSync();
-// Check jw.org's feed for new items (at most daily; dates only)
-registerWhatsNewCheck();
 // Apply widget check-ins on foreground and keep the widget snapshot current
 registerWidgetBridge();
 // Award badges once when their rules are met (never revoked)

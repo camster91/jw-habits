@@ -121,7 +121,11 @@
       "readingPaceYear": "Year-plan comparison: {{recorded}} chapters recorded; {{planned}} planned by today. Extra chapters stay on the day you read them.",
       "readingAhead_one": "About {{count}} day ahead of the year-plan pace.",
       "readingAhead_other": "About {{count}} days ahead of the year-plan pace.",
-      "checkHint": "Hold an empty circle to check a routine. Tap a checked circle to undo."
+      "checkHint": "Hold an empty circle to check a routine. Tap a checked circle to undo.",
+      "whatsNewLink": "What's New on jw.org",
+      "whatsNewHint": "Explore the latest on the official website ↗",
+      "dailySteps": "{{done}} of {{total}} daily steps · A little at a time",
+      "gentleDay": "Room to recharge today"
     },
     "onboarding": {
       "stepOf": "Step {{step}} of {{total}}",
@@ -238,8 +242,8 @@
         }
       },
       "whatsNew": {
-        "toggle": "Show what's new on jw.org",
-        "hint": "A small count on Today when jw.org has something new."
+        "toggle": "Show the What's New shortcut",
+        "hint": "Open the official jw.org page from Today. No automatic checks or copied content."
       },
       "reminders": {
         "toggle": "Reminders",

@@ -1,3 +1,4 @@
+import QuickGuide from '../components/QuickGuide.jsx';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
@@ -126,7 +127,7 @@ function SettingsDialog({ onClose }) {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={onKeyDown}
       >
-        <div className="flex items-center justify-between">
+        <div className="fd-settings-heading flex items-center justify-between rounded-2xl p-3">
           <h2 id={titleId} className="text-xl font-semibold">
             {t('fd.settings.title')}
           </h2>
@@ -148,6 +149,23 @@ function SettingsDialog({ onClose }) {
           >
             {t('fd.settings.goToBackup')}
           </button>
+          <QuickGuide
+            title="Your app, your rhythm"
+            steps={[
+              {
+                title: 'Make it fit',
+                body: 'Choose the routines and days that work for you. Adjust reading, colours and tone whenever your rhythm changes.',
+              },
+              {
+                title: 'Let reminders be gentle',
+                body: 'Reminders need your phone’s permission. You can switch individual routines off.',
+              },
+              {
+                title: 'Protect your journal',
+                body: 'Backup includes your routines, notes and preparation. Save it somewhere private before clearing app data or changing phones.',
+              },
+            ]}
+          />
           <Section title={section('routines')}>
             <StepRoutines {...props} />
           </Section>

@@ -1,6 +1,14 @@
 import { Children } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Sun, BookOpen, CalendarDays, Users, NotebookPen } from 'lucide-react';
+
+const ICONS = {
+  dailyText: Sun,
+  bibleReading: BookOpen,
+  meetingPrep: CalendarDays,
+  familyWorship: Users,
+  personalStudy: NotebookPen,
+};
 import HoldToCheck from './HoldToCheck.jsx';
 import { openLink } from '../native/openLink.js';
 
@@ -12,6 +20,7 @@ import { openLink } from '../native/openLink.js';
  */
 export default function RoutineRow({
   label,
+  routineId,
   detail,
   done,
   onComplete,
@@ -22,12 +31,21 @@ export default function RoutineRow({
   children,
 }) {
   const { t } = useTranslation();
+  const Icon = ICONS[routineId];
   return (
-    <li data-testid={testId} className="rounded-2xl bg-base-100 p-3 shadow-sm">
+    <li
+      data-testid={testId}
+      data-routine={routineId}
+      data-done={done}
+      className="fd-routine rounded-2xl bg-base-100 p-3 shadow-sm"
+    >
       <div className="flex items-center gap-3">
         <HoldToCheck done={done} onComplete={onComplete} onUndo={onUndo} label={label} />
         <div className="min-w-0 flex-1">
-          <p className="break-words font-medium">{label}</p>
+          <p className="flex items-center gap-2 break-words font-semibold">
+            {Icon && <Icon aria-hidden="true" className="fd-routine-icon h-4 w-4 shrink-0" />}
+            <span>{label}</span>
+          </p>
           {detail && <p className="break-words text-sm text-base-content/70">{detail}</p>}
         </div>
         {link && (

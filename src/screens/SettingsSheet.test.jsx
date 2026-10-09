@@ -338,7 +338,7 @@ describe('SettingsSheet', () => {
 
   it("What's New and quiet hours write through", () => {
     renderSheet();
-    fireEvent.click(screen.getByRole('switch', { name: "Show what's new on jw.org" }));
+    fireEvent.click(screen.getByRole('switch', { name: "Show the What's New shortcut" }));
     expect(current.whatsNew.enabled).toBe(false);
     fireEvent.click(screen.getByRole('switch', { name: 'Quiet hours' }));
     expect(current.quietHours).toEqual({ start: '22:00', end: '07:00' });

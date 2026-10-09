@@ -118,8 +118,11 @@ export default defineConfig({
         // valid narrow-form-factor screenshot, and shipping a wrong one is
         // worse than shipping none. Add real captures here when available.
       },
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,webp,svg,woff,woff2,ttf}'],
+      },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,webp,svg,woff,woff2,ttf}'],
         cleanupOutdatedCaches: true,
         // We deliberately do NOT set skipWaiting/clientsClaim here —
         // those are controlled in src/sw.js so the user gets a

@@ -331,7 +331,7 @@ describe('Today: cards and lines', () => {
     expect(screen.queryByText('Set your meeting days')).toBeNull();
   });
 
-  it('shows the What’s New badge; a tap opens the page and zeroes the count, offline', () => {
+  it("opens the official What's New page without changing saved metadata or fetching content", () => {
     const whatsNew = {
       enabled: true,
       lastCheck: '2026-10-05T00:00:00.000Z',
@@ -340,23 +340,23 @@ describe('Today: cards and lines', () => {
     };
     window.fetch = vi.fn();
     renderToday(makeStore({ whatsNew }));
-    fireEvent.click(screen.getByRole('button', { name: '2 new on jw.org' }));
+    fireEvent.click(screen.getByRole('button', { name: /What's New on jw.org/ }));
     expect(openLink).toHaveBeenCalledWith('https://www.jw.org/en/whats-new/');
-    expect(current.whatsNew).toEqual({ ...whatsNew, newCount: 0 });
+    expect(current.whatsNew).toEqual(whatsNew);
     expect(CapacitorHttp.get).not.toHaveBeenCalled();
     expect(window.fetch).not.toHaveBeenCalled();
-    expect(screen.queryByText(/new on jw\.org/)).toBeNull();
+    expect(screen.queryByText(/2 new on jw\.org/)).toBeNull();
   });
 
   it('shows no badge once What’s New is switched off, even with a count left over', () => {
     const whatsNew = { enabled: false, lastCheck: null, seen: ['a'], newCount: 2 };
     renderToday(makeStore({ whatsNew }));
-    expect(screen.queryByRole('button', { name: '2 new on jw.org' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /What's New on jw.org/ })).toBeNull();
   });
 
-  it('shows no badge when nothing is new', () => {
+  it('offers the official page even before any feed check', () => {
     renderToday(makeStore());
-    expect(screen.queryByText(/new on jw\.org/)).toBeNull();
+    expect(screen.getByRole('button', { name: /What's New on jw.org/ })).toBeInTheDocument();
   });
 
   it('opens a week with a fresh-start line on Monday', () => {

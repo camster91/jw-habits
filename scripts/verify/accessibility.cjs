@@ -26,6 +26,9 @@ async function scan(page, label) {
       await scan(page,`${theme} onboarding`);
       await onboardSkip(page);
       await scan(page,`${theme} Today`);
+      await page.getByText('Make Today your own',{exact:true}).click();
+      await scan(page,`${theme} Today guide expanded`);
+      await page.getByText('Make Today your own',{exact:true}).click();
       await hold(page,routineButton(page,'Daily text'));
       await scan(page,`${theme} Today completed`);
       await page.getByRole('button',{name:'Settings',exact:true}).click();
@@ -34,6 +37,8 @@ async function scan(page, label) {
       for (const route of ['plans','plans/preparation','notes','progress','progress/badges','share?text=Example%20shared%20text']) {
         await page.goto(`${BASE}/${route}`,{waitUntil:'networkidle'});
         await scan(page,`${theme} ${route}`);
+        const guide=page.locator('details.fd-guide summary');
+        if(await guide.count()) { await guide.click(); await scan(page,`${theme} ${route} guide expanded`); await guide.click(); }
       }
       const newerRaw=JSON.stringify({version:4,theme,futureNotes:['Synthetic private note']},null,2);
       await page.evaluate(raw=>localStorage.setItem('jw-habits-v2',raw),newerRaw);

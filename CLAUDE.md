@@ -11,8 +11,8 @@ If you change anything in this doc, bump the date. If you change anything in `sr
 
 A Capacitor (React + Vite) mobile/PWA routine tracker for six spiritual routines: the daily
 text, Bible reading, meeting prep, family worship, personal study and the ministry. Today shows
-what is due and a long press checks it off; Progress shows how the weeks are going; onboarding
-sets it up in six skippable steps, or starts directly with existing/default settings from the welcome. Today visibly explains hold-to-check and tap-to-undo; open controls are empty circles. Reminders, a "What's New" count from jw.org's public feed, and
+what is due and a long press checks it off; Today uses original coloured routine cards and a compact daily completion summary; Progress shows how the weeks are going; onboarding
+sets it up in six skippable steps, or starts directly with existing/default settings from the welcome. Today visibly explains hold-to-check and tap-to-undo; open controls are empty circles. Reminders, a user-opened "What's New" shortcut to jw.org, and
 home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
@@ -33,8 +33,7 @@ This is the central design constraint. The app bundles no jw.org text, no verses
 Bible book names and chapter counts are public facts (`domain/bible.js`); encouragement lines
 carry scripture *references* as data, never verse text. Link buttons open jw.org / JW Library
 URLs built from those facts, or a link the user typed (`links` in the store, validated by
-`isSafeHttpUrl`). The one network call is the What's New feed check (dates and counts only, at
-least 24 hours after a successful check; failed/empty checks may retry on later foregrounds; can be switched off in Settings).
+`isSafeHttpUrl`). There is no automatic jw.org feed collection. The optional What's New shortcut opens the official page only when tapped, makes no unseen-update claim, and preserves legacy feed metadata without using it.
 
 Do not add bundled third-party content. If a feature seems to need some, it needs a
 user-editable slot instead.
@@ -278,3 +277,10 @@ account/signing, assistive technology and household research remain release gate
 The prepared `android-closed-testing.yml` separates preflight, `android-signing` and `play-closed-testing` environments. AAB metadata/signature checks and run/attempt artifact replay precede the pinned closed-track uploader. Owner environment/reviewer/credential/lineage setup and exact execution authorization remain gates; no store/device proof exists. See `docs/android-closed-testing.md`.
 
 The iOS TestFlight candidate now separates credential-free preflight/simulator, `ios-signing` archive and `testflight-upload`. Both native release workflows are manual-only, with upload opt-in. Shared read-only `release_guard.py` validates latest exact-source checks and the sole-owner environment policy: Cameron (`camster91`, ID `33962910`) initiates dispatch on `agent/261-launch-candidate-review` and approves separate signing/upload pauses. Each environment requires that one User reviewer, self-review prevention disabled, and exactly that custom branch policy. Administrative bypass and actual approval records require separate authenticated verification; the REST guard cannot establish them. The IPA is replayed from the exact run/attempt and version/hash evidence rechecked before upload. Owner setup and real enforcement/signature/processing/device evidence remain incomplete; see `docs/ios-testflight-approval.md`.
+
+
+## Whole-app character and guidance — October 9
+
+Original transparent paper-cut illustrations are bundled as optimized WebP in public/illustrations (welcome, plans, notes). ScreenIntro and QuickGuide provide consistent coloured page introductions and native expandable guides across Today, Plans, Notes, Preparation, Family weeks, Plan trail, Progress, Badges and Settings. All onboarding steps retain their existing choices. Notes offers three original editable draft starters; choosing one never persists content or routine activity before Save. Today uses coloured routine accents and an actual visible-row completion summary. Reduced-motion and dark theme remain supported; Today still contains no garden.
+
+What’s New is now a user-opened official-page shortcut. No runtime RSS fetch or foreground collection remains; compatibility exports return null/no-op. Existing saved metadata and frozen storage keys are preserved and never used for update claims. Website terms reviewed at https://www.jw.org/en/terms-of-use/; links permitted, distributed site-data collection restricted. This is a conservative product boundary, not permission to copy publisher content or a legal certification. The current local polish has not been published, rebuilt natively or distributed.
