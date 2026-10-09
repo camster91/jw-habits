@@ -109,6 +109,24 @@ class ReleaseEvidenceTests(unittest.TestCase):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 release.inspect_android(text, self.metadata)
 
+    def test_android_sdk_badging_codename_does_not_replace_package_name(self):
+        line = "package: name='ca.ashbi.habittracker' versionCode='520' versionName='5.2.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'"
+        self.assertEqual(release.inspect_android(line, self.metadata)[0]['identifier'], release.APP_ID)
+
+    def test_android_prefixed_attribute_cannot_supply_a_missing_required_field(self):
+        for line in ("package: compileSdkVersionCodename='ca.ashbi.habittracker' versionCode='520' versionName='5.2.0'",
+                     "package: name='ca.ashbi.habittracker' injectedversionCode='520' versionName='5.2.0'",
+                     "package: name='ca.ashbi.habittracker' versionCode='520' injectedversionName='5.2.0'"):
+            with self.subTest(line=line), self.assertRaises(ValueError):
+                release.inspect_android(line, self.metadata)
+
+    def test_android_duplicate_or_malformed_package_fields_are_rejected(self):
+        valid = "package: name='ca.ashbi.habittracker' versionCode='520' versionName='5.2.0'"
+        for line in (valid + " name='ca.ashbi.habittracker'", valid + " versionCode='520'",
+                     valid + ' trailing-garbage', valid.replace("name='", "name=\"", 1)):
+            with self.subTest(line=line), self.assertRaises(ValueError):
+                release.inspect_android(line, self.metadata)
+
     def test_invalid_metadata_and_empty_artifact_fail(self):
         path = self.root / 'empty.ipa'
         path.touch()

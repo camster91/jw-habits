@@ -108,8 +108,15 @@ def inspect_android(badging, metadata):
     lines = [line for line in badging.splitlines() if line.startswith('package:')]
     if len(lines) != 1:
         raise ValueError('Expected one Android package record')
-    fields = dict(re.findall(r"(name|versionCode|versionName)='([^']*)'", lines[0]))
-    if fields != {'name': APP_ID, 'versionCode': str(metadata['buildNumber']), 'versionName': metadata['version']}:
+    tail = lines[0][len('package:'):]
+    if not re.fullmatch(r"(?:\s+[A-Za-z][A-Za-z0-9_]*='[^']*')+\s*", tail):
+        raise ValueError('Malformed Android package record')
+    pairs = re.findall(r"\s+([A-Za-z][A-Za-z0-9_]*)='([^']*)'", tail)
+    fields = dict(pairs)
+    if len(fields) != len(pairs):
+        raise ValueError('Duplicate Android package fields')
+    expected = {'name': APP_ID, 'versionCode': str(metadata['buildNumber']), 'versionName': metadata['version']}
+    if any(fields.get(key) != value for key, value in expected.items()):
         raise ValueError('Android artifact identity/version/build does not match resolved inputs')
     return [{'identifier': APP_ID, 'version': fields['versionName'], 'buildNumber': fields['versionCode']}]
 
