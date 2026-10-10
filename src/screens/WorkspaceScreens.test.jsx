@@ -74,6 +74,53 @@ describe('Notes UI', () => {
     expect(store).toEqual(before);
   });
 
+  it.each(['A question', 'A takeaway', 'Family idea'])(
+    'closes an untouched %s starter immediately without saving',
+    (starter) => {
+      render(
+        <Harness>
+          <Notes />
+        </Harness>
+      );
+      screen.getByRole('button', { name: starter, exact: true }).focus();
+      button(starter);
+      button('Close');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(current.notes).toEqual([]);
+      expect(screen.getByRole('button', { name: starter, exact: true })).toHaveFocus();
+    }
+  );
+
+  it('shows a focused close choice for edited starters and preserves every draft field', () => {
+    render(
+      <Harness>
+        <Notes />
+      </Harness>
+    );
+    button('Family idea');
+    field('Your note', 'My edited family idea');
+    field('Tags (separate with commas)', 'family');
+    field('Links (one per line)', 'https://example.com/reference');
+    button('Close');
+    expect(screen.getByRole('dialog', { name: 'Unsaved changes' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your note')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Keep editing' })).toHaveFocus();
+    button('Keep editing');
+    expect(screen.getByLabelText('Title')).toHaveFocus();
+    expect(screen.getByLabelText('Your note')).toHaveValue('My edited family idea');
+    expect(screen.getByLabelText('Tags (separate with commas)')).toHaveValue('family');
+    expect(screen.getByLabelText('Links (one per line)')).toHaveValue(
+      'https://example.com/reference'
+    );
+    button('Close');
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(screen.getByLabelText('Your note')).toHaveValue('My edited family idea');
+    button('Close');
+    button('Discard changes');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(current.notes).toEqual([]);
+  });
+
   it('creates, searches, edits and deletes a durable note without routine activity', async () => {
     render(
       <Harness>

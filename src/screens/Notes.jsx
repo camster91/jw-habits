@@ -1,6 +1,6 @@
 import QuickGuide from '../components/QuickGuide.jsx';
 import ScreenIntro from '../components/ScreenIntro.jsx';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWorkspace } from '../data/useWorkspace.js';
 import { useStore } from '../data/useStore.js';
@@ -19,6 +19,14 @@ function NoteEditor({ note, seed, context, onClose }) {
   const [busy, setBusy] = useState(false);
   const [discard, setDiscard] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const titleRef = useRef(null);
+  const keepEditingRef = useRef(null);
+  const wasConfirming = useRef(false);
+  useEffect(() => {
+    if (discard) keepEditingRef.current?.focus();
+    else if (wasConfirming.current) titleRef.current?.focus();
+    wasConfirming.current = discard;
+  }, [discard]);
   const exportDraft = async () => {
     try {
       await saveBackup(
@@ -32,9 +40,13 @@ function NoteEditor({ note, seed, context, onClose }) {
   };
   const close = () => {
     if (busy) return;
+    if (discard) {
+      setDiscard(false);
+      return;
+    }
     if (
-      title !== (note?.title ?? '') ||
-      body !== (note?.body ?? '') ||
+      title !== (note?.title ?? seed?.title ?? '') ||
+      body !== (note?.body ?? seed?.body ?? '') ||
       tags !== (note?.tags.join(', ') ?? '') ||
       links !== (note?.links.join('\n') ?? '')
     )
@@ -67,6 +79,31 @@ function NoteEditor({ note, seed, context, onClose }) {
       setBusy(false);
     }
   };
+  if (discard) {
+    return (
+      <Sheet title="Unsaved changes" onClose={close}>
+        <div role="group" aria-label="Unsaved note" className="space-y-4">
+          <p>Discard your unsaved changes?</p>
+          <p className="text-sm text-base-content/70">
+            Keep editing to return to your draft. Discard changes closes it without saving.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              ref={keepEditingRef}
+              type="button"
+              className="btn btn-primary min-h-11"
+              onClick={() => setDiscard(false)}
+            >
+              Keep editing
+            </button>
+            <button type="button" className="btn min-h-11" onClick={onClose}>
+              Discard changes
+            </button>
+          </div>
+        </div>
+      </Sheet>
+    );
+  }
   return (
     <Sheet title={note ? 'Edit note' : 'New note'} onClose={close}>
       <form
@@ -79,6 +116,7 @@ function NoteEditor({ note, seed, context, onClose }) {
         <label className="block space-y-1">
           <span>Title</span>
           <input
+            ref={titleRef}
             required
             maxLength={120}
             className="input min-h-11 w-full"
@@ -147,17 +185,6 @@ function NoteEditor({ note, seed, context, onClose }) {
           </button>
           <button className="btn min-h-11" onClick={() => setDeleting(false)}>
             Keep note
-          </button>
-        </div>
-      )}
-      {discard && (
-        <div role="group" aria-label="Unsaved note">
-          <p>Discard your unsaved changes?</p>
-          <button className="btn min-h-11" onClick={onClose}>
-            Discard changes
-          </button>
-          <button className="btn min-h-11" onClick={() => setDiscard(false)}>
-            Keep editing
           </button>
         </div>
       )}

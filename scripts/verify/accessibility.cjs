@@ -43,6 +43,26 @@ async function scan(page, label) {
       for (const route of ['plans','plans/preparation','notes','progress','progress/badges','share?text=Example%20shared%20text']) {
         await page.goto(`${BASE}/${route}`,{waitUntil:'networkidle'});
         await scan(page,`${theme} ${route}`);
+        if (route === 'notes') {
+          await page.getByRole('button',{name:'Family idea',exact:true}).click();
+          await page.getByRole('button',{name:'Close',exact:true}).click();
+          if(await page.getByRole('dialog').count()) throw new Error('Untouched starter did not close');
+          await page.getByRole('button',{name:'Family idea',exact:true}).click();
+          await page.getByRole('textbox',{name:'Your note',exact:true}).fill('Synthetic edited family idea');
+          await page.getByRole('button',{name:'Close',exact:true}).click();
+          await scan(page,`${theme} unsaved note close choice`);
+          const keep=page.getByRole('button',{name:'Keep editing',exact:true});
+          if(!await keep.evaluate(el=>el===document.activeElement)) throw new Error('Keep editing lacks focus');
+          const discard=page.getByRole('button',{name:'Discard changes',exact:true});
+          const box=await discard.boundingBox();
+          if(!box || box.y<0 || box.y+box.height>800) throw new Error('Discard choice is outside phone viewport');
+          if(process.env.NOTES_CLOSE_EVIDENCE_DIR) await page.screenshot({path:`${process.env.NOTES_CLOSE_EVIDENCE_DIR}/note-close-${theme}.png`});
+          await keep.click();
+          if(await page.getByRole('textbox',{name:'Your note',exact:true}).inputValue()!=='Synthetic edited family idea') throw new Error('Draft lost on Keep editing');
+          await page.getByRole('button',{name:'Close',exact:true}).click();
+          await discard.click();
+          if(await page.getByRole('dialog').count()) throw new Error('Discard did not close the editor');
+        }
         const guide=page.locator('details.fd-guide summary');
         if(await guide.count()) { await guide.click(); await scan(page,`${theme} ${route} guide expanded`); await guide.click(); }
       }
