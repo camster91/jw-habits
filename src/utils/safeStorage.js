@@ -7,6 +7,7 @@
  * the UI via `jw-storage-full` when persistence still fails.
  */
 
+import { DATA_KEYS, RESTORE_JOURNAL_KEY } from '../data/restoreKeys.js';
 import { Preferences } from '@capacitor/preferences';
 import { isNative } from './native.js';
 
@@ -158,8 +159,14 @@ export async function durableGet(key) {
 }
 
 /** @returns {Promise<void>} rejects when the write could not be stored */
-export function durableSet(key, value) {
+export function durableSet(key, value, { restore = false } = {}) {
   return enqueue(async () => {
+    if (DATA_KEYS.includes(key) && !restore) {
+      const journal = await durableGet(RESTORE_JOURNAL_KEY);
+      const state = journal ? JSON.parse(journal) : null;
+      if (journal && (state?.version !== 1 || state?.status !== 'complete'))
+        throw new Error('Restore is incomplete. Reload to recover before editing.');
+    }
     if (isNative) {
       try {
         await Preferences.set({ key, value });

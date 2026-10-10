@@ -29,7 +29,7 @@ describe('TabBar', () => {
     renderBar('/');
     expect(screen.getAllByRole('link').map((a) => a.textContent)).toEqual([
       'Today',
-      'Plans',
+      'Plan',
       'Notes',
       'Progress',
     ]);
@@ -37,11 +37,11 @@ describe('TabBar', () => {
 
   it('marks Plans current on /plans and on a plan trail', () => {
     renderBar('/plans');
-    expect(screen.getByRole('link', { name: 'Plans' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Plan' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Today' })).not.toHaveAttribute('aria-current');
     cleanup();
     renderBar('/plans/abc');
-    expect(screen.getByRole('link', { name: 'Plans' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Plan' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('opens Settings from its button', () => {

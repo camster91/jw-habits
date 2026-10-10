@@ -1,6 +1,6 @@
 # Faithful Days connected organiser plan
 
-Status: approved product direction; proposed implementation specification. Prepared 2026-10-10 against local c09a7ff. No organiser implementation, new GitHub issues, native distribution or store launch is claimed by this document.
+Status: approved product direction, with a persisted 5.3.0 local candidate now implemented. Original plan was prepared 2026-10-10 against c09a7ff; candidate evidence and explicit limits are in [organiser-candidate-review.md](organiser-candidate-review.md). No new posted issues, native distribution or store launch is claimed.
 
 ## Product goal
 

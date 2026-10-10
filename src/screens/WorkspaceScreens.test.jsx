@@ -311,6 +311,9 @@ describe('Preparation UI', () => {
     await screen.findByText(/Checklist prepared/);
     fireEvent.click(screen.getByLabelText('Read'));
     await screen.findByText('Prepare at your own pace.');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Edit assignment', exact: true })).toBeEnabled()
+    );
     button('Edit assignment');
     expect(screen.getByLabelText('Assignment title')).toHaveFocus();
     expect(screen.getByLabelText('Assignment title')).toBeVisible();
@@ -320,6 +323,9 @@ describe('Preparation UI', () => {
     await screen.findByText('Read James revised');
     expect(current.assignments[0].tasks[1].done).toBe(true);
     expect(current.assignments[0].date).toBe('2026-10-16');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Edit assignment', exact: true })).toBeEnabled()
+    );
     button('Edit assignment');
     button('Cancel assignment edit');
     button('Remove assignment');

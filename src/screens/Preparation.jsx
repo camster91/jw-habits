@@ -142,7 +142,7 @@ export default function Preparation() {
     <main className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]">
       <div className="mx-auto max-w-md space-y-6">
         <Link className="inline-flex min-h-11 items-center underline" to="/plans">
-          Back to Plans
+          Back to Plan
         </Link>
         <ScreenIntro
           title="Prepare ahead"

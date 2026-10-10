@@ -96,7 +96,7 @@ describe('App shell', () => {
     renderApp();
     expect(await screen.findByTestId('family-weeks')).toBeInTheDocument();
     expect(screen.queryByTestId('plan-trail')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Plans' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Plan' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('shows the tab bar on Today and Progress but not during onboarding', async () => {

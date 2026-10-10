@@ -28,7 +28,7 @@ function at(day, hhmm) {
 }
 
 /** Quiet hours may wrap midnight; the start is inside, the end is not. */
-function inQuietHours(quiet, hhmm) {
+export function inQuietHours(quiet, hhmm) {
   if (!quiet) return false;
   const [start, end, time] = [quiet.start, quiet.end, hhmm].map(minutes);
   if (start === end) return false;

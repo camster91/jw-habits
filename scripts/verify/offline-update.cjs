@@ -4,8 +4,8 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const { chromium } = require('playwright');
-const { onboardSkip, hold, routineButton, STORE_KEY } = require('./lib.cjs');
+
+const { launchBrowser, onboardSkip, hold, routineButton, STORE_KEY } = require('./lib.cjs');
 const WORKSPACE_KEY = 'faithful-days-workspace-v1';
 let generation = 1;
 const root = path.resolve('dist');
@@ -36,7 +36,7 @@ const server = http.createServer((req, res) => {
 (async () => {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
-  const browser = await chromium.launch();
+  const browser = await launchBrowser();
   try {
     const context = await browser.newContext({ locale: 'en-CA', serviceWorkers: 'allow' });
     await context.addInitScript(() => {
@@ -74,11 +74,14 @@ const server = http.createServer((req, res) => {
         const bitmap = await createImageBitmap(await response.blob());
         return { ok: response.ok, width: bitmap.width, height: bitmap.height };
       }, `/illustrations/${name}.webp`);
-      assert.ok(artwork.ok && artwork.width > 0 && artwork.height > 0, `${name} artwork is decodable offline`);
+      assert.ok(
+        artwork.ok && artwork.width > 0 && artwork.height > 0,
+        `${name} artwork is decodable offline`
+      );
     }
     console.log('All original illustrations available offline');
     await page.goto(`${base}/plans`, { waitUntil: 'domcontentloaded' });
-    await page.getByRole('heading', { name: 'Plans', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Plan', exact: true }).waitFor();
     assert.equal(
       await page.evaluate((key) => localStorage.getItem(key), STORE_KEY),
       saved,
@@ -94,6 +97,7 @@ const server = http.createServer((req, res) => {
     await page
       .getByLabel('Your note', { exact: true })
       .fill('A fabricated note saved without network access.');
+    await page.getByText('Tags & reference links (optional)', { exact: true }).click();
     await page.getByLabel('Tags (separate with commas)', { exact: true }).fill('offline, practice');
     await page.getByRole('button', { name: 'Save note', exact: true }).click();
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
@@ -127,13 +131,39 @@ const server = http.createServer((req, res) => {
       saved,
       'offline workspace activity must not create routine check-ins'
     );
-    console.log('First offline lazy Notes/preparation visits and durable workspace edits passed.');
-    const assertWorkspace = async (label) =>
+    await page.goto(`${base}/plans`, { waitUntil: 'domcontentloaded' });
+    await page
+      .getByRole('region', { name: 'Calendar and tasks' })
+      .getByRole('button', { name: 'Add', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Task', exact: true }).click();
+    await page.getByLabel('Title', { exact: true }).fill('Offline preparation task');
+    await page.getByRole('button', { name: 'Save task', exact: true }).click();
+    await page.getByRole('dialog').waitFor({ state: 'hidden' });
+    await page
+      .getByRole('button', { name: 'Complete Offline preparation task', exact: true })
+      .click();
+    await page.waitForFunction(() =>
+      JSON.parse(localStorage.getItem('faithful-days-organiser-v1')).exceptions.some(
+        (e) => e.status === 'done'
+      )
+    );
+    const organiserSaved = await page.evaluate(() =>
+      localStorage.getItem('faithful-days-organiser-v1')
+    );
+    console.log('First offline lazy Notes/preparation visits and durable organiser edits passed.');
+    const assertWorkspace = async (label) => {
       assert.equal(
+        await page.evaluate(() => localStorage.getItem('faithful-days-organiser-v1')),
+        organiserSaved,
+        'offline/update retained organiser bytes'
+      );
+      return assert.equal(
         await page.evaluate((key) => localStorage.getItem(key), WORKSPACE_KEY),
         workspaceSaved,
         label
       );
+    };
     const verifyWorkspaceScreens = async () => {
       await page.goto(`${base}/notes`, { waitUntil: 'domcontentloaded' });
       await page.getByRole('button', { name: 'Offline practice idea', exact: true }).waitFor();

@@ -42,8 +42,8 @@ export default function StepRoutines({ store, change, today }) {
     <div className="space-y-3">
       <p className="text-base-content/80">{t('fd.onboarding.routines.body')}</p>
       <p aria-live="polite" className="text-sm font-medium">
-        {ROUTINE_IDS.filter((id) => enabled[id]).length} of 6 routines selected. You can change
-        these in Settings later.
+        {ROUTINE_IDS.filter((id) => enabled[id]).length} of 6 routines selected. These choices
+        preserve your earlier history.
       </p>
       <ul className="space-y-3">
         {ROUTINE_IDS.map((id) => {

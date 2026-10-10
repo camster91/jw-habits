@@ -223,3 +223,31 @@ describe('HoldToCheck', () => {
     expect(onComplete).not.toHaveBeenCalled();
   });
 });
+
+describe('tap recording mode', () => {
+  it('records a short pointer tap once', () => {
+    const { button, onComplete } = setup({ tapToComplete: true });
+    fireEvent.pointerDown(button);
+    advance(100);
+    fireEvent.pointerUp(button);
+    fireEvent.click(button);
+    advance(1000);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+  it.each(['Enter', ' '])('records keyboard %s without a second synthetic activation', (key) => {
+    const { button, onComplete } = setup({ tapToComplete: true });
+    fireEvent.keyDown(button, { key });
+    fireEvent.keyUp(button, { key });
+    fireEvent.click(button);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+  it('does not undo on release of a completed hold', () => {
+    const { button, onComplete, onUndo } = setup({ tapToComplete: true });
+    fireEvent.pointerDown(button);
+    advance(600);
+    fireEvent.pointerUp(button);
+    fireEvent.click(button);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(onUndo).not.toHaveBeenCalled();
+  });
+});

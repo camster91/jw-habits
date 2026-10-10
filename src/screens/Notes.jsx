@@ -1,3 +1,6 @@
+import { useOrganiser } from '../data/useOrganiser.js';
+import { linkNote } from '../domain/organiser.js';
+import { newId } from '../domain/ids.js';
 import QuickGuide from '../components/QuickGuide.jsx';
 import ScreenIntro from '../components/ScreenIntro.jsx';
 import { useEffect, useRef, useState } from 'react';
@@ -5,10 +8,13 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useWorkspace } from '../data/useWorkspace.js';
 import { useStore } from '../data/useStore.js';
 import { putNote, searchNotes, searchRelated } from '../domain/workspace.js';
+import ItemEditor from '../components/organiser/ItemEditor.jsx';
 import { saveBackup } from '../utils/backup.js';
 import Sheet from '../components/plans/Sheet.jsx';
 
-function NoteEditor({ note, seed, context, onClose }) {
+function NoteEditor({ note, seed, context, target, onClose }) {
+  const organiserContext = useOrganiser();
+  const stableId = useRef(note?.id ?? newId());
   const { save } = useWorkspace();
   const { today } = useStore();
   const [title, setTitle] = useState(note?.title ?? seed?.title ?? '');
@@ -56,14 +62,16 @@ function NoteEditor({ note, seed, context, onClose }) {
   const persist = async (remove = false) => {
     setBusy(true);
     try {
+      if (!remove && !title.trim() && !body.trim())
+        throw new Error('Add a title or a few words before saving.');
       await save((w) =>
         remove
           ? { ...w, notes: w.notes.filter((n) => n.id !== note.id) }
           : putNote(
               w,
               {
-                id: note?.id,
-                title,
+                id: stableId.current,
+                title: title.trim() || body.trim().split('\n')[0].slice(0, 120) || 'Untitled note',
                 body,
                 tags: tags.split(','),
                 links: links.split('\n'),
@@ -72,6 +80,17 @@ function NoteEditor({ note, seed, context, onClose }) {
               today
             )
       );
+      if (!remove && target && organiserContext) {
+        try {
+          await organiserContext.save((o) => linkNote(o, stableId.current, target));
+        } catch (e) {
+          throw new Error(
+            'Your note is saved. Its attachment failed: ' +
+              e.message +
+              ' Retry Save to attach it; your note will not be duplicated.'
+          );
+        }
+      }
       onClose();
     } catch (e) {
       setError(e.message);
@@ -106,6 +125,14 @@ function NoteEditor({ note, seed, context, onClose }) {
   }
   return (
     <Sheet title={note ? 'Edit note' : 'New note'} onClose={close}>
+      {target && (
+        <p className="rounded-xl bg-base-200 p-3 text-sm">
+          Attached to {target.kind}:{' '}
+          {organiserContext?.organiser[target.kind === 'task' ? 'tasks' : 'events'].find(
+            (i) => i.id === target.id
+          )?.title ?? 'Original activity unavailable'}
+        </p>
+      )}
       <form
         className="space-y-3"
         onSubmit={(e) => {
@@ -117,7 +144,6 @@ function NoteEditor({ note, seed, context, onClose }) {
           <span>Title</span>
           <input
             ref={titleRef}
-            required
             maxLength={120}
             className="input min-h-11 w-full"
             value={title}
@@ -134,27 +160,32 @@ function NoteEditor({ note, seed, context, onClose }) {
             onChange={(e) => setBody(e.target.value)}
           />
         </label>
-        <label className="block space-y-1">
-          <span>Tags (separate with commas)</span>
-          <input
-            className="input min-h-11 w-full"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-          />
-        </label>
-        <p className="text-sm text-base-content/70">Up to 10 tags, 32 characters each.</p>
-        <label className="block space-y-1">
-          <span>Links (one per line)</span>
-          <textarea
-            rows={2}
-            className="textarea w-full"
-            value={links}
-            onChange={(e) => setLinks(e.target.value)}
-          />
-        </label>
-        <p className="text-sm text-base-content/70">
-          Up to 5 web links. Add your own references; publication text is not supplied.
-        </p>
+        <details>
+          <summary className="min-h-11 cursor-pointer py-2 font-medium">
+            Tags & reference links (optional)
+          </summary>
+          <label className="block space-y-1">
+            <span>Tags (separate with commas)</span>
+            <input
+              className="input min-h-11 w-full"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+            />
+          </label>
+          <p className="text-sm text-base-content/70">Up to 10 tags, 32 characters each.</p>
+          <label className="block space-y-1">
+            <span>Links (one per line)</span>
+            <textarea
+              rows={2}
+              className="textarea w-full"
+              value={links}
+              onChange={(e) => setLinks(e.target.value)}
+            />
+          </label>
+          <p className="text-sm text-base-content/70">
+            Up to 5 web links. Add your own references; publication text is not supplied.
+          </p>
+        </details>
         <p role="alert" className="text-error">
           {error}
         </p>
@@ -217,9 +248,23 @@ export default function Notes() {
     params.get('id')
       ? { kind: params.get('context'), id: params.get('id') }
       : { kind: 'day', id: today };
-  const [editing, setEditing] = useState(params.has('new') ? {} : null);
+  const organiserContext = useOrganiser();
+  const targetKind = params.get('targetKind'),
+    targetId = params.get('targetId');
+  const target =
+    ['task', 'event'].includes(targetKind) && targetId ? { kind: targetKind, id: targetId } : null;
+  const targetItem =
+    target &&
+    organiserContext?.organiser[target.kind === 'task' ? 'tasks' : 'events'].find(
+      (i) => i.id === target.id
+    );
+  const [editing, setEditing] = useState(
+    params.has('new') ? {} : (workspace.notes.find((n) => n.id === params.get('note')) ?? null)
+  );
   const [query, setQuery] = useState('');
   const [tag, setTag] = useState('');
+  const [taskFromNote, setTaskFromNote] = useState(null);
+  const [relationFilter, setRelationFilter] = useState('all');
   const [exportError, setExportError] = useState('');
   const close = () => {
     setEditing(null);
@@ -237,6 +282,20 @@ export default function Notes() {
       setExportError(e.message);
     }
   };
+  const visibleNotes = searchNotes(workspace, query, tag).filter((n) => {
+    const relations =
+      organiserContext?.organiser.relations.filter(
+        (r) => r.source.kind === 'note' && r.source.id === n.id
+      ) ?? [];
+    return (
+      relationFilter === 'all' ||
+      (relationFilter === 'unlinked'
+        ? relations.length === 0 && (!n.context || n.context.kind === 'day')
+        : relations.some((r) => r.target.kind === relationFilter) ||
+          n.context?.kind === relationFilter)
+    );
+  });
+  const currentEditing = editing ?? workspace.notes.find((n) => n.id === params.get('note'));
   return (
     <main className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]">
       <div className="mx-auto max-w-md space-y-4">
@@ -337,8 +396,23 @@ export default function Notes() {
             ))}
           </select>
         </label>
+        <label className="block">
+          Related activity
+          <select
+            className="select min-h-11 w-full"
+            value={relationFilter}
+            onChange={(e) => setRelationFilter(e.target.value)}
+          >
+            <option value="all">All notes</option>
+            <option value="unlinked">Unlinked notes</option>
+            <option value="task">Tasks</option>
+            <option value="event">Events</option>
+            <option value="meeting">Meetings</option>
+            <option value="plan">Study and family plans</option>
+          </select>
+        </label>
         <ul className="space-y-3">
-          {searchNotes(workspace, query, tag).map((n) => (
+          {visibleNotes.map((n) => (
             <li key={n.id} className="space-y-2 rounded-2xl bg-base-100 p-4 break-words">
               <button
                 className="min-h-11 text-left text-lg font-semibold underline"
@@ -351,6 +425,31 @@ export default function Notes() {
               <p className="text-sm text-base-content/70">
                 {contextLabel(n.context, store, workspace)}
               </p>
+              {organiserContext?.organiser.relations
+                .filter((r) => r.source.kind === 'note' && r.source.id === n.id)
+                .map((r) => {
+                  const item =
+                    ['event', 'task'].includes(r.target.kind) &&
+                    organiserContext.organiser[r.target.kind === 'task' ? 'tasks' : 'events'].find(
+                      (i) => i.id === r.target.id
+                    );
+                  return (
+                    <Link key={r.id} to="/plans" className="block min-h-11 py-2 text-sm underline">
+                      {item
+                        ? 'Linked ' + r.target.kind + ': ' + item.title
+                        : 'Original activity is unavailable; your note is kept.'}
+                    </Link>
+                  );
+                })}
+              {organiserContext && (
+                <button
+                  disabled={!organiserContext.ready}
+                  className="btn btn-ghost min-h-11"
+                  onClick={() => setTaskFromNote(n)}
+                >
+                  Create task from note
+                </button>
+              )}
               {n.links.map((url) => (
                 <a
                   key={url}
@@ -384,7 +483,7 @@ export default function Notes() {
             </ul>
           </section>
         )}
-        {ready && searchNotes(workspace, query, tag).length === 0 && (
+        {ready && visibleNotes.length === 0 && (
           <p>
             {workspace.notes.length
               ? 'No notes match. Try another word or tag.'
@@ -392,13 +491,23 @@ export default function Notes() {
           </p>
         )}
         <Link className="inline-flex min-h-11 items-center underline" to="/plans">
-          Go to Plans
+          Go to Plan
         </Link>
       </div>
-      {editing && (
+      {taskFromNote && (
+        <ItemEditor
+          kind="task"
+          date={null}
+          target={{ kind: 'note', id: taskFromNote.id }}
+          initialTitle={taskFromNote.title}
+          onClose={() => setTaskFromNote(null)}
+        />
+      )}
+      {currentEditing && (
         <NoteEditor
-          note={editing.id ? editing : null}
-          seed={editing.seed}
+          note={currentEditing.id ? currentEditing : null}
+          seed={currentEditing.seed}
+          target={targetItem ? target : null}
           context={context}
           onClose={close}
         />

@@ -4,6 +4,9 @@
  * the app working. A failed cancellation may leave earlier reminders pending;
  * later foreground/settings sync can retry.
  */
+import { durableGet } from '../utils/safeStorage.js';
+import { ORGANISER_KEY, validateOrganiser } from '../domain/organiser.js';
+import { planOrganiserNotifications } from '../domain/organiserNotifications.js';
 import i18n from 'i18next';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { planNotifications } from '../domain/notifications.js';
@@ -25,7 +28,15 @@ async function permitted() {
 async function applyReminders(store, t) {
   if (!isNative) return { scheduled: 0 };
   try {
-    const plan = planNotifications(store, new Date(), t);
+    const now = new Date();
+    const raw = await durableGet(ORGANISER_KEY);
+    const organiser = raw ? validateOrganiser(JSON.parse(raw)) : null;
+    const plan = [
+      ...planNotifications(store, now, t),
+      ...(organiser?.ok ? planOrganiserNotifications(organiser.organiser, store, now) : []),
+    ]
+      .sort((a, b) => a.at - b.at)
+      .slice(0, 64);
 
     const pending = await LocalNotifications.getPending();
     if (pending.notifications.length > 0) {
@@ -68,15 +79,25 @@ const RESCHEDULE_DELAY_MS = 1000;
 export function registerReminderSync() {
   const sync = (store) => syncReminders(store, i18n.t.bind(i18n));
   let timer = null;
+  let lastStore = null;
+  const onOrganiser = () => {
+    if (!lastStore) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => void sync(lastStore), RESCHEDULE_DELAY_MS);
+  };
+  window.addEventListener('faithful-organiser-changed', onOrganiser);
   const offForeground = onForeground(({ store }) => {
+    lastStore = store;
     clearTimeout(timer);
     return sync(store);
   });
   const offChange = onStoreChange((store) => {
+    lastStore = store;
     clearTimeout(timer);
     timer = setTimeout(() => void sync(store), RESCHEDULE_DELAY_MS);
   });
   return () => {
+    window.removeEventListener('faithful-organiser-changed', onOrganiser);
     offForeground();
     offChange();
     clearTimeout(timer);

@@ -1,3 +1,6 @@
+import { useOrganiser } from '../data/useOrganiser.js';
+import { civilDate } from '../domain/organiser.js';
+import { weekStart } from '../domain/day.js';
 import QuickGuide from '../components/QuickGuide.jsx';
 import ScreenIntro from '../components/ScreenIntro.jsx';
 import ShareButton from '../components/fun/ShareButton.jsx';
@@ -51,6 +54,7 @@ function RoutineCard({ title, s, daysThisYear }) {
 }
 
 export default function Progress() {
+  const organiserContext = useOrganiser();
   const { t } = useTranslation();
   const { store, today } = useStore();
   const { enabled } = scheduleOn(store, today);
@@ -101,6 +105,52 @@ export default function Progress() {
             <p className="text-sm text-base-content/70">{t('fd.progress.weekEmpty')}</p>
           )}
         </section>
+        {organiserContext && (
+          <section className="rounded-2xl bg-base-100 p-4">
+            <h2 className="font-semibold">Your organiser this week</h2>
+            <p>
+              {
+                organiserContext.organiser.exceptions.filter(
+                  (e) =>
+                    e.status === 'done' &&
+                    civilDate(new Date(e.completedAt)) >= weekStart(civilDate()) &&
+                    civilDate(new Date(e.completedAt)) <= civilDate()
+                ).length
+              }{' '}
+              tasks completed
+            </p>
+            <p>
+              {
+                organiserContext.organiser.routineCheckIns.filter(
+                  (c) => c.day >= weekStart(today) && c.day <= today
+                ).length
+              }{' '}
+              personal routine check-ins
+            </p>
+            <p className="text-sm text-base-content/70">
+              Task completion and calendar plans stay separate from spiritual routine activity.
+            </p>
+          </section>
+        )}
+        {cards.length > 0 && (
+          <ul aria-label="Routine progress" className="space-y-3">
+            {cards.map((id) => (
+              <RoutineCard
+                key={id}
+                title={labelFor(store, id, t)}
+                s={streak(store, id, today)}
+                daysThisYear={sums.perRoutineDaysThisYear[id]}
+              />
+            ))}
+          </ul>
+        )}
+        <section className="card space-y-3 bg-base-100 p-4 shadow-sm">
+          <h2 className="font-semibold">{t('fd.progress.readingTitle')}</h2>
+          <p>{t('fd.progress.readingDays', { count: sums.readingDaysThisYear })}</p>
+          <p>{t('fd.progress.chapters', { count: sums.chaptersThisYear })}</p>
+          <p>{t('fd.progress.books', { count: sums.booksCompleted })}</p>
+          <BibleMap completed={completed} />
+        </section>
         <section className="card space-y-3 bg-base-100 p-4 shadow-sm">
           <h2 className="font-semibold">{t('fd.fun.gardenTitle')}</h2>
           <div className="mx-auto w-full max-w-48">
@@ -128,25 +178,6 @@ export default function Progress() {
           <Link className="btn btn-ghost min-h-11" to="/progress/badges">
             {t('fd.fun.badgesTitle')}
           </Link>
-        </section>
-        {cards.length > 0 && (
-          <ul aria-label="Routine progress" className="space-y-3">
-            {cards.map((id) => (
-              <RoutineCard
-                key={id}
-                title={labelFor(store, id, t)}
-                s={streak(store, id, today)}
-                daysThisYear={sums.perRoutineDaysThisYear[id]}
-              />
-            ))}
-          </ul>
-        )}
-        <section className="card space-y-3 bg-base-100 p-4 shadow-sm">
-          <h2 className="font-semibold">{t('fd.progress.readingTitle')}</h2>
-          <p>{t('fd.progress.readingDays', { count: sums.readingDaysThisYear })}</p>
-          <p>{t('fd.progress.chapters', { count: sums.chaptersThisYear })}</p>
-          <p>{t('fd.progress.books', { count: sums.booksCompleted })}</p>
-          <BibleMap completed={completed} />
         </section>
       </div>
     </main>

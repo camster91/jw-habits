@@ -7,8 +7,15 @@
 /** Real engines for the release compatibility gate; reject accidental fallback. */
 async function launchBrowser() {
   const name = process.env.PLAYWRIGHT_BROWSER || 'chromium';
-  if (!['chromium', 'firefox', 'webkit'].includes(name)) throw new Error(`Unsupported browser: ${name}`);
-  const browser = await require('playwright')[name].launch({ headless: true });
+  if (!['chromium', 'firefox', 'webkit'].includes(name))
+    throw new Error(`Unsupported browser: ${name}`);
+  const channel = process.env.PLAYWRIGHT_CHANNEL;
+  if (channel && (name !== 'chromium' || channel !== 'chromium'))
+    throw new Error('Only the explicit bundled Chromium channel is supported');
+  const browser = await require('playwright')[name].launch({
+    headless: true,
+    ...(channel ? { channel } : {}),
+  });
   console.log(`Browser engine: ${name} ${browser.version()}`);
   return browser;
 }

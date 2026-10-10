@@ -51,7 +51,7 @@ const BANNED = /missed|broke|failed|lost/i;
 describe('Plans', () => {
   it('has the three sections', () => {
     renderPlans();
-    expect(screen.getByRole('heading', { level: 1, name: 'Plans' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Plan' })).toBeInTheDocument();
     expect(section('Personal study')).toBeInTheDocument();
     expect(section('Family worship')).toBeInTheDocument();
     expect(section('Completed')).toBeInTheDocument();
@@ -220,6 +220,7 @@ describe('Plans', () => {
     renderPlans(s);
 
     expect(within(section('Personal study')).queryByRole('link', { name: /Done book/ })).toBeNull();
+    fireEvent.click(screen.getByText('Completed plans', { exact: true }));
     const shelf = section('Completed');
     expect(within(shelf).getByRole('link', { name: /Done book/ })).toHaveTextContent('1 of 1');
     fireEvent.click(within(shelf).getByRole('button', { name: 'Restore Done book' }));

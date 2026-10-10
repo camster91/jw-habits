@@ -68,6 +68,7 @@
     "today": {
       "title": "Today",
       "holdToCheck": "Hold to check",
+      "tapToCheck": "Tap to record; tap again to undo",
       "tapToUndo": "Done. Tap to undo",
       "openLink": "Open {{label}}",
       "chaptersRead": "Chapters read today",
@@ -121,9 +122,10 @@
       "readingPaceYear": "Year-plan comparison: {{recorded}} chapters recorded; {{planned}} planned by today. Extra chapters stay on the day you read them.",
       "readingAhead_one": "About {{count}} day ahead of the year-plan pace.",
       "readingAhead_other": "About {{count}} days ahead of the year-plan pace.",
-      "checkHint": "Hold an empty circle to check a routine. Tap a checked circle to undo.",
+      "checkHint": "Tap a circle to record a routine. Tap it again to undo.",
       "whatsNewLink": "What's New on jw.org",
       "whatsNewHint": "Explore the latest on the official website \u2197",
+      "routineSummary": "{{done}} of {{total}} routines recorded · At your pace",
       "dailySteps": "{{done}} of {{total}} daily steps \u00b7 A little at a time",
       "gentleDay": "Room to recharge today"
     },
@@ -292,7 +294,7 @@
     "tabs": {
       "label": "Main navigation",
       "today": "Today",
-      "plans": "Plans",
+      "plans": "Plan",
       "progress": "Progress",
       "settings": "Settings"
     },
@@ -328,7 +330,7 @@
       "weekEmpty": "Your check-ins appear here as you record them."
     },
     "plans": {
-      "title": "Plans",
+      "title": "Plan",
       "close": "Close",
       "study": {
         "heading": "Personal study",
@@ -404,7 +406,7 @@
         "titleHint": "For example: Study the book of James"
       },
       "trail": {
-        "back": "Plans",
+        "back": "Plan",
         "steps": "Steps",
         "stop": "{{title}}, {{state}}",
         "state": {
@@ -451,7 +453,7 @@
     },
     "family": {
       "title": "Family worship weeks",
-      "back": "Back to Plans",
+      "back": "Back to Plan",
       "noPlans": "Make a family plan on the Plans tab and its next steps will be suggested here.",
       "thisWeek": "This week",
       "weekOf": "Week of {{date}}",

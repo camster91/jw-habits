@@ -20,7 +20,15 @@
 //
 // Exits 1 if any journey fails.
 
-const { launchBrowser, openPage, go, hold, storeWhere, onboardSkip, routineButton } = require('./lib.cjs');
+const {
+  launchBrowser,
+  openPage,
+  go,
+  hold,
+  storeWhere,
+  onboardSkip,
+  routineButton,
+} = require('./lib.cjs');
 
 const BASE = process.env.JOURNEYS_BASE_URL || `http://localhost:${process.env.PORT || 4173}`;
 const MORNING = new Date(2026, 9, 6, 10, 0); // Tuesday 6 Oct 2026, 10:00
@@ -51,6 +59,9 @@ const lastSchedule = (s) => s.schedule[s.schedule.length - 1];
 const openSettings = async (page) => {
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('dialog').waitFor();
+  for (const summary of await page.getByRole('dialog').locator('details > summary').all()) {
+    if (!(await summary.evaluate((el) => el.parentElement.open))) await summary.click();
+  }
 };
 const closeSettings = async (page) => {
   await page.getByRole('button', { name: 'Close', exact: true }).click();
@@ -137,14 +148,16 @@ const closeSettings = async (page) => {
     async (page) => {
       await onboardSkip(page);
       const check = routineButton(page, 'Daily text');
-      // A quick press must not complete it.
+      // A short tap records it; a second tap undoes it.
       await check.dispatchEvent('pointerdown');
       await page.waitForTimeout(100);
       await check.dispatchEvent('pointerup');
+      await check.dispatchEvent('click');
       step(
-        'J3 a short press does not check',
-        (await check.getAttribute('aria-pressed')) === 'false'
+        'J3 a short tap records the routine',
+        (await check.getAttribute('aria-pressed')) === 'true'
       );
+      await check.click();
       await hold(page, check);
       await page.waitForFunction(
         () => document.querySelector('button[aria-pressed="true"]') !== null
@@ -263,7 +276,10 @@ const closeSettings = async (page) => {
         'J7 Done for today leaves the one-line summary',
         await page.getByText(/Your day in review ·/).isVisible()
       );
-      step('J7 Done for today keeps routines visible', await routineButton(page, 'Daily text').isVisible());
+      step(
+        'J7 Done for today keeps routines visible',
+        await routineButton(page, 'Daily text').isVisible()
+      );
     },
     sink
   );
@@ -276,9 +292,11 @@ const closeSettings = async (page) => {
       { at: MORNING, viewport: { width, height: 900 } },
       async (page) => {
         await onboardSkip(page);
-        await page.getByRole('link', { name: 'Plans', exact: true }).click();
+        await page.getByRole('link', { name: 'Plan', exact: true }).click();
         await page.getByRole('button', { name: 'New study plan', exact: true }).click();
-        await page.getByLabel('How would you like to organise it?', { exact: true }).selectOption('bibleBook');
+        await page
+          .getByLabel('How would you like to organise it?', { exact: true })
+          .selectOption('bibleBook');
         await page.getByLabel('Bible book', { exact: true }).selectOption('27');
         await page.getByRole('button', { name: 'Create', exact: true }).click();
         await page.getByRole('link', { name: 'Today', exact: true }).click();
@@ -290,17 +308,20 @@ const closeSettings = async (page) => {
           `J9 ${width}px check-in ticks the project step`,
           Boolean(checked?.plans[0]?.steps[0]?.doneOn)
         );
-        await page.getByRole('link', { name: 'Plans', exact: true }).click();
+        await page.getByRole('link', { name: 'Plan', exact: true }).click();
         step(
           `J9 ${width}px project shows 1 of 12`,
           await page.getByText('1 of 12', { exact: true }).isVisible()
         );
         await page.getByRole('button', { name: 'New family plan', exact: true }).click();
         await page.getByLabel('Title', { exact: true }).fill('Family study');
-        await page.getByLabel('How would you like to organise it?', { exact: true }).selectOption('lessons');
+        await page
+          .getByLabel('How would you like to organise it?', { exact: true })
+          .selectOption('lessons');
         await page.getByLabel('Number of steps', { exact: true }).fill('2');
         await page.getByRole('button', { name: 'Create', exact: true }).click();
         await page.locator('a[href="/plans/family"]').click();
+        await page.getByText('Plan future weeks', { exact: true }).click();
         await page.getByTestId('week-2026-10-12').getByRole('button', { name: /^Keep/ }).click();
         const kept = await storeWhere(page, (store) => store.familyAgendas['2026-10-12']?.length);
         step(
@@ -362,10 +383,13 @@ const closeSettings = async (page) => {
 
   // Notes/preparation are intentions and personal text, never fabricated activity.
   for (const width of [320, 390, 768, 1440]) {
-    await journey(`J11 notes and preparation at ${width}px`, browser,
-      { at: MORNING, viewport: { width, height: 900 } }, async (page) => {
+    await journey(
+      `J11 notes and preparation at ${width}px`,
+      browser,
+      { at: MORNING, viewport: { width, height: 900 } },
+      async (page) => {
         await onboardSkip(page);
-        await page.getByRole('link', { name: 'Plans', exact: true }).click();
+        await page.getByRole('link', { name: 'Plan', exact: true }).click();
         await page.getByRole('link', { name: 'Prepare for meetings and assignments' }).click();
         await page.getByLabel('Meeting type', { exact: true }).selectOption('weekend');
         await page.getByRole('button', { name: 'Add meeting', exact: true }).click();
@@ -375,34 +399,65 @@ const closeSettings = async (page) => {
         await page.getByRole('dialog', { name: 'New note' }).waitFor();
         await page.getByLabel('Title', { exact: true }).fill('Question for later');
         await page.getByLabel('Your note', { exact: true }).fill('A personal thought');
+        await page.getByText('Tags & reference links (optional)', { exact: true }).click();
         await page.getByLabel('Tags (separate with commas)', { exact: true }).fill('study');
         await page.getByRole('button', { name: 'Save note', exact: true }).click();
         await page.getByRole('dialog').waitFor({ state: 'hidden' });
         await page.reload();
         await page.getByRole('button', { name: 'Question for later', exact: true }).waitFor();
-        const saved = await page.evaluate(() => ({ routines: JSON.parse(localStorage.getItem('jw-habits-v2')), workspace: JSON.parse(localStorage.getItem('faithful-days-workspace-v1')) }));
-        step(`J11 ${width}px notes and prepared sections survive reload`, saved.workspace.notes.length === 1 && saved.workspace.meetings[0].prepared.includes('Watchtower Study'));
+        const saved = await page.evaluate(() => ({
+          routines: JSON.parse(localStorage.getItem('jw-habits-v2')),
+          workspace: JSON.parse(localStorage.getItem('faithful-days-workspace-v1')),
+        }));
+        step(
+          `J11 ${width}px notes and prepared sections survive reload`,
+          saved.workspace.notes.length === 1 &&
+            saved.workspace.meetings[0].prepared.includes('Watchtower Study')
+        );
         step(`J11 ${width}px preparation creates no activity`, saved.routines.log.length === 0);
-        step(`J11 ${width}px no horizontal clipping`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+        step(
+          `J11 ${width}px no horizontal clipping`,
+          await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+        );
         await openSettings(page);
         const downloading = page.waitForEvent('download');
         await page.getByRole('button', { name: 'Export a backup', exact: true }).click();
         const download = await downloading;
         const backup = JSON.parse(require('node:fs').readFileSync(await download.path(), 'utf8'));
-        step(`J11 ${width}px combined backup includes both stores`, backup.routines.version === 3 && backup.workspace.notes.length === 1);
+        step(
+          `J11 ${width}px combined backup includes both stores`,
+          backup.format === 'faithful-days-organiser-backup' &&
+            backup.routines.version === 3 &&
+            backup.workspace.notes.length === 1 &&
+            backup.organiser.version === 1
+        );
         await closeSettings(page);
-      }, sink);
+      },
+      sink
+    );
   }
 
   // J10: before the application loads, persisted theme wins and motion is optional.
   for (const theme of ['dark', 'light']) {
-    const ctx = await browser.newContext({ locale: 'en-CA', colorScheme: theme === 'dark' ? 'light' : 'dark', reducedMotion: 'reduce' });
+    const ctx = await browser.newContext({
+      locale: 'en-CA',
+      colorScheme: theme === 'dark' ? 'light' : 'dark',
+      reducedMotion: 'reduce',
+    });
     await ctx.addInitScript((value) => localStorage.setItem('fd-boot-theme', value), theme);
     const page = await ctx.newPage();
-    await page.route('**/*.js', route => route.abort());
+    await page.route('**/*.js', (route) => route.abort());
     await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-    const boot = await page.evaluate(() => ({ theme: document.documentElement.dataset.theme, background: getComputedStyle(document.documentElement).backgroundColor, motion: getComputedStyle(document.getElementById('root'), '::after').animationName, chrome: document.querySelector('meta[name="theme-color"]').content }));
-    step(`J10 ${theme} startup chrome respects persisted preference`, boot.theme === theme && boot.chrome === (theme === 'dark' ? '#000000' : '#f3f4f6'));
+    const boot = await page.evaluate(() => ({
+      theme: document.documentElement.dataset.theme,
+      background: getComputedStyle(document.documentElement).backgroundColor,
+      motion: getComputedStyle(document.getElementById('root'), '::after').animationName,
+      chrome: document.querySelector('meta[name="theme-color"]').content,
+    }));
+    step(
+      `J10 ${theme} startup chrome respects persisted preference`,
+      boot.theme === theme && boot.chrome === (theme === 'dark' ? '#000000' : '#f3f4f6')
+    );
     step(`J10 ${theme} startup has no reduced-motion spinner`, boot.motion === 'none');
     await ctx.close();
   }

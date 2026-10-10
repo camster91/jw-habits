@@ -75,7 +75,7 @@ const TIME_VALUES = ['06:45', '23:59', ''];
 
 /** Buttons that leave the screen, open files or navigate steps; never poked. */
 const SKIP =
-  /^(Close|Export a backup|Import a backup|Back|Next|Start my first day|Get started|Skip)/;
+  /^(Close|Export a backup|Import a backup|Back|Next|Start my first day|Start with these routines|Get started|Skip)/;
 
 /** Change every input and select through several values; click every other button. */
 function pokeAll(root) {

@@ -4,6 +4,7 @@ import './index.css';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
+import RestoreGate from './components/RestoreGate.jsx';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { recordDiagnostic, pruneDiagnostics } from './utils/diagnostics.js';
@@ -87,9 +88,11 @@ const root = createRoot(container);
 root.render(
   <StrictMode>
     <ErrorBoundary>
-      <StoreProvider>
-        <App />
-      </StoreProvider>
+      <RestoreGate>
+        <StoreProvider>
+          <App />
+        </StoreProvider>
+      </RestoreGate>
     </ErrorBoundary>
   </StrictMode>
 );

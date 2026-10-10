@@ -138,6 +138,29 @@ export default function Onboarding() {
               : 'These are draft choices. Back keeps them; Skip keeps the settings this step started with.'}
           </p>
         )}
+        {index === 1 && (
+          <div className="space-y-2 rounded-2xl bg-base-100 p-3">
+            <p className="text-sm">
+              Ready to begin? Keep these routines and set schedules, reminders and appearance later.
+              New reading starts at your own pace.
+            </p>
+            <button
+              className="btn btn-primary min-h-11 w-full"
+              onClick={() =>
+                update((s) =>
+                  commitOnboarding(s, {
+                    ...draft,
+                    reading: store.log.length
+                      ? draft.reading
+                      : { ...draft.reading, plan: 'ownPace' },
+                  })
+                )
+              }
+            >
+              Start with these routines
+            </button>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2 pt-2">
           {index === 0 && (
             <button

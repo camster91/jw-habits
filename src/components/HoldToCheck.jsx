@@ -14,7 +14,14 @@ const PRESS_WINDOW_MS = 2000;
  * with no press before it (screen reader, switch or voice control)
  * completes at once, so the check never depends on holding.
  */
-export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 600 }) {
+export default function HoldToCheck({
+  done,
+  onComplete,
+  onUndo,
+  label,
+  holdMs = 600,
+  tapToComplete = false,
+}) {
   const { t } = useTranslation();
   const hintId = useId();
   const [holding, setHolding] = useState(false);
@@ -59,7 +66,7 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
     if (completed) return;
     const fromPress = at !== null && Date.now() - at < PRESS_WINDOW_MS;
     if (done) onUndo();
-    else if (!fromPress) complete();
+    else if (tapToComplete || !fromPress) complete();
   };
 
   const onKeyDown = (e) => {
@@ -67,8 +74,13 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
     e.preventDefault();
     if (e.repeat) return;
     press.current = { at: Date.now(), completed: false };
-    if (done) onUndo();
-    else start();
+    if (done) {
+      press.current.completed = true;
+      onUndo();
+    } else if (tapToComplete) {
+      press.current.completed = true;
+      complete();
+    } else start();
   };
 
   const onKeyUp = (e) => {
@@ -108,7 +120,11 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
         )}
       </button>
       <span id={hintId} className="sr-only">
-        {done ? t('fd.today.tapToUndo') : t('fd.today.holdToCheck')}
+        {done
+          ? t('fd.today.tapToUndo')
+          : tapToComplete
+            ? t('fd.today.tapToCheck')
+            : t('fd.today.holdToCheck')}
       </span>
     </>
   );

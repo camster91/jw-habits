@@ -21,6 +21,7 @@ import SettingsSheet from './screens/SettingsSheet';
 import { useStore } from './data/useStore.js';
 import { applyTheme } from './theme/theme.js';
 import { isWeb } from './utils/native.js';
+import OrganiserProvider from './data/OrganiserProvider.jsx';
 import WorkspaceProvider from './data/WorkspaceProvider.jsx';
 const Notes = lazy(() => import('./screens/Notes.jsx'));
 const Preparation = lazy(() => import('./screens/Preparation.jsx'));
@@ -109,7 +110,9 @@ function App() {
   const shell = (
     <Router basename={routerBasename()}>
       <WorkspaceProvider>
-        <Screens />
+        <OrganiserProvider>
+          <Screens />
+        </OrganiserProvider>
       </WorkspaceProvider>
     </Router>
   );

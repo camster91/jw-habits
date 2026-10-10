@@ -431,9 +431,15 @@ export default function FamilyWeeks() {
           ]}
         />
         {!hasFamilyPlan && <p className="text-base-content/70">{t('fd.family.noPlans')}</p>}
-        {planWeeks(today).map((w) => (
-          <WeekCard key={w} week={w} today={today} />
-        ))}
+        <WeekCard week={planWeeks(today)[0]} today={today} />
+        <details className="space-y-3">
+          <summary className="min-h-11 cursor-pointer py-2 font-medium">Plan future weeks</summary>
+          {planWeeks(today)
+            .slice(1)
+            .map((w) => (
+              <WeekCard key={w} week={w} today={today} />
+            ))}
+        </details>
         {past.length > 0 && (
           <details className="space-y-2">
             <summary className="min-h-11 cursor-pointer py-2 font-medium">

@@ -663,6 +663,7 @@ it('foreground durable flush waits for the actual Preferences write and propagat
   await Promise.resolve();
   await Promise.resolve();
   expect(settled).toBe(false);
+  await vi.waitFor(() => expect(set).toHaveBeenCalled());
   expect(set.mock.calls[0][0].value).toBe(JSON.stringify(latest.store));
   resolve();
   expect(await pending).toEqual(latest.store);

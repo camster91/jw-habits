@@ -1,3 +1,5 @@
+import OrganiserBoard from '../components/organiser/OrganiserBoard.jsx';
+import PersonalRoutines from '../components/organiser/PersonalRoutines.jsx';
 import QuickGuide from '../components/QuickGuide.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -438,7 +440,7 @@ export default function Today({ onOpenSettings = () => {} }) {
           <p className="flex items-center gap-2 text-sm font-medium">
             <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" />
             {rows.length > 0
-              ? t('fd.today.dailySteps', {
+              ? t('fd.today.routineSummary', {
                   done: rows.filter((id) =>
                     id === 'ministry' ? month?.value.shared : isDone(store, id, today)
                   ).length,
@@ -486,6 +488,7 @@ export default function Today({ onOpenSettings = () => {} }) {
           <MeetingDaysCard onOpen={onOpenSettings} />
         )}
 
+        <OrganiserBoard compact />
         <ul className="space-y-3">
           {rows.map(renderRow)}
           {rows.length === 0 && (
@@ -493,6 +496,7 @@ export default function Today({ onOpenSettings = () => {} }) {
           )}
         </ul>
 
+        <PersonalRoutines />
         {wrapping && !dismissed && (
           <WrapUpCard
             day={today}
@@ -511,11 +515,11 @@ export default function Today({ onOpenSettings = () => {} }) {
         {wrapping && dismissed && <WrapUpSummary count={result.done.length} />}
 
         <QuickGuide
-          title="Make Today your own"
+          title="A quick guide to Today"
           steps={[
             {
               title: 'Take one small step',
-              body: 'Hold an empty circle to check off a routine. Tap a checked circle to undo. Keyboard and assistive controls can activate it too.',
+              body: 'Tap a circle to record a routine. Tap it again to undo. Keyboard and assistive controls can activate it too.',
             },
             {
               title: 'Open your references',

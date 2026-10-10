@@ -1,3 +1,4 @@
+import { useOrganiser } from '../data/useOrganiser.js';
 import QuickGuide from '../components/QuickGuide.jsx';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,21 +16,33 @@ import AboutSection from '../components/settings/AboutSection.jsx';
 import RemindersSection from '../components/settings/RemindersSection.jsx';
 import { onBack } from '../utils/backStack.js';
 
-const FOCUSABLE = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'button, input, select, textarea, summary, a[href], [tabindex]:not([tabindex="-1"])';
 const DEFAULT_QUIET = { start: '22:00', end: '07:00' };
 
 function Section({ title, children, headingRef }) {
   const id = useId();
-  return (
+  const grouped = Boolean(useOrganiser());
+  const heading = (
+    <h3
+      ref={headingRef}
+      tabIndex={headingRef ? -1 : undefined}
+      id={id}
+      className="text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
+      {title}
+    </h3>
+  );
+  return grouped ? (
+    <details className="border-t border-base-300">
+      <summary className="min-h-11 cursor-pointer py-3">{heading}</summary>
+      <section aria-labelledby={id} className="space-y-3 pb-3">
+        {children}
+      </section>
+    </details>
+  ) : (
     <section aria-labelledby={id} className="space-y-3 border-t border-base-300 pt-4">
-      <h3
-        ref={headingRef}
-        tabIndex={headingRef ? -1 : undefined}
-        id={id}
-        className="text-lg font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        {title}
-      </h3>
+      {heading}
       {children}
     </section>
   );
@@ -99,7 +112,9 @@ function SettingsDialog({ onClose }) {
       return;
     }
     if (e.key !== 'Tab') return;
-    const items = [...dialogRef.current.querySelectorAll(FOCUSABLE)].filter((el) => !el.disabled);
+    const items = [...dialogRef.current.querySelectorAll(FOCUSABLE)].filter(
+      (el) => !el.disabled && (!el.closest('details:not([open])') || el.closest('summary'))
+    );
     if (items.length === 0) return;
     const first = items[0];
     const last = items[items.length - 1];
@@ -145,7 +160,11 @@ function SettingsDialog({ onClose }) {
           <button
             type="button"
             className="btn btn-outline min-h-11"
-            onClick={() => backupRef.current?.focus()}
+            onClick={() => {
+              const parent = backupRef.current?.closest('details');
+              if (parent) parent.open = true;
+              backupRef.current?.focus();
+            }}
           >
             {t('fd.settings.goToBackup')}
           </button>
@@ -162,7 +181,7 @@ function SettingsDialog({ onClose }) {
               },
               {
                 title: 'Protect your journal',
-                body: 'Backup includes your routines, notes and preparation. Save it somewhere private before clearing app data or changing phones.',
+                body: 'Backup includes your routines, notes, preparation, tasks and calendar. Save it somewhere private before clearing app data or changing phones.',
               },
             ]}
           />

@@ -1,3 +1,4 @@
+import OrganiserBoard from '../components/organiser/OrganiserBoard.jsx';
 import QuickGuide from '../components/QuickGuide.jsx';
 import ScreenIntro from '../components/ScreenIntro.jsx';
 import { useId, useState } from 'react';
@@ -118,6 +119,7 @@ export default function Plans() {
           art="plans"
           tone="lavender"
         />
+        <OrganiserBoard />
         <QuickGuide
           title="Build your first plan"
           steps={[
@@ -131,7 +133,7 @@ export default function Plans() {
             },
             {
               title: 'Bring it into your day',
-              body: 'Use on Today makes a study plan current. Hold Personal study on Today to record the next step; planning alone never records activity.',
+              body: 'Use on Today makes a study plan current. Tap Personal study on Today to record the next step; planning alone never records activity.',
             },
           ]}
         />
@@ -189,27 +191,30 @@ export default function Plans() {
           <NewButton label={t('fd.plans.family.new')} onClick={() => setCreating('family')} />
         </Section>
 
-        <Section title={t('fd.plans.completed.heading')}>
-          {completed.length > 0 ? (
-            <ul className="space-y-3">
-              {completed.map((p) => (
-                <PlanCard key={p.id} plan={p}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm min-h-11 w-full"
-                    aria-label={t('fd.plans.completed.restore', { title: p.title })}
-                    onClick={() => update((s) => restorePlan(s, p.id))}
-                  >
-                    <RotateCcw aria-hidden="true" className="h-4 w-4" />
-                    {t('fd.plans.completed.restoreShort')}
-                  </button>
-                </PlanCard>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-base-content/70">{t('fd.plans.completed.empty')}</p>
-          )}
-        </Section>
+        <details>
+          <summary className="min-h-11 cursor-pointer py-2 font-medium">Completed plans</summary>{' '}
+          <Section title={t('fd.plans.completed.heading')}>
+            {completed.length > 0 ? (
+              <ul className="space-y-3">
+                {completed.map((p) => (
+                  <PlanCard key={p.id} plan={p}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm min-h-11 w-full"
+                      aria-label={t('fd.plans.completed.restore', { title: p.title })}
+                      onClick={() => update((s) => restorePlan(s, p.id))}
+                    >
+                      <RotateCcw aria-hidden="true" className="h-4 w-4" />
+                      {t('fd.plans.completed.restoreShort')}
+                    </button>
+                  </PlanCard>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-base-content/70">{t('fd.plans.completed.empty')}</p>
+            )}
+          </Section>
+        </details>
       </div>
       {creating && <NewPlanSheet kind={creating} onClose={() => setCreating(null)} />}
     </main>

@@ -14,13 +14,13 @@ If you change anything in this doc, bump the date. If you change anything in `sr
 
 A Capacitor (React + Vite) mobile/PWA routine tracker for six spiritual routines: the daily
 text, Bible reading, meeting prep, family worship, personal study and the ministry. Today shows
-what is due and a long press checks it off; Today uses original coloured routine cards and a compact daily completion summary; Progress shows how the weeks are going; onboarding
-sets it up in six skippable steps (routine cues preserve the separately chosen reminder clock time), or starts directly with existing/default settings from the welcome. Today puts routine cards before the evening review, guide and official-site shortcut. The wrap-up time and Done for today never hide the routine list. Today visibly explains hold-to-check and tap-to-undo; open controls are empty circles. Reminders, a user-opened "What's New" shortcut to jw.org, and
+what is due and a tap records it; Today uses original coloured routine cards and a compact daily completion summary; Progress shows how the weeks are going; onboarding
+sets it up in six skippable steps (routine cues preserve the separately chosen reminder clock time), or starts directly with existing/default settings from the welcome. Today puts routine cards before the evening review, guide and official-site shortcut. The wrap-up time and Done for today never hide the routine list. Today visibly explains tap-to-record and tap-to-undo; open controls are empty circles. Reminders, a user-opened "What's New" shortcut to jw.org, and
 home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
-- **Version:** 5.2.0
-- **Progress and backup:** Progress starts with recorded routine check-ins for the current Monday-Sunday week (distinct routine/day pairs, currently enabled routines only), followed by a compact garden. Garden sharing requires earned XP. Settings has a top shortcut focusing Backup without exporting or importing.
+- **Version:** 5.3.0
+- **Progress and backup:** Progress starts with recorded routine check-ins for the current Monday-Sunday week (distinct routine/day pairs, currently enabled routines only), followed by organiser counts, routine totals and reading position; a compact garden comes last. Garden sharing requires earned XP. Settings has a top shortcut focusing Backup without exporting or importing.
 - **Current product contract:** `docs/feature-ui-reconciliation.md` records the
   approved UI and notes/preparation boundaries. Today has no garden illustration;
   Progress retains the garden. Study plans use "Use on Today" and "Current plan".
@@ -261,12 +261,40 @@ and uses Web Locks where available. Unknown schemas, malformed records, failed
 reads and stale windows cannot overwrite that store. Forms retain failed-save
 drafts; notes offer a draft export. Main routine store/key remains version 3.
 
-Settings exports a combined versioned bundle and validates both payloads before
-import. Routine-only imports explicitly leave workspace records alone. Durable
-replacement retains `faithful-days-before-import`; it can be exported from
-Settings. Two-key writes are not atomic: a workspace failure attempts routine
-rollback and reports failure even if rollback fails. Recovery copies contain
-private plain text and are never pruned as diagnostics.
+`faithful-days-organiser-v1` is a separate schema-1 store with tasks, events,
+inline recurrence definitions, stable occurrence exceptions, personal routines,
+manual check-ins and typed relations. Its client uses serialized durable writes,
+compare-before-write and Web Locks where available; provider state updates only
+after success. Civil task/event dates stay separate from 03:00 routine app days.
+Timed events retain an IANA zone and display device-local calendar times; floating
+tasks follow the device zone. Temporal compatible DST resolution shifts gaps
+forward and chooses the earlier overlap. Event durations are capped at one year.
+
+Today contains a bounded agenda (three tasks/two events), routines and additional
+manual routines. Plan provides Agenda/Week/Month/Tasks, filters/search, per-occurrence
+and future recurrence edits, undo and recoverable archive. Existing assignment
+checklists write through the workspace adapter; studies/family agendas retain the
+routine store as owner. Notes can attach to tasks/events, filter related activity
+and create an undated task with a backlink. Failed attachment retries reuse the
+saved note ID. Optional What's New check-ins and external links remain separate;
+there is no content retrieval or unseen-update detection.
+
+Settings groups configuration into expandable sections and exports the distinct
+`faithful-days-organiser-backup` version-1 envelope with minimum reader 5.3.0 and
+all three stores. Older importers reject that marker. Legacy routine-only and
+routine/workspace imports retain organiser data. Full restore saves
+`faithful-days-before-import`, records a pending recovery journal, writes/readbacks
+all stores and then marks the journal complete. RestoreGate mounts before providers
+and pauses startup/editing for incomplete/unreadable journals. Recovery restores
+the validated pre-import snapshot. These are recoverable sequential writes, not
+an atomic transaction. Recovery files contain private text and are not diagnostics.
+
+Fast onboarding can retain selected routines and start new reading at own pace
+before configuring schedules, reminders and appearance. Guided setup remains.
+Native reminders combine routine and saved organiser occurrences, respect quiet
+hours, cap the next native plan at 64 and reconcile on foreground/settings/organiser
+changes; notification permission is requested only through an explicit user action.
+Physical-device delivery and native compile are still separate evidence gates.
 
 Remaining #263/#264 work: native share transport after first-device verification.
 Local year-plan pace comparison, extra-reading activity dates and cross-content search are implemented. OS capture extensions, replay receipts and signing are

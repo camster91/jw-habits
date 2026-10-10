@@ -349,3 +349,14 @@ describe('Onboarding', () => {
     expect(text).not.toMatch(/missed|broke|failed|lost/i);
   });
 });
+
+it('starts quickly with selected routines and own-pace reading without requesting notifications', () => {
+  renderOnboarding();
+  click('Get started');
+  fireEvent.click(screen.getByRole('switch', { name: 'Personal study', exact: true }));
+  click('Start with these routines');
+  expect(current.onboardingDone).toBe(true);
+  expect(current.reading.plan).toBe('ownPace');
+  expect(current.schedule.at(-1).enabled.personalStudy).toBe(false);
+  expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
+});

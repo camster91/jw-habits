@@ -38,8 +38,8 @@ export default function StepWelcome() {
         {t(`fd.onboarding.welcome.explore.${interest}.body`)}
       </p>
       <p className="text-sm text-base-content/70">
-        Get started walks through six steps and saves your choices at the end. Start with defaults
-        takes you straight to Today.
+        Get started lets you choose your routines and begin, or continue a guided setup. Start with
+        defaults takes you straight to Today.
       </p>
       <details className="fd-guide rounded-2xl px-4 py-1">
         <summary className="min-h-11 cursor-pointer py-3 font-semibold">

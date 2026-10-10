@@ -4,6 +4,9 @@ import { useStore } from '../../data/useStore.js';
 import { exportJson, importJson } from '../../domain/store.js';
 import { isShareCancel, saveBackup } from '../../utils/backup.js';
 import { useWorkspace } from '../../data/useWorkspace.js';
+import { useOrganiser } from '../../data/useOrganiser.js';
+import { exportOrganiserBundle, importOrganiserBundle } from '../../domain/organiserBackup.js';
+import { restoreBundle } from '../../data/restoreCoordinator.js';
 import { exportBundle, importBundle } from '../../domain/workspace.js';
 import { durableGet, durableSet } from '../../utils/safeStorage.js';
 
@@ -17,6 +20,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
   const { t } = useTranslation();
   const { store, update, replace: replaceStore, today } = useStore();
   const workspaceState = useWorkspace();
+  const organiserState = useOrganiser();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null); // {error: boolean, text: string}
   const [pending, setPending] = useState(null);
@@ -32,13 +36,25 @@ export default function BackupSection({ onReplaced = () => {} }) {
     setStatus(null);
     try {
       await saveBackup(
-        workspaceState
-          ? workspaceState.ready
-            ? exportBundle(store, workspaceState.workspace)
-            : (() => {
-                throw new Error('Workspace unreadable; export its original data separately.');
-              })()
-          : exportJson(store),
+        organiserState
+          ? (() => {
+              if (!organiserState.ready || !workspaceState?.ready)
+                throw new Error(
+                  'Tasks, calendar or notes cannot be read; export their original data first.'
+                );
+              return exportOrganiserBundle(
+                store,
+                workspaceState.workspace,
+                organiserState.organiser
+              );
+            })()
+          : workspaceState
+            ? workspaceState.ready
+              ? exportBundle(store, workspaceState.workspace)
+              : (() => {
+                  throw new Error('Workspace unreadable; export its original data separately.');
+                })()
+            : exportJson(store),
         `faithful-days-backup-${today}.json`,
         t('fd.settings.backup.shareTitle')
       );
@@ -64,7 +80,11 @@ export default function BackupSection({ onReplaced = () => {} }) {
       setStatus({ error: true, text: t('fd.settings.backup.readError') });
       return;
     }
-    const result = workspaceState ? importBundle(text, today) : importJson(text, today);
+    const result = organiserState
+      ? importOrganiserBundle(text, today)
+      : workspaceState
+        ? importBundle(text, today)
+        : importJson(text, today);
     if (result.ok) setPending(result);
     else setStatus({ error: true, text: t(`fd.settings.backup.errors.${result.reason}`) });
   };
@@ -73,7 +93,27 @@ export default function BackupSection({ onReplaced = () => {} }) {
     setBusy(true);
     let routinesReplaced = false;
     try {
-      if (workspaceState) {
+      if (organiserState) {
+        if (!organiserState.ready || !workspaceState?.ready)
+          throw new Error('Import is paused until all device data can be read.');
+        await workspaceState.save(
+          (current) => pending.workspace ?? current,
+          async (currentWorkspace) => {
+            await organiserState.save(
+              (current) => pending.organiser ?? current,
+              async (currentOrganiser) => {
+                await restoreBundle({
+                  backup: exportOrganiserBundle(store, currentWorkspace, currentOrganiser),
+                  store: pending.store,
+                  workspace: pending.workspace ?? currentWorkspace,
+                  organiser: pending.organiser ?? currentOrganiser,
+                });
+                await replaceStore(pending.store);
+              }
+            );
+          }
+        );
+      } else if (workspaceState) {
         if (!workspaceState.ready)
           throw new Error('Notes and preparation cannot be read; import is paused.');
         await workspaceState.save(
@@ -158,7 +198,11 @@ export default function BackupSection({ onReplaced = () => {} }) {
             <p className="text-sm">
               {pending.legacy
                 ? 'This older backup replaces routines only. Your notes and preparation stay here.'
-                : 'This replaces routines, notes and preparation. A pre-import backup will be retained.'}
+                : organiserState
+                  ? pending.organiser
+                    ? 'This replaces routines, notes, preparation, tasks and calendar. A pre-import backup will be retained.'
+                    : 'This older backup replaces routines, notes and preparation. Your tasks and calendar stay here.'
+                  : 'This replaces routines, notes and preparation. A pre-import backup will be retained.'}
             </p>
           )}
           <div className="flex gap-2">
