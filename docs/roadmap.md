@@ -36,3 +36,5 @@ Store copy/current UI generation and outstanding account/device declarations: [s
 ## Connected organiser direction — 2026-10-10
 
 Cameron approved planning the connected Today, calendar/tasks and notes direction. [Connected organiser plan](connected-organiser-plan.md) defines thirteen work packages, existing issue mappings, storage/recurrence constraints and phone acceptance gates. This is a proposed implementation specification, not shipped functionality or new posted issues. Next bounded milestone: ORG-01–03, navigation correction, architecture/backup contract and a connected phone prototype. Existing release and privacy commitments remain in force.
+
+First organiser milestone prepared locally: navigation correction implemented and rendered; storage/backup contract documented; connected memory-only prototype verified. [Milestone evidence](organiser-prototype-review.md). Next implementation slice is ORG-04 validators, durable storage and backup compatibility; this does not change native/store status.

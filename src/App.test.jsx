@@ -41,6 +41,7 @@ let listeners;
 let prefersDark;
 
 beforeEach(() => {
+  window.scrollTo = vi.fn();
   listeners = new Set();
   prefersDark = false;
   window.matchMedia = vi.fn(() => ({

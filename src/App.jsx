@@ -1,3 +1,4 @@
+import NavigationPosition from './components/NavigationPosition.jsx';
 import StorageNotice from './components/StorageNotice.jsx';
 import { lazy, Suspense, useLayoutEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -55,6 +56,7 @@ function Screens() {
   const today = withTabs(<Today onOpenSettings={openSettings} />);
   return (
     <>
+      <NavigationPosition enabled={onboardingDone} />
       <Routes>
         {isWeb && (
           <Route

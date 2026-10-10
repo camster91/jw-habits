@@ -1,6 +1,8 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-09.**
+**Last audited against source: 2026-10-10.**
+
+Finishing onboarding and opening a new screen reset scroll and focus its heading, including lazy routes. History Back restores the saved screen position; physical Android back behavior remains a device gate. Native/browser automatic scroll restoration is suppressed while the shell is mounted.
 
 Untouched note starters close immediately without saving. Closing an edited note shows a short replacement confirmation; Keep editing or closing that confirmation restores the draft and focus, while Discard changes deliberately closes without saving.
 Preparation creation forms start open for an empty collection and collapse after a successful save. Saved records remain accessible; closing a form retains its draft, and Edit opens and focuses the assignment title. Failed saves keep forms and drafts open.
