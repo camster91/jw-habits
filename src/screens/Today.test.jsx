@@ -379,22 +379,23 @@ describe('Today: wrap-up', () => {
     expect(screen.queryByRole('region', { name: 'Your day in review' })).toBeNull();
   });
 
-  it('replaces the list at 21:00, with Still time for open routines', () => {
+  it('keeps routines before the review at 21:00, with Still time for open routines', () => {
     renderToday(someDone(), at(21));
     const card = screen.getByRole('region', { name: 'Your day in review' });
     expect(within(card).getByText('Daily text')).toBeInTheDocument();
     expect(within(card).getAllByRole('button', { name: /Still time/ }).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('button', { name: 'Bible reading', pressed: false })).toBeNull();
+    expect(checkButton('Bible reading')).toBeInTheDocument();
+    expect(
+      checkButton('Bible reading').compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Hide routines' })).toBeNull();
   });
 
-  it('Still time and Show routines expand the list for a late check-in', () => {
+  it('Still time focuses the visible routine for a late check-in', () => {
     renderToday(someDone(), at(21));
     fireEvent.click(screen.getAllByRole('button', { name: /Still time/ })[0]);
     expect(checkButton('Bible reading')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Hide routines' }));
-    expect(screen.queryByRole('button', { name: 'Bible reading', pressed: false })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Show routines' }));
-    expect(checkButton('Bible reading')).toBeInTheDocument();
+    expect(checkButton('Bible reading')).toHaveFocus();
   });
 
   it('lists nothing still open at 22:30', () => {
@@ -463,7 +464,6 @@ describe('Today: wrap-up', () => {
     unmount();
     renderToday(someDone(), at(21, 30));
     expect(screen.getByText('Your day in review · 1 done')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show routines' }));
     expect(checkButton('Bible reading')).toBeInTheDocument();
   });
 
@@ -471,12 +471,14 @@ describe('Today: wrap-up', () => {
     sessionStorage.setItem('fd-wrapup-dismissed', '2026-10-05');
     renderToday(someDone(), at(21));
     expect(screen.getByRole('region', { name: 'Your day in review' })).toBeInTheDocument();
+    expect(checkButton('Bible reading')).toBeInTheDocument();
   });
 
   it('appears when the wrap-up time arrives while open', () => {
     renderToday(someDone(), at(19, 59));
     advance(60 * 1000);
     expect(screen.getByRole('region', { name: 'Your day in review' })).toBeInTheDocument();
+    expect(checkButton('Bible reading')).toBeInTheDocument();
   });
 });
 

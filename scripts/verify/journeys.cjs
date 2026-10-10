@@ -245,7 +245,7 @@ const closeSettings = async (page) => {
     sink
   );
 
-  // J7: at 21:00 the wrap-up card replaces the list; the list can be reopened.
+  // J7: at 21:00 the review follows the routines and never hides them.
   await journey(
     'J7 wrap-up at 21:00',
     browser,
@@ -255,19 +255,15 @@ const closeSettings = async (page) => {
       await page.getByRole('heading', { name: 'Your day in review' }).waitFor();
       step('J7 the wrap-up card shows at 21:00', true);
       step(
-        'J7 the routine list is hidden behind it',
-        (await routineButton(page, 'Daily text').count()) === 0
-      );
-      await page.getByRole('button', { name: 'Show routines' }).click();
-      step(
-        'J7 Show routines brings the list back',
-        (await routineButton(page, 'Daily text').count()) === 1
+        'J7 routines stay visible before the review',
+        await routineButton(page, 'Daily text').isVisible()
       );
       await page.getByRole('button', { name: 'Done for today' }).click();
       step(
         'J7 Done for today leaves the one-line summary',
         await page.getByText(/Your day in review ·/).isVisible()
       );
+      step('J7 Done for today keeps routines visible', await routineButton(page, 'Daily text').isVisible());
     },
     sink
   );

@@ -167,10 +167,9 @@ async function runSmoke(browser) {
       `entries=${saved ? saved.log.length : 'none'} pressed=${after}`,
     );
 
-    // S5: 02:00 on the 7th is still the 6th (wrap-up is showing, so open the list).
+    // S5: 02:00 on the 7th is still the 6th; routines remain visible beside the wrap-up.
     await page.clock.setSystemTime(new Date(2026, 9, 7, 2, 0));
     await page.reload({ waitUntil: 'networkidle' });
-    await page.getByRole('button', { name: 'Show routines' }).click();
     const before3 = await pressed(page, 'Daily text');
     record(
       'S5: Before 03:00 the app day is still yesterday (check-in still shown)',

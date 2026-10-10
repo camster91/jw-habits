@@ -30,3 +30,9 @@ Native OS permission dialogs, refreshed Android APK, signed iOS/TestFlight and p
 A meal, family prayer or bedtime is a personal event, not a known clock time. Step 5 and Settings now call the selection a daily-text cue and label the separate clock field Reminder time. Changing any cue (including Just a clock time) preserves the user's chosen clock; it no longer assigns the legacy before-bed suggestion of 21:30. The final setup review shows both cue and clock. Existing saved clocks, reminder permissions, quiet hours and scheduling rules remain intact. No meal or bedtime detection is implemented.
 
 Validation: 110 affected onboarding, Settings, store and notification tests; lint, formatting, production build and size budgets; production dependency audit (zero vulnerabilities); Chromium smoke and responsive journeys; light/dark 320px accessibility checks (zero violations or overflow). A rendered 390px dark preview confirmed Before bed with a separately chosen 22:15 clock. This correction is local and is not in the previously delivered APK or TestFlight.
+
+## Today visibility correction
+
+Today previously replaced its routine list at the chosen wrap-up time. With the list reopened, the guide, official-site shortcut and review still pushed most routine cards below the phone viewport. Today now renders the routine list before those extras, keeps it present at all times, and removes Hide/Show routines controls. Done for today minimizes only the review. Still time focuses and scrolls to the corresponding visible routine. Stored history, due-day rules, wrap-up scheduling and reminder permissions are unchanged.
+
+Validation: 64 Today component tests, lint/format/build/budgets; rendered 390px evening light/dark layouts and accessibility checks. New browser journey assertions require routines to remain visible before and after Done for today. Native/device distribution is separate.

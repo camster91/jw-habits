@@ -129,7 +129,6 @@ export default function Today({ onOpenSettings = () => {} }) {
     : null;
   const now = useNow();
   const [line, encourage] = useEncouragement(store.tone, today, t);
-  const [expanded, setExpanded] = useState(false);
   const [dismissedOn, setDismissedOn] = useState(() => safeSessionGetItem(DISMISS_KEY));
   // The plan a check-in just finished: {planId, started} (started: the next project's title).
   const [finished, setFinished] = useState(null);
@@ -157,7 +156,6 @@ export default function Today({ onOpenSettings = () => {} }) {
   const dismissed = dismissedOn === today;
   const result = wrapping ? wrapUp(store, now, t) : null;
   const fresh = freshStart(today);
-  const showList = !wrapping || expanded;
   const study = todaysStudyStep(store);
   const studyEntry = store.log.find((e) => e.routine === 'personalStudy' && e.day === today);
   // What the study row shows. While today is checked in: the step that check-in
@@ -265,7 +263,6 @@ export default function Today({ onOpenSettings = () => {} }) {
   const dismiss = () => {
     safeSessionSetItem(DISMISS_KEY, today);
     setDismissedOn(today);
-    setExpanded(false);
   };
 
   const detailOf = (id) => {
@@ -451,27 +448,8 @@ export default function Today({ onOpenSettings = () => {} }) {
           </p>
         </header>
         <p className="text-sm text-base-content/70">{t('fd.today.checkHint')}</p>
-        <QuickGuide
-          title="Make Today your own"
-          steps={[
-            {
-              title: 'Take one small step',
-              body: 'Hold an empty circle to check off a routine. Tap a checked circle to undo. Keyboard and assistive controls can activate it too.',
-            },
-            {
-              title: 'Open your references',
-              body: 'The arrow beside a routine opens its linked reference. What’s New opens the official jw.org page when you choose.',
-            },
-            {
-              title: 'Find your rhythm',
-              body: 'Change routine days, reading pace, colours and reminders in Settings. Your day rolls over at 3 a.m.',
-            },
-          ]}
-        />
 
         {fresh && <p className="text-base-content/80">{t(`fd.today.${fresh}`)}</p>}
-
-        {store.whatsNew.enabled && <WhatsNewBadge onOpen={openWhatsNew} />}
 
         <div role="status" aria-live="polite" className="empty:hidden text-[var(--fd-accent-text)]">
           {line && (
@@ -508,35 +486,49 @@ export default function Today({ onOpenSettings = () => {} }) {
           <MeetingDaysCard onOpen={onOpenSettings} />
         )}
 
+        <ul className="space-y-3">
+          {rows.map(renderRow)}
+          {rows.length === 0 && (
+            <li className="text-center text-base-content/70">{t('fd.today.allClear')}</li>
+          )}
+        </ul>
+
         {wrapping && !dismissed && (
           <WrapUpCard
             day={today}
             result={result}
             labelOf={label}
             tone={store.tone}
-            expanded={expanded}
-            onToggle={() => setExpanded((x) => !x)}
-            onStillTime={() => setExpanded(true)}
+            onStillTime={(id) => {
+              const target = document.querySelector(`[data-testid="row-${id}"] button`);
+              target?.focus();
+              target?.scrollIntoView?.({ block: 'center' });
+            }}
             onDone={dismiss}
           />
         )}
 
-        {wrapping && dismissed && (
-          <WrapUpSummary
-            count={result.done.length}
-            expanded={expanded}
-            onToggle={() => setExpanded((x) => !x)}
-          />
-        )}
+        {wrapping && dismissed && <WrapUpSummary count={result.done.length} />}
 
-        {showList && (
-          <ul className="space-y-3">
-            {rows.map(renderRow)}
-            {rows.length === 0 && (
-              <li className="text-center text-base-content/70">{t('fd.today.allClear')}</li>
-            )}
-          </ul>
-        )}
+        <QuickGuide
+          title="Make Today your own"
+          steps={[
+            {
+              title: 'Take one small step',
+              body: 'Hold an empty circle to check off a routine. Tap a checked circle to undo. Keyboard and assistive controls can activate it too.',
+            },
+            {
+              title: 'Open your references',
+              body: 'The arrow beside a routine opens its linked reference. What’s New opens the official jw.org page when you choose.',
+            },
+            {
+              title: 'Find your rhythm',
+              body: 'Change routine days, reading pace, colours and reminders in Settings. Your day rolls over at 3 a.m.',
+            },
+          ]}
+        />
+
+        {store.whatsNew.enabled && <WhatsNewBadge onOpen={openWhatsNew} />}
       </div>
       {choosing && study && !studyEntry && (
         <SomethingElseSheet

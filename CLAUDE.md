@@ -12,7 +12,7 @@ If you change anything in this doc, bump the date. If you change anything in `sr
 A Capacitor (React + Vite) mobile/PWA routine tracker for six spiritual routines: the daily
 text, Bible reading, meeting prep, family worship, personal study and the ministry. Today shows
 what is due and a long press checks it off; Today uses original coloured routine cards and a compact daily completion summary; Progress shows how the weeks are going; onboarding
-sets it up in six skippable steps (routine cues preserve the separately chosen reminder clock time), or starts directly with existing/default settings from the welcome. Today visibly explains hold-to-check and tap-to-undo; open controls are empty circles. Reminders, a user-opened "What's New" shortcut to jw.org, and
+sets it up in six skippable steps (routine cues preserve the separately chosen reminder clock time), or starts directly with existing/default settings from the welcome. Today puts routine cards before the evening review, guide and official-site shortcut. The wrap-up time and Done for today never hide the routine list. Today visibly explains hold-to-check and tap-to-undo; open controls are empty circles. Reminders, a user-opened "What's New" shortcut to jw.org, and
 home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
