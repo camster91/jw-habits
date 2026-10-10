@@ -1,10 +1,11 @@
 # Faithful Days privacy policy
 
-Effective: 2026-10-07. Developer: Ashbi Design. Contact: cameron@ashbi.ca.
-Published policy: https://jwhabits.ashbi.ca/privacy.html
+Updated: 2026-10-10. Developer: Ashbi Design. Contact: cameron@ashbi.ca.
+Policy source: `public/privacy/index.html`; intended URL: https://jwhabits.ashbi.ca/privacy/ . Public availability and publication are separate release gates.
 
 Faithful Days keeps routine history, Bible chapter records, study/family plans,
-user-written step notes, settings and badges on your device. No account backend,
+user-written notes, meeting preparation, assignments, tasks, calendar events,
+personal routines, settings and badges on your device. No account backend,
 analytics, advertising or remote activity/crash-report service is included.
 The app does not upload this content to Ashbi Design.
 
@@ -21,15 +22,23 @@ notes and saved links. Native exports use temporary cache files and attempt to
 remove them after system sharing completes/cancels; cache retention is also
 controlled by the OS.
 
+Full imports replace all three stores after confirmation, retaining a pre-import
+recovery snapshot and journal. Older routine/workspace imports retain organiser
+data; routine-only imports also retain notes/preparation. Interrupted restores
+block editing until recovery. Archive keeps organiser history; storage removal
+can remove it. Recovery copies have no automatic expiration.
+
 Notifications are optional and local. Home-screen widgets receive only the
 local routine snapshot needed to display/check in; the app and widget share
 on-device state, not a remote service. Diagnostic entries contain bounded
 categories/times, not notes or payloads; at most 20 entries are kept and entries
 older than seven days are removed. Settings provides inspect/clear controls.
 
-Loading the web app contacts its hosting service. An enabled What's New check
-contacts jw.org's public feed; explicit links contact the destination you choose.
-Hosting/feed operators may receive IP addresses, request metadata and their own
+Loading the web app contacts its hosting service. The optional What's New shortcut
+opens the official website only when selected; no feed collection occurs.
+An optional routine records manual activity without detecting website updates.
+Explicit links contact the destination you choose.
+Hosting/destination operators may receive IP addresses, request metadata and their own
 logs. Their retention is not certified by this app's source code. Store privacy
 and data-safety declarations require owner review of those practices.
 

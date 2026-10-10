@@ -1,11 +1,33 @@
 # Privacy data inventory — source evidence and owner gates
 
-Reviewed October 8, 2026 against the local Faithful Days 5.2 candidate. Parents
+Reviewed October 10, 2026 against the local Faithful Days 5.3 candidate. Parents
 #178/#174/#250; owner Cameron / store account holder. This is a source inventory,
 not a signed-package inspection, console declaration, retention approval or legal
 assessment. No private user data was inspected. Test records remain fabricated.
 
 ## On-device data and copies
+
+### Organiser update
+
+`faithful-days-organiser-v1` contains task/event titles and details, calendar dates,
+optional times/time zones, recurrence, exceptions and completion times, personal
+routine labels/icons/reference URLs, check-ins and typed note/preparation links.
+It stays in localStorage or native Capacitor Preferences via the durable adapter;
+there is no remote task/event service. Archive retains history. No automatic
+expiration or app-level encryption is asserted. Full backups include this store;
+older routine/workspace imports leave it untouched. Older clients cannot read it.
+
+The pre-import recovery key below now retains the full three-store envelope.
+`faithful-days-restore-journal-v1` records restore state and gates editing after an
+interruption. The coordinator writes stores sequentially with readback; this is
+recoverable storage, not an atomic transaction. Completed journals retain only
+version/status, while pending journals can contain the validated imported bundle.
+Recovery snapshots have no automatic expiration and may contain private content.
+References: `src/domain/organiser.js`, `organiserBackup.js`,
+`src/data/organiserClient.js`, `restoreCoordinator.js`, `RestoreGate.jsx`.
+Physical native storage/OS backup, notification delivery and user-controlled
+export file lifetime remain unverified. The historical two-store entries below
+are superseded by this three-store restore contract.
 
 | Data/path                                          | Contents and persistence                                                                                                                                                          | Source / boundary                                                                                                                   | Remaining verification                                                                                                          |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |

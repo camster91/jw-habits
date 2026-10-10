@@ -1,4 +1,4 @@
-# Faithful Days 5.2 store release pack
+# Faithful Days 5.3 store release pack
 
 Draft for the current implementation; neither store listing or signed release is verified live. Cameron / Ashbi Design owns name reservation, account declarations and submission. Validate final copy and images against the exact signed candidate before publishing.
 
@@ -6,13 +6,18 @@ Draft for the current implementation; neither store listing or signed release is
 
 Name: **Faithful Days** (store availability/reservation remains an owner check).
 Subtitle: **Spiritual routines, your way**.
-Play short description: **Private routines, study plans, notes and meeting preparation on your device.**
+Play short description: **Private routines, tasks, calendar, notes and preparation on your device.**
 
 Long description:
 
 Faithful Days helps Jehovah's Witnesses organise spiritual routines and prepare ahead on their own device. Choose the routines that fit your life: daily text, Bible reading, meeting preparation, family worship, personal study and ministry. Keep a steady rhythm with gentle progress, optional reminders and a daily wrap-up.
 
 Create study and family projects with your own titles and steps. Plan a family worship agenda and track Bible chapters. Keep your own notes with tags, links and local search. Choose actual meeting and assignment dates, mark the sections you have prepared, and make a personal assignment checklist. Preparation and notes stay separate from the routine activity you record on Today.
+
+Add tasks and recurring calendar events. See your agenda, week, month or task list,
+attach preparation and notes, and record task completion with Undo. Add a personal
+routine, including an optional manual check-in for exploring What's New on the
+official website. Reference links open separately; the app does not detect updates.
 
 See recorded weekly activity, a garden and badges. Turn points and levels on or off. Export a combined JSON backup to protect your routines, notes and preparation, then import it on another device. There is no app account or automatic cloud sync. Backup files are not encrypted; keep them private. The app contains no publication text or verses: you choose your own links and written content.
 
@@ -37,13 +42,13 @@ Screenshot order draft: Today → Plans → Notes → prepared meeting → assig
 
 ## Reviewer notes draft (validate on the signed build)
 
-No login is required. Routines, plans, notes, preparation, assignments and history stay on-device. Core editing works offline; external links and the optional What's New feed require network access. The app day rolls at local 03:00. Preparation checks and written notes do not automatically mark a routine complete.
+No login is required. Routines, plans, notes, preparation, assignments, tasks, events and history stay on-device. Core editing works offline; user-opened external links require network access. Routine tracking rolls at local 03:00; calendar dates are separate. Preparation, event presence and written notes do not automatically mark a routine complete.
 
-1. On welcome, choose Start with defaults or follow the customization steps. On Today, hold an empty circle to record a routine; tap a checked circle to undo.
-2. Open Plans and create a study project with your own steps; use it on Today. Family plans and agendas are available in Plans. Open Progress for recorded weekly activity and the garden/badges.
+1. On welcome, choose your routines and Start with these routines, use defaults, or follow guided setup. On Today, tap a circle to record a routine; tap again to undo.
+2. Open Plan and try Agenda/Week/Month/Tasks. Add an event, open it and add a preparation task or linked note. Complete the task, Undo and reload. Study projects and family agendas remain available below the organiser. Open Progress for weekly records and optional garden/badges.
 3. Choose Notes in the bottom navigation. Choose New note, write a title/body and optional comma-separated tags or links, then Save note. Search notes locally and reopen the saved note to edit. Use fabricated personal text for review.
 4. In Plans, choose Prepare for meetings and assignments. Add a meeting with its actual date and mark a prepared section. Add an assignment title/type/date and your own checklist. Add a contextual note from the meeting/assignment link. Return to Today to confirm preparation alone has created no routine check-in.
-5. Open Settings → Go to Backup. Export a combined backup and keep it private. Import only into an isolated review install: combined imports replace routine and workspace data after confirmation, retain a pre-import recovery copy, and routine-only legacy imports leave notes/preparation alone. Verify reload and recovery separately; export/import is not sync or atomic two-store storage.
+5. Open Settings → Go to Backup. Export a full backup and keep it private. Import only into an isolated review install: full imports replace all three stores after confirmation and retain a pre-import snapshot and journal. Older routine/workspace imports retain organiser data; routine-only imports also retain notes/preparation. Verify reload and interrupted restore recovery separately; export/import is not sync or atomic storage.
 6. Native-only claims require device evidence: reminders/permission denial, haptics, system sharing, durable storage and home-screen widgets. Verify both widget sizes, app-day rollover and the signed App Group/OS configuration before asserting support. The containing iOS app targets iOS 15; WidgetKit extension requires iOS 17. Native share-in capture is still pending its first-device baseline and must not be advertised as implemented.
 
 An uploader exit, unsigned compile, browser screenshot or synthetic test is not reviewer acceptance or store availability. Record exact source/build/device/OS and results under the controlling release issues.
