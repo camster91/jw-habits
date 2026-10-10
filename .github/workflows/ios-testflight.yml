@@ -112,7 +112,7 @@ jobs:
           printf 'path=%s\n' "$ipa" >> "$GITHUB_OUTPUT"
       - name: Upload to TestFlight
         if: env.SKIP_UPLOAD != 'true'
-        uses: apple-actions/upload-testflight-build@14df18fee5a4ff3b76971dd382f033494a0194e9 # v5.5.0
+        uses: apple-actions/upload-testflight-build@65a84cdb671ee2ccfa93710cd58e8f7b5d251967 # v5.5.1
         with:
           app-path: ${{ steps.ipa.outputs.path }}
           app-type: ios
