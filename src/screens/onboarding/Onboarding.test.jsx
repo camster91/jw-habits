@@ -262,6 +262,21 @@ describe('Onboarding', () => {
     expect(screen.getByText(/Routines, plans and notes stay on this device/)).toBeInTheDocument();
   });
 
+  it('explains the tracking day interactively without recording activity', () => {
+    const initial = initialStore();
+    renderOnboarding(initial);
+    click('Your ideas');
+    expect(screen.getByText(/Keep your own questions/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText('How does a day work?'));
+    click('4 a.m.');
+    expect(screen.getByText(/At 4 a.m., your check-in belongs to the new day/)).toBeInTheDocument();
+    click('1 a.m.');
+    expect(
+      screen.getByText(/At 1 a.m., your check-in belongs to the previous day/)
+    ).toBeInTheDocument();
+    expect(current).toEqual(initial);
+  });
+
   it('setting copy never says missed, broke, failed or lost', () => {
     const text = JSON.stringify([en.fd.onboarding, en.fd.settings]);
     expect(text).not.toMatch(/missed|broke|failed|lost/i);

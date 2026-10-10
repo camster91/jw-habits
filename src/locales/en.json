@@ -15,16 +15,16 @@
     },
     "notify": {
       "title": "Faithful Days",
-      "ready_one": "{{prefix}} · {{list}} is ready",
-      "ready_other": "{{prefix}} · {{list}} are ready",
+      "ready_one": "{{prefix}} \u00b7 {{list}} is ready",
+      "ready_other": "{{prefix}} \u00b7 {{list}} are ready",
       "and": "{{head}} and {{last}}",
       "wrapUp": "Your day in review is ready",
-      "meetingEve": "Tomorrow's meeting — prep is ready when you are"
+      "meetingEve": "Tomorrow's meeting \u2014 prep is ready when you are"
     },
     "wrapUp": {
-      "restWell": "Rest well — tomorrow's a fresh start.",
-      "bibleMoved_one": "{{count}} chapter · {{books}} of 66 books",
-      "bibleMoved_other": "{{count}} chapters · {{books}} of 66 books",
+      "restWell": "Rest well \u2014 tomorrow's a fresh start.",
+      "bibleMoved_one": "{{count}} chapter \u00b7 {{books}} of 66 books",
+      "bibleMoved_other": "{{count}} chapters \u00b7 {{books}} of 66 books",
       "bibleBooks": "{{books}} of 66 books",
       "meetingMoved_one": "{{done}} of 1 meeting",
       "meetingMoved_other": "{{done}} of the last {{count}} meetings",
@@ -78,8 +78,8 @@
       "ministryStudies": "Bible studies",
       "ministryHours": "Hours this month",
       "hoursGoal": "{{hours}} of {{goal}} hours",
-      "ministrySummary_one": "Shared this month · {{count}} Bible study",
-      "ministrySummary_other": "Shared this month · {{count}} Bible studies",
+      "ministrySummary_one": "Shared this month \u00b7 {{count}} Bible study",
+      "ministrySummary_other": "Shared this month \u00b7 {{count}} Bible studies",
       "ministryEdit": "Edit",
       "setMeetingDays": "Set your meeting days",
       "setMeetingDaysBody": "Choose your meeting days. Preparation appears the day before each meeting.",
@@ -92,12 +92,12 @@
       "hideRoutines": "Hide routines",
       "doneForToday": "Done for today",
       "stillTime": "Still time",
-      "graceKept": "Life happens — kept your streak",
+      "graceKept": "Life happens \u2014 kept your streak",
       "allDone": "Everything is done for today. Well done.",
-      "summary_one": "Your day in review · {{count}} done",
-      "summary_other": "Your day in review · {{count}} done",
+      "summary_one": "Your day in review \u00b7 {{count}} done",
+      "summary_other": "Your day in review \u00b7 {{count}} done",
       "study": {
-        "line": "{{plan}} · {{step}}",
+        "line": "{{plan}} \u00b7 {{step}}",
         "openStep": "Open {{title}}",
         "somethingElse": "Did something else",
         "sheetTitle": "What did you study?",
@@ -123,22 +123,36 @@
       "readingAhead_other": "About {{count}} days ahead of the year-plan pace.",
       "checkHint": "Hold an empty circle to check a routine. Tap a checked circle to undo.",
       "whatsNewLink": "What's New on jw.org",
-      "whatsNewHint": "Explore the latest on the official website ↗",
-      "dailySteps": "{{done}} of {{total}} daily steps · A little at a time",
+      "whatsNewHint": "Explore the latest on the official website \u2197",
+      "dailySteps": "{{done}} of {{total}} daily steps \u00b7 A little at a time",
       "gentleDay": "Room to recharge today"
     },
     "onboarding": {
       "stepOf": "Step {{step}} of {{total}}",
       "back": "Back",
       "next": "Next",
-      "skip": "Skip — use defaults",
+      "skip": "Skip \u2014 use defaults",
       "finish": "Start my first day",
       "welcome": {
         "title": "Welcome to Faithful Days",
         "body": "A calm place to keep your spiritual routines: the daily text, Bible reading, meetings, family worship, personal study and the ministry.",
         "start": "Get started",
-        "storage": "Your day starts at 3 a.m. Routines, plans and notes stay on this device, with no account or sync. Clearing app data or uninstalling can remove your history. Export a backup in Settings before changing devices.",
-        "defaults": "Start with defaults"
+        "storage": "Routines, plans and notes stay on this device, with no account or sync. Clearing app data or uninstalling can remove your history. Export a backup in Settings before changing devices.",
+        "defaults": "Start with defaults",
+        "explore": {
+          "rhythm": {
+            "title": "Your rhythm",
+            "body": "Choose the routines and meeting days that fit your week. Get started will guide you through those choices."
+          },
+          "ideas": {
+            "title": "Your ideas",
+            "body": "Keep your own questions, notes and preparation together. Editable starters help when you need a starting point."
+          },
+          "pace": {
+            "title": "Your pace",
+            "body": "Read at your own pace or follow a year plan. Small steps count; choose what works for you during setup."
+          }
+        }
       },
       "routines": {
         "title": "Your routines",
@@ -327,7 +341,7 @@
       },
       "family": {
         "heading": "Family worship",
-        "weeks": "Plan this week’s family worship",
+        "weeks": "Plan this week\u2019s family worship",
         "empty": "Add topics for one evening, or create a plan to follow over several weeks.",
         "new": "New family plan"
       },
@@ -494,12 +508,12 @@
         "Fruitful Tree"
       ],
       "treeNumber": "Fruitful Tree {{count}}",
-      "level": "{{name}} · Level {{level}}",
+      "level": "{{name}} \u00b7 Level {{level}}",
       "xp": "{{earned}} / {{needed}} XP",
       "levelProgress": "Progress to the next level",
-      "levelReached": "Your garden is growing · {{name}}",
+      "levelReached": "Your garden is growing \u00b7 {{name}}",
       "badgesTitle": "Badges",
-      "badgeEarned": "A new bloom · {{name}}",
+      "badgeEarned": "A new bloom \u00b7 {{name}}",
       "dismiss": "Dismiss",
       "earnedOn": "Earned {{day}}",
       "notYet": "Not yet",
@@ -527,15 +541,15 @@
       }
     },
     "share": {
-      "finished": "Finished {{title}}! 📖",
+      "finished": "Finished {{title}}! \ud83d\udcd6",
       "garden": "My growing garden",
       "days": "{{count}} days this year",
       "routineDays": "{{title}} {{count}} days",
       "weekly": "A good week",
       "button": "Share card",
-      "preparing": "Preparing card…",
+      "preparing": "Preparing card\u2026",
       "error": "The card could not be prepared. Please try again.",
-      "badge": "A new bloom · {{title}}"
+      "badge": "A new bloom \u00b7 {{title}}"
     },
     "storage": {
       "full": "Your changes could not be saved on this device. Export a backup before closing the app, then free storage or check device settings.",
