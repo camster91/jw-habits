@@ -58,7 +58,7 @@ export const BADGE_IDS = [
   'level5',
 ];
 
-/** Clock time each anchor phrase stands for. */
+/** Legacy suggested times; keys define the persisted cue vocabulary. Choosing a cue preserves the user's clock time. */
 export const ANCHOR_PHRASE_TIMES = {
   afterBreakfast: '08:00',
   withFamilyPrayer: '07:00',

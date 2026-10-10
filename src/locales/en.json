@@ -182,9 +182,9 @@
       },
       "rhythm": {
         "title": "Your rhythm",
-        "anchorQuestion": "When will you read the daily text?",
-        "setTime": "A set time",
-        "anchorTime": "Daily text time",
+        "anchorQuestion": "What could be your daily-text cue?",
+        "setTime": "Just a clock time",
+        "anchorTime": "Reminder time",
         "wrapUpTime": "Evening wrap-up time",
         "wrapUpNotification": "Evening wrap-up notification",
         "tone": "Encouragement after a check-in",

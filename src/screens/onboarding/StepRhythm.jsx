@@ -23,7 +23,7 @@ export default function StepRhythm({ store, change, askPermission = false }) {
   const setAnchor = (a) => change((s) => ({ ...s, anchors: { ...s.anchors, dailyText: a } }));
   const pickPhrase = (v) => {
     const phrase = v === SET_TIME ? null : v;
-    setAnchor({ time: phrase ? ANCHOR_PHRASE_TIMES[phrase] : anchor.time, phrase });
+    setAnchor({ ...anchor, phrase });
   };
 
   const requestPermission = () => {
@@ -60,13 +60,18 @@ export default function StepRhythm({ store, change, askPermission = false }) {
           onChange={pickPhrase}
         />
         <p className="text-sm text-base-content/70">
-          A familiar moment sets a suggested clock time. Adjust the time below to fit your day.
+          A cue helps you connect reading with your own routine. Faithful Days cannot detect
+          breakfast, prayer or bedtime. Choosing a cue does not change your reminder time.
         </p>
         <TimeField
           label={t('fd.onboarding.rhythm.anchorTime')}
           value={anchor.time}
           onChange={(time) => setAnchor({ ...anchor, time })}
         />
+        <p className="text-sm text-base-content/70">
+          If reminders are enabled, they use this clock time. Choose a time that fits your routine;
+          the cue itself does not trigger a notification.
+        </p>
       </section>
       <section className="space-y-3 rounded-2xl bg-base-100 p-4">
         <h2 className="font-semibold">A quiet evening pause</h2>

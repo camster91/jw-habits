@@ -5,7 +5,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useCallback, useMemo, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { StoreContext } from '../../data/useStore.js';
-import { ANCHOR_PHRASE_TIMES, defaultStore } from '../../domain/store.js';
+import { defaultStore } from '../../domain/store.js';
 import { ACCENTS } from '../../theme/theme.js';
 import en from '../../locales/en.json';
 // eslint-disable-next-line no-unused-vars -- used via JSX
@@ -206,19 +206,31 @@ describe('Onboarding', () => {
     expect(current).toEqual({ ...initial, onboardingDone: true });
   });
 
-  it('picking an anchor phrase sets its time, which can still be adjusted', () => {
+  it('keeps the reminder clock independent of the chosen routine cue', () => {
     renderOnboarding();
     click('Get started');
     for (let i = 0; i < 3; i++) click('Next');
     expect(heading()).toHaveTextContent('Your rhythm');
-    fireEvent.click(screen.getByRole('radio', { name: 'Before bed' }));
-    const time = screen.getByLabelText('Daily text time');
-    expect(time).toHaveValue(ANCHOR_PHRASE_TIMES.beforeBed);
+    const time = screen.getByLabelText('Reminder time');
     fireEvent.change(time, { target: { value: '22:15' } });
+    for (const cue of [
+      'Before bed',
+      'After breakfast',
+      'With family prayer',
+      'Just a clock time',
+    ]) {
+      fireEvent.click(screen.getByRole('radio', { name: cue }));
+      expect(time).toHaveValue('22:15');
+    }
+    fireEvent.click(screen.getByRole('radio', { name: 'Before bed' }));
+    expect(screen.getByText(/cannot detect breakfast/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: 'With a scripture reference' }));
     fireEvent.click(screen.getByRole('switch', { name: 'Evening wrap-up notification' }));
     click('Next');
-    click(SKIP);
+    expect(screen.getByRole('region', { name: 'Review your setup' })).toHaveTextContent(
+      'Daily-text cue: Before bed. Reminder time: 22:15'
+    );
+    click('Start my first day');
     expect(current.anchors).toEqual({ dailyText: { time: '22:15', phrase: 'beforeBed' } });
     expect(current.tone).toBe('scripture');
     expect(current.wrapUpNotification).toBe(true);

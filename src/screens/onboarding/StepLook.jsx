@@ -132,7 +132,11 @@ function Review({ store, today }) {
         <div>
           <dt className="font-semibold">Your rhythm</dt>
           <dd>
-            Daily text: {store.anchors.dailyText?.time ?? '07:00'}. Evening notification:{' '}
+            Daily-text cue:{' '}
+            {store.anchors.dailyText?.phrase
+              ? t(`fd.anchor.${store.anchors.dailyText.phrase}`)
+              : t('fd.onboarding.rhythm.setTime')}
+            . Reminder time: {store.anchors.dailyText?.time ?? '07:00'}. Evening notification:{' '}
             {store.wrapUpNotification ? `on at ${store.wrapUpTime}` : 'off'}. Encouragement:{' '}
             {t(`fd.onboarding.rhythm.tones.${store.tone}`)}.
           </dd>
