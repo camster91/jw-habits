@@ -12,9 +12,10 @@ export default function StepWelcome() {
         src="/illustrations/welcome.webp"
         alt=""
         width="200"
-        height="160"
-        className="mx-auto h-40 w-50 object-contain"
+        height="112"
+        className="mx-auto h-28 w-50 object-contain"
       />
+      <p>{t('fd.onboarding.welcome.body')}</p>
       <p className="text-sm">Tap to explore what you can make your own.</p>
       <div
         role="group"
@@ -36,7 +37,10 @@ export default function StepWelcome() {
       <p aria-live="polite" className="rounded-2xl bg-base-100 p-4 text-sm">
         {t(`fd.onboarding.welcome.explore.${interest}.body`)}
       </p>
-      <p>{t('fd.onboarding.welcome.body')}</p>
+      <p className="text-sm text-base-content/70">
+        Get started walks through six steps and saves your choices at the end. Start with defaults
+        takes you straight to Today.
+      </p>
       <details className="fd-guide rounded-2xl px-4 py-1">
         <summary className="min-h-11 cursor-pointer py-3 font-semibold">
           How does a day work?

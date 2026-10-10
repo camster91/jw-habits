@@ -39,7 +39,7 @@ async function journey(name, browser, opts, body, sink) {
     await go(session.page, BASE);
     await body(session.page);
   } catch (e) {
-    step(name, false, String(e.message).split('\n')[0]);
+    step(name, false, String(e.message));
   }
   sink.errors.push(...session.errors);
   sink.external.push(...session.external);

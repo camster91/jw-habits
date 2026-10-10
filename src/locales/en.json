@@ -135,7 +135,7 @@
       "finish": "Start my first day",
       "welcome": {
         "title": "Welcome to Faithful Days",
-        "body": "A calm place to keep your spiritual routines: the daily text, Bible reading, meetings, family worship, personal study and the ministry.",
+        "body": "A little space for your spiritual routines, plans and ideas. Make it your own, one choice at a time.",
         "start": "Get started",
         "storage": "Routines, plans and notes stay on this device, with no account or sync. Clearing app data or uninstalling can remove your history. Export a backup in Settings before changing devices.",
         "defaults": "Start with defaults",
@@ -156,7 +156,7 @@
       },
       "routines": {
         "title": "Your routines",
-        "body": "All six are on. Turn off any you'd rather not keep here, or give them your own names.",
+        "body": "Keep the routines you want to track. Turn a switch off to hide a routine, or tap its pencil to give it your own name.",
         "rename": "Rename {{label}}",
         "nameFor": "Name for {{label}}",
         "reset": "Reset to default",

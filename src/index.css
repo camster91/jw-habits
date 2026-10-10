@@ -287,6 +287,12 @@ input[type='range']::-webkit-slider-thumb {
 .fd-screen-intro[data-tone='rose'] {
   --intro-colour: #b03a6e;
 }
+.fd-screen-intro[data-tone='ocean'] {
+  --intro-colour: #4a6fa4;
+}
+.fd-screen-intro[data-tone='rust'] {
+  --intro-colour: #b5472f;
+}
 .fd-screen-intro[data-tone='amber'] {
   --intro-colour: #9a5b13;
 }

@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil } from 'lucide-react';
+import { Pencil, Sun, BookOpen, CalendarDays, Heart, NotebookPen, Users } from 'lucide-react';
 import { ROUTINE_IDS } from '../../domain/routines.js';
 import { scheduleOn, withScheduleChange } from '../../domain/schedule.js';
 import { labelFor } from '../../domain/store.js';
 import { Toggle } from './controls.jsx';
 
 const MAX_LABEL = 30;
+const DETAILS = {
+  dailyText: [Sun, 'A small daily moment to read and reflect.', 'amber'],
+  bibleReading: [BookOpen, 'Keep your place and record the chapters you read.', 'teal'],
+  meetingPrep: [CalendarDays, 'A preparation check-in before your meeting days.', 'ocean'],
+  familyWorship: [Heart, 'Make time together part of your weekly rhythm.', 'rose'],
+  personalStudy: [NotebookPen, 'Keep space for questions and personal study.', 'lavender'],
+  ministry: [Users, 'Record your monthly participation and Bible studies.', 'rust'],
+};
 
 /** New store with `id`'s custom label set, or removed when `text` is blank. */
 function withLabel(store, id, text) {
@@ -33,13 +41,23 @@ export default function StepRoutines({ store, change, today }) {
   return (
     <div className="space-y-3">
       <p className="text-base-content/80">{t('fd.onboarding.routines.body')}</p>
-      <ul className="space-y-2">
+      <p aria-live="polite" className="text-sm font-medium">
+        {ROUTINE_IDS.filter((id) => enabled[id]).length} of 6 routines selected. You can change
+        these in Settings later.
+      </p>
+      <ul className="space-y-3">
         {ROUTINE_IDS.map((id) => {
           const label = labelFor(store, id, t);
           const fallback = t('fd.routine.' + id);
+          const [Icon, hint, tone] = DETAILS[id];
           return (
-            <li key={id} className="rounded-2xl bg-base-100 px-3 py-1 shadow-sm">
+            <li
+              key={id}
+              data-tone={tone}
+              className="fd-screen-intro rounded-2xl px-3 py-2 shadow-sm"
+            >
               <div className="flex items-center gap-2">
+                <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
                 <div className="flex-1">
                   <Toggle
                     label={label}
@@ -57,11 +75,12 @@ export default function StepRoutines({ store, change, today }) {
                   <Pencil aria-hidden="true" className="h-4 w-4" />
                 </button>
               </div>
+              <p className="pb-2 text-sm text-base-content/70">{hint}</p>
               {editing === id && (
                 <div className="flex items-center gap-2 pb-2">
                   <input
                     type="text"
-                    className="input input-bordered min-h-11 flex-1"
+                    className="input input-bordered min-h-11 min-w-0 flex-1"
                     aria-label={t('fd.onboarding.routines.nameFor', { label: fallback })}
                     placeholder={fallback}
                     maxLength={MAX_LABEL}

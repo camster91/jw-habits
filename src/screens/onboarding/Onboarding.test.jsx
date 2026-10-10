@@ -238,10 +238,33 @@ describe('Onboarding', () => {
     ).toBeTruthy();
     fireEvent.click(allow);
     expect(LocalNotifications.requestPermissions).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Notifications are not enabled')
+    );
     // Declining is fine: the step carries on.
     await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled());
     click('Next');
     expect(heading()).toHaveTextContent('Your look');
+  });
+
+  it('lets the owner retry an interrupted notification request without saving setup', async () => {
+    platform.isNative = true;
+    LocalNotifications.requestPermissions.mockRejectedValueOnce(new Error('interrupted'));
+    const initial = initialStore();
+    renderOnboarding(initial);
+    click('Get started');
+    for (let i = 0; i < 3; i++) click('Next');
+    click('Allow notifications');
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Permission could not be checked')
+    );
+    expect(screen.getByRole('button', { name: 'Allow notifications' })).toBeEnabled();
+    expect(current).toEqual(initial);
+    click('Allow notifications');
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Notifications are not enabled')
+    );
+    expect(current).toEqual(initial);
   });
 
   it('never asks for notification permission on the web', () => {
@@ -275,6 +298,38 @@ describe('Onboarding', () => {
       screen.getByText(/At 1 a.m., your check-in belongs to the previous day/)
     ).toBeInTheDocument();
     expect(current).toEqual(initial);
+  });
+
+  it('reviews the actual draft before saving and keeps Back editable', () => {
+    const initial = initialStore();
+    renderOnboarding(initial);
+    click('Get started');
+    fireEvent.click(screen.getByRole('switch', { name: 'Ministry' }));
+    click('Next');
+    click('Wednesday');
+    click('Next');
+    fireEvent.click(screen.getByRole('radio', { name: 'My own pace' }));
+    fireEvent.change(screen.getByLabelText('Starting book'), { target: { value: '19' } });
+    click('Next');
+    fireEvent.click(screen.getByRole('radio', { name: 'Quiet' }));
+    click('Next');
+    const review = screen.getByRole('region', { name: 'Review your setup' });
+    expect(review).toHaveTextContent('Meetings: Wednesday');
+    expect(review).toHaveTextContent('Psalms 1');
+    expect(review).toHaveTextContent('My own pace');
+    expect(review).toHaveTextContent('Encouragement: Quiet');
+    expect(review).not.toHaveTextContent('Ministry');
+    expect(current).toEqual(initial);
+    click('Back');
+    fireEvent.click(screen.getByRole('radio', { name: 'Warm' }));
+    click('Next');
+    expect(screen.getByRole('region', { name: 'Review your setup' })).toHaveTextContent(
+      'Encouragement: Warm'
+    );
+    click('Start my first day');
+    expect(current.tone).toBe('warm');
+    expect(current.reading.plan).toBe('ownPace');
+    expect(current.log).toEqual(initial.log);
   });
 
   it('setting copy never says missed, broke, failed or lost', () => {

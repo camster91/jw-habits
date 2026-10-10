@@ -51,6 +51,7 @@ async function go(page, base) {
 
 /** Complete a hold-to-check on a button: press, wait past 600 ms, release. */
 async function hold(page, button) {
+  await button.scrollIntoViewIfNeeded();
   const box = await button.boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();

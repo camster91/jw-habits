@@ -24,6 +24,12 @@ async function scan(page, label) {
       await go(page,BASE);
       if(requests.some(url=>/\/Share-[^/]+\.js/.test(url))) { failures++; console.error('Share code fetched during initial startup'); }
       await scan(page,`${theme} onboarding`);
+      await page.getByRole('button',{name:'Get started',exact:true}).click();
+      for(let step=2;step<=6;step++) {
+        await scan(page,`${theme} onboarding step ${step}`);
+        if(step<6) await page.getByRole('button',{name:'Next',exact:true}).click();
+      }
+      for(let step=6;step>1;step--) await page.getByRole('button',{name:'Back',exact:true}).click();
       await onboardSkip(page);
       await scan(page,`${theme} Today`);
       await page.getByText('Make Today your own',{exact:true}).click();
