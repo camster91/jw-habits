@@ -29,4 +29,20 @@ A “Shipped” web feature does not imply native/store certification. Broad tra
 
 Current automated validation contracts: [quality gates](quality-gates.md) and [production recovery](production-recovery.md). Shared-content preview is ephemeral and opens only hosts saved in the current app link settings; no attachment or shared text is persisted. Native capture is tracked separately in #264.
 
+Device/household acceptance procedures and blank result records: [release checklist](release-checklist.md), [device results](device-release-results-template.md), [household pilot](household-pilot.md). These are prepared protocols, not device or participant results.
+
 Store copy/current UI generation and outstanding account/device declarations: [store release pack](store-release-pack.md). Operating probes and owner restore gates: [monitoring](operations-monitoring.md). Current #263/#264 module boundaries are recorded in [capability map](../CAPABILITY-MAP.md).
+
+## Connected organiser direction — 2026-10-10
+
+Cameron approved planning the connected Today, calendar/tasks and notes direction. [Connected organiser plan](connected-organiser-plan.md) defines thirteen work packages, existing issue mappings, storage/recurrence constraints and phone acceptance gates. This is a proposed implementation specification, not shipped functionality or new posted issues. Next bounded milestone: ORG-01–03, navigation correction, architecture/backup contract and a connected phone prototype. Existing release and privacy commitments remain in force.
+
+First organiser milestone prepared locally: navigation correction implemented and rendered; storage/backup contract documented; connected memory-only prototype verified. [Milestone evidence](organiser-prototype-review.md). Next implementation slice is ORG-04 validators, durable storage and backup compatibility; this does not change native/store status.
+
+
+Persisted organiser candidate prepared locally in 5.3.0: separate durable tasks/events/recurrence,
+linked note capture and task-from-note, compact Today, calendar/task views, manual personal
+routines/What's New, grouped Settings, fast setup and journaled full backup/recovery.
+Existing data keys/schema owners remain intact. Native reminder planning is implemented;
+physical delivery, native compilation, signing/upload and household/store evidence remain gates.
+See `organiser-candidate-review.md` for the exact verification state and remaining limits.

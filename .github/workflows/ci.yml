@@ -58,6 +58,16 @@ jobs:
       - name: Immutable workflow policy
         run: node scripts/verify/workflow-policy.cjs
 
+      - name: Signing helper safety (fabricated tooling only)
+        run: |
+          bash -n scripts/generate-android-keystore.sh
+          python3 scripts/native/test_keystore_generator.py
+      - name: Native release evidence safety
+        run: |
+          python3 scripts/native/test_release_evidence.py
+          python3 scripts/native/test_release_guard.py
+          python3 scripts/native/release_evidence.py check-defaults
+
       # Hard fail on high/critical advisories. The overrides block in
       # package.json pins fixed floors, but those go stale as soon as a
       # newer advisory lands (js-yaml 4.3.1 vs 4.3.2, Oct 2026). Without

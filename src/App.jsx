@@ -1,3 +1,4 @@
+import NavigationPosition from './components/NavigationPosition.jsx';
 import StorageNotice from './components/StorageNotice.jsx';
 import { lazy, Suspense, useLayoutEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -20,6 +21,7 @@ import SettingsSheet from './screens/SettingsSheet';
 import { useStore } from './data/useStore.js';
 import { applyTheme } from './theme/theme.js';
 import { isWeb } from './utils/native.js';
+import OrganiserProvider from './data/OrganiserProvider.jsx';
 import WorkspaceProvider from './data/WorkspaceProvider.jsx';
 const Notes = lazy(() => import('./screens/Notes.jsx'));
 const Preparation = lazy(() => import('./screens/Preparation.jsx'));
@@ -55,6 +57,7 @@ function Screens() {
   const today = withTabs(<Today onOpenSettings={openSettings} />);
   return (
     <>
+      <NavigationPosition enabled={onboardingDone} />
       <Routes>
         {isWeb && (
           <Route
@@ -107,7 +110,9 @@ function App() {
   const shell = (
     <Router basename={routerBasename()}>
       <WorkspaceProvider>
-        <Screens />
+        <OrganiserProvider>
+          <Screens />
+        </OrganiserProvider>
       </WorkspaceProvider>
     </Router>
   );

@@ -1,3 +1,6 @@
+import OrganiserBoard from '../components/organiser/OrganiserBoard.jsx';
+import QuickGuide from '../components/QuickGuide.jsx';
+import ScreenIntro from '../components/ScreenIntro.jsx';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -110,7 +113,30 @@ export default function Plans() {
       className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-6">
-        <h1 className="text-3xl font-bold">{t('fd.plans.title')}</h1>
+        <ScreenIntro
+          title={t('fd.plans.title')}
+          subtitle="Make room for what matters. One small step is a good start."
+          art="plans"
+          tone="lavender"
+        />
+        <OrganiserBoard />
+        <QuickGuide
+          title="Build your first plan"
+          steps={[
+            {
+              title: 'Choose a focus',
+              body: 'Start a study or family plan. Give it a title that means something to you.',
+            },
+            {
+              title: 'Make it manageable',
+              body: 'Add your own steps, or use the chapter, lesson or weekly step generator. You can add safe links to your references.',
+            },
+            {
+              title: 'Bring it into your day',
+              body: 'Use on Today makes a study plan current. Tap Personal study on Today to record the next step; planning alone never records activity.',
+            },
+          ]}
+        />
         <p className="text-base-content/80">{t('fd.plans.intro')}</p>
         <Link
           to="/plans/preparation"
@@ -165,27 +191,30 @@ export default function Plans() {
           <NewButton label={t('fd.plans.family.new')} onClick={() => setCreating('family')} />
         </Section>
 
-        <Section title={t('fd.plans.completed.heading')}>
-          {completed.length > 0 ? (
-            <ul className="space-y-3">
-              {completed.map((p) => (
-                <PlanCard key={p.id} plan={p}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm min-h-11 w-full"
-                    aria-label={t('fd.plans.completed.restore', { title: p.title })}
-                    onClick={() => update((s) => restorePlan(s, p.id))}
-                  >
-                    <RotateCcw aria-hidden="true" className="h-4 w-4" />
-                    {t('fd.plans.completed.restoreShort')}
-                  </button>
-                </PlanCard>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-base-content/70">{t('fd.plans.completed.empty')}</p>
-          )}
-        </Section>
+        <details>
+          <summary className="min-h-11 cursor-pointer py-2 font-medium">Completed plans</summary>{' '}
+          <Section title={t('fd.plans.completed.heading')}>
+            {completed.length > 0 ? (
+              <ul className="space-y-3">
+                {completed.map((p) => (
+                  <PlanCard key={p.id} plan={p}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm min-h-11 w-full"
+                      aria-label={t('fd.plans.completed.restore', { title: p.title })}
+                      onClick={() => update((s) => restorePlan(s, p.id))}
+                    >
+                      <RotateCcw aria-hidden="true" className="h-4 w-4" />
+                      {t('fd.plans.completed.restoreShort')}
+                    </button>
+                  </PlanCard>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-base-content/70">{t('fd.plans.completed.empty')}</p>
+            )}
+          </Section>
+        </details>
       </div>
       {creating && <NewPlanSheet kind={creating} onClose={() => setCreating(null)} />}
     </main>

@@ -181,3 +181,20 @@ export function totals(store, today) {
     perRoutineDaysThisYear,
   };
 }
+
+/** Recorded routine/day pairs this week for routines currently enabled. */
+export function weeklyActivity(store, today) {
+  const from = later(weekStart(today), store.schedule[0].from);
+  const { enabled } = scheduleOn(store, today);
+  const days = new Set();
+  let checkIns = 0;
+  for (const id of ROUTINE_IDS) {
+    if (!enabled[id]) continue;
+    for (const day of checkInDays(store, id, today)) {
+      if (day < from) continue;
+      checkIns++;
+      days.add(day);
+    }
+  }
+  return { checkIns, activeDays: days.size };
+}

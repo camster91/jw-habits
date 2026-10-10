@@ -13,16 +13,7 @@ const CELEBRATED_KEY = 'fd-celebrated';
  * It never lists anything as undone: open routines appear only as "Still
  * time" before 22:00, and a day with nothing done gets only the closing line.
  */
-export default function WrapUpCard({
-  day,
-  result,
-  labelOf,
-  tone,
-  expanded,
-  onToggle,
-  onStillTime,
-  onDone,
-}) {
+export default function WrapUpCard({ day, result, labelOf, tone, onStillTime, onDone }) {
   const { t } = useTranslation();
   const titleId = useId();
   const celebrate = result.state === 'allDone' && tone !== 'quiet';
@@ -80,7 +71,7 @@ export default function WrapUpCard({
                       type="button"
                       className="btn btn-ghost btn-sm min-h-11 text-[var(--fd-accent-text)]"
                       aria-label={`${t('fd.today.stillTime')}: ${labelOf(id)}`}
-                      onClick={onStillTime}
+                      onClick={() => onStillTime(id)}
                     >
                       {t('fd.today.stillTime')}
                     </button>
@@ -96,7 +87,6 @@ export default function WrapUpCard({
         {result.closingLine && <p>{result.closingLine}</p>}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <ToggleRoutines expanded={expanded} onToggle={onToggle} />
         {weekday(day) === 0 && (
           <ShareButton kind="weekly" data={({ store, today }) => ({ store, today })} />
         )}
@@ -112,27 +102,12 @@ export default function WrapUpCard({
   );
 }
 
-function ToggleRoutines({ expanded, onToggle }) {
-  const { t } = useTranslation();
-  return (
-    <button
-      type="button"
-      className="btn btn-ghost btn-sm min-h-11"
-      aria-expanded={expanded}
-      onClick={onToggle}
-    >
-      {expanded ? t('fd.today.hideRoutines') : t('fd.today.showRoutines')}
-    </button>
-  );
-}
-
 /** The one-line card left after "Done for today", until the day rolls over. */
-export function WrapUpSummary({ count, expanded, onToggle }) {
+export function WrapUpSummary({ count }) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center justify-between gap-2 rounded-2xl bg-base-100 px-4 py-2 shadow-sm">
       <p className="text-sm">{t('fd.today.summary', { count })}</p>
-      <ToggleRoutines expanded={expanded} onToggle={onToggle} />
     </div>
   );
 }

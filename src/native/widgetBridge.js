@@ -62,14 +62,14 @@ function validItem(x) {
 }
 
 /**
- * Take (and clear) the check-ins the widget queued. Malformed items are
- * dropped. Resolves [] on web or on any failure.
+ * Read the check-ins without removing them. Malformed items are
+ * ignored (left pending). Resolves [] on web or on any failure.
  * @returns {Promise<{routine: string, day: string}[]>}
  */
-export async function drainWidgetCheckIns() {
+export async function readWidgetCheckIns() {
   if (!isNative) return [];
   try {
-    const result = await WidgetBridge.drainQueue();
+    const result = await WidgetBridge.peekQueue();
     const items = Array.isArray(result?.items) ? result.items : [];
     return items.filter(validItem).map(({ routine, day }) => ({ routine, day }));
   } catch (error) {
@@ -105,7 +105,7 @@ function todayFor(store) {
 }
 
 /**
- * Drain the widget queue and publish the snapshot on every foreground, and
+ * Read, durably save and acknowledge widget taps, then publish the snapshot on every foreground, and
  * republish (debounced) after each store change. Call once at startup, after
  * i18n is initialised. Lives here so StoreProvider never imports a plugin.
  * @returns {() => void} unsubscribe
@@ -113,23 +113,39 @@ function todayFor(store) {
 export function registerWidgetBridge() {
   const t = i18n.t.bind(i18n);
 
-  const offForeground = onForeground(async ({ store, update, today }) => {
-    const queued = await drainWidgetCheckIns();
-    let latest = store;
-    // Skip the update (and its save) when nothing applies; inside it, re-check
-    // against the current store in case it moved on during the drain.
-    if (applicable(store, queued, today).length > 0) {
-      update((s) => {
-        // Always `true`, Bible reading included: `{chapters: []}` is the
-        // catch-up marker only, and today.js takes that back.
-        latest = applicable(s, queued, today).reduce(
-          (acc, { routine, day }) => addCheckIn(acc, { routine, day, value: true }),
-          s
-        );
-        return latest;
-      });
+  let processing = false;
+  const offForeground = onForeground(async ({ store, update, flush, today }) => {
+    if (processing) return;
+    processing = true;
+    try {
+      const queued = await readWidgetCheckIns();
+      let latest = store;
+      // Skip the update (and its save) when nothing applies; inside it, re-check
+      // against the current store in case it moved on during the read.
+      if (applicable(store, queued, today).length > 0) {
+        update((s) => {
+          // Always `true`, Bible reading included: `{chapters: []}` is the
+          // catch-up marker only, and today.js takes that back.
+          latest = applicable(s, queued, today).reduce(
+            (acc, { routine, day }) => addCheckIn(acc, { routine, day, value: true }),
+            s
+          );
+          return latest;
+        });
+      }
+      if (queued.length > 0) {
+        // Flush even when taps already appear in memory after a previous failed write.
+        // A missing new bridge/provider fails safely without draining older queues.
+        if (typeof flush !== 'function') throw new Error('Durable widget save is unavailable');
+        latest = await flush();
+        await WidgetBridge.acknowledgeQueue({ items: queued });
+      }
+      await publishSnapshot(latest, today, t);
+    } catch (error) {
+      console.warn('Widget taps remain queued until saving succeeds:', error);
+    } finally {
+      processing = false;
     }
-    await publishSnapshot(latest, today, t);
   });
 
   let timer = null;

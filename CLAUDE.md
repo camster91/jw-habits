@@ -1,24 +1,32 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-08.**
+**Last audited against source: 2026-10-10.**
+
+Finishing onboarding and opening a new screen reset scroll and focus its heading, including lazy routes. History Back restores the saved screen position; physical Android back behavior remains a device gate. Native/browser automatic scroll restoration is suppressed while the shell is mounted.
+
+Untouched note starters close immediately without saving. Closing an edited note shows a short replacement confirmation; Keep editing or closing that confirmation restores the draft and focus, while Discard changes deliberately closes without saving.
+Preparation creation forms start open for an empty collection and collapse after a successful save. Saved records remain accessible; closing a form retains its draft, and Edit opens and focuses the assignment title. Failed saves keep forms and drafts open.
+Widget foreground processing reads native pending taps, flushes the current routine store durably, then acknowledges only those taps; a failed save leaves them pending. Read/ack methods require the updated native bridge.
+Reminder cancel/schedule operations run serially in request order. Foreground clears any stale pending debounce and applies its current settings; failed plugin operations allow later retries without requesting permission.
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
 
 A Capacitor (React + Vite) mobile/PWA routine tracker for six spiritual routines: the daily
 text, Bible reading, meeting prep, family worship, personal study and the ministry. Today shows
-what is due and a long press checks it off; Progress shows how the weeks are going; onboarding
-sets it up in six skippable steps. Reminders, a "What's New" count from jw.org's public feed, and
+what is due and a tap records it; Today uses original coloured routine cards and a compact daily completion summary; Progress shows how the weeks are going; onboarding
+sets it up in six skippable steps (routine cues preserve the separately chosen reminder clock time), or starts directly with existing/default settings from the welcome. Today puts routine cards before the evening review, guide and official-site shortcut. The wrap-up time and Done for today never hide the routine list. Today visibly explains tap-to-record and tap-to-undo; open controls are empty circles. Reminders, a user-opened "What's New" shortcut to jw.org, and
 home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 
 - **App ID:** `ca.ashbi.habittracker`
-- **Version:** 5.2.0
+- **Version:** 5.3.0
+- **Progress and backup:** Progress starts with recorded routine check-ins for the current Monday-Sunday week (distinct routine/day pairs, currently enabled routines only), followed by organiser counts, routine totals and reading position; a compact garden comes last. Garden sharing requires earned XP. Settings has a top shortcut focusing Backup without exporting or importing.
 - **Current product contract:** `docs/feature-ui-reconciliation.md` records the
   approved UI and notes/preparation boundaries. Today has no garden illustration;
   Progress retains the garden. Study plans use "Use on Today" and "Current plan".
 - **Node:** >= 22.12.0
 - **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
-  trail at `/plans/:planId`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
+  trail at `/plans/:planId`, family agendas at `/plans/family`, preparation at `/plans/preparation`), Notes (`/notes`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
   sheet opened from the tab bar, not a route. `/share` (lazy, preview-only PWA share target) exists in the web
   build only.
 
@@ -28,8 +36,7 @@ This is the central design constraint. The app bundles no jw.org text, no verses
 Bible book names and chapter counts are public facts (`domain/bible.js`); encouragement lines
 carry scripture *references* as data, never verse text. Link buttons open jw.org / JW Library
 URLs built from those facts, or a link the user typed (`links` in the store, validated by
-`isSafeHttpUrl`). The one network call is the What's New feed check (dates and counts only, at
-most daily, can be switched off in Settings).
+`isSafeHttpUrl`). There is no automatic jw.org feed collection. The optional What's New shortcut opens the official page only when tapped, makes no unseen-update claim, and preserves legacy feed metadata without using it.
 
 Do not add bundled third-party content. If a feature seems to need some, it needs a
 user-editable slot instead.
@@ -39,7 +46,7 @@ user-editable slot instead.
 | Layer | Technology | Version |
 |---|---|---|
 | Frontend | React 19 + Vite 8 | `react: 19.3.0` (exact, with `react-dom`), `vite: ^8.1.5` |
-| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, `/progress/badges`, web-only `/share`; `*` falls back to Today |
+| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/plans/preparation`, `/notes`, `/progress`, `/progress/badges`, web-only `/share`; `*` falls back to Today |
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
@@ -254,14 +261,61 @@ and uses Web Locks where available. Unknown schemas, malformed records, failed
 reads and stale windows cannot overwrite that store. Forms retain failed-save
 drafts; notes offer a draft export. Main routine store/key remains version 3.
 
-Settings exports a combined versioned bundle and validates both payloads before
-import. Routine-only imports explicitly leave workspace records alone. Durable
-replacement retains `faithful-days-before-import`; it can be exported from
-Settings. Two-key writes are not atomic: a workspace failure attempts routine
-rollback and reports failure even if rollback fails. Recovery copies contain
-private plain text and are never pruned as diagnostics.
+`faithful-days-organiser-v1` is a separate schema-1 store with tasks, events,
+inline recurrence definitions, stable occurrence exceptions, personal routines,
+manual check-ins and typed relations. Its client uses serialized durable writes,
+compare-before-write and Web Locks where available; provider state updates only
+after success. Civil task/event dates stay separate from 03:00 routine app days.
+Timed events retain an IANA zone and display device-local calendar times; floating
+tasks follow the device zone. Temporal compatible DST resolution shifts gaps
+forward and chooses the earlier overlap. Event durations are capped at one year.
+
+Today contains a bounded agenda (three tasks/two events), routines and additional
+manual routines. Plan provides Agenda/Week/Month/Tasks, filters/search, per-occurrence
+and future recurrence edits, undo and recoverable archive. Existing assignment
+checklists write through the workspace adapter; studies/family agendas retain the
+routine store as owner. Notes can attach to tasks/events, filter related activity
+and create an undated task with a backlink. Failed attachment retries reuse the
+saved note ID. Optional What's New check-ins and external links remain separate;
+there is no content retrieval or unseen-update detection.
+
+Settings groups configuration into expandable sections and exports the distinct
+`faithful-days-organiser-backup` version-1 envelope with minimum reader 5.3.0 and
+all three stores. Older importers reject that marker. Legacy routine-only and
+routine/workspace imports retain organiser data. Full restore saves
+`faithful-days-before-import`, records a pending recovery journal, writes/readbacks
+all stores and then marks the journal complete. RestoreGate mounts before providers
+and pauses startup/editing for incomplete/unreadable journals. Recovery restores
+the validated pre-import snapshot. These are recoverable sequential writes, not
+an atomic transaction. Recovery files contain private text and are not diagnostics.
+
+Fast onboarding can retain selected routines and start new reading at own pace
+before configuring schedules, reminders and appearance. Guided setup remains.
+Native reminders combine routine and saved organiser occurrences, respect quiet
+hours, cap the next native plan at 64 and reconcile on foreground/settings/organiser
+changes; notification permission is requested only through an explicit user action.
+Physical-device delivery and native compile are still separate evidence gates.
 
 Remaining #263/#264 work: native share transport after first-device verification.
 Local year-plan pace comparison, extra-reading activity dates and cross-content search are implemented. OS capture extensions, replay receipts and signing are
 not claimed by a local Notes screen or an unsigned compile. Physical devices,
 account/signing, assistive technology and household research remain release gates.
+
+## Native version and artifact evidence
+
+`package.json` supplies the canonical numeric marketing version; `native-release.json` supplies the shared default build. Android Gradle reads these directly and validates optional `FD_NATIVE_BUILD`. `scripts/native/release_evidence.py` rejects mismatched version tags/overrides, regressing builds and drift in the four checked-in Xcode app/widget defaults; native workflows pass the resolved settings to both iOS targets. Owners must allocate unused higher build numbers against actual store history; run numbers are not release allocation. APK/IPA metadata and SHA-256 evidence are prepared in workflows, with signing/processing/device fields explicitly unverified. See `docs/native-release-evidence.md`. No new native compilation or signed/device proof is implied by this local wiring.
+
+The prepared `android-closed-testing.yml` separates preflight, `android-signing` and `play-closed-testing` environments. AAB metadata/signature checks and run/attempt artifact replay precede the pinned closed-track uploader. Owner environment/reviewer/credential/lineage setup and exact execution authorization remain gates; no store/device proof exists. See `docs/android-closed-testing.md`.
+
+The iOS TestFlight candidate now separates credential-free preflight/simulator, `ios-signing` archive and `testflight-upload`. Both native release workflows are manual-only, with upload opt-in. Shared read-only `release_guard.py` validates latest exact-source checks and the sole-owner environment policy: Cameron (`camster91`, ID `33962910`) initiates dispatch on `agent/261-launch-candidate-review` and approves separate signing/upload pauses. Each environment requires that one User reviewer, self-review prevention disabled, and exactly that custom branch policy. Administrative bypass and actual approval records require separate authenticated verification; the REST guard cannot establish them. The IPA is replayed from the exact run/attempt and version/hash evidence rechecked before upload. Owner setup and real enforcement/signature/processing/device evidence remain incomplete; see `docs/ios-testflight-approval.md`.
+
+
+## Whole-app character and guidance — October 9
+
+Original transparent paper-cut illustrations are bundled as optimized WebP in public/illustrations (welcome, plans, notes). ScreenIntro and QuickGuide provide consistent coloured page introductions and native expandable guides across Today, Plans, Notes, Preparation, Family weeks, Plan trail, Progress, Badges and Settings. All onboarding steps retain their existing choices. Notes offers three original editable draft starters; choosing one never persists content or routine activity before Save. Today uses coloured routine accents and an actual visible-row completion summary. Reduced-motion and dark theme remain supported; Today still contains no garden.
+
+What’s New is now a user-opened official-page shortcut. No runtime RSS fetch or foreground collection remains; compatibility exports return null/no-op. Existing saved metadata and frozen storage keys are preserved and never used for update claims. Website terms reviewed at https://www.jw.org/en/terms-of-use/; links permitted, distributed site-data collection restricted. This is a conservative product boundary, not permission to copy publisher content or a legal certification. The current local polish has not been published, rebuilt natively or distributed.
+
+Welcome now offers tappable rhythm/ideas/pace explanations and a collapsed tracking-day explainer with 1 a.m./4 a.m. examples. These use component-local state only; they neither configure rollover nor record activity. Keep 03:00 persistence/reminder semantics unchanged. Storage and independence notices stay visible.
+
+Onboarding refinement: all six steps have a distinct purpose and clearer guidance. Routine cards pair original colors/icons with descriptive text; Week and Reading show live draft summaries; Rhythm separates daily/evening/encouragement and announces permission results; Look includes an onboarding-only actual draft review. Shared field layouts remain accessible in Settings. Back/Skip/commit contracts and schemas are unchanged. See docs/onboarding-review.md for findings and validation limits.

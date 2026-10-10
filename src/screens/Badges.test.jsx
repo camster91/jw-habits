@@ -18,7 +18,9 @@ describe('Badges', () => {
         </MemoryRouter>
       </StoreContext.Provider>
     );
-    expect(screen.getAllByRole('listitem')).toHaveLength(18);
+    expect(screen.getByRole('list', { name: 'Milestones' }).querySelectorAll('li')).toHaveLength(
+      18
+    );
     expect(screen.getByText('Earned 2026-10-06')).toBeInTheDocument();
     expect(screen.getAllByText('Not yet')).toHaveLength(17);
     expect(screen.getByRole('link', { name: 'Progress' })).toHaveAttribute('href', '/progress');

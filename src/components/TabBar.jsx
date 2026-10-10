@@ -15,7 +15,7 @@ const itemClass =
 export default function TabBar({ onOpenSettings }) {
   const { t } = useTranslation();
   const tab = ({ isActive }) =>
-    `${itemClass} ${isActive ? 'font-semibold text-[var(--fd-accent-text)]' : 'text-base-content/70'}`;
+    `${itemClass} ${isActive ? 'fd-tab-active font-semibold text-[var(--fd-accent-text)]' : 'text-base-content/70'}`;
   return (
     <nav
       aria-label={t('fd.tabs.label')}

@@ -21,33 +21,57 @@ export default function StepReading({ store, change, today }) {
         legend={t('fd.onboarding.reading.plan')}
         value={plan}
         options={[
-          { value: 'year', label: t('fd.onboarding.reading.year') },
-          { value: 'ownPace', label: t('fd.onboarding.reading.ownPace') },
+          {
+            value: 'year',
+            label: t('fd.onboarding.reading.year'),
+            hint: 'Follow a suggested daily chapter schedule. Your actual reading stays on the day you record it.',
+          },
+          {
+            value: 'ownPace',
+            label: t('fd.onboarding.reading.ownPace'),
+            hint: 'Choose how much to read each day without a year-plan comparison.',
+          },
         ]}
         onChange={(plan) => change((s) => ({ ...s, reading: { ...s.reading, plan } }))}
       />
-      <SelectField
-        label={t('fd.onboarding.reading.book')}
-        value={String(start.book)}
-        options={BOOKS.map((b) => ({ value: String(b.n), label: b.name }))}
-        onChange={(v) => restart({ start: { book: Number(v), chapter: 1 } })}
-      />
-      <SelectField
-        label={t('fd.onboarding.reading.chapter')}
-        value={String(start.chapter)}
-        options={Array.from({ length: book.chapters }, (_, i) => ({
-          value: String(i + 1),
-          label: String(i + 1),
-        }))}
-        onChange={(v) => restart({ start: { book: start.book, chapter: Number(v) } })}
-      />
-      <Toggle
-        label={t('fd.onboarding.reading.countEarlier')}
-        checked={countEarlierAsRead}
-        onChange={(on) =>
-          change((s) => ({ ...s, reading: { ...s.reading, countEarlierAsRead: on } }))
-        }
-      />
+      <div className="space-y-4 rounded-2xl bg-base-100 p-4">
+        <SelectField
+          label={t('fd.onboarding.reading.book')}
+          value={String(start.book)}
+          options={BOOKS.map((b) => ({ value: String(b.n), label: b.name }))}
+          onChange={(v) => restart({ start: { book: Number(v), chapter: 1 } })}
+        />
+        <SelectField
+          label={t('fd.onboarding.reading.chapter')}
+          value={String(start.chapter)}
+          options={Array.from({ length: book.chapters }, (_, i) => ({
+            value: String(i + 1),
+            label: String(i + 1),
+          }))}
+          onChange={(v) => restart({ start: { book: start.book, chapter: Number(v) } })}
+        />
+      </div>
+      <div className="rounded-2xl bg-base-100 p-4">
+        <Toggle
+          label={t('fd.onboarding.reading.countEarlier')}
+          hint="Use this only if you have already read the books before your starting book. It marks those books as read in Progress."
+          checked={countEarlierAsRead}
+          onChange={(on) =>
+            change((s) => ({ ...s, reading: { ...s.reading, countEarlierAsRead: on } }))
+          }
+        />
+      </div>
+      <p aria-live="polite" className="rounded-2xl bg-base-100 p-4 text-sm">
+        Your starting place:{' '}
+        <strong>
+          {book.name} {start.chapter}
+        </strong>
+        .{' '}
+        {plan === 'year'
+          ? 'A year plan will suggest your next chapters.'
+          : 'You decide the next small step.'}{' '}
+        You can adjust this in Settings.
+      </p>
     </div>
   );
 }

@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { onBack } from '../../utils/backStack.js';
 
-const FOCUSABLE = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'button, input, select, textarea, summary, a[href], [tabindex]:not([tabindex="-1"])';
 
 /**
  * A bottom sheet for the Plans screens: a modal dialog titled by `title`,
@@ -48,7 +49,9 @@ export default function Sheet({ title, onClose, children, testId, fallbackFocus 
       return;
     }
     if (e.key !== 'Tab') return;
-    const items = [...dialogRef.current.querySelectorAll(FOCUSABLE)].filter((el) => !el.disabled);
+    const items = [...dialogRef.current.querySelectorAll(FOCUSABLE)].filter(
+      (el) => !el.disabled && (!el.closest('details:not([open])') || el.closest('summary'))
+    );
     if (items.length === 0) return;
     const first = items[0];
     const last = items[items.length - 1];

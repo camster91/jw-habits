@@ -8,6 +8,8 @@ const plugin = vi.hoisted(() => ({
   cancel: vi.fn(),
   schedule: vi.fn(),
 }));
+const storage = vi.hoisted(() => ({ raw: null }));
+vi.mock('../utils/safeStorage.js', () => ({ durableGet: async () => storage.raw }));
 const native = vi.hoisted(() => ({ isNative: true }));
 
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: plugin }));
@@ -29,6 +31,7 @@ vi.mock('../utils/native.js', () => ({
 }));
 
 import { syncReminders, registerReminderSync } from './reminders.js';
+import { emptyOrganiser, newOrganiserItem } from '../domain/organiser.js';
 import { defaultStore } from '../domain/store.js';
 
 const t = i18n.t.bind(i18n);
@@ -44,6 +47,7 @@ function store() {
 
 beforeEach(() => {
   native.isNative = true;
+  storage.raw = null;
   plugin.checkPermissions.mockResolvedValue({ display: 'granted' });
   plugin.requestPermissions.mockResolvedValue({ display: 'granted' });
   plugin.getPending.mockResolvedValue({ notifications: [{ id: 99 }] });
@@ -120,11 +124,63 @@ describe('syncReminders', () => {
     expect(await syncReminders(store(), t)).toEqual({ scheduled: 0 });
     expect(plugin.checkPermissions).not.toHaveBeenCalled();
   });
+
+  it('a delayed older schedule cannot outlive a newer request to turn reminders off', async () => {
+    let releaseSchedule;
+    const delayed = new Promise((resolve) => {
+      releaseSchedule = resolve;
+    });
+    let pending = [{ id: 99 }];
+    plugin.getPending.mockImplementation(async () => ({ notifications: [...pending] }));
+    plugin.cancel.mockImplementation(async () => {
+      pending = [];
+    });
+    plugin.schedule.mockImplementation(async ({ notifications }) => {
+      await delayed;
+      pending = notifications;
+    });
+    const first = syncReminders(store(), t);
+    await vi.waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1));
+    const disabled = { ...store(), reminders: { enabled: false, off: [] } };
+    const second = syncReminders(disabled, t);
+    await Promise.resolve();
+    expect(plugin.getPending).toHaveBeenCalledTimes(1);
+    releaseSchedule();
+    expect(await first).toEqual({ scheduled: 7 });
+    expect(await second).toEqual({ scheduled: 0 });
+    expect(plugin.getPending).toHaveBeenCalledTimes(2);
+    expect(pending).toEqual([]);
+  });
+
+  it('a failed cancellation does not prevent the next sync from applying newer settings', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    plugin.cancel.mockRejectedValueOnce(new Error('cancel unavailable'));
+    const first = syncReminders(store(), t);
+    const newer = store();
+    newer.anchors.dailyText.time = '09:00';
+    const second = syncReminders(newer, t);
+    expect(await first).toEqual({ scheduled: 0 });
+    expect(await second).toEqual({ scheduled: 7 });
+    expect(plugin.schedule).toHaveBeenCalledTimes(1);
+    expect(plugin.schedule.mock.calls[0][0].notifications[0].body).toContain('09:00');
+    warn.mockRestore();
+  });
 });
 
 describe('registerReminderSync', () => {
+  it('foreground supersedes a pending debounce with the current settings', async () => {
+    const unsubscribe = registerReminderSync();
+    hooks.change(store());
+    const disabled = { ...store(), reminders: { enabled: false, off: [] } };
+    await hooks.foreground({ store: disabled });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(plugin.getPending).toHaveBeenCalledTimes(1);
+    expect(plugin.schedule).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
   it('syncs on foreground and, debounced, on store changes with the latest store', async () => {
-    registerReminderSync();
+    const unsubscribe = registerReminderSync();
     const s1 = { ...store(), studyTopic: 'one' };
     const s2 = { ...store(), studyTopic: 'two' };
     hooks.change(s1);
@@ -135,6 +191,54 @@ describe('registerReminderSync', () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(plugin.schedule).toHaveBeenCalledTimes(1);
     await hooks.foreground({ store: s2 });
+    expect(plugin.schedule).toHaveBeenCalledTimes(2);
+    unsubscribe();
+  });
+});
+
+describe('saved organiser reminder integration', () => {
+  it('combines a saved task reminder with routine reminders without requesting permission', async () => {
+    storage.raw = JSON.stringify({
+      ...emptyOrganiser(),
+      tasks: [
+        newOrganiserItem('task', {
+          title: 'Prepare for meeting',
+          date: '2026-10-06',
+          time: '10:00',
+          reminder: true,
+        }),
+      ],
+    });
+    expect(await syncReminders(store(), t)).toEqual({ scheduled: 8 });
+    expect(
+      plugin.schedule.mock.calls[0][0].notifications.some(
+        (n) => n.id >= 1000 && n.body === 'Prepare for meeting'
+      )
+    ).toBe(true);
+    expect(plugin.requestPermissions).not.toHaveBeenCalled();
+  });
+  it('ignores an unsupported organiser and handles unreadable JSON without scheduling', async () => {
+    storage.raw = JSON.stringify({ version: 99 });
+    expect(await syncReminders(store(), t)).toEqual({ scheduled: 7 });
+    storage.raw = '{broken';
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(await syncReminders(store(), t)).toEqual({ scheduled: 0 });
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+  it('handles organiser changes only after settings load and cancels listener and timer on cleanup', async () => {
+    const unsubscribe = registerReminderSync();
+    window.dispatchEvent(new Event('faithful-organiser-changed'));
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(plugin.schedule).not.toHaveBeenCalled();
+    await hooks.foreground({ store: store() });
+    window.dispatchEvent(new Event('faithful-organiser-changed'));
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(plugin.schedule).toHaveBeenCalledTimes(2);
+    window.dispatchEvent(new Event('faithful-organiser-changed'));
+    unsubscribe();
+    window.dispatchEvent(new Event('faithful-organiser-changed'));
+    await vi.advanceTimersByTimeAsync(1000);
     expect(plugin.schedule).toHaveBeenCalledTimes(2);
   });
 });

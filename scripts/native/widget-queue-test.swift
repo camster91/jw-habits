@@ -36,6 +36,18 @@ struct QueueTest {
         let firstDrain = try queue.drain()
         precondition(firstDrain == [item])
 
+        try queue.enqueue(item)
+        let peek = try queue.read()
+        let later = WidgetCheckIn(routine: "bibleReading", day: "2026-10-07")
+        try queue.enqueue(later)
+        try queue.acknowledge(peek)
+        let afterAck = try queue.read()
+        precondition(afterAck == [later], "Acknowledging a read must preserve later taps")
+        try queue.acknowledge(peek)
+        let afterRepeatedAck = try queue.read()
+        precondition(afterRepeatedAck == [later], "Repeated acknowledgement must be harmless")
+        try queue.acknowledge([later])
+
         // Separate OS processes, not threads sharing a process-local lock.
         let workers = try (0..<8).map { number -> Process in
             let worker = Process()
@@ -46,15 +58,19 @@ struct QueueTest {
         }
         var received = Set<WidgetCheckIn>()
         while workers.contains(where: { $0.isRunning }) {
-            received.formUnion(try queue.drain())
+            let pending = try queue.read()
+            received.formUnion(pending)
+            try queue.acknowledge(pending)
             usleep(1_000)
         }
         for worker in workers {
             worker.waitUntilExit()
             precondition(worker.terminationStatus == 0)
         }
-        received.formUnion(try queue.drain())
-        precondition(received.count == 400, "A concurrent enqueue/drain lost a tap")
+        let finalPending = try queue.read()
+        received.formUnion(finalPending)
+        try queue.acknowledge(finalPending)
+        precondition(received.count == 400, "A concurrent enqueue/read-ack lost a tap")
         let remaining = try queue.read()
         precondition(remaining.isEmpty)
 
@@ -71,6 +87,6 @@ struct QueueTest {
         try queue.enqueue(item)
         let recovered = try queue.drain()
         precondition(recovered == [item], "Corrupt transport must not block future taps")
-        print("Widget day/timezone checks and queue: duplicate taps, 400 cross-process concurrent taps/drains and corrupt-byte preservation passed")
+        print("Widget day/timezone checks and queue: duplicate taps, 400 cross-process concurrent taps/read-acks and corrupt-byte preservation passed")
     }
 }

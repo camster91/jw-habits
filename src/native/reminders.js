@@ -1,15 +1,19 @@
 /**
  * Applies the notification plan through @capacitor/local-notifications.
- * Reminders are best-effort: a denied permission or a plugin failure leaves
- * the app working and just schedules nothing.
+ * Reminders are best-effort: denied permission or plugin failure leaves
+ * the app working. A failed cancellation may leave earlier reminders pending;
+ * later foreground/settings sync can retry.
  */
+import { durableGet } from '../utils/safeStorage.js';
+import { ORGANISER_KEY, validateOrganiser } from '../domain/organiser.js';
+import { planOrganiserNotifications } from '../domain/organiserNotifications.js';
 import i18n from 'i18next';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { planNotifications } from '../domain/notifications.js';
 import { onForeground, onStoreChange } from '../data/StoreProvider.jsx';
 import { isNative } from '../utils/native.js';
 
-/** Permission is only ever checked here; it is requested during onboarding. */
+/** Permission is checked here; only explicit onboarding/settings actions request it. */
 async function permitted() {
   const { display } = await LocalNotifications.checkPermissions();
   return display === 'granted';
@@ -21,10 +25,18 @@ async function permitted() {
  * resolves how many notifications were scheduled.
  * @returns {Promise<{scheduled: number}>}
  */
-export async function syncReminders(store, t) {
+async function applyReminders(store, t) {
   if (!isNative) return { scheduled: 0 };
   try {
-    const plan = planNotifications(store, new Date(), t);
+    const now = new Date();
+    const raw = await durableGet(ORGANISER_KEY);
+    const organiser = raw ? validateOrganiser(JSON.parse(raw)) : null;
+    const plan = [
+      ...planNotifications(store, now, t),
+      ...(organiser?.ok ? planOrganiserNotifications(organiser.organiser, store, now) : []),
+    ]
+      .sort((a, b) => a.at - b.at)
+      .slice(0, 64);
 
     const pending = await LocalNotifications.getPending();
     if (pending.notifications.length > 0) {
@@ -47,6 +59,15 @@ export async function syncReminders(store, t) {
   }
 }
 
+// Native cancel/schedule must be one transaction at a time: an older sync
+// must not schedule after a newer request has disabled reminders.
+let pendingSync = Promise.resolve();
+export function syncReminders(store, t) {
+  const result = pendingSync.then(() => applyReminders(store, t));
+  pendingSync = result.catch(() => {});
+  return result;
+}
+
 const RESCHEDULE_DELAY_MS = 1000;
 
 /**
@@ -57,13 +78,26 @@ const RESCHEDULE_DELAY_MS = 1000;
  */
 export function registerReminderSync() {
   const sync = (store) => syncReminders(store, i18n.t.bind(i18n));
-  const offForeground = onForeground(({ store }) => sync(store));
   let timer = null;
+  let lastStore = null;
+  const onOrganiser = () => {
+    if (!lastStore) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => void sync(lastStore), RESCHEDULE_DELAY_MS);
+  };
+  window.addEventListener('faithful-organiser-changed', onOrganiser);
+  const offForeground = onForeground(({ store }) => {
+    lastStore = store;
+    clearTimeout(timer);
+    return sync(store);
+  });
   const offChange = onStoreChange((store) => {
+    lastStore = store;
     clearTimeout(timer);
     timer = setTimeout(() => void sync(store), RESCHEDULE_DELAY_MS);
   });
   return () => {
+    window.removeEventListener('faithful-organiser-changed', onOrganiser);
     offForeground();
     offChange();
     clearTimeout(timer);

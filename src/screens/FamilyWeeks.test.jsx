@@ -58,7 +58,12 @@ function twoPlans() {
   return s;
 }
 
-const week = (monday) => within(screen.getByTestId(`week-${monday}`));
+const week = (monday) => {
+  const card = screen.getByTestId(`week-${monday}`);
+  const details = card.closest('details');
+  if (details && !details.open) fireEvent.click(details.querySelector('summary'));
+  return within(card);
+};
 const itemText = (monday) =>
   week(monday)
     .queryAllByRole('listitem')

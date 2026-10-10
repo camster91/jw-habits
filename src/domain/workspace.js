@@ -94,7 +94,7 @@ export function validateWorkspace(x) {
 export function putNote(workspace, input, today) {
   const existing = workspace.notes.find((n) => n.id === input.id);
   const next = {
-    id: existing?.id ?? newId(),
+    id: existing?.id ?? input.id ?? newId(),
     title: input.title.trim(),
     body: input.body,
     tags: [...new Set(input.tags.map((t) => t.trim()).filter(Boolean))],

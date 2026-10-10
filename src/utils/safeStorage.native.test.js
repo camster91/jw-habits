@@ -30,3 +30,26 @@ describe('durable storage (native)', () => {
     expect(await durableGet('k')).toBeNull();
   });
 });
+
+it('blocks normal data writes during interrupted restore, permits only restore writes, and recovers its queue', async () => {
+  prefs.set('faithful-days-restore-journal-v1', JSON.stringify({ status: 'pending' }));
+  await expect(durableSet('faithful-days-organiser-v1', 'unsafe')).rejects.toThrow(
+    'Restore is incomplete'
+  );
+  expect(prefs.get('faithful-days-organiser-v1')).toBeUndefined();
+  await durableSet('faithful-days-organiser-v1', 'recovered', { restore: true });
+  expect(prefs.get('faithful-days-organiser-v1')).toBe('recovered');
+  prefs.set(
+    'faithful-days-restore-journal-v1',
+    JSON.stringify({ version: 99, status: 'complete' })
+  );
+  await expect(durableSet('faithful-days-organiser-v1', 'unsafe')).rejects.toThrow(
+    'Restore is incomplete'
+  );
+  prefs.set('faithful-days-restore-journal-v1', 'broken');
+  await expect(durableSet('faithful-days-organiser-v1', 'unsafe')).rejects.toThrow();
+  prefs.set('faithful-days-restore-journal-v1', JSON.stringify({ version: 1, status: 'complete' }));
+  await durableSet('faithful-days-organiser-v1', 'safe');
+  expect(prefs.get('faithful-days-organiser-v1')).toBe('safe');
+  prefs.delete('faithful-days-restore-journal-v1');
+});

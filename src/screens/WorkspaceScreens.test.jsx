@@ -53,6 +53,74 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 describe('Notes UI', () => {
+  it('starts an editable question draft and writes nothing before Save', async () => {
+    const store = defaultStore(today, 'en');
+    const before = structuredClone(store);
+    render(
+      <Harness store={store}>
+        <Notes />
+      </Harness>
+    );
+    button('A question');
+    expect(current.notes).toHaveLength(0);
+    expect(screen.getByLabelText('Title')).toHaveValue('A question to explore');
+    expect(screen.getByLabelText('Your note').value).toContain('My question:');
+    field('Your note', 'My own question and reflection');
+    button('Save note');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(current.notes).toHaveLength(1);
+    expect(current.notes[0].body).toBe('My own question and reflection');
+    expect(current.notes[0].context).toEqual({ kind: 'day', id: today });
+    expect(store).toEqual(before);
+  });
+
+  it.each(['A question', 'A takeaway', 'Family idea'])(
+    'closes an untouched %s starter immediately without saving',
+    (starter) => {
+      render(
+        <Harness>
+          <Notes />
+        </Harness>
+      );
+      screen.getByRole('button', { name: starter, exact: true }).focus();
+      button(starter);
+      button('Close');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(current.notes).toEqual([]);
+      expect(screen.getByRole('button', { name: starter, exact: true })).toHaveFocus();
+    }
+  );
+
+  it('shows a focused close choice for edited starters and preserves every draft field', () => {
+    render(
+      <Harness>
+        <Notes />
+      </Harness>
+    );
+    button('Family idea');
+    field('Your note', 'My edited family idea');
+    field('Tags (separate with commas)', 'family');
+    field('Links (one per line)', 'https://example.com/reference');
+    button('Close');
+    expect(screen.getByRole('dialog', { name: 'Unsaved changes' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your note')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Keep editing' })).toHaveFocus();
+    button('Keep editing');
+    expect(screen.getByLabelText('Title')).toHaveFocus();
+    expect(screen.getByLabelText('Your note')).toHaveValue('My edited family idea');
+    expect(screen.getByLabelText('Tags (separate with commas)')).toHaveValue('family');
+    expect(screen.getByLabelText('Links (one per line)')).toHaveValue(
+      'https://example.com/reference'
+    );
+    button('Close');
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(screen.getByLabelText('Your note')).toHaveValue('My edited family idea');
+    button('Close');
+    button('Discard changes');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(current.notes).toEqual([]);
+  });
+
   it('creates, searches, edits and deletes a durable note without routine activity', async () => {
     render(
       <Harness>
@@ -93,7 +161,10 @@ describe('Notes UI', () => {
     field('Title', 'Keep me');
     fail = true;
     button('Save note');
-    await screen.findAllByText('Storage is full');
+    // The provider reports failure before the editor settles its save promise.
+    // Wait for editor recovery before closing; a busy editor deliberately ignores Close.
+    await screen.findByRole('button', { name: 'Export this draft' });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save note' })).toBeEnabled());
     expect(screen.getByLabelText('Title')).toHaveValue('Keep me');
     button('Close');
     expect(screen.getByText('Discard your unsaved changes?')).toBeInTheDocument();
@@ -149,6 +220,45 @@ describe('Notes UI', () => {
   });
 });
 describe('Preparation UI', () => {
+  it('collapses creation forms when saved records hydrate after the first render', () => {
+    const tree = (workspace, ready) => (
+      <StoreContext.Provider value={{ today }}>
+        <WorkspaceContext.Provider value={{ workspace, ready, save: vi.fn(), error: '' }}>
+          <MemoryRouter>
+            <Preparation />
+          </MemoryRouter>
+        </WorkspaceContext.Provider>
+      </StoreContext.Provider>
+    );
+    const { rerender } = render(tree(emptyWorkspace(), false));
+    rerender(
+      tree(
+        {
+          ...emptyWorkspace(),
+          meetings: [{ id: 'm', type: 'weekend', date: today, prepared: [] }],
+          assignments: [
+            {
+              id: 'a',
+              title: 'Saved assignment',
+              type: 'Talk',
+              date: today,
+              details: '',
+              tasks: [],
+            },
+          ],
+        },
+        true
+      )
+    );
+    expect(screen.getByLabelText('Meeting date')).not.toBeVisible();
+    expect(screen.getByLabelText('Assignment title')).not.toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Saved assignment' })).toBeVisible();
+    button('New meeting');
+    expect(screen.getByLabelText('Meeting date')).toBeVisible();
+    button('New assignment');
+    expect(screen.getByLabelText('Assignment title')).toBeVisible();
+  });
+
   it('adds a dated meeting, prepares and undoes a section, refuses duplicates and removes it deliberately', async () => {
     render(
       <Harness>
@@ -161,6 +271,7 @@ describe('Preparation UI', () => {
     await screen.findByText('1 of 6 sections prepared');
     fireEvent.click(screen.getByLabelText(MEETING_PARTS.midweek[0]));
     await screen.findByText('0 of 6 sections prepared');
+    button('New meeting');
     button('Add meeting');
     expect(screen.getByText('That meeting is already listed below.')).toBeInTheDocument();
     expect(current.meetings.length).toBe(1);
@@ -193,19 +304,28 @@ describe('Preparation UI', () => {
     button('Add assignment');
     await screen.findByText('Read James');
     expect(screen.getByLabelText('Assignment title')).toHaveValue('');
+    expect(screen.getByLabelText('Assignment title')).not.toBeVisible();
     fireEvent.click(screen.getByLabelText('Read'));
     await waitFor(() => expect(current.assignments[0].tasks[0].done).toBe(true));
     fireEvent.click(screen.getByLabelText('Practise'));
     await screen.findByText(/Checklist prepared/);
     fireEvent.click(screen.getByLabelText('Read'));
     await screen.findByText('Prepare at your own pace.');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Edit assignment', exact: true })).toBeEnabled()
+    );
     button('Edit assignment');
+    expect(screen.getByLabelText('Assignment title')).toHaveFocus();
+    expect(screen.getByLabelText('Assignment title')).toBeVisible();
     field('Assignment title', 'Read James revised');
     field('Assignment date', '2026-10-16');
     button('Save assignment');
     await screen.findByText('Read James revised');
     expect(current.assignments[0].tasks[1].done).toBe(true);
     expect(current.assignments[0].date).toBe('2026-10-16');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Edit assignment', exact: true })).toBeEnabled()
+    );
     button('Edit assignment');
     button('Cancel assignment edit');
     button('Remove assignment');
@@ -225,6 +345,12 @@ describe('Preparation UI', () => {
     field('Assignment title', 'Draft');
     button('Add assignment');
     await waitFor(() => expect(screen.getByLabelText('Assignment title')).toHaveValue('Draft'));
+    expect(screen.getByLabelText('Assignment title')).toBeVisible();
+    button('Close assignment form');
+    expect(screen.getByLabelText('Assignment title')).not.toBeVisible();
+    button('New assignment');
+    expect(screen.getByLabelText('Assignment title')).toHaveValue('Draft');
+    expect(screen.getByLabelText('Assignment title')).toBeVisible();
   });
 });
 

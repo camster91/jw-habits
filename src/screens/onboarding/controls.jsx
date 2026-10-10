@@ -40,17 +40,29 @@ export function Choice({ legend, options, value, onChange }) {
   return (
     <fieldset>
       <legend className="mb-1 text-sm font-medium">{legend}</legend>
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-2">
         {options.map((o) => (
-          <label key={o.value} className="flex min-h-11 cursor-pointer items-center gap-3">
+          <label
+            key={o.value}
+            className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl p-3 ${o.hint ? 'bg-base-100' : ''}`}
+          >
             <input
               type="radio"
               className="radio radio-sm"
               name={name}
+              aria-label={o.label}
+              aria-describedby={o.hint ? `${name}-${o.value}` : undefined}
               checked={value === o.value}
               onChange={() => onChange(o.value)}
             />
-            {o.label}
+            <span>
+              <span className="block">{o.label}</span>
+              {o.hint && (
+                <span id={`${name}-${o.value}`} className="mt-1 block text-sm text-base-content/70">
+                  {o.hint}
+                </span>
+              )}
+            </span>
           </label>
         ))}
       </div>
@@ -79,11 +91,11 @@ export function TimeField({ label, value, onChange }) {
 export function SelectField({ label, value, options, onChange }) {
   const id = useId();
   return (
-    <div className="flex min-h-11 items-center justify-between gap-3">
+    <div className="flex min-h-11 flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
       <label htmlFor={id}>{label}</label>
       <select
         id={id}
-        className="select select-bordered min-h-11 w-44"
+        className="select select-bordered min-h-11 w-full sm:w-44"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >

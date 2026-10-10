@@ -34,7 +34,10 @@ export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange
 
   if (!open) {
     return (
-      <li className="flex items-center justify-between gap-3 rounded-2xl bg-base-100 p-3 shadow-sm">
+      <li
+        data-routine="ministry"
+        className="fd-routine flex items-center justify-between gap-3 rounded-2xl bg-base-100 p-3 shadow-sm"
+      >
         <div className="min-w-0">
           <p className="font-medium">{label}</p>
           <p className="text-sm text-base-content/70">
@@ -55,7 +58,7 @@ export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange
   }
 
   return (
-    <li className="rounded-2xl bg-base-100 p-3 shadow-sm">
+    <li data-routine="ministry" className="fd-routine rounded-2xl bg-base-100 p-3 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <p className="font-medium">{label}</p>
         {collapsed && (

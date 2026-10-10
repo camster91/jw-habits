@@ -1,0 +1,3 @@
+# Public on-device storage namespace, not a credential. Suppress only this
+# historical finding; retain every default rule and all other findings.
+faca11d3fb82cfa7cdc5b754c31dc94769e58a8c:src/domain/organiser.js:generic-api-key:6

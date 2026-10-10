@@ -11,7 +11,9 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "WidgetBridge"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "setSnapshot", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "drainQueue", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "drainQueue", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "peekQueue", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "acknowledgeQueue", returnType: CAPPluginReturnPromise)
     ]
 
     static let appGroup = "group.ca.ashbi.habittracker"
@@ -38,6 +40,51 @@ public class WidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         defaults.set(json, forKey: WidgetBridgePlugin.snapshotKey)
         WidgetCenter.shared.reloadAllTimelines()
         call.resolve()
+    }
+
+    private func pendingQueue() throws -> WidgetQueue {
+        guard let defaults = defaults, let queue = WidgetQueue.shared else {
+            throw NSError(domain: "WidgetQueue", code: 1)
+        }
+        if let raw = defaults.string(forKey: WidgetBridgePlugin.queueKey),
+           let data = raw.data(using: .utf8),
+           let legacy = try? JSONDecoder().decode([WidgetCheckIn].self, from: data) {
+            for item in legacy { try queue.enqueue(item) }
+            defaults.removeObject(forKey: WidgetBridgePlugin.queueKey)
+        }
+        return queue
+    }
+
+    @objc func peekQueue(_ call: CAPPluginCall) {
+        lock.lock()
+        defer { lock.unlock() }
+        do {
+            let items: [JSObject] = try pendingQueue().read().map {
+                ["routine": $0.routine, "day": $0.day]
+            }
+            call.resolve(["items": items])
+        } catch { call.reject("Could not read widget taps") }
+    }
+
+    @objc func acknowledgeQueue(_ call: CAPPluginCall) {
+        guard let values = call.getArray("items", JSObject.self) else {
+            call.reject("Widget acknowledgement items are required")
+            return
+        }
+        let items = values.compactMap { value -> WidgetCheckIn? in
+            guard let routine = value["routine"] as? String, let day = value["day"] as? String else { return nil }
+            return WidgetCheckIn(routine: routine, day: day)
+        }
+        guard items.count == values.count else {
+            call.reject("Invalid widget acknowledgement")
+            return
+        }
+        lock.lock()
+        defer { lock.unlock() }
+        do {
+            try pendingQueue().acknowledge(items)
+            call.resolve()
+        } catch { call.reject("Could not acknowledge widget taps") }
     }
 
     /// drainQueue() -> {items}: return the queued {routine, day} check-ins and clear the queue.

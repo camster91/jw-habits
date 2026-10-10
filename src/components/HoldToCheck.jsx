@@ -14,7 +14,14 @@ const PRESS_WINDOW_MS = 2000;
  * with no press before it (screen reader, switch or voice control)
  * completes at once, so the check never depends on holding.
  */
-export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 600 }) {
+export default function HoldToCheck({
+  done,
+  onComplete,
+  onUndo,
+  label,
+  holdMs = 600,
+  tapToComplete = false,
+}) {
   const { t } = useTranslation();
   const hintId = useId();
   const [holding, setHolding] = useState(false);
@@ -59,7 +66,7 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
     if (completed) return;
     const fromPress = at !== null && Date.now() - at < PRESS_WINDOW_MS;
     if (done) onUndo();
-    else if (!fromPress) complete();
+    else if (tapToComplete || !fromPress) complete();
   };
 
   const onKeyDown = (e) => {
@@ -67,8 +74,13 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
     e.preventDefault();
     if (e.repeat) return;
     press.current = { at: Date.now(), completed: false };
-    if (done) onUndo();
-    else start();
+    if (done) {
+      press.current.completed = true;
+      onUndo();
+    } else if (tapToComplete) {
+      press.current.completed = true;
+      complete();
+    } else start();
   };
 
   const onKeyUp = (e) => {
@@ -103,14 +115,16 @@ export default function HoldToCheck({ done, onComplete, onUndo, label, holdMs = 
           } ${done ? 'opacity-100' : 'opacity-60'}`}
           style={{ transitionDuration: holding ? `${holdMs}ms` : '150ms' }}
         />
-        <Check
-          aria-hidden="true"
-          className={`relative h-5 w-5 ${done ? 'text-white' : 'text-[var(--fd-accent-text)] opacity-40'}`}
-          strokeWidth={3}
-        />
+        {filled && (
+          <Check aria-hidden="true" className="relative h-5 w-5 text-white" strokeWidth={3} />
+        )}
       </button>
       <span id={hintId} className="sr-only">
-        {done ? t('fd.today.tapToUndo') : t('fd.today.holdToCheck')}
+        {done
+          ? t('fd.today.tapToUndo')
+          : tapToComplete
+            ? t('fd.today.tapToCheck')
+            : t('fd.today.holdToCheck')}
       </span>
     </>
   );

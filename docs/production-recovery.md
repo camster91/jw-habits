@@ -53,7 +53,10 @@ need an operations policy and an actual drill (#179).
 
 `python3 scripts/deploy/test_remote.py` exercises isolated simulated failures:
 bad staged image, failed production start, failed public probe, and successful
-retention. These prove script sequencing. The image workflow additionally runs the
+retention. GNU `timeout` must be on PATH; absent tooling fails the suite rather
+than counting early exits as successful failure-path checks. Negative cases
+verify that their intended stage or rollback was actually reached. These prove
+script sequencing. The image workflow additionally runs the
 published digest on an isolated Docker runner: mismatched staged revision,
 invalid public HTTPS, successful deployment and manual rollback must preserve
 or restore the original container ID. This is a real Docker drill, not a VPS
@@ -65,3 +68,23 @@ production. Clean-host/VPS-edge restore policy remains in #179.
 Signing-key replacement/escrow (#132/#133), administrator-required branch
 rules (#175), physical-device QA and store-account submission are separate
 gates. No device data or activity content is collected by these checks.
+
+## Read-only routing diagnosis
+
+`scripts/deploy/diagnose-routing.py` inspects the known `coolify-proxy` and
+`traefik` runtimes, their network mode and mounted file-provider configuration,
+and the named current/previous app containers. It reads app-specific routes
+from the provider directory resolved through the `/traefik` mount, separately
+from the legacy `/opt/traefik/dynamic/routers.yml`. Credentials, environment
+values, raw labels and unrelated routes are omitted. These configured routes
+do not establish runtime acceptance; compare with the live proxy's local API
+and loopback/public probes before proposing a repair. Missing inspection
+results alone cannot distinguish absence from Docker permission failures.
+
+The October 9 read-only inspection found no named app container or loopback
+listener and no active app router. The running host-network `coolify-proxy`
+loads `/data/coolify/proxy/dynamic`; the two legacy app routes are outside that
+provider. Its low-priority catch-all serves the public 503. A retained image
+and saved deployment records exist, but recovery still requires an approved
+exact image, isolated readiness checks, app-specific routing, preserved
+configuration and trusted public validation. The removal's actor is unknown.

@@ -5,7 +5,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { useCallback, useMemo, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { StoreContext } from '../../data/useStore.js';
-import { ANCHOR_PHRASE_TIMES, defaultStore } from '../../domain/store.js';
+import { defaultStore } from '../../domain/store.js';
 import { ACCENTS } from '../../theme/theme.js';
 import en from '../../locales/en.json';
 // eslint-disable-next-line no-unused-vars -- used via JSX
@@ -82,6 +82,18 @@ describe('Onboarding', () => {
     for (let i = 0; i < 5; i++) click(SKIP);
     expect(screen.getByTestId('today')).toBeInTheDocument();
     expect(current).toEqual({ ...initial, onboardingDone: true });
+  });
+
+  it('starts directly from welcome without resetting existing history or asking for permission', () => {
+    platform.isNative = true;
+    const initial = initialStore();
+    initial.labels.dailyText = 'Morning reading';
+    initial.log = [{ day: TODAY, routine: 'dailyText', value: true }];
+    renderOnboarding(initial);
+    click('Start with defaults');
+    expect(screen.getByTestId('today')).toBeInTheDocument();
+    expect(current).toEqual({ ...initial, onboardingDone: true });
+    expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
   });
 
   it('announces the step and allows going back', () => {
@@ -194,19 +206,31 @@ describe('Onboarding', () => {
     expect(current).toEqual({ ...initial, onboardingDone: true });
   });
 
-  it('picking an anchor phrase sets its time, which can still be adjusted', () => {
+  it('keeps the reminder clock independent of the chosen routine cue', () => {
     renderOnboarding();
     click('Get started');
     for (let i = 0; i < 3; i++) click('Next');
     expect(heading()).toHaveTextContent('Your rhythm');
-    fireEvent.click(screen.getByRole('radio', { name: 'Before bed' }));
-    const time = screen.getByLabelText('Daily text time');
-    expect(time).toHaveValue(ANCHOR_PHRASE_TIMES.beforeBed);
+    const time = screen.getByLabelText('Reminder time');
     fireEvent.change(time, { target: { value: '22:15' } });
+    for (const cue of [
+      'Before bed',
+      'After breakfast',
+      'With family prayer',
+      'Just a clock time',
+    ]) {
+      fireEvent.click(screen.getByRole('radio', { name: cue }));
+      expect(time).toHaveValue('22:15');
+    }
+    fireEvent.click(screen.getByRole('radio', { name: 'Before bed' }));
+    expect(screen.getByText(/cannot detect breakfast/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: 'With a scripture reference' }));
     fireEvent.click(screen.getByRole('switch', { name: 'Evening wrap-up notification' }));
     click('Next');
-    click(SKIP);
+    expect(screen.getByRole('region', { name: 'Review your setup' })).toHaveTextContent(
+      'Daily-text cue: Before bed. Reminder time: 22:15'
+    );
+    click('Start my first day');
     expect(current.anchors).toEqual({ dailyText: { time: '22:15', phrase: 'beforeBed' } });
     expect(current.tone).toBe('scripture');
     expect(current.wrapUpNotification).toBe(true);
@@ -226,10 +250,33 @@ describe('Onboarding', () => {
     ).toBeTruthy();
     fireEvent.click(allow);
     expect(LocalNotifications.requestPermissions).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Notifications are not enabled')
+    );
     // Declining is fine: the step carries on.
     await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled());
     click('Next');
     expect(heading()).toHaveTextContent('Your look');
+  });
+
+  it('lets the owner retry an interrupted notification request without saving setup', async () => {
+    platform.isNative = true;
+    LocalNotifications.requestPermissions.mockRejectedValueOnce(new Error('interrupted'));
+    const initial = initialStore();
+    renderOnboarding(initial);
+    click('Get started');
+    for (let i = 0; i < 3; i++) click('Next');
+    click('Allow notifications');
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Permission could not be checked')
+    );
+    expect(screen.getByRole('button', { name: 'Allow notifications' })).toBeEnabled();
+    expect(current).toEqual(initial);
+    click('Allow notifications');
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Notifications are not enabled')
+    );
+    expect(current).toEqual(initial);
   });
 
   it('never asks for notification permission on the web', () => {
@@ -247,11 +294,69 @@ describe('Onboarding', () => {
         'Faithful Days is an independent app. It is not affiliated with, endorsed by, or sponsored by Watch Tower Bible and Tract Society or jw.org, and contains no content from jw.org.'
       )
     ).toBeInTheDocument();
-    expect(screen.getByText(/Your routines stay on this device/)).toBeInTheDocument();
+    expect(screen.getByText(/Routines, plans and notes stay on this device/)).toBeInTheDocument();
+  });
+
+  it('explains the tracking day interactively without recording activity', () => {
+    const initial = initialStore();
+    renderOnboarding(initial);
+    click('Your ideas');
+    expect(screen.getByText(/Keep your own questions/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText('How does a day work?'));
+    click('4 a.m.');
+    expect(screen.getByText(/At 4 a.m., your check-in belongs to the new day/)).toBeInTheDocument();
+    click('1 a.m.');
+    expect(
+      screen.getByText(/At 1 a.m., your check-in belongs to the previous day/)
+    ).toBeInTheDocument();
+    expect(current).toEqual(initial);
+  });
+
+  it('reviews the actual draft before saving and keeps Back editable', () => {
+    const initial = initialStore();
+    renderOnboarding(initial);
+    click('Get started');
+    fireEvent.click(screen.getByRole('switch', { name: 'Ministry' }));
+    click('Next');
+    click('Wednesday');
+    click('Next');
+    fireEvent.click(screen.getByRole('radio', { name: 'My own pace' }));
+    fireEvent.change(screen.getByLabelText('Starting book'), { target: { value: '19' } });
+    click('Next');
+    fireEvent.click(screen.getByRole('radio', { name: 'Quiet' }));
+    click('Next');
+    const review = screen.getByRole('region', { name: 'Review your setup' });
+    expect(review).toHaveTextContent('Meetings: Wednesday');
+    expect(review).toHaveTextContent('Psalms 1');
+    expect(review).toHaveTextContent('My own pace');
+    expect(review).toHaveTextContent('Encouragement: Quiet');
+    expect(review).not.toHaveTextContent('Ministry');
+    expect(current).toEqual(initial);
+    click('Back');
+    fireEvent.click(screen.getByRole('radio', { name: 'Warm' }));
+    click('Next');
+    expect(screen.getByRole('region', { name: 'Review your setup' })).toHaveTextContent(
+      'Encouragement: Warm'
+    );
+    click('Start my first day');
+    expect(current.tone).toBe('warm');
+    expect(current.reading.plan).toBe('ownPace');
+    expect(current.log).toEqual(initial.log);
   });
 
   it('setting copy never says missed, broke, failed or lost', () => {
     const text = JSON.stringify([en.fd.onboarding, en.fd.settings]);
     expect(text).not.toMatch(/missed|broke|failed|lost/i);
   });
+});
+
+it('starts quickly with selected routines and own-pace reading without requesting notifications', () => {
+  renderOnboarding();
+  click('Get started');
+  fireEvent.click(screen.getByRole('switch', { name: 'Personal study', exact: true }));
+  click('Start with these routines');
+  expect(current.onboardingDone).toBe(true);
+  expect(current.reading.plan).toBe('ownPace');
+  expect(current.schedule.at(-1).enabled.personalStudy).toBe(false);
+  expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
 });

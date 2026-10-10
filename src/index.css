@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source('./');
 
 @plugin "daisyui" {
   themes:
@@ -203,4 +203,130 @@ input[type='range']::-webkit-slider-thumb {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Original Faithful Days colour, separate from linked publisher branding. */
+.fd-today-header {
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, #7b5ea7 16%, var(--color-base-100)),
+    color-mix(in srgb, #efad69 18%, var(--color-base-100))
+  );
+  border: 1px solid color-mix(in srgb, #7b5ea7 18%, var(--color-base-100));
+}
+.fd-today-sun {
+  color: #9a5b13;
+}
+[data-theme='dark'] .fd-today-sun {
+  color: #f4c979;
+}
+.fd-routine {
+  --routine-colour: #4a6fa4;
+  border-inline-start: 4px solid var(--routine-colour);
+  background: linear-gradient(
+    105deg,
+    color-mix(in srgb, var(--routine-colour) 7%, var(--color-base-100)),
+    var(--color-base-100)
+  );
+}
+.fd-routine[data-routine='dailyText'] {
+  --routine-colour: #9a5b13;
+}
+.fd-routine[data-routine='bibleReading'] {
+  --routine-colour: #2e7d6b;
+}
+.fd-routine[data-routine='meetingPrep'] {
+  --routine-colour: #1f6e8c;
+}
+.fd-routine[data-routine='familyWorship'] {
+  --routine-colour: #b03a6e;
+}
+.fd-routine[data-routine='personalStudy'] {
+  --routine-colour: #7b5ea7;
+}
+.fd-routine[data-routine='ministry'] {
+  --routine-colour: #b5472f;
+}
+.fd-routine[data-done='true'] {
+  background: color-mix(in srgb, var(--routine-colour) 12%, var(--color-base-100));
+}
+.fd-routine-icon {
+  color: var(--routine-colour);
+}
+[data-theme='dark'] .fd-routine-icon {
+  color: color-mix(in srgb, var(--routine-colour) 45%, white);
+}
+.fd-routine button[aria-pressed] {
+  --fd-accent: var(--routine-colour);
+}
+.fd-whats-new {
+  background: color-mix(in srgb, #7b5ea7 9%, var(--color-base-100));
+  border: 1px solid color-mix(in srgb, #7b5ea7 23%, var(--color-base-100));
+}
+.fd-whats-new-icon {
+  background: #7b5ea7;
+  color: white;
+}
+.fd-whats-new:focus-visible {
+  outline: 2px solid var(--fd-accent-text);
+  outline-offset: 3px;
+}
+
+.fd-screen-intro {
+  --intro-colour: #2e7d6b;
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--intro-colour) 13%, var(--color-base-100)),
+    color-mix(in srgb, var(--intro-colour) 4%, var(--color-base-100))
+  );
+  border: 1px solid color-mix(in srgb, var(--intro-colour) 16%, var(--color-base-100));
+}
+.fd-screen-intro[data-tone='lavender'] {
+  --intro-colour: #7b5ea7;
+}
+.fd-screen-intro[data-tone='rose'] {
+  --intro-colour: #b03a6e;
+}
+.fd-screen-intro[data-tone='ocean'] {
+  --intro-colour: #4a6fa4;
+}
+.fd-screen-intro[data-tone='rust'] {
+  --intro-colour: #b5472f;
+}
+.fd-screen-intro[data-tone='amber'] {
+  --intro-colour: #9a5b13;
+}
+.fd-guide {
+  background: color-mix(in srgb, #9a5b13 6%, var(--color-base-100));
+  border: 1px solid color-mix(in srgb, #9a5b13 18%, var(--color-base-100));
+}
+.fd-guide summary:focus-visible {
+  outline: 2px solid var(--fd-accent-text);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.fd-guide[open] summary {
+  margin-bottom: 8px;
+}
+.fd-guide[open] summary > span:last-child {
+  transform: rotate(45deg);
+}
+.fd-settings-heading,
+.fd-welcome-tile {
+  background: color-mix(in srgb, #7b5ea7 10%, var(--color-base-100));
+}
+.fd-welcome-tile:nth-child(2) {
+  background: color-mix(in srgb, #2e7d6b 12%, var(--color-base-100));
+}
+.fd-welcome-tile:nth-child(3) {
+  background: color-mix(in srgb, #9a5b13 12%, var(--color-base-100));
+}
+.fd-tab-active {
+  background: var(--color-base-100);
+  box-shadow: inset 0 -3px var(--fd-accent);
+  border-radius: 18px;
+  margin: 4px 0;
+}
+main .card {
+  border-radius: 20px;
 }

@@ -55,6 +55,33 @@ public final class WidgetStore {
         }
     }
 
+    /** Read without clearing; acknowledgement follows the app's durable save. */
+    public static JSONArray peekQueue(Context context) {
+        synchronized (LOCK) {
+            return parseArray(prefs(context).getString(QUEUE_KEY, null));
+        }
+    }
+
+    /** Remove only acknowledged pairs, preserving taps added while the app saved. */
+    public static boolean acknowledgeQueue(Context context, JSONArray acknowledged) {
+        synchronized (LOCK) {
+            SharedPreferences p = prefs(context);
+            JSONArray pending = parseArray(p.getString(QUEUE_KEY, null));
+            JSONArray remaining = new JSONArray();
+            for (int i = 0; i < pending.length(); i++) {
+                JSONObject item = pending.optJSONObject(i);
+                boolean matched = false;
+                for (int j = 0; item != null && j < acknowledged.length(); j++) {
+                    JSONObject ack = acknowledged.optJSONObject(j);
+                    if (ack != null && item.optString("routine").equals(ack.optString("routine"))
+                            && item.optString("day").equals(ack.optString("day"))) matched = true;
+                }
+                if (!matched) remaining.put(pending.opt(i));
+            }
+            return p.edit().putString(QUEUE_KEY, remaining.toString()).commit();
+        }
+    }
+
     /** Return the queued {routine, day} items and clear the queue. */
     public static JSONArray drainQueue(Context context) {
         synchronized (LOCK) {

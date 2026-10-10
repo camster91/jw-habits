@@ -46,6 +46,32 @@ beforeEach(() => vi.useFakeTimers({ toFake: ['Date'] }));
 afterEach(() => vi.useRealTimers());
 
 describe('Progress', () => {
+  it('shows an empty weekly summary without offering a zero-activity share', () => {
+    renderProgress(makeStore());
+    const summary = screen.getByRole('region', { name: 'This week' });
+    expect(within(summary).getByText('0 routine check-ins')).toBeInTheDocument();
+    expect(
+      within(summary).getByText('Your check-ins appear here as you record them.')
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Share card' })).not.toBeInTheDocument();
+  });
+
+  it('shows recorded activity even when points and levels are hidden', () => {
+    renderProgress(
+      makeStore({
+        showGameLayer: false,
+        log: [
+          { routine: 'dailyText', day: TODAY, value: true },
+          { routine: 'bibleReading', day: TODAY, value: true },
+        ],
+      })
+    );
+    const summary = screen.getByRole('region', { name: 'This week' });
+    expect(within(summary).getByText('2 routine check-ins')).toBeInTheDocument();
+    expect(within(summary).getByText('Recorded on 1 day this week')).toBeInTheDocument();
+    expect(screen.queryByText(/XP/)).not.toBeInTheDocument();
+  });
+
   it('fills 13 books when 13 are complete and says so', () => {
     // Start at book 14, earlier books counted: Genesis..2 Kings is 13 books.
     renderProgress(makeStore());
@@ -157,8 +183,9 @@ describe('Progress', () => {
     const none = Object.fromEntries(Object.keys(base.schedule[0].enabled).map((k) => [k, false]));
     renderProgress({ ...base, schedule: [{ ...base.schedule[0], enabled: none }] });
     expect(screen.queryByRole('heading', { name: 'Daily text' })).not.toBeInTheDocument();
-    // Only the Bible-map list remains.
-    expect(screen.getAllByRole('list')).toHaveLength(1);
+    // Guides and the Bible map remain; there is no routine-progress list.
+    expect(screen.queryByRole('list', { name: 'Routine progress' })).toBeNull();
+    expect(screen.getByRole('list', { name: 'Bible books' })).toBeInTheDocument();
   });
 
   it('shows the reading totals', () => {

@@ -1,5 +1,9 @@
+import OrganiserBoard from '../components/organiser/OrganiserBoard.jsx';
+import PersonalRoutines from '../components/organiser/PersonalRoutines.jsx';
+import QuickGuide from '../components/QuickGuide.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Sun, Sparkles } from 'lucide-react';
 import { useWorkspace } from '../data/useWorkspace.js';
 import { MEETING_PARTS } from '../domain/workspace.js';
 import { useTranslation } from 'react-i18next';
@@ -127,7 +131,6 @@ export default function Today({ onOpenSettings = () => {} }) {
     : null;
   const now = useNow();
   const [line, encourage] = useEncouragement(store.tone, today, t);
-  const [expanded, setExpanded] = useState(false);
   const [dismissedOn, setDismissedOn] = useState(() => safeSessionGetItem(DISMISS_KEY));
   // The plan a check-in just finished: {planId, started} (started: the next project's title).
   const [finished, setFinished] = useState(null);
@@ -155,7 +158,6 @@ export default function Today({ onOpenSettings = () => {} }) {
   const dismissed = dismissedOn === today;
   const result = wrapping ? wrapUp(store, now, t) : null;
   const fresh = freshStart(today);
-  const showList = !wrapping || expanded;
   const study = todaysStudyStep(store);
   const studyEntry = store.log.find((e) => e.routine === 'personalStudy' && e.day === today);
   // What the study row shows. While today is checked in: the step that check-in
@@ -255,16 +257,14 @@ export default function Today({ onOpenSettings = () => {} }) {
     update((s) => setMinistry(s, today, patch));
   };
 
-  // Opening the page zeroes the count; the checks already keep every guid seen.
+  // Open the official page only on request; never fetch or copy its content.
   const openWhatsNew = () => {
     openLink(whatsNewPageUrl(linkLocale(language)));
-    update((s) => ({ ...s, whatsNew: { ...s.whatsNew, newCount: 0 } }));
   };
 
   const dismiss = () => {
     safeSessionSetItem(DISMISS_KEY, today);
     setDismissedOn(today);
-    setExpanded(false);
   };
 
   const detailOf = (id) => {
@@ -340,6 +340,7 @@ export default function Today({ onOpenSettings = () => {} }) {
     return (
       <RoutineRow
         key={id}
+        routineId={id}
         testId={`row-${id}`}
         label={label(id)}
         detail={detailOf(id)}
@@ -420,28 +421,39 @@ export default function Today({ onOpenSettings = () => {} }) {
       className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-4">
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 tabIndex={-1} className="text-3xl font-bold focus:outline-none">
-              {t('fd.today.title')}
-            </h1>
-            <p className="text-sm text-base-content/70">
-              {new Intl.DateTimeFormat(language, {
-                weekday: 'long',
-                month: 'long',
-                day: 'numeric',
-              }).format(dateOf(today))}
-            </p>
+        <header className="fd-today-header space-y-3 rounded-3xl p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h1 tabIndex={-1} className="text-3xl font-bold focus:outline-none">
+                {t('fd.today.title')}
+              </h1>
+              <p className="text-sm text-base-content/70">
+                {new Intl.DateTimeFormat(language, {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                }).format(dateOf(today))}
+              </p>
+            </div>
+            <Sun aria-hidden="true" className="fd-today-sun h-10 w-10 shrink-0" />
           </div>
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" />
+            {rows.length > 0
+              ? t('fd.today.routineSummary', {
+                  done: rows.filter((id) =>
+                    id === 'ministry' ? month?.value.shared : isDone(store, id, today)
+                  ).length,
+                  total: rows.length,
+                })
+              : t('fd.today.gentleDay')}
+          </p>
         </header>
+        <p className="text-sm text-base-content/70">{t('fd.today.checkHint')}</p>
 
         {fresh && <p className="text-base-content/80">{t(`fd.today.${fresh}`)}</p>}
 
-        {store.whatsNew.enabled && store.whatsNew.newCount > 0 && (
-          <WhatsNewBadge count={store.whatsNew.newCount} onOpen={openWhatsNew} />
-        )}
-
-        <div role="status" aria-live="polite" className="min-h-6 text-[var(--fd-accent-text)]">
+        <div role="status" aria-live="polite" className="empty:hidden text-[var(--fd-accent-text)]">
           {line && (
             <>
               {line.text}
@@ -476,35 +488,51 @@ export default function Today({ onOpenSettings = () => {} }) {
           <MeetingDaysCard onOpen={onOpenSettings} />
         )}
 
+        <OrganiserBoard compact />
+        <ul className="space-y-3">
+          {rows.map(renderRow)}
+          {rows.length === 0 && (
+            <li className="text-center text-base-content/70">{t('fd.today.allClear')}</li>
+          )}
+        </ul>
+
+        <PersonalRoutines />
         {wrapping && !dismissed && (
           <WrapUpCard
             day={today}
             result={result}
             labelOf={label}
             tone={store.tone}
-            expanded={expanded}
-            onToggle={() => setExpanded((x) => !x)}
-            onStillTime={() => setExpanded(true)}
+            onStillTime={(id) => {
+              const target = document.querySelector(`[data-testid="row-${id}"] button`);
+              target?.focus();
+              target?.scrollIntoView?.({ block: 'center' });
+            }}
             onDone={dismiss}
           />
         )}
 
-        {wrapping && dismissed && (
-          <WrapUpSummary
-            count={result.done.length}
-            expanded={expanded}
-            onToggle={() => setExpanded((x) => !x)}
-          />
-        )}
+        {wrapping && dismissed && <WrapUpSummary count={result.done.length} />}
 
-        {showList && (
-          <ul className="space-y-3">
-            {rows.map(renderRow)}
-            {rows.length === 0 && (
-              <li className="text-center text-base-content/70">{t('fd.today.allClear')}</li>
-            )}
-          </ul>
-        )}
+        <QuickGuide
+          title="A quick guide to Today"
+          steps={[
+            {
+              title: 'Take one small step',
+              body: 'Tap a circle to record a routine. Tap it again to undo. Keyboard and assistive controls can activate it too.',
+            },
+            {
+              title: 'Open your references',
+              body: 'The arrow beside a routine opens its linked reference. What’s New opens the official jw.org page when you choose.',
+            },
+            {
+              title: 'Find your rhythm',
+              body: 'Change routine days, reading pace, colours and reminders in Settings. Your day rolls over at 3 a.m.',
+            },
+          ]}
+        />
+
+        {store.whatsNew.enabled && <WhatsNewBadge onOpen={openWhatsNew} />}
       </div>
       {choosing && study && !studyEntry && (
         <SomethingElseSheet

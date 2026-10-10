@@ -9,6 +9,39 @@ import StepReading from './StepReading.jsx';
 import StepRhythm from './StepRhythm.jsx';
 import StepLook from './StepLook.jsx';
 
+const CONTEXT = {
+  routines: [
+    'Keep what helps you',
+    'Choose the routines you want to see. There is no need to track everything.',
+    'welcome',
+    'teal',
+  ],
+  week: [
+    'Make room in your week',
+    'A usual meeting day helps Today show preparation at the right time.',
+    'plans',
+    'ocean',
+  ],
+  reading: [
+    'Start where you are',
+    'Pick a pace and a starting place. Your reading belongs to you.',
+    'welcome',
+    'amber',
+  ],
+  rhythm: [
+    'Gentle cues, your timing',
+    'Choose familiar moments, optional reminders and the encouragement you prefer.',
+    'notes',
+    'rose',
+  ],
+  look: [
+    'A little home that feels like you',
+    'Try a colour and theme, then review your choices before starting.',
+    'notes',
+    'lavender',
+  ],
+};
+
 const STEPS = [
   { key: 'welcome', Body: StepWelcome },
   { key: 'routines', Body: StepRoutines },
@@ -68,11 +101,76 @@ export default function Onboarding() {
         <p aria-live="polite" className="text-sm text-base-content/70">
           {t('fd.onboarding.stepOf', { step: index + 1, total: STEPS.length })}
         </p>
+        <div className="flex gap-1" aria-hidden="true">
+          {STEPS.map((step, i) => (
+            <span
+              key={step.key}
+              className={`h-1.5 flex-1 rounded-full ${i <= index ? 'bg-[var(--fd-accent)]' : 'bg-base-content/15'}`}
+            />
+          ))}
+        </div>
         <h1 ref={headingRef} tabIndex={-1} className="text-3xl font-bold focus:outline-none">
           {t(`fd.onboarding.${key}.title`)}
         </h1>
-        <Body store={draft} change={setDraft} today={today} askPermission preview />
+        {CONTEXT[key] && (
+          <header
+            className="fd-screen-intro flex items-center gap-3 rounded-3xl p-4"
+            data-tone={CONTEXT[key][3]}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">{CONTEXT[key][0]}</p>
+              <p className="mt-2 text-sm text-base-content/80">{CONTEXT[key][1]}</p>
+            </div>
+            <img
+              src={`/illustrations/${CONTEXT[key][2]}.webp`}
+              width="72"
+              height="72"
+              alt=""
+              className="h-18 w-18 shrink-0 object-contain"
+            />
+          </header>
+        )}
+        <Body store={draft} change={setDraft} today={today} askPermission preview review={last} />
+        {index > 0 && (
+          <p className="text-sm text-base-content/70">
+            {last
+              ? 'Starting saves your choices. You can revisit them in Settings.'
+              : 'These are draft choices. Back keeps them; Skip keeps the settings this step started with.'}
+          </p>
+        )}
+        {index === 1 && (
+          <div className="space-y-2 rounded-2xl bg-base-100 p-3">
+            <p className="text-sm">
+              Ready to begin? Keep these routines and set schedules, reminders and appearance later.
+              New reading starts at your own pace.
+            </p>
+            <button
+              className="btn btn-primary min-h-11 w-full"
+              onClick={() =>
+                update((s) =>
+                  commitOnboarding(s, {
+                    ...draft,
+                    reading: store.log.length
+                      ? draft.reading
+                      : { ...draft.reading, plan: 'ownPace' },
+                  })
+                )
+              }
+            >
+              Start with these routines
+            </button>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2 pt-2">
+          {index === 0 && (
+            <button
+              type="button"
+              className="btn btn-outline min-h-11"
+              onClick={() => update((s) => ({ ...s, onboardingDone: true }))}
+            >
+              {t('fd.onboarding.welcome.defaults')}
+            </button>
+          )}
           {index > 0 && (
             <button
               type="button"

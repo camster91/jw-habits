@@ -1,81 +1,66 @@
-# Faithful Days 5.2 store release pack
+# Faithful Days 5.3 store release pack
 
-Current code and web release, not a claim that either store listing is live.
-Cameron / Ashbi Design owns name reservation, account declarations and submission.
+Draft for the current implementation; neither store listing or signed release is verified live. Cameron / Ashbi Design owns name reservation, account declarations and submission. Validate final copy and images against the exact signed candidate before publishing.
 
 ## Listing copy
 
-Name: **Faithful Days** (availability/reservation still requires the store owner).
+Name: **Faithful Days** (store availability/reservation remains an owner check).
 Subtitle: **Spiritual routines, your way**.
-Play short description: **A private, on-device routine and study planner for Jehovah's Witnesses.**
+Play short description: **Private routines, tasks, calendar, notes and preparation on your device.**
 
 Long description:
 
-Faithful Days helps Jehovah's Witnesses organise daily spiritual routines and
-personal study on their own device. Choose the routines that fit your life:
-daily text, Bible reading, meeting preparation, family worship, personal study
-and ministry. Keep a steady rhythm with gentle progress, optional reminders,
-and a daily wrap-up.
+Faithful Days helps Jehovah's Witnesses organise spiritual routines and prepare ahead on their own device. Choose the routines that fit your life: daily text, Bible reading, meeting preparation, family worship, personal study and ministry. Keep a steady rhythm with gentle progress, optional reminders and a daily wrap-up.
 
-Create study and family projects with your own titles and steps. Plan a family
-worship agenda, track Bible chapters, and choose an optional garden, badges and
-levels. Export a JSON backup to move or protect your data, and import it on
-another device. No account or cloud sync is required. The app contains no
-publication text or verses; you choose your own links and written plan content.
+Create study and family projects with your own titles and steps. Plan a family worship agenda and track Bible chapters. Keep your own notes with tags, links and local search. Choose actual meeting and assignment dates, mark the sections you have prepared, and make a personal assignment checklist. Preparation and notes stay separate from the routine activity you record on Today.
 
-Faithful Days is an independent app. It is not affiliated with, endorsed by,
-or sponsored by Watch Tower Bible and Tract Society or jw.org, and contains no
-content from jw.org.
+Add tasks and recurring calendar events. See your agenda, week, month or task list,
+attach preparation and notes, and record task completion with Undo. Add a personal
+routine, including an optional manual check-in for exploring What's New on the
+official website. Reference links open separately; the app does not detect updates.
 
-Clearing app data or uninstalling can remove your history. Protect a backup
-before doing so. Reminders and home-screen widgets need supported native
-platforms and permissions; final listings must describe the verified release.
+See recorded weekly activity, a garden and badges. Turn points and levels on or off. Export a combined JSON backup to protect your routines, notes and preparation, then import it on another device. There is no app account or automatic cloud sync. Backup files are not encrypted; keep them private. The app contains no publication text or verses: you choose your own links and written content.
 
-Suggested category: Productivity. Age/content-rating questionnaires must be
-answered in the actual consoles; do not invent a published rating.
-Privacy: https://jwhabits.ashbi.ca/privacy.html
-Support: https://jwhabits.ashbi.ca/support.html
+Faithful Days is an independent app. It is not affiliated with, endorsed by or sponsored by Watch Tower Bible and Tract Society or jw.org, and contains no content from jw.org.
 
-## Current UI assets
+Clearing app data or uninstalling may remove your history. Save a backup first. Reminders and home-screen widgets depend on supported native platforms and permissions; final listings must describe the verified release.
 
-`scripts/marketing/screenshot-store-assets.cjs` captures Today, evening wrap-up,
-Plans, Progress/Bible map and onboarding with synthetic records in light/dark.
-Outputs have no alpha channel and include a dimensions/source manifest.
-The smoke workflow uploads the generated pack as `current-store-ui`.
+Suggested category: Productivity. Complete age/content-rating questionnaires in the actual consoles; no published rating is claimed here.
 
-Targets: iPhone medium 1179×2556, iPhone large 1320×2868, iPad 13-inch 2064×2752,
-and Android phone 1080×1920. Recheck current console requirements before upload:
-https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications
+Privacy: https://jwhabits.ashbi.ca/privacy/
+Support: https://jwhabits.ashbi.ca/support/
 
-These are browser-rendered current-app references. Recapture the signed native
-release and real widgets on the required devices before store submission. No
-widget image is fabricated, and these captures are not device certification.
+These match the public source pages and app Settings links. Public HTTP availability is a separate production-recovery gate; do not submit unreachable URLs. The former `.html` paths do not match shipped static files and may fall back to the app shell.
 
-## Reviewer notes draft (validate against signed build)
+## Current UI assets and recapture
 
-No login is required. The app stores user routines/plans/history locally and
-works offline. Native functionality includes local notification permissions,
-haptics, system sharing, JSON export/import and home-screen widget integration.
-Test native reminders/widgets on a physical device before describing them as
-verified. Widget interaction requires the widget's supported OS and App Group
-configuration. The app day rolls at local 03:00. Reviewers can complete or skip
-onboarding, hold a routine to check it in, create a plan in Plans, open Progress,
-and access Settings for reminders, backup and privacy/support.
+`scripts/marketing/screenshot-store-assets.cjs` captures Today, evening wrap-up, Plans, Progress, Notes, a prepared meeting, an assignment checklist and onboarding with fabricated records in light/dark. Preparation/assignment shots are scrolled to the actual saved record; the manifest identifies that anchor. It validates both fixtures, waits for actual screen/data readiness, rejects visible alerts, exports opaque PNGs and records dimensions, source revision and generator hash. Smoke uploads the generated reference pack as `current-store-ui` when authorized CI runs.
+
+Browser targets: iPhone medium 1179×2556, iPhone large 1320×2868, iPad 13-inch 2064×2752 and Android phone 1080×1920. These are rendered browser references, without native status bars, device frames or fabricated widgets. Select a truthful subset rather than submitting all references indiscriminately. Recapture the signed native candidate and real widgets on required supported devices before store submission. Confirm dimensions/count/format in the current consoles and [Apple screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications) / [Play preview-asset guidance](https://support.google.com/googleplay/android-developer/answer/9866151?hl=en).
+
+Screenshot order draft: Today → Plans → Notes → prepared meeting → assignment → Progress. Use synthetic personal text only. Keep note/assignment creation forms, error/recovery and backup screenshots as reviewer evidence when useful, rather than marketing private-data recovery as a core benefit. No screenshots establish physical-device certification.
+
+## Reviewer notes draft (validate on the signed build)
+
+No login is required. Routines, plans, notes, preparation, assignments, tasks, events and history stay on-device. Core editing works offline; user-opened external links require network access. Routine tracking rolls at local 03:00; calendar dates are separate. Preparation, event presence and written notes do not automatically mark a routine complete.
+
+1. On welcome, choose your routines and Start with these routines, use defaults, or follow guided setup. On Today, tap a circle to record a routine; tap again to undo.
+2. Open Plan and try Agenda/Week/Month/Tasks. Add an event, open it and add a preparation task or linked note. Complete the task, Undo and reload. Study projects and family agendas remain available below the organiser. Open Progress for weekly records and optional garden/badges.
+3. Choose Notes in the bottom navigation. Choose New note, write a title/body and optional comma-separated tags or links, then Save note. Search notes locally and reopen the saved note to edit. Use fabricated personal text for review.
+4. In Plans, choose Prepare for meetings and assignments. Add a meeting with its actual date and mark a prepared section. Add an assignment title/type/date and your own checklist. Add a contextual note from the meeting/assignment link. Return to Today to confirm preparation alone has created no routine check-in.
+5. Open Settings → Go to Backup. Export a full backup and keep it private. Import only into an isolated review install: full imports replace all three stores after confirmation and retain a pre-import snapshot and journal. Older routine/workspace imports retain organiser data; routine-only imports also retain notes/preparation. Verify reload and interrupted restore recovery separately; export/import is not sync or atomic storage.
+6. Native-only claims require device evidence: reminders/permission denial, haptics, system sharing, durable storage and home-screen widgets. Verify both widget sizes, app-day rollover and the signed App Group/OS configuration before asserting support. The containing iOS app targets iOS 15; WidgetKit extension requires iOS 17. Native share-in capture is still pending its first-device baseline and must not be advertised as implemented.
+
+An uploader exit, unsigned compile, browser screenshot or synthetic test is not reviewer acceptance or store availability. Record exact source/build/device/OS and results under the controlling release issues.
 
 ## Privacy declaration review
 
-The app has no account backend, analytics or remote habit/note storage. It
-reads a public What's New feed if enabled, and hosting/feed operators may see
-network metadata. The owner must review those recipients and retention before
-asserting Apple Data Not Collected or the Play equivalent. OS backups and
-user-invoked exports/shares are also described in the public policy. Native
-required-reason manifests compile; store-console privacy answers remain an
-account-holder task. Do not mark the declarations complete from unit tests.
+The app has no account backend, advertising analytics or remote habit/note storage. Detailed source inventory and unresolved declaration checks: [privacy data inventory](privacy-data-inventory.md). The optional What’s New shortcut is user-opened and performs no automatic feed collection. Public source policy covers routine/workspace content, plain-text backups, pre-import recovery copies, OS backup possibilities, user-invoked sharing, user-opened website links, external destinations, local diagnostics and support email. Review the signed package's permissions, embedded SDKs/manifests, actual network behavior and hosting/external-site/support recipients and retention before answering console forms. Do not infer Apple Data Not Collected or Play declarations from on-device architecture alone. [Apple privacy details](https://developer.apple.com/app-store/app-privacy-details/).
 
-Outstanding gates: #132/#133 signing incident, #246 name reservations,
-#248/#249 signed artifacts, #251 physical QA, #252 pilot, #253 account-specific
-Play eligibility, #254 submission/review and #255 web-retirement prerequisites.
+Required-reason manifest source and old compile evidence do not verify the new signed archive or console answers. No cloud sync, automatic external capture, encryption or full accessibility/localization certification is promised by this copy. Owner approval and current console declarations remain pending.
 
-## Initial language claim
+## Initial language and remaining gates
 
-Declare the current app UI as English only. #259 chooses its English-only initial-release alternative and removes unused v1 es/fr catalogs. Native widget chrome resources may follow the device language; full Spanish/French app UI, notifications/destination review, and fluent accessibility checks remain #46. Do not advertise full es/fr support from the native widget resources.
+Declare the app UI English only. #259 selected the English-only initial release. Widget chrome resources may follow device language; full Spanish/French UI, notification/destination review and fluent accessibility remain deferred under #46. Do not advertise full es/fr support from widget resources.
+
+Outstanding: #132/#133 signing incident, #246 name/account records, #248/#249 approved signed artifacts and test-track processing, #251 physical QA, #252 real household pilot, #253 account-specific Play eligibility, #254 explicit submission/review, production privacy/support availability and #255 approved web-retirement prerequisites. Local copy/assets preparation closes none of these gates.

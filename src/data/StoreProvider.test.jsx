@@ -641,3 +641,48 @@ it('runs initial foreground callbacks after child listeners commit', async () =>
   off();
   view.unmount();
 });
+
+it('foreground durable flush waits for the actual Preferences write and propagates failure', async () => {
+  let args;
+  const off = onForeground((value) => {
+    args = value;
+  });
+  await mount();
+  let resolve;
+  const set = vi.spyOn(Preferences, 'set').mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      })
+  );
+  let settled = false;
+  const pending = args.flush().then((value) => {
+    settled = true;
+    return value;
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(settled).toBe(false);
+  await vi.waitFor(() => expect(set).toHaveBeenCalled());
+  expect(set.mock.calls[0][0].value).toBe(JSON.stringify(latest.store));
+  resolve();
+  expect(await pending).toEqual(latest.store);
+  set.mockRejectedValueOnce(new Error('disk full'));
+  await expect(args.flush()).rejects.toThrow('disk full');
+  off();
+});
+
+it('durable widget flush cannot replace data after an unreadable-store startup', async () => {
+  let args;
+  const off = onForeground((value) => {
+    args = value;
+  });
+  vi.spyOn(Preferences, 'get').mockRejectedValue(new Error('read unavailable'));
+  const set = vi.spyOn(Preferences, 'set');
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  await mount();
+  await expect(args.flush()).rejects.toThrow('Saving is paused');
+  expect(set).not.toHaveBeenCalled();
+  warn.mockRestore();
+  off();
+});

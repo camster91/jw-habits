@@ -1,4 +1,6 @@
-import { useRef, useState } from 'react';
+import QuickGuide from '../components/QuickGuide.jsx';
+import ScreenIntro from '../components/ScreenIntro.jsx';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkspace } from '../data/useWorkspace.js';
 import { useStore } from '../data/useStore.js';
@@ -19,7 +21,14 @@ export default function Preparation() {
   const [status, setStatus] = useState('');
   const [deleting, setDeleting] = useState(null);
   const [editingAssignment, setEditingAssignment] = useState(null);
+  const [meetingFormOverride, setMeetingFormOpen] = useState(null);
+  const [assignmentFormOverride, setAssignmentFormOpen] = useState(null);
+  const meetingFormOpen = meetingFormOverride ?? !workspace.meetings.length;
+  const assignmentFormOpen = assignmentFormOverride ?? !workspace.assignments.length;
   const assignmentTitle = useRef(null);
+  useEffect(() => {
+    if (editingAssignment && assignmentFormOpen) assignmentTitle.current?.focus();
+  }, [editingAssignment, assignmentFormOpen]);
   const [pendingPart, setPendingPart] = useState(null);
   const [pendingTask, setPendingTask] = useState(null);
   const change = async (fn, onSaved = () => {}) => {
@@ -44,10 +53,13 @@ export default function Preparation() {
       setStatus('That meeting is already listed below.');
       return;
     }
-    change((w) => ({
-      ...w,
-      meetings: [...w.meetings, { id: newId(), type: meetingType, date, prepared: [] }],
-    }));
+    change(
+      (w) => ({
+        ...w,
+        meetings: [...w.meetings, { id: newId(), type: meetingType, date, prepared: [] }],
+      }),
+      () => setMeetingFormOpen(false)
+    );
   };
   const addAssignment = (e) => {
     e.preventDefault();
@@ -77,6 +89,7 @@ export default function Preparation() {
         setTitle('');
         setDetails('');
         setEditingAssignment(null);
+        setAssignmentFormOpen(false);
       }
     );
   };
@@ -129,9 +142,31 @@ export default function Preparation() {
     <main className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]">
       <div className="mx-auto max-w-md space-y-6">
         <Link className="inline-flex min-h-11 items-center underline" to="/plans">
-          Back to Plans
+          Back to Plan
         </Link>
-        <h1 className="text-3xl font-bold">Prepare ahead</h1>
+        <ScreenIntro
+          title="Prepare ahead"
+          subtitle="A calmer meeting day starts with a small step today."
+          art="plans"
+          tone="amber"
+        />
+        <QuickGuide
+          title="Get ready, without rushing"
+          steps={[
+            {
+              title: 'Pick the real date',
+              body: 'Add a midweek or weekend meeting. Keep its checklist with that meeting, even when you prepare early.',
+            },
+            {
+              title: 'Break an assignment down',
+              body: 'Add your assignment and edit its checklist: read, practise and check timing are a starting point, not required steps.',
+            },
+            {
+              title: 'Capture your thinking',
+              body: 'Open a linked note for your ideas and references. Preparation stays separate from routine activity on Today.',
+            },
+          ]}
+        />
         <p>
           Choose the actual meeting or assignment date. Prepared items stay separate from activity
           recorded on Today.
@@ -144,7 +179,22 @@ export default function Preparation() {
           <h2 id="meetings-heading" className="text-xl font-semibold">
             Meeting preparation
           </h2>
-          <form className="space-y-3 rounded-2xl bg-base-100 p-4" onSubmit={addMeeting}>
+          <button
+            type="button"
+            className="btn min-h-11"
+            aria-expanded={meetingFormOpen}
+            aria-controls="meeting-form"
+            disabled={busy}
+            onClick={() => setMeetingFormOpen(!meetingFormOpen)}
+          >
+            {meetingFormOpen ? 'Close meeting form' : 'New meeting'}
+          </button>
+          <form
+            id="meeting-form"
+            hidden={!meetingFormOpen}
+            className="space-y-3 rounded-2xl bg-base-100 p-4"
+            onSubmit={addMeeting}
+          >
             <label className="block">
               <span id="meeting-type-label">Meeting type</span>
               <select
@@ -221,7 +271,26 @@ export default function Preparation() {
           <h2 id="assignments-heading" className="text-xl font-semibold">
             My assignments
           </h2>
-          <form className="space-y-3 rounded-2xl bg-base-100 p-4" onSubmit={addAssignment}>
+          <button
+            type="button"
+            className="btn min-h-11"
+            aria-expanded={assignmentFormOpen}
+            aria-controls="assignment-form"
+            disabled={busy}
+            onClick={() => setAssignmentFormOpen(!assignmentFormOpen)}
+          >
+            {assignmentFormOpen
+              ? 'Close assignment form'
+              : editingAssignment
+                ? 'Continue assignment edit'
+                : 'New assignment'}
+          </button>
+          <form
+            id="assignment-form"
+            hidden={!assignmentFormOpen}
+            className="space-y-3 rounded-2xl bg-base-100 p-4"
+            onSubmit={addAssignment}
+          >
             <label className="block">
               <span>Assignment title</span>
               <input
@@ -287,6 +356,7 @@ export default function Preparation() {
                   setEditingAssignment(null);
                   setTitle('');
                   setDetails('');
+                  setAssignmentFormOpen(false);
                 }}
               >
                 Cancel assignment edit
@@ -339,7 +409,7 @@ export default function Preparation() {
                     setDue(a.date);
                     setDetails(a.details);
                     setTasks(a.tasks.map((t) => t.title).join('\n'));
-                    assignmentTitle.current?.focus();
+                    setAssignmentFormOpen(true);
                   }}
                 >
                   Edit assignment

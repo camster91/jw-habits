@@ -337,6 +337,6 @@ describe('PlanTrail', () => {
     const { store } = danielStore();
     renderTrail(store, 'nope');
     expect(screen.getByText(/isn.t here/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Plans/ })).toHaveAttribute('href', '/plans');
+    expect(screen.getByRole('link', { name: /Plan/ })).toHaveAttribute('href', '/plans');
   });
 });

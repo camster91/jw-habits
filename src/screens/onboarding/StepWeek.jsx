@@ -55,11 +55,11 @@ export default function StepWeek({ store, change, today }) {
 
   return (
     <div className="space-y-4">
-      <div role="group" aria-labelledby={groupId} className="space-y-1">
+      <div role="group" aria-labelledby={groupId} className="space-y-2 rounded-2xl bg-base-100 p-4">
         <p id={groupId} className="text-sm font-medium">
           {t('fd.onboarding.week.meetingDays')}
         </p>
-        <div className="flex flex-wrap gap-1">
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
           {WEEK.map((d) => {
             const on = meetingDays.includes(d);
             return (
@@ -79,27 +79,41 @@ export default function StepWeek({ store, change, today }) {
         <p className="text-sm text-base-content/70">{t('fd.onboarding.week.meetingHint')}</p>
       </div>
 
-      <SelectField
-        label={t('fd.onboarding.week.familyDay')}
-        value={String(familyWorshipDay)}
-        options={WEEK.map((d) => ({ value: String(d), label: dayName(d, language, 'long') }))}
-        onChange={(v) =>
-          change((s) => withScheduleChange(s, today, { familyWorshipDay: Number(v) }))
-        }
-      />
-
-      <Toggle
-        label={t('fd.onboarding.week.pioneer')}
-        hint={t('fd.onboarding.week.pioneerHint')}
-        checked={store.pioneer}
-        onChange={(on) => change((s) => ({ ...s, pioneer: on }))}
-      />
-      {store.pioneer && (
-        <HoursGoal
-          value={store.hoursGoal}
-          onChange={(n) => change((s) => ({ ...s, hoursGoal: n }))}
+      <div className="space-y-2 rounded-2xl bg-base-100 p-4">
+        <SelectField
+          label={t('fd.onboarding.week.familyDay')}
+          value={String(familyWorshipDay)}
+          options={WEEK.map((d) => ({ value: String(d), label: dayName(d, language, 'long') }))}
+          onChange={(v) =>
+            change((s) => withScheduleChange(s, today, { familyWorshipDay: Number(v) }))
+          }
         />
-      )}
+
+        <p className="text-sm text-base-content/70">
+          Pick a usual day as a starting point. You can plan a different evening whenever you need
+          to.
+        </p>
+      </div>
+      <div className="space-y-2 rounded-2xl bg-base-100 p-4">
+        <Toggle
+          label={t('fd.onboarding.week.pioneer')}
+          hint={t('fd.onboarding.week.pioneerHint')}
+          checked={store.pioneer}
+          onChange={(on) => change((s) => ({ ...s, pioneer: on }))}
+        />
+        {store.pioneer && (
+          <HoursGoal
+            value={store.hoursGoal}
+            onChange={(n) => change((s) => ({ ...s, hoursGoal: n }))}
+          />
+        )}
+      </div>
+      <p aria-live="polite" className="rounded-2xl bg-base-100 p-4 text-sm">
+        {meetingDays.length
+          ? `Meeting days: ${meetingDays.map((d) => dayName(d, language, 'long')).join(', ')}.`
+          : 'No meeting days selected yet. You can set them now or later in Settings.'}{' '}
+        Family worship: {dayName(familyWorshipDay, language, 'long')}.
+      </p>
     </div>
   );
 }
