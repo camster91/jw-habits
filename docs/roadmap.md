@@ -32,3 +32,7 @@ Current automated validation contracts: [quality gates](quality-gates.md) and [p
 Device/household acceptance procedures and blank result records: [release checklist](release-checklist.md), [device results](device-release-results-template.md), [household pilot](household-pilot.md). These are prepared protocols, not device or participant results.
 
 Store copy/current UI generation and outstanding account/device declarations: [store release pack](store-release-pack.md). Operating probes and owner restore gates: [monitoring](operations-monitoring.md). Current #263/#264 module boundaries are recorded in [capability map](../CAPABILITY-MAP.md).
+
+## Connected organiser direction — 2026-10-10
+
+Cameron approved planning the connected Today, calendar/tasks and notes direction. [Connected organiser plan](connected-organiser-plan.md) defines thirteen work packages, existing issue mappings, storage/recurrence constraints and phone acceptance gates. This is a proposed implementation specification, not shipped functionality or new posted issues. Next bounded milestone: ORG-01–03, navigation correction, architecture/backup contract and a connected phone prototype. Existing release and privacy commitments remain in force.
