@@ -393,6 +393,11 @@ const closeSettings = async (page) => {
         await page.getByRole('link', { name: 'Prepare for meetings and assignments' }).click();
         await page.getByLabel('Meeting type', { exact: true }).selectOption('weekend');
         await page.getByRole('button', { name: 'Add meeting', exact: true }).click();
+        // The durable save closes the form and moves the checklist. Wait for
+        // that transition before aiming at a checkbox near the fixed tab bar.
+        await page
+          .getByRole('button', { name: 'Add meeting', exact: true })
+          .waitFor({ state: 'hidden' });
         await page.getByLabel('Watchtower Study', { exact: true }).check();
         await page.getByText('1 of 2 sections prepared', { exact: true }).waitFor();
         await page.getByRole('link', { name: 'Add a meeting note' }).click();
