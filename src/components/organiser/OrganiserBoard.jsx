@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Check, Plus, NotebookPen, Undo2 } from 'lucide-react';
+import {
+  CalendarDays,
+  Check,
+  Plus,
+  NotebookPen,
+  Undo2,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { useOrganiser } from '../../data/useOrganiser.js';
 import { useWorkspace } from '../../data/useWorkspace.js';
-import { addDays, weekStart, weekday } from '../../domain/day.js';
+import { addDays, addMonths, weekStart, weekday } from '../../domain/day.js';
 import {
   calendarEvents,
   changeOccurrence,
@@ -31,7 +39,7 @@ export default function OrganiserBoard({ compact = false }) {
     [error, setError] = useState(''),
     [undo, setUndo] = useState(null),
     [query, setQuery] = useState(''),
-    [filter, setFilter] = useState('Upcoming');
+    [filter, setFilter] = useState('Open');
   if (!context) return null;
   const { organiser, ready, save, rawExport } = context;
   const today = civilDate(),
@@ -83,6 +91,13 @@ export default function OrganiserBoard({ compact = false }) {
     tasks = tasks.filter((t) => t.date === selected);
     events = events.filter((e) => e.displayDate <= selected && e.displayEndDate >= selected);
   }
+  const navigationUnit = view === 'Month' ? 'month' : view === 'Week' ? 'week' : 'day';
+  const moveDate = (direction) =>
+    setSelected((date) =>
+      view === 'Month'
+        ? addMonths(date, direction)
+        : addDays(date, direction * (view === 'Week' ? 7 : 1))
+    );
   const dueCount = tasks.length + events.length;
   if (compact) {
     tasks = tasks.slice(0, 3);
@@ -258,27 +273,64 @@ export default function OrganiserBoard({ compact = false }) {
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                 >
-                  {['Upcoming', 'Today', 'All', 'Completed'].map((v) => (
+                  {['Open', 'Today', 'All', 'Completed'].map((v) => (
                     <option key={v}>{v}</option>
                   ))}
                 </select>
               </label>
-              <p className="text-sm text-base-content/70">
-                Recurring tasks include the last 90 days and next 180 days. Use the calendar to
-                inspect earlier dates.
-              </p>
+              <details>
+                <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">
+                  About task dates
+                </summary>
+                <p className="text-sm text-base-content/70">
+                  Open includes overdue and undated tasks. Recurring tasks include the last 90 days
+                  and next 180 days. Use the calendar to inspect other dates.
+                </p>
+              </details>
             </>
           ) : (
             <>
-              <label className="block">
-                Choose date
-                <input
-                  type="date"
-                  className="input min-h-11 w-full"
-                  value={selected}
-                  onChange={(e) => e.target.value && setSelected(e.target.value)}
-                />
-              </label>
+              <div
+                role="group"
+                aria-label="Calendar navigation"
+                className="flex items-center gap-2"
+              >
+                <button
+                  type="button"
+                  className="btn btn-ghost min-h-11 shrink-0"
+                  aria-label={`Previous ${navigationUnit}`}
+                  onClick={() => moveDate(-1)}
+                >
+                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                </button>
+                <label className="min-w-0 flex-1">
+                  <span className="sr-only">Choose date</span>
+                  <input
+                    type="date"
+                    className="input min-h-11 w-full"
+                    value={selected}
+                    onChange={(e) => e.target.value && setSelected(e.target.value)}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-ghost min-h-11 shrink-0"
+                  aria-label={`Next ${navigationUnit}`}
+                  onClick={() => moveDate(1)}
+                >
+                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+              {view === 'Month' && (
+                <div
+                  aria-hidden="true"
+                  className="grid grid-cols-7 gap-1 text-center text-xs text-base-content/70"
+                >
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                    <span key={day}>{day}</span>
+                  ))}
+                </div>
+              )}
               <div className="grid grid-cols-7 gap-1">
                 {Array.from(
                   {
@@ -324,16 +376,26 @@ export default function OrganiserBoard({ compact = false }) {
                   }
                 )}
               </div>
-              <p className="text-sm font-medium">
-                {view === 'Week'
-                  ? `${friendlyDate(from)} – ${friendlyDate(to)}`
-                  : view === 'Month'
-                    ? new Date(month + 'T12:00:00').toLocaleDateString('en', {
-                        month: 'long',
-                        year: 'numeric',
-                      })
-                    : friendlyDate(selected)}
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium" aria-live="polite">
+                  {view === 'Week'
+                    ? `${friendlyDate(from)} – ${friendlyDate(to)}`
+                    : view === 'Month'
+                      ? new Date(month + 'T12:00:00').toLocaleDateString('en', {
+                          month: 'long',
+                          year: 'numeric',
+                        })
+                      : friendlyDate(selected)}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-ghost min-h-11"
+                  disabled={selected === today}
+                  onClick={() => setSelected(today)}
+                >
+                  Today
+                </button>
+              </div>
             </>
           )}
         </>
@@ -387,7 +449,10 @@ export default function OrganiserBoard({ compact = false }) {
       ))}
       {emptyAgenda && !compact && (
         <p className="text-sm text-base-content/70">
-          Nothing here yet. Add an event or a small next step.
+          {view === 'Tasks'
+            ? 'No tasks match this view.'
+            : 'Nothing scheduled for this date range.'}{' '}
+          Add an event or a small next step.
         </p>
       )}
       {!compact && organiser.tasks.concat(organiser.events).some((i) => i.archivedAt) && (
@@ -419,14 +484,19 @@ export default function OrganiserBoard({ compact = false }) {
         </details>
       )}
       {!compact && (
-        <p className="text-sm text-base-content/70">
-          Events use calendar dates. Routine records keep the 3 a.m. tracking-day boundary. Planning
-          never records spiritual activity.
-        </p>
+        <details>
+          <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">
+            How planning works
+          </summary>
+          <p className="text-sm text-base-content/70">
+            Events use calendar dates. Routine records keep the 3 a.m. tracking-day boundary.
+            Planning never records spiritual activity.
+          </p>
+        </details>
       )}
       {compact && dueCount > 0 && (
         <Link to="/plans" className="block min-h-11 py-2 underline">
-          See all {dueCount} tasks and events
+          View agenda ({dueCount})
         </Link>
       )}
       {adding && (

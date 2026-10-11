@@ -120,23 +120,6 @@ export default function Plans() {
           tone="lavender"
         />
         <OrganiserBoard />
-        <QuickGuide
-          title="Build your first plan"
-          steps={[
-            {
-              title: 'Choose a focus',
-              body: 'Start a study or family plan. Give it a title that means something to you.',
-            },
-            {
-              title: 'Make it manageable',
-              body: 'Add your own steps, or use the chapter, lesson or weekly step generator. You can add safe links to your references.',
-            },
-            {
-              title: 'Bring it into your day',
-              body: 'Use on Today makes a study plan current. Tap Personal study on Today to record the next step; planning alone never records activity.',
-            },
-          ]}
-        />
         <p className="text-base-content/80">{t('fd.plans.intro')}</p>
         <Link
           to="/plans/preparation"
@@ -215,6 +198,23 @@ export default function Plans() {
             )}
           </Section>
         </details>
+        <QuickGuide
+          title="Build your first plan"
+          steps={[
+            {
+              title: 'Choose a focus',
+              body: 'Start a study or family plan. Give it a title that means something to you.',
+            },
+            {
+              title: 'Make it manageable',
+              body: 'Add your own steps, or use the chapter, lesson or weekly step generator. You can add safe links to your references.',
+            },
+            {
+              title: 'Bring it into your day',
+              body: 'Use on Today makes a study plan current. Tap Personal study on Today to record the next step; planning alone never records activity.',
+            },
+          ]}
+        />
       </div>
       {creating && <NewPlanSheet kind={creating} onClose={() => setCreating(null)} />}
     </main>
