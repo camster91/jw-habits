@@ -5,6 +5,9 @@ import { render, screen, within } from '@testing-library/react';
 import i18n from 'i18next';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { StoreContext } from '../data/useStore.js';
+// eslint-disable-next-line no-unused-vars -- used via JSX
+import { OrganiserContext } from '../data/useOrganiser.js';
+import { emptyOrganiser } from '../domain/organiser.js';
 import { defaultStore } from '../domain/store.js';
 import { withScheduleChange } from '../domain/schedule.js';
 import { BOOKS } from '../domain/bible.js';
@@ -29,13 +32,15 @@ function makeStore(over = {}, patch = {}) {
   return withScheduleChange(s, '2026-01-01', { meetingDays: [2, 0], ...patch });
 }
 
-function renderProgress(store) {
+function renderProgress(store, organiser = null) {
   const value = { store, update: () => {}, today: TODAY };
   return render(
     <StoreContext.Provider value={value}>
-      <MemoryRouter>
-        <Progress />
-      </MemoryRouter>
+      <OrganiserContext.Provider value={organiser ? { organiser } : null}>
+        <MemoryRouter>
+          <Progress />
+        </MemoryRouter>
+      </OrganiserContext.Provider>
     </StoreContext.Provider>
   );
 }
@@ -54,6 +59,8 @@ describe('Progress', () => {
       within(summary).getByText('Your check-ins appear here as you record them.')
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Share card' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Routine progress' })).not.toBeInTheDocument();
+    expect(within(summary).getByRole('link', { name: 'Go to Today' })).toHaveAttribute('href', '/');
   });
 
   it('shows recorded activity even when points and levels are hidden', () => {
@@ -70,6 +77,38 @@ describe('Progress', () => {
     expect(within(summary).getByText('2 routine check-ins')).toBeInTheDocument();
     expect(within(summary).getByText('Recorded on 1 day this week')).toBeInTheDocument();
     expect(screen.queryByText(/XP/)).not.toBeInTheDocument();
+  });
+
+  it('keeps older recorded history visible during an empty week', () => {
+    renderProgress(makeStore({ log: [{ routine: 'dailyText', day: '2026-01-04', value: true }] }));
+    expect(screen.getByRole('heading', { name: 'Daily text' })).toBeInTheDocument();
+    expect(screen.getByText('1 day this year')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Go to Today' })).toBeInTheDocument();
+  });
+
+  it('does not show routine history for a future record', () => {
+    renderProgress(makeStore({ log: [{ routine: 'dailyText', day: '2026-10-07', value: true }] }));
+    expect(screen.queryByRole('list', { name: 'Routine progress' })).not.toBeInTheDocument();
+  });
+
+  it('omits an empty organiser summary', () => {
+    renderProgress(makeStore(), emptyOrganiser());
+    expect(
+      screen.queryByRole('heading', { name: 'Your organiser this week' })
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps organiser completions separate from routine activity', () => {
+    vi.setSystemTime(new Date('2026-10-06T12:00:00'));
+    renderProgress(makeStore(), {
+      ...emptyOrganiser(),
+      exceptions: [{ status: 'done', completedAt: '2026-10-06T12:00:00Z' }],
+      routineCheckIns: [{ day: TODAY }],
+    });
+    expect(screen.getByText('1 task completed')).toBeInTheDocument();
+    expect(screen.getByText('1 personal routine check-in')).toBeInTheDocument();
+    expect(screen.getByText('0 routine check-ins')).toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Routine progress' })).not.toBeInTheDocument();
   });
 
   it('fills 13 books when 13 are complete and says so', () => {
@@ -93,7 +132,12 @@ describe('Progress', () => {
   });
 
   it('shows a card only for routines enabled today', () => {
-    const base = makeStore();
+    const base = makeStore({
+      log: [
+        { routine: 'dailyText', day: TODAY, value: true },
+        { routine: 'familyWorship', day: TODAY, value: true },
+      ],
+    });
     const store = withScheduleChange(base, '2026-09-01', {
       enabled: { ...base.schedule[0].enabled, familyWorship: false },
     });
@@ -128,9 +172,7 @@ describe('Progress', () => {
       ...makeStore({ log }),
       schedule: [{ ...makeStore().schedule[0], from: TODAY }],
     });
-    const ministry = screen.getByRole('heading', { name: 'Ministry' }).closest('li');
-    expect(within(ministry).queryByText(/in a row/)).not.toBeInTheDocument();
-    expect(within(ministry).getByText('0 days this year')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Ministry' })).not.toBeInTheDocument();
     const daily = screen.getByRole('heading', { name: 'Daily text' }).closest('li');
     expect(within(daily).getByText('1 day this year')).toBeInTheDocument();
   });
