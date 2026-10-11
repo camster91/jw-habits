@@ -1,0 +1,17 @@
+{
+  "repository": "camster91/jw-habits",
+  "app_id": "6821076241",
+  "bundles": [
+    "ca.ashbi.habittracker",
+    "ca.ashbi.habittracker.FaithfulDaysWidget"
+  ],
+  "project": "ios/App/App.xcodeproj/project.pbxproj",
+  "checks": [
+    "Build + Lint + Test",
+    "Playwright smoke",
+    "Browser compatibility (firefox)",
+    "Browser compatibility (webkit)",
+    "Android debug compile",
+    "iOS simulator compile"
+  ]
+}
