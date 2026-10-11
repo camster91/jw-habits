@@ -183,10 +183,12 @@ export default function OrganiserBoard({ compact = false }) {
         ? a.tasks.filter((t) => !compact || !t.done).map((t) => ({ ...t, assignment: a }))
         : []
     ) ?? [];
+  const emptyAgenda =
+    !tasks.length && !events.length && !legacyTasks.length && !legacyMeetings.length;
   return (
     <section
       aria-label={compact ? 'Today agenda and tasks' : 'Calendar and tasks'}
-      className="space-y-3"
+      className={compact && emptyAgenda ? 'space-y-1' : 'space-y-3'}
     >
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-xl font-semibold">{compact ? 'Your agenda' : 'Calendar & tasks'}</h2>
@@ -199,9 +201,11 @@ export default function OrganiserBoard({ compact = false }) {
           Add
         </button>
       </div>
-      <p role="alert" className="text-error">
-        {error || context.error}
-      </p>
+      {(error || context.error) && (
+        <p role="alert" className="text-error">
+          {error || context.error}
+        </p>
+      )}
       {!ready && (
         <button className="btn min-h-11" onClick={exportOriginal}>
           Export original tasks and calendar
@@ -381,11 +385,9 @@ export default function OrganiserBoard({ compact = false }) {
           </Link>
         </div>
       ))}
-      {!tasks.length && !events.length && !legacyTasks.length && !legacyMeetings.length && (
+      {emptyAgenda && !compact && (
         <p className="text-sm text-base-content/70">
-          {compact
-            ? 'No dated tasks or events due. Your routines are below.'
-            : 'Nothing here yet. Add an event or a small next step.'}
+          Nothing here yet. Add an event or a small next step.
         </p>
       )}
       {!compact && organiser.tasks.concat(organiser.events).some((i) => i.archivedAt) && (
