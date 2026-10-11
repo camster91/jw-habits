@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { linkedOrganiserOccurrence } from '../../domain/organiserLinks.js';
 import {
   CalendarDays,
   Check,
@@ -28,20 +29,45 @@ const friendlyDate = (date) =>
     month: 'short',
     day: 'numeric',
   });
-export default function OrganiserBoard({ compact = false }) {
-  const context = useOrganiser(),
-    workspaceContext = useWorkspace();
-  const [selected, setSelected] = useState(civilDate),
-    [view, setView] = useState('Agenda'),
+export default function OrganiserBoard(props) {
+  const context = useOrganiser();
+  return context ? <OrganiserBoardContent {...props} context={context} /> : null;
+}
+
+function OrganiserBoardContent({ compact = false, context }) {
+  const workspaceContext = useWorkspace();
+  const [params, setParams] = useSearchParams();
+  const [selectedDate, setSelected] = useState(civilDate),
+    [localView, setView] = useState('Agenda'),
     [editing, setEditing] = useState(null),
-    [detail, setDetail] = useState(null),
+    [localDetail, setLocalDetail] = useState(null),
     [adding, setAdding] = useState(false),
     [error, setError] = useState(''),
     [undo, setUndo] = useState(null),
     [query, setQuery] = useState(''),
     [filter, setFilter] = useState('Open');
-  if (!context) return null;
   const { organiser, ready, save, rawExport } = context;
+  const linkedKind = params.get('itemKind'),
+    linkedId = params.get('itemId');
+  const hasLinkedTarget = !compact && Boolean(linkedKind || linkedId);
+  const routeDetail =
+    hasLinkedTarget && ready ? linkedOrganiserOccurrence(organiser, linkedKind, linkedId) : null;
+  const detail = localDetail ?? routeDetail;
+  const selected = routeDetail?.displayDate ?? routeDetail?.date ?? selectedDate;
+  const view = routeDetail?.kind === 'task' && !routeDetail.date ? 'Tasks' : localView;
+  const setDetail = (next) => {
+    setLocalDetail(next);
+    if (hasLinkedTarget) {
+      if (routeDetail) {
+        setSelected(routeDetail.displayDate ?? routeDetail.date ?? civilDate());
+        if (routeDetail.kind === 'task' && !routeDetail.date) setView('Tasks');
+      }
+      const nextParams = new URLSearchParams(params);
+      nextParams.delete('itemKind');
+      nextParams.delete('itemId');
+      setParams(nextParams, { replace: true });
+    }
+  };
   const today = civilDate(),
     monday = weekStart(selected),
     month = selected.slice(0, 7) + '-01';
@@ -216,6 +242,14 @@ export default function OrganiserBoard({ compact = false }) {
           Add
         </button>
       </div>
+      {hasLinkedTarget && ready && !routeDetail && (
+        <div role="status" className="rounded-xl bg-base-100 p-3">
+          <p>That activity is unavailable. Your notes are kept.</p>
+          <button type="button" className="btn btn-ghost min-h-11" onClick={() => setDetail(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
       {(error || context.error) && (
         <p role="alert" className="text-error">
           {error || context.error}
