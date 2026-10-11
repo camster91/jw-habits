@@ -29,9 +29,13 @@ const friendlyDate = (date) =>
     month: 'short',
     day: 'numeric',
   });
-export default function OrganiserBoard({ compact = false }) {
-  const context = useOrganiser(),
-    workspaceContext = useWorkspace();
+export default function OrganiserBoard(props) {
+  const context = useOrganiser();
+  return context ? <OrganiserBoardContent {...props} context={context} /> : null;
+}
+
+function OrganiserBoardContent({ compact = false, context }) {
+  const workspaceContext = useWorkspace();
   const [params, setParams] = useSearchParams();
   const [selectedDate, setSelected] = useState(civilDate),
     [localView, setView] = useState('Agenda'),
@@ -42,7 +46,6 @@ export default function OrganiserBoard({ compact = false }) {
     [undo, setUndo] = useState(null),
     [query, setQuery] = useState(''),
     [filter, setFilter] = useState('Open');
-  if (!context) return null;
   const { organiser, ready, save, rawExport } = context;
   const linkedKind = params.get('itemKind'),
     linkedId = params.get('itemId');
