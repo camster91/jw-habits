@@ -9,7 +9,7 @@ import time
 
 REQUIRED = ('Build + Lint + Test', 'Playwright smoke', 'Browser compatibility (firefox)',
             'Browser compatibility (webkit)', 'Android debug compile', 'iOS simulator compile')
-ENVIRONMENTS = ('android-signing', 'play-closed-testing', 'ios-signing', 'testflight-upload')
+ENVIRONMENTS = ('android-signing', 'play-closed-testing', 'play-internal-testing', 'ios-signing', 'testflight-upload')
 
 
 def source_state(payload):
