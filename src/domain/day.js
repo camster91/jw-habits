@@ -45,6 +45,17 @@ export function addDays(day, n) {
   return formatDate(date);
 }
 
+/** Move calendar months, clamping to the last day when a month is shorter. */
+export function addMonths(day, n) {
+  const date = parse(day);
+  const dayOfMonth = date.getDate();
+  date.setDate(1);
+  date.setMonth(date.getMonth() + n);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0, 12).getDate();
+  date.setDate(Math.min(dayOfMonth, lastDay));
+  return formatDate(date);
+}
+
 /**
  * The day the app treats as today: the clock's app day, or `lastSeenDay` when
  * that is exactly one day ahead (so westward travel never moves today

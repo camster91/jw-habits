@@ -1,7 +1,16 @@
 process.env.TZ = 'America/Toronto';
 
 import { describe, it, expect } from 'vitest';
-import { appDay, addDays, currentDay, weekday, weekStart, monthKey, serviceYear } from './day.js';
+import {
+  appDay,
+  addDays,
+  addMonths,
+  currentDay,
+  weekday,
+  weekStart,
+  monthKey,
+  serviceYear,
+} from './day.js';
 
 const zoneIsToronto = Intl.DateTimeFormat().resolvedOptions().timeZone === 'America/Toronto';
 
@@ -50,6 +59,15 @@ describe('day arithmetic', () => {
     expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
     expect(addDays('2028-02-28', 1)).toBe('2028-02-29');
     expect(addDays('2026-03-07', 2)).toBe('2026-03-09');
+  });
+
+  it('moves months without skipping shorter months or changing the local date', () => {
+    expect(addMonths('2026-01-31', 1)).toBe('2026-02-28');
+    expect(addMonths('2028-01-31', 1)).toBe('2028-02-29');
+    expect(addMonths('2026-03-31', -1)).toBe('2026-02-28');
+    expect(addMonths('2026-12-15', 1)).toBe('2027-01-15');
+    expect(addMonths('2026-01-15', -1)).toBe('2025-12-15');
+    expect(addMonths('2026-02-08', 1)).toBe('2026-03-08');
   });
 
   it('weekday: 0 is Sunday', () => {

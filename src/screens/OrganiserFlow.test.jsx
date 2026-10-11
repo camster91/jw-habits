@@ -274,3 +274,55 @@ it('blocks unknown recovery journal versions even when they claim completion', a
   await screen.findByRole('heading', { name: 'Finish recovering your data' });
   expect(screen.queryByTestId('plans')).not.toBeInTheDocument();
 });
+
+it('navigates calendar dates by view and prefills Add without recording activity', async () => {
+  mount();
+  const b = await board();
+  const date = within(b).getByLabelText('Choose date');
+  fireEvent.click(within(b).getByRole('button', { name: 'Next day', exact: true }));
+  expect(date).toHaveValue('2026-10-11');
+  fireEvent.click(within(b).getByRole('button', { name: 'Previous day', exact: true }));
+  expect(date).toHaveValue('2026-10-10');
+  fireEvent.click(within(b).getByRole('button', { name: 'Week', exact: true }));
+  fireEvent.click(within(b).getByRole('button', { name: 'Next week', exact: true }));
+  expect(date).toHaveValue('2026-10-17');
+  fireEvent.click(within(b).getByRole('button', { name: 'Previous week', exact: true }));
+  expect(date).toHaveValue('2026-10-10');
+  fireEvent.click(within(b).getByRole('button', { name: 'Month', exact: true }));
+  fireEvent.change(date, { target: { value: '2026-01-31' } });
+  fireEvent.click(within(b).getByRole('button', { name: 'Next month', exact: true }));
+  expect(date).toHaveValue('2026-02-28');
+  fireEvent.click(within(b).getByRole('button', { name: 'Add', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Task', exact: true }));
+  expect(screen.getByLabelText('Due date (optional)')).toHaveValue('2026-02-28');
+  fireEvent.click(screen.getByRole('button', { name: 'Close', exact: true }));
+  fireEvent.click(within(b).getByRole('button', { name: 'Previous month', exact: true }));
+  expect(date).toHaveValue('2026-01-28');
+  fireEvent.click(within(b).getByRole('button', { name: 'Today', exact: true }));
+  expect(date).toHaveValue('2026-10-10');
+  expect(within(b).getByRole('button', { name: 'Today', exact: true })).toBeDisabled();
+  expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+});
+
+it('labels overdue and undated tasks as Open and preserves task filtering', async () => {
+  localStorage.setItem(
+    ORGANISER_KEY,
+    JSON.stringify({
+      ...emptyOrganiser(),
+      tasks: [
+        newOrganiserItem('task', { title: 'Overdue question', date: '2026-10-09' }),
+        newOrganiserItem('task', { title: 'Undated idea', date: null }),
+      ],
+    })
+  );
+  mount();
+  const b = await board();
+  fireEvent.click(within(b).getByRole('button', { name: 'Tasks', exact: true }));
+  expect(within(b).getByLabelText('Task view')).toHaveValue('Open');
+  expect(within(b).getByRole('button', { name: /^Overdue question/ })).toBeInTheDocument();
+  expect(within(b).getByRole('button', { name: /^Undated idea/ })).toBeInTheDocument();
+  fireEvent.change(within(b).getByLabelText('Search tasks'), { target: { value: 'Undated' } });
+  expect(within(b).queryByRole('button', { name: /^Overdue question/ })).not.toBeInTheDocument();
+  expect(within(b).getByRole('button', { name: /^Undated idea/ })).toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+});
