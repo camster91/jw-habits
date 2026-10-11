@@ -1,3 +1,4 @@
+import { organiserItemUrl } from '../domain/organiserLinks.js';
 import { useOrganiser } from '../data/useOrganiser.js';
 import { linkNote } from '../domain/organiser.js';
 import { newId } from '../domain/ids.js';
@@ -449,12 +450,20 @@ export default function Notes() {
                     organiserContext.organiser[r.target.kind === 'task' ? 'tasks' : 'events'].find(
                       (i) => i.id === r.target.id
                     );
-                  return (
-                    <Link key={r.id} to="/plans" className="block min-h-11 py-2 text-sm underline">
-                      {item
-                        ? 'Linked ' + r.target.kind + ': ' + item.title
-                        : 'Original activity is unavailable; your note is kept.'}
+                  return item && !item.archivedAt ? (
+                    <Link
+                      key={r.id}
+                      to={organiserItemUrl(r.target.kind, item.id)}
+                      className="block min-h-11 py-2 text-sm underline"
+                    >
+                      {'Linked ' + r.target.kind + ': ' + item.title}
                     </Link>
+                  ) : (
+                    <p key={r.id} className="py-2 text-sm text-base-content/70">
+                      {item
+                        ? 'Original activity is archived; your note is kept.'
+                        : 'Original activity is unavailable; your note is kept.'}
+                    </p>
                   );
                 })}
               {organiserContext && (

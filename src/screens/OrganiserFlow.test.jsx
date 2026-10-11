@@ -86,6 +86,12 @@ it('persists a connected event, preparation task and note, completion/Undo and f
     'A question to explore'
   );
   expect(data().relations.some((r) => r.source.kind === 'note')).toBe(true);
+  fireEvent.click(screen.getByRole('link', { name: 'Linked event: Weekend meeting', exact: true }));
+  const linked = await screen.findByRole('dialog', { name: 'Weekend meeting', exact: true });
+  expect(within(linked).getByRole('heading', { name: 'Preparation tasks' })).toBeInTheDocument();
+  expect(screen.getByLabelText('Choose date')).toHaveValue('2026-10-10');
+  fireEvent.click(within(linked).getByRole('button', { name: 'Close', exact: true }));
+  expect(new URLSearchParams(window.location.search).has('itemId')).toBe(false);
   fireEvent.click(screen.getByRole('button', { name: 'Settings', exact: true }));
   fireEvent.click(screen.getByRole('button', { name: 'Go to Backup', exact: false }));
   fireEvent.click(screen.getByRole('button', { name: 'Export a backup' }));
@@ -324,5 +330,28 @@ it('labels overdue and undated tasks as Open and preserves task filtering', asyn
   fireEvent.change(within(b).getByLabelText('Search tasks'), { target: { value: 'Undated' } });
   expect(within(b).queryByRole('button', { name: /^Overdue question/ })).not.toBeInTheDocument();
   expect(within(b).getByRole('button', { name: /^Undated idea/ })).toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+});
+
+it('opens a linked undated task and clears the target when closed', async () => {
+  const task = newOrganiserItem('task', { title: 'Linked undated task', date: null });
+  localStorage.setItem(ORGANISER_KEY, JSON.stringify({ ...emptyOrganiser(), tasks: [task] }));
+  window.history.pushState({}, '', `/plans?itemKind=task&itemId=${task.id}`);
+  mount();
+  const dialog = await screen.findByRole('dialog', { name: 'Linked undated task' });
+  expect(within(dialog).getByText('No date', { exact: true })).toBeInTheDocument();
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Close', exact: true }));
+  expect(window.location.search).toBe('');
+  expect(screen.getByLabelText('Task view')).toHaveValue('Open');
+  expect(screen.getByRole('button', { name: /^Linked undated task/ })).toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+});
+it('shows a dismissible unavailable link without changing stored records', async () => {
+  window.history.pushState({}, '', '/plans?itemKind=event&itemId=missing');
+  mount();
+  await screen.findByText('That activity is unavailable. Your notes are kept.');
+  fireEvent.click(screen.getByRole('button', { name: 'Dismiss', exact: true }));
+  expect(window.location.search).toBe('');
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
 });
