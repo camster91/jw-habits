@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { useStore } from '../data/useStore.js';
 import { booksCompleted } from '../domain/bible.js';
 import { streak, totals, weeklyActivity } from '../domain/progress.js';
-import { ROUTINE_IDS } from '../domain/routines.js';
+import { ROUTINE_IDS, checkInDays } from '../domain/routines.js';
 import { scheduleOn } from '../domain/schedule.js';
 import { labelFor } from '../domain/store.js';
 import Garden from '../components/fun/Garden.jsx';
@@ -62,7 +62,19 @@ export default function Progress() {
   const week = weeklyActivity(store, today);
   const completed = booksCompleted(store);
   const xp = totalXp(store, today);
-  const cards = ROUTINE_IDS.filter((id) => enabled[id]);
+  const cards = ROUTINE_IDS.filter((id) => enabled[id] && checkInDays(store, id, today).size > 0);
+  const calendarToday = civilDate();
+  const completedTasks =
+    organiserContext?.organiser.exceptions.filter(
+      (e) =>
+        e.status === 'done' &&
+        civilDate(new Date(e.completedAt)) >= weekStart(calendarToday) &&
+        civilDate(new Date(e.completedAt)) <= calendarToday
+    ).length ?? 0;
+  const personalCheckIns =
+    organiserContext?.organiser.routineCheckIns.filter(
+      (c) => c.day >= weekStart(today) && c.day <= today
+    ).length ?? 0;
 
   return (
     <main
@@ -75,23 +87,6 @@ export default function Progress() {
           subtitle="Little moments add up. Your pace is welcome here."
           tone="teal"
         />
-        <QuickGuide
-          title="Understand your progress"
-          steps={[
-            {
-              title: 'Start with this week',
-              body: 'The weekly card counts the routine check-ins you actually recorded, for routines currently enabled.',
-            },
-            {
-              title: 'Watch your garden grow',
-              body: 'Recorded activity earns points and garden milestones. Quiet days carry no penalty; there is no leaderboard.',
-            },
-            {
-              title: 'Make it comfortable',
-              body: 'Settings lets you hide points, choose a quiet tone and change your routine rhythm.',
-            },
-          ]}
-        />
         <section
           aria-label={t('fd.progress.thisWeek')}
           className="card space-y-2 bg-base-100 p-4 shadow-sm"
@@ -102,31 +97,28 @@ export default function Progress() {
             {t('fd.progress.activeDays', { count: week.activeDays })}
           </p>
           {week.checkIns === 0 && (
-            <p className="text-sm text-base-content/70">{t('fd.progress.weekEmpty')}</p>
+            <>
+              <p className="text-sm text-base-content/70">{t('fd.progress.weekEmpty')}</p>
+              <Link className="btn btn-primary min-h-11 self-start" to="/">
+                Go to Today
+              </Link>
+            </>
           )}
         </section>
-        {organiserContext && (
+        {(completedTasks > 0 || personalCheckIns > 0) && (
           <section className="rounded-2xl bg-base-100 p-4">
             <h2 className="font-semibold">Your organiser this week</h2>
-            <p>
-              {
-                organiserContext.organiser.exceptions.filter(
-                  (e) =>
-                    e.status === 'done' &&
-                    civilDate(new Date(e.completedAt)) >= weekStart(civilDate()) &&
-                    civilDate(new Date(e.completedAt)) <= civilDate()
-                ).length
-              }{' '}
-              tasks completed
-            </p>
-            <p>
-              {
-                organiserContext.organiser.routineCheckIns.filter(
-                  (c) => c.day >= weekStart(today) && c.day <= today
-                ).length
-              }{' '}
-              personal routine check-ins
-            </p>
+            {completedTasks > 0 && (
+              <p>
+                {completedTasks} {completedTasks === 1 ? 'task completed' : 'tasks completed'}
+              </p>
+            )}
+            {personalCheckIns > 0 && (
+              <p>
+                {personalCheckIns} personal routine{' '}
+                {personalCheckIns === 1 ? 'check-in' : 'check-ins'}
+              </p>
+            )}
             <p className="text-sm text-base-content/70">
               Task completion and calendar plans stay separate from spiritual routine activity.
             </p>
@@ -179,6 +171,23 @@ export default function Progress() {
             {t('fd.fun.badgesTitle')}
           </Link>
         </section>
+        <QuickGuide
+          title="Understand your progress"
+          steps={[
+            {
+              title: 'Start with this week',
+              body: 'The weekly card counts the routine check-ins you actually recorded, for routines currently enabled.',
+            },
+            {
+              title: 'Watch your garden grow',
+              body: 'Recorded activity earns points and garden milestones. Quiet days carry no penalty; there is no leaderboard.',
+            },
+            {
+              title: 'Make it comfortable',
+              body: 'Settings lets you hide points, choose a quiet tone and change your routine rhythm.',
+            },
+          ]}
+        />
       </div>
     </main>
   );
