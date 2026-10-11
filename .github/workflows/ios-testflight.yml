@@ -44,7 +44,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --audit-level=high && npm run lint && npm run test:coverage && npm run format:check && npm run build && npm run budgets
-      - run: python3 scripts/native/test_release_guard.py && python3 scripts/native/test_release_evidence.py && python3 scripts/native/test_keystore_generator.py
+      - run: python3 scripts/native/test_distribution_profiles.py && python3 scripts/native/test_release_guard.py && python3 scripts/native/test_release_evidence.py && python3 scripts/native/test_keystore_generator.py
       - run: python3 scripts/native/release_evidence.py resolve --output native-version.json
       - name: Require exact-source checks before signing
         if: inputs.skip_upload != true
@@ -95,42 +95,52 @@ jobs:
       - run: npm ci
       - run: python3 scripts/native/release_evidence.py resolve --output native-version.json --github-env "$GITHUB_ENV"
       - run: npm run build && npx cap sync ios
-      - name: Prepare signing authentication
+      - name: Prepare protected App Store distribution signing
         env:
-          ASC_API_PRIVATE_KEY: ${{ secrets.ASC_API_PRIVATE_KEY }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+          IOS_DISTRIBUTION_P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_P12_BASE64 }}
+          IOS_DISTRIBUTION_P12_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
+          IOS_APP_STORE_PROFILE_BASE64: ${{ secrets.IOS_APP_STORE_PROFILE_BASE64 }}
+          IOS_WIDGET_STORE_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_STORE_PROFILE_BASE64 }}
+          IOS_DISTRIBUTION_CERT_SHA256: ${{ vars.IOS_DISTRIBUTION_CERT_SHA256 }}
         run: |
           set -euo pipefail
-          for name in ASC_API_PRIVATE_KEY ASC_KEY_ID ASC_ISSUER_ID ASC_TEAM_ID; do
-            [[ -n "${!name}" ]] || { echo "::error::Missing protected signing input: $name"; exit 1; }
-          done
           umask 077
-          printf '%s' "$ASC_API_PRIVATE_KEY" > "$RUNNER_TEMP/AuthKey_ci.p8"
-          python3 - <<'PY'
-          import os, plistlib
+          python3 scripts/native/distribution_profiles.py
+          python3 - <<'PYCODE'
+          import os, plistlib, secrets, subprocess
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'faithful-distribution'
+          password = secrets.token_urlsafe(32)
+          keychain = str(root / 'distribution.keychain-db')
+          def run(args):
+              result = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+              if result.returncode:
+                  raise RuntimeError('Private distribution keychain setup failed')
+          run(['security', 'create-keychain', '-p', password, keychain])
+          run(['security', 'set-keychain-settings', '-lut', '21600', keychain])
+          run(['security', 'unlock-keychain', '-p', password, keychain])
+          run(['security', 'import', str(root / 'distribution.p12'), '-k', keychain, '-P', os.environ['IOS_DISTRIBUTION_P12_PASSWORD'], '-T', '/usr/bin/codesign'])
+          run(['security', 'set-key-partition-list', '-S', 'apple-tool:,apple:,codesign:', '-s', '-k', password, keychain])
+          run(['security', 'list-keychains', '-d', 'user', '-s', keychain])
+          profiles = {}
+          for path in root.glob('*.mobileprovision'):
+              profile = plistlib.loads(subprocess.check_output(['security', 'cms', '-D', '-i', str(path)]))
+              identifier = profile['Entitlements']['application-identifier'].split('.', 1)[1]
+              profiles[identifier] = profile['UUID']
           with open('ios/App/App/exportOptions.plist', 'wb') as output:
-              plistlib.dump({'method': 'app-store-connect', 'signingStyle': 'automatic', 'teamID': os.environ['ASC_TEAM_ID'], 'destination': 'export', 'uploadSymbols': True}, output)
-          PY
+              plistlib.dump({'method': 'app-store-connect', 'signingStyle': 'manual', 'teamID': 'NVJ5UY3T2X', 'destination': 'export', 'uploadSymbols': True, 'signingCertificate': 'Apple Distribution', 'provisioningProfiles': profiles}, output)
+          PYCODE
       - name: Archive and export signed app with matching widget version
         working-directory: ios/App
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
         run: |
           set -euo pipefail
           xcodebuild -project App.xcodeproj -scheme App -configuration Release \
             -archivePath build/App.xcarchive -destination 'generic/platform=iOS' \
-            -allowProvisioningUpdates -authenticationKeyPath "$RUNNER_TEMP/AuthKey_ci.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            archive CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM="$ASC_TEAM_ID" \
+            archive CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM=NVJ5UY3T2X \
             MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION"
           xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build/ipa \
-            -exportOptionsPlist App/exportOptions.plist -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey_ci.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            -exportOptionsPlist App/exportOptions.plist
       - name: Normalize exported IPA and record actual bundle metadata
         run: |
           set -euo pipefail
@@ -162,9 +172,12 @@ jobs:
             native-artifact.json
           if-no-files-found: error
           retention-days: 90
-      - name: Remove temporary signing key
+      - name: Remove temporary distribution signing material
         if: always()
-        run: rm -f "$RUNNER_TEMP/AuthKey_ci.p8"
+        run: |
+          security delete-keychain "$RUNNER_TEMP/faithful-distribution/distribution.keychain-db" || true
+          rm -rf "$RUNNER_TEMP/faithful-distribution"
+
   upload:
     needs: archive
     if: inputs.skip_upload != true && inputs.upload
