@@ -25,12 +25,12 @@ function NoteEditor({ note, seed, context, target, onClose }) {
   const [busy, setBusy] = useState(false);
   const [discard, setDiscard] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const titleRef = useRef(null);
+  const bodyRef = useRef(null);
   const keepEditingRef = useRef(null);
   const wasConfirming = useRef(false);
   useEffect(() => {
     if (discard) keepEditingRef.current?.focus();
-    else if (wasConfirming.current) titleRef.current?.focus();
+    else if (wasConfirming.current) bodyRef.current?.focus();
     wasConfirming.current = discard;
   }, [discard]);
   const exportDraft = async () => {
@@ -141,18 +141,9 @@ function NoteEditor({ note, seed, context, target, onClose }) {
         }}
       >
         <label className="block space-y-1">
-          <span>Title</span>
-          <input
-            ref={titleRef}
-            maxLength={120}
-            className="input min-h-11 w-full"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </label>
-        <label className="block space-y-1">
           <span>Your note</span>
           <textarea
+            ref={bodyRef}
             maxLength={8000}
             rows={7}
             className="textarea w-full"
@@ -160,6 +151,19 @@ function NoteEditor({ note, seed, context, target, onClose }) {
             onChange={(e) => setBody(e.target.value)}
           />
         </label>
+        <label className="block space-y-1">
+          <span>Title</span>
+          <input
+            aria-describedby="note-title-hint"
+            maxLength={120}
+            className="input min-h-11 w-full"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </label>
+        <p id="note-title-hint" className="text-sm text-base-content/70">
+          Optional — leave blank to use the first line of your note.
+        </p>
         <details>
           <summary className="min-h-11 cursor-pointer py-2 font-medium">
             Tags & reference links (optional)
@@ -295,6 +299,16 @@ export default function Notes() {
           n.context?.kind === relationFilter)
     );
   });
+  const availableTags = [...new Set(workspace.notes.flatMap((n) => n.tags))].sort();
+  const hasSearchableContent = Boolean(
+    workspace.notes.length ||
+    store.plans.length ||
+    workspace.meetings.length ||
+    workspace.assignments.length ||
+    query ||
+    tag ||
+    relationFilter !== 'all'
+  );
   const currentEditing = editing ?? workspace.notes.find((n) => n.id === params.get('note'));
   return (
     <main className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]">
@@ -305,30 +319,12 @@ export default function Notes() {
           art="notes"
           tone="rose"
         />
-        <QuickGuide
-          title="Keep an idea you can find again"
-          steps={[
-            {
-              title: 'Capture it in your words',
-              body: 'Write a question, reflection or takeaway. Notes are private on this device.',
-            },
-            {
-              title: 'Give it a home',
-              body: 'Add comma-separated tags and your own reference links. Search can find matching notes and plan steps.',
-            },
-            {
-              title: 'Keep a copy',
-              body: 'Use Settings → Backup before changing devices. Saving a note does not check off a routine.',
-            },
-          ]}
-        />
-        <p>
-          Your thoughts, questions and references. Notes stay on this device and do not mark a
-          routine complete.
-        </p>
-        <p role="alert" className="text-error">
-          {error || exportError}
-        </p>
+        <p>Private on this device. Capture an idea now; organise it later.</p>
+        {(error || exportError) && (
+          <p role="alert" className="text-error">
+            {error || exportError}
+          </p>
+        )}
         {!ready && (
           <button className="btn min-h-11" onClick={exportOriginal}>
             Export original notes and preparation
@@ -373,44 +369,64 @@ export default function Notes() {
             ))}
           </div>
         </div>
-        <label className="block">
-          <span>Search notes and plans</span>
-          <input
-            type="search"
-            className="input min-h-11 w-full"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span id="notes-tag-label">Filter by tag</span>
-          <select
-            className="select min-h-11 w-full"
-            aria-labelledby="notes-tag-label"
-            value={tag}
-            onChange={(e) => setTag(e.target.value)}
+        {hasSearchableContent && (
+          <label className="block">
+            <span>Search notes and plans</span>
+            <input
+              type="search"
+              className="input min-h-11 w-full"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+        )}
+        {(availableTags.length > 0 || tag) && (
+          <label className="block">
+            <span id="notes-tag-label">Filter by tag</span>
+            <select
+              className="select min-h-11 w-full"
+              aria-labelledby="notes-tag-label"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+            >
+              <option value="">All tags</option>
+              {tag && !availableTags.includes(tag) && <option value={tag}>{tag}</option>}
+              {availableTags.map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+        )}
+        {(workspace.notes.length > 0 || relationFilter !== 'all') && (
+          <label className="block">
+            Related activity
+            <select
+              className="select min-h-11 w-full"
+              value={relationFilter}
+              onChange={(e) => setRelationFilter(e.target.value)}
+            >
+              <option value="all">All notes</option>
+              <option value="unlinked">Unlinked notes</option>
+              <option value="task">Tasks</option>
+              <option value="event">Events</option>
+              <option value="meeting">Meetings</option>
+              <option value="plan">Study and family plans</option>
+            </select>
+          </label>
+        )}
+        {(query || tag || relationFilter !== 'all') && (
+          <button
+            type="button"
+            className="btn btn-ghost min-h-11"
+            onClick={() => {
+              setQuery('');
+              setTag('');
+              setRelationFilter('all');
+            }}
           >
-            <option value="">All tags</option>
-            {[...new Set(workspace.notes.flatMap((n) => n.tags))].sort().map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          Related activity
-          <select
-            className="select min-h-11 w-full"
-            value={relationFilter}
-            onChange={(e) => setRelationFilter(e.target.value)}
-          >
-            <option value="all">All notes</option>
-            <option value="unlinked">Unlinked notes</option>
-            <option value="task">Tasks</option>
-            <option value="event">Events</option>
-            <option value="meeting">Meetings</option>
-            <option value="plan">Study and family plans</option>
-          </select>
-        </label>
+            Clear filters
+          </button>
+        )}
         <ul className="space-y-3">
           {visibleNotes.map((n) => (
             <li key={n.id} className="space-y-2 rounded-2xl bg-base-100 p-4 break-words">
@@ -490,6 +506,23 @@ export default function Notes() {
               : 'Keep a question, a scripture reference or an idea you want to revisit.'}
           </p>
         )}
+        <QuickGuide
+          title="Keep an idea you can find again"
+          steps={[
+            {
+              title: 'Capture it in your words',
+              body: 'Write a question, reflection or takeaway. Notes are private on this device.',
+            },
+            {
+              title: 'Give it a home',
+              body: 'Add comma-separated tags and your own reference links. Search can find matching notes and plan steps.',
+            },
+            {
+              title: 'Keep a copy',
+              body: 'Use Settings → Backup before changing devices. Saving a note does not check off a routine.',
+            },
+          ]}
+        />
         <Link className="inline-flex min-h-11 items-center underline" to="/plans">
           Go to Plan
         </Link>

@@ -53,6 +53,37 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 describe('Notes UI', () => {
+  it('keeps empty capture simple and reveals search after a body-only save', async () => {
+    render(
+      <Harness>
+        <Notes />
+      </Harness>
+    );
+    expect(screen.queryByLabelText('Search notes and plans')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Filter by tag')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Related activity')).not.toBeInTheDocument();
+    button('New note');
+    field('Your note', 'A useful question\nMore detail');
+    button('Save note');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(current.notes[0].title).toBe('A useful question');
+    expect(current.notes[0].body).toBe('A useful question\nMore detail');
+    expect(screen.getByLabelText('Search notes and plans')).toBeInTheDocument();
+    expect(screen.getByLabelText('Related activity')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Filter by tag')).not.toBeInTheDocument();
+  });
+
+  it('keeps plan search available when no notes exist', () => {
+    const store = defaultStore(today, 'en');
+    store.plans = [{ id: 'study', title: 'Study', steps: [] }];
+    render(
+      <Harness store={store}>
+        <Notes />
+      </Harness>
+    );
+    expect(screen.getByLabelText('Search notes and plans')).toBeInTheDocument();
+  });
+
   it('starts an editable question draft and writes nothing before Save', async () => {
     const store = defaultStore(today, 'en');
     const before = structuredClone(store);
@@ -106,7 +137,7 @@ describe('Notes UI', () => {
     expect(screen.queryByLabelText('Your note')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Keep editing' })).toHaveFocus();
     button('Keep editing');
-    expect(screen.getByLabelText('Title')).toHaveFocus();
+    expect(screen.getByLabelText('Your note')).toHaveFocus();
     expect(screen.getByLabelText('Your note')).toHaveValue('My edited family idea');
     expect(screen.getByLabelText('Tags (separate with commas)')).toHaveValue('family');
     expect(screen.getByLabelText('Links (one per line)')).toHaveValue(
@@ -150,6 +181,9 @@ describe('Notes UI', () => {
     button('Delete note');
     button('Delete permanently');
     await waitFor(() => expect(current.notes).toEqual([]));
+    button('Clear filters');
+    expect(screen.queryByLabelText('Filter by tag')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Search notes and plans')).not.toBeInTheDocument();
   });
   it('keeps a failed-save draft and offers deliberate discard', async () => {
     render(
