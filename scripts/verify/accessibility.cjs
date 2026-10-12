@@ -44,6 +44,33 @@ async function scan(page, label) {
       await page.getByRole('button', { name: 'Get started', exact: true }).click();
       for (let step = 2; step <= 6; step++) {
         await scan(page, `${theme} onboarding step ${step}`);
+        let reachedNavigation = false;
+        for (let tab = 0; tab < 80; tab++) {
+          await page.keyboard.press('Tab');
+          const focus = await page.evaluate(() => {
+            const active = document.activeElement;
+            const main = document.querySelector('[data-testid="onboarding"]');
+            const nav = main.querySelector('[aria-label="Setup navigation"]');
+            if (!main.contains(active)) return { outside: true };
+            if (nav.contains(active)) return { navigation: true };
+            const control = active.closest('label') ?? active;
+            const box = control.getBoundingClientRect();
+            return {
+              bottom: box.bottom,
+              footerTop: nav.getBoundingClientRect().top,
+              name: active.getAttribute('aria-label') ?? active.textContent.slice(0, 80),
+            };
+          });
+          if (focus.outside) throw new Error('Onboarding keyboard focus left its controls');
+          if (focus.navigation) {
+            reachedNavigation = true;
+            break;
+          }
+          if (focus.bottom > focus.footerTop + 1)
+            throw new Error(`${theme} step ${step} focus covered by footer: ${focus.name}`);
+        }
+        if (!reachedNavigation) throw new Error('Onboarding keyboard navigation was unreachable');
+
         if (step < 6) await page.getByRole('button', { name: 'Next', exact: true }).click();
       }
       for (let step = 6; step > 1; step--)

@@ -65,6 +65,7 @@ export default function Onboarding() {
   const [index, setIndex] = useState(0);
   const [editingReview, setEditingReview] = useState(false);
   const headingRef = useRef(null);
+  const navigationRef = useRef(null);
   const moved = useRef(false);
 
   // Move focus to the new step's heading, but not on first arrival.
@@ -75,6 +76,22 @@ export default function Onboarding() {
     }
     moved.current = true;
   }, [index]);
+
+  // Native focus scrolling does not account for the sticky footer's overlap.
+  const keepFocusedControlVisible = (event) => {
+    const target = event.target;
+    const navigation = navigationRef.current;
+    if (
+      !(target instanceof HTMLElement) ||
+      !navigation ||
+      navigation.contains(target) ||
+      !target.matches('button, input, select, textarea, a[href], summary, [tabindex="0"]')
+    )
+      return;
+    const control = target.closest('label') ?? target;
+    const covered = control.getBoundingClientRect().bottom - navigation.getBoundingClientRect().top;
+    if (covered > 0) window.scrollBy({ top: covered + 12, behavior: 'instant' });
+  };
 
   const { key, Body } = STEPS[index];
   const last = index === STEPS.length - 1;
@@ -110,6 +127,7 @@ export default function Onboarding() {
   return (
     <main
       data-testid="onboarding"
+      onFocusCapture={keepFocusedControlVisible}
       className="min-h-screen bg-base-200 px-4 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-4">
@@ -188,6 +206,7 @@ export default function Onboarding() {
         )}
         <div
           role="group"
+          ref={navigationRef}
           aria-label="Setup navigation"
           className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 border-t border-base-content/10 bg-base-200 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2"
         >
