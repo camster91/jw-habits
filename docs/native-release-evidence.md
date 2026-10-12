@@ -4,7 +4,9 @@ Prepared for #174/#248/#249. This wiring is not signed-release, device or store 
 
 ## Canonical inputs
 
-`package.json.version` is the marketing-version source. It must have three canonical numeric components, without prerelease/build suffixes. `native-release.json.buildNumber` is the shared positive default build, currently 520. Keep the four Xcode app/widget Debug/Release defaults aligned when changing these inputs; `check-defaults` rejects drift rather than silently editing valuable project configuration. Android Gradle reads the inputs directly.
+`package.json.version` is the marketing-version source. It must have three canonical numeric components, without prerelease/build suffixes. `native-release.json.buildNumber` is the shared positive default build, currently 531 for the reviewed polish candidate. Keep the four Xcode app/widget Debug/Release defaults aligned when changing these inputs; `check-defaults` rejects drift rather than silently editing valuable project configuration. Android Gradle reads the inputs directly.
+
+Read-only Apple history on 2026-10-11 confirmed 531 unused in the 5.3.0 iOS train and its sole previous build 530 expired. This is a preparation observation, not a reserved number or uploaded build; history must be checked again immediately before upload. Android history remains unverified until app-scoped Play access is available. The candidate preserves separate owner signing/upload approvals and is not evidence of device or store acceptance.
 
 Version tags must exactly equal `v` plus the package version. The TestFlight dispatch's marketing-version input is an assertion, not an unrelated override. A build override cannot regress below the committed number or exceed Play's versionCode limit. Android receives `FD_NATIVE_BUILD`; both iOS targets receive matching `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` settings. Build numbers no longer default to workflow-specific run numbers.
 

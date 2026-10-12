@@ -1,5 +1,6 @@
 import copy
 import datetime
+import json
 from pathlib import Path
 import unittest
 from distribution_profiles import TEAM,GROUP,TARGETS,validate,configure
@@ -22,8 +23,10 @@ class Profiles(unittest.TestCase):
         result=configure(original,{target:self.profile['UUID'] for target in TARGETS})
         self.assertEqual(result.count('PROVISIONING_PROFILE_SPECIFIER'),2)
         self.assertEqual(result.count('CODE_SIGN_STYLE = Manual;'),2)
-        self.assertEqual(result.count('MARKETING_VERSION = 5.3.0;'),4)
-        self.assertEqual(result.count('CURRENT_PROJECT_VERSION = 530;'),4)
+        version=json.loads((root/'package.json').read_text())['version']
+        build=json.loads((root/'native-release.json').read_text())['buildNumber']
+        self.assertEqual(result.count(f'MARKETING_VERSION = {version};'),4)
+        self.assertEqual(result.count(f'CURRENT_PROJECT_VERSION = {build};'),4)
         with self.assertRaises(ValueError):configure(result,{target:self.profile['UUID'] for target in TARGETS})
 
 if __name__=='__main__':unittest.main()
