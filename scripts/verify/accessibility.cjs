@@ -73,6 +73,22 @@ async function scan(page, label) {
         await page.goto(`${BASE}/${route}`, { waitUntil: 'networkidle' });
         await scan(page, `${theme} ${route}`);
         if (route === 'notes') {
+          await page.getByRole('button', { name: 'New note', exact: true }).click();
+          await page.getByRole('button', { name: 'Save note', exact: true }).click();
+          await page
+            .getByRole('alert')
+            .filter({ hasText: 'Add a title or a few words before saving.' })
+            .waitFor();
+          await scan(page, `${theme} blank-note validation`);
+          await page
+            .getByRole('textbox', { name: 'Your note', exact: true })
+            .fill('Synthetic contrast note');
+          await page.getByRole('button', { name: 'Save note', exact: true }).click();
+          await page.getByRole('button', { name: 'Synthetic contrast note', exact: true }).click();
+          await page.getByRole('button', { name: 'Delete note', exact: true }).click();
+          await scan(page, `${theme} note deletion confirmation`);
+          await page.getByRole('button', { name: 'Keep note', exact: true }).click();
+          await page.getByRole('button', { name: 'Close', exact: true }).click();
           await page.getByRole('button', { name: 'Family idea', exact: true }).click();
           await page.getByRole('button', { name: 'Close', exact: true }).click();
           if (await page.getByRole('dialog').count())

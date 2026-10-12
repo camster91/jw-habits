@@ -21,6 +21,8 @@ If you change anything in this doc, bump the date. If you change anything in `sr
 
 Backup replacement explains its scope and has no Undo button. The latest pre-import copy can be exported and imported to recover prior data; another import replaces that copy, and clearing app data or uninstalling can remove it. Recovery export clears stale feedback, announces success only after the file handoff completes, and treats sharing cancellation quietly. Failed imports do not claim a recovery copy was saved when its write may have failed.
 
+Light-theme errors use a dark red shared error token with white danger-button labels. Blank-note validation and note deletion confirmation are included in real-build light/dark contrast scans. Dark theme tokens and persistence behavior are unchanged.
+
 ## What this is
 
 A Capacitor (React + Vite) mobile/PWA routine tracker for six spiritual routines: the daily

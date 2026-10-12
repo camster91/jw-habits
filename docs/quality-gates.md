@@ -11,7 +11,7 @@ and shared-content preview, plus newer-schema recovery. The recovery case
 downloads an actual byte-exact copy and checks that reload preserves the primary
 value. Axe A/AA checks include color contrast; page-width
 checks reject horizontal overflow. Essential routine details and project context
-wrap. Completed labels retain full text contrast, with a checked control as the
+wrap. Blank-note validation and note deletion confirmation are scanned in both themes, covering shared error text and danger-button labels. Completed labels retain full text contrast, with a checked control as the
 completion cue. VoiceOver, TalkBack, keyboard across browser engines, dynamic
 text and fluent Spanish/French review remain manual gates (#176/#192/#46).
 
