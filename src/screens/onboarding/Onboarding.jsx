@@ -66,6 +66,7 @@ export default function Onboarding() {
   const [editingReview, setEditingReview] = useState(false);
   const headingRef = useRef(null);
   const navigationRef = useRef(null);
+  const keyboardFocusRef = useRef(true);
   const moved = useRef(false);
 
   // Move focus to the new step's heading, but not on first arrival.
@@ -82,6 +83,7 @@ export default function Onboarding() {
     const target = event.target;
     const navigation = navigationRef.current;
     if (
+      !keyboardFocusRef.current ||
       !(target instanceof HTMLElement) ||
       !navigation ||
       navigation.contains(target) ||
@@ -128,6 +130,12 @@ export default function Onboarding() {
     <main
       data-testid="onboarding"
       onFocusCapture={keepFocusedControlVisible}
+      onPointerDownCapture={() => {
+        keyboardFocusRef.current = false;
+      }}
+      onKeyDownCapture={() => {
+        keyboardFocusRef.current = true;
+      }}
       className="min-h-screen bg-base-200 px-4 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-4">
