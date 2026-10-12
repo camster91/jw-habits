@@ -36,7 +36,7 @@ const CONTEXT = {
   ],
   look: [
     'A little home that feels like you',
-    'Try a colour and theme, then review your choices before starting.',
+    'Review your choices, then try a colour or theme before starting.',
     'notes',
     'lavender',
   ],

@@ -55,6 +55,7 @@ export default function StepLook({
   const name = useId();
   return (
     <div className="space-y-4">
+      {review && <Review store={store} today={today} onEditStep={onEditStep} />}
       <fieldset>
         <legend className="mb-1 text-sm font-medium">{t('fd.onboarding.look.accent')}</legend>
         <div className="flex flex-wrap gap-1">
@@ -95,7 +96,6 @@ export default function StepLook({
           <Preview store={store} />
         </>
       )}
-      {review && <Review store={store} today={today} onEditStep={onEditStep} />}
     </div>
   );
 }
