@@ -59,6 +59,32 @@ async function save(kind) {
   fireEvent.click(screen.getByRole('button', { name: 'Save ' + kind.toLowerCase(), exact: true }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 }
+it.each([
+  ['Event', '2026-10-12'],
+  ['Task', '2026-10-12'],
+  ['Task', ''],
+])('confirms a saved %s and opens it beyond the current calendar date (%s)', async (kind, date) => {
+  mount();
+  await add(kind, 'Future capture', date);
+  await save(kind);
+  const message = screen.getByRole('status', { name: 'Saved activity' });
+  const view = within(message).getByRole('link', { name: `View saved ${kind.toLowerCase()}` });
+  const item = data()[kind === 'Task' ? 'tasks' : 'events'][0];
+  expect(view).toHaveAttribute('href', `/plans?itemKind=${kind.toLowerCase()}&itemId=${item.id}`);
+  expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+  fireEvent.click(view);
+  const detail = await screen.findByRole('dialog', { name: 'Future capture', exact: true });
+  if (date) expect(screen.getByLabelText('Choose date')).toHaveValue(date);
+  else expect(within(detail).getByText('No date', { exact: true })).toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+  fireEvent.click(within(detail).getByRole('button', { name: 'Close', exact: true }));
+  fireEvent.click(within(await board()).getByRole('button', { name: 'Add', exact: true }));
+  expect(screen.queryByRole('status', { name: 'Saved activity' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: kind, exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Close', exact: true }));
+  expect(screen.queryByRole('status', { name: 'Saved activity' })).not.toBeInTheDocument();
+  expect(data()[kind === 'Task' ? 'tasks' : 'events']).toHaveLength(1);
+});
 it('persists a connected event, preparation task and note, completion/Undo and full backup', async () => {
   const view = mount();
   await add('Event', 'Weekend meeting');
@@ -107,6 +133,96 @@ it('persists a connected event, preparation task and note, completion/Undo and f
   fireEvent.click(screen.getByRole('button', { name: /^Weekend meeting/ }));
   expect(await screen.findByRole('link', { name: 'A question to explore' })).toBeInTheDocument();
 });
+it('opens a future capture from Today without marking a routine', async () => {
+  window.history.pushState({}, '', '/');
+  mount();
+  const agenda = await screen.findByRole('region', { name: 'Today agenda and tasks' });
+  await waitFor(() =>
+    expect(within(agenda).getByRole('button', { name: 'Add', exact: true })).toBeEnabled()
+  );
+  fireEvent.click(within(agenda).getByRole('button', { name: 'Add', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Task', exact: true }));
+  fireEvent.change(screen.getByLabelText('Title', { exact: true }), {
+    target: { value: 'Tomorrow’s next step' },
+  });
+  fireEvent.change(screen.getByLabelText('Due date (optional)', { exact: true }), {
+    target: { value: '2026-10-12' },
+  });
+  await save('Task');
+  expect(
+    within(agenda).queryByRole('button', { name: /^Tomorrow’s next step/ })
+  ).not.toBeInTheDocument();
+  fireEvent.click(within(agenda).getByRole('link', { name: 'View saved task', exact: true }));
+  await screen.findByRole('dialog', { name: 'Tomorrow’s next step', exact: true });
+  expect(screen.getByLabelText('Choose date')).toHaveValue('2026-10-12');
+  expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+});
+it.each(['local', 'url'])(
+  'returns from a %s preparation-task detail to its event without recording activity',
+  async (entry) => {
+    const event = newOrganiserItem('event', { title: 'Related meeting', date: '2026-10-12' });
+    const task = newOrganiserItem('task', { title: 'Prepare beforehand', date: '2026-10-10' });
+    const initial = {
+      ...emptyOrganiser(),
+      events: [event],
+      tasks: [task],
+      relations: [
+        {
+          id: 'preparation',
+          source: { kind: 'task', id: task.id },
+          target: { kind: 'event', id: event.id },
+        },
+      ],
+    };
+    localStorage.setItem(ORGANISER_KEY, JSON.stringify(initial));
+    if (entry === 'url') window.history.pushState({}, '', `/plans?itemKind=task&itemId=${task.id}`);
+    mount();
+    await board();
+    if (entry === 'local')
+      fireEvent.click(screen.getByRole('button', { name: /^Prepare beforehand/ }));
+    const detail = await screen.findByRole('dialog', { name: 'Prepare beforehand', exact: true });
+    fireEvent.click(
+      within(detail).getByRole('link', { name: 'Preparation for: Related meeting', exact: true })
+    );
+    await screen.findByRole('dialog', { name: 'Related meeting', exact: true });
+    expect(screen.getByLabelText('Choose date')).toHaveValue('2026-10-12');
+    expect(data()).toEqual(initial);
+    expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+  }
+);
+
+it('keeps the preparation task when its event is archived', async () => {
+  const event = {
+    ...newOrganiserItem('event', { title: 'Archived meeting', date: '2026-10-12' }),
+    archivedAt: new Date(2026, 9, 9).toISOString(),
+  };
+  const task = newOrganiserItem('task', { title: 'Kept preparation', date: '2026-10-10' });
+  localStorage.setItem(
+    ORGANISER_KEY,
+    JSON.stringify({
+      ...emptyOrganiser(),
+      events: [event],
+      tasks: [task],
+      relations: [
+        {
+          id: 'preparation',
+          source: { kind: 'task', id: task.id },
+          target: { kind: 'event', id: event.id },
+        },
+      ],
+    })
+  );
+  mount();
+  await board();
+  fireEvent.click(screen.getByRole('button', { name: /^Kept preparation/ }));
+  const detail = await screen.findByRole('dialog', { name: 'Kept preparation', exact: true });
+  expect(
+    within(detail).getByText('The related event is archived or unavailable. Your task is kept.')
+  ).toBeInTheDocument();
+  expect(within(detail).queryByRole('link', { name: /Preparation for/ })).not.toBeInTheDocument();
+  expect(data().tasks[0].archivedAt).toBeNull();
+  expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+});
 it('keeps invalid drafts, edits one recurrence, switches views and preserves history on archive', async () => {
   mount();
   await add('Task', 'Read', '2026-10-10');
@@ -120,6 +236,7 @@ it('keeps invalid drafts, edits one recurrence, switches views and preserves his
     await within(screen.getByRole('dialog')).findByText(/Check the title/)
   ).toBeInTheDocument();
   expect(screen.getByLabelText('Title', { exact: true })).toHaveValue('Read');
+  expect(screen.queryByRole('status', { name: 'Saved activity' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByLabelText('Sun'));
   await save('Task');
   fireEvent.click(screen.getByRole('button', { name: 'Tasks', exact: true }));

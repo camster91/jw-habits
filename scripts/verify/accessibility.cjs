@@ -143,6 +143,26 @@ async function scan(page, label) {
       await page.getByRole('button', { name: 'Settings', exact: true }).click();
       await scan(page, `${theme} Settings enlarged text`);
       await page.getByRole('button', { name: 'Close', exact: true }).click();
+      const routineBeforeCapture = await page.evaluate(() => localStorage.getItem('jw-habits-v2'));
+      const agenda = page.getByRole('region', { name: 'Today agenda and tasks' });
+      await agenda.getByRole('button', { name: 'Add', exact: true }).click();
+      await page.getByRole('button', { name: 'Task', exact: true }).click();
+      await page
+        .getByRole('textbox', { name: 'Title', exact: true })
+        .fill('Synthetic future capture');
+      await page.getByLabel('Due date (optional)', { exact: true }).fill('2026-10-13');
+      await page.getByRole('button', { name: 'Save task', exact: true }).click();
+      await page.getByRole('status', { name: 'Saved activity' }).waitFor();
+      await scan(page, `${theme} saved capture enlarged text`);
+      await page.getByRole('link', { name: 'View saved task', exact: true }).click();
+      const captured = page.getByRole('dialog', { name: 'Synthetic future capture', exact: true });
+      await captured.waitFor();
+      await scan(page, `${theme} captured task detail enlarged text`);
+      await captured.getByRole('button', { name: 'Close', exact: true }).click();
+      if (
+        (await page.evaluate(() => localStorage.getItem('jw-habits-v2'))) !== routineBeforeCapture
+      )
+        throw new Error('Capturing and opening a task changed routine records');
       const newerRaw = JSON.stringify(
         { version: 4, theme, futureNotes: ['Synthetic private note'] },
         null,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { linkedOrganiserOccurrence } from '../../domain/organiserLinks.js';
+import { linkedOrganiserOccurrence, organiserItemUrl } from '../../domain/organiserLinks.js';
 import {
   CalendarDays,
   Check,
@@ -44,6 +44,7 @@ function OrganiserBoardContent({ compact = false, context }) {
     [adding, setAdding] = useState(false),
     [error, setError] = useState(''),
     [undo, setUndo] = useState(null),
+    [savedActivity, setSavedActivity] = useState(null),
     [query, setQuery] = useState(''),
     [filter, setFilter] = useState('Open');
   const { organiser, ready, save, rawExport } = context;
@@ -238,12 +239,41 @@ function OrganiserBoardContent({ compact = false, context }) {
         <button
           disabled={!ready}
           className="btn btn-ghost min-h-11"
-          onClick={() => setAdding(true)}
+          onClick={() => {
+            setSavedActivity(null);
+            setAdding(true);
+          }}
         >
           <Plus aria-hidden="true" className="h-4 w-4" />
           Add
         </button>
       </div>
+      {savedActivity && (
+        <div
+          role="status"
+          aria-label="Saved activity"
+          className="flex flex-wrap items-center gap-2 rounded-xl bg-base-100 p-3"
+        >
+          <p className="min-w-0 flex-1">
+            {savedActivity.kind === 'event' ? 'Event saved.' : 'Task saved.'}
+          </p>
+          <Link
+            to={organiserItemUrl(savedActivity.kind, savedActivity.id)}
+            aria-label={`View saved ${savedActivity.kind}`}
+            className="btn min-h-11"
+          >
+            View
+          </Link>
+          <button
+            type="button"
+            className="btn btn-ghost min-h-11"
+            aria-label="Dismiss saved message"
+            onClick={() => setSavedActivity(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       {hasLinkedTarget && ready && !routeDetail && (
         <div role="status" className="rounded-xl bg-base-100 p-3">
           <p>That activity is unavailable. Your notes are kept.</p>
@@ -583,6 +613,7 @@ function OrganiserBoardContent({ compact = false, context }) {
             <button
               className="btn min-h-11"
               onClick={() => {
+                setSavedActivity(null);
                 setEditing({ kind: detail.kind, date: detail.date, occurrence: detail });
                 setDetail(null);
               }}
@@ -600,6 +631,7 @@ function OrganiserBoardContent({ compact = false, context }) {
               <button
                 className="btn min-h-11"
                 onClick={() => {
+                  setSavedActivity(null);
                   setEditing({
                     kind: 'task',
                     date: detail.displayDate ?? detail.date,
@@ -660,6 +692,29 @@ function OrganiserBoardContent({ compact = false, context }) {
               </ul>
             </div>
           )}
+          {detail.kind === 'task' &&
+            organiser.relations
+              .filter(
+                (r) =>
+                  r.source.kind === 'task' && r.source.id === detail.id && r.target.kind === 'event'
+              )
+              .map((r) => {
+                const event = organiser.events.find((e) => e.id === r.target.id);
+                return event && !event.archivedAt ? (
+                  <Link
+                    key={r.id}
+                    to={organiserItemUrl('event', event.id)}
+                    onClick={() => setLocalDetail(null)}
+                    className="block min-h-11 break-words py-2 underline"
+                  >
+                    Preparation for: {event.title}
+                  </Link>
+                ) : (
+                  <p key={r.id} className="text-sm text-base-content/70">
+                    The related event is archived or unavailable. Your task is kept.
+                  </p>
+                );
+              })}
           <h3 className="font-semibold">Linked notes</h3>
           {organiser.relations
             .filter(
@@ -689,7 +744,9 @@ function OrganiserBoardContent({ compact = false, context }) {
           </p>
         </Sheet>
       )}
-      {editing && <ItemEditor {...editing} onClose={() => setEditing(null)} />}
+      {editing && (
+        <ItemEditor {...editing} onSaved={setSavedActivity} onClose={() => setEditing(null)} />
+      )}
     </section>
   );
 }
