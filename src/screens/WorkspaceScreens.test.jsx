@@ -8,6 +8,7 @@ import { StoreContext } from '../data/useStore.js';
 import { emptyWorkspace, putNote, MEETING_PARTS } from '../domain/workspace.js';
 import { defaultStore } from '../domain/store.js';
 import Notes from './Notes.jsx';
+import NavigationPosition from '../components/NavigationPosition.jsx';
 import Preparation from './Preparation.jsx';
 import Today from './Today.jsx';
 import { saveBackup } from '../utils/backup.js';
@@ -20,6 +21,7 @@ function Harness({
   initial = emptyWorkspace(),
   ready = true,
   route = '/notes',
+  navigation = false,
   store = defaultStore(today, 'en'),
 }) {
   const [workspace, set] = useState(initial);
@@ -40,7 +42,10 @@ function Harness({
       <WorkspaceContext.Provider
         value={{ workspace, save, ready, error, rawExport: async () => 'original' }}
       >
-        <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
+        <MemoryRouter initialEntries={[route]}>
+          {navigation && <NavigationPosition enabled />}
+          {children}
+        </MemoryRouter>
       </WorkspaceContext.Provider>
     </StoreContext.Provider>
   );
@@ -51,21 +56,24 @@ afterEach(() => vi.useRealTimers());
 beforeEach(() => {
   fail = false;
   vi.clearAllMocks();
+  window.scrollTo = vi.fn();
 });
 describe('Notes UI', () => {
   it('keeps empty capture simple and reveals search after a body-only save', async () => {
     render(
-      <Harness>
+      <Harness navigation>
         <Notes />
       </Harness>
     );
     expect(screen.queryByLabelText('Search notes and plans')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Filter by tag')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Related activity')).not.toBeInTheDocument();
+    screen.getByRole('button', { name: 'New note', exact: true }).focus();
     button('New note');
     field('Your note', 'A useful question\nMore detail');
     button('Save note');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'New note', exact: true })).toHaveFocus();
     expect(current.notes[0].title).toBe('A useful question');
     expect(current.notes[0].body).toBe('A useful question\nMore detail');
     expect(screen.getByLabelText('Search notes and plans')).toBeInTheDocument();
@@ -109,7 +117,7 @@ describe('Notes UI', () => {
     'closes an untouched %s starter immediately without saving',
     (starter) => {
       render(
-        <Harness>
+        <Harness navigation>
           <Notes />
         </Harness>
       );
@@ -124,10 +132,11 @@ describe('Notes UI', () => {
 
   it('shows a focused close choice for edited starters and preserves every draft field', () => {
     render(
-      <Harness>
+      <Harness navigation>
         <Notes />
       </Harness>
     );
+    screen.getByRole('button', { name: 'Family idea', exact: true }).focus();
     button('Family idea');
     field('Your note', 'My edited family idea');
     field('Tags (separate with commas)', 'family');
@@ -150,6 +159,7 @@ describe('Notes UI', () => {
     button('Discard changes');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(current.notes).toEqual([]);
+    expect(screen.getByRole('button', { name: 'Family idea', exact: true })).toHaveFocus();
   });
 
   it('creates, searches, edits and deletes a durable note without routine activity', async () => {

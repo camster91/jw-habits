@@ -273,7 +273,9 @@ export default function Notes() {
   const [exportError, setExportError] = useState('');
   const close = () => {
     setEditing(null);
-    setParams({});
+    // Local capture has no editor URL to clear. A no-op navigation would
+    // override the sheet's restored opener focus with the route heading.
+    if (params.toString()) setParams({});
   };
   const exportOriginal = async () => {
     try {
