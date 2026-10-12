@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useStore } from '../data/useStore.js';
 import StepRoutines from './onboarding/StepRoutines.jsx';
+import PersonalRoutines from '../components/organiser/PersonalRoutines.jsx';
 import StepWeek from './onboarding/StepWeek.jsx';
 import StepReading from './onboarding/StepReading.jsx';
 import StepRhythm from './onboarding/StepRhythm.jsx';
@@ -187,6 +188,7 @@ function SettingsDialog({ onClose }) {
           />
           <Section title={section('routines')}>
             <StepRoutines {...props} />
+            <PersonalRoutines manage />
           </Section>
           <Section title={section('week')}>
             <StepWeek {...props} />

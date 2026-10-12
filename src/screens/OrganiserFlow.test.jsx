@@ -264,24 +264,85 @@ it('keeps invalid drafts, edits one recurrence, switches views and preserves his
 it('tracks a custom What’s New routine separately and restores an archived routine', async () => {
   window.history.pushState({}, '', '/');
   mount();
+  await screen.findByRole('heading', { name: 'Today', exact: true });
+  expect(screen.queryByRole('region', { name: 'Personal routines' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Add routine' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Settings', exact: true }));
+  fireEvent.click(screen.getByText('Routines', { selector: 'h3' }));
   const button = await screen.findByRole('button', { name: "Track exploring What's New" });
   await waitFor(() => expect(button).toBeEnabled());
   fireEvent.click(button);
-  fireEvent.click(screen.getByRole('button', { name: 'Close', exact: true }));
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  fireEvent.click(
+    within(screen.getByRole('dialog', { name: 'Add a personal routine' })).getByRole('button', {
+      name: 'Close',
+      exact: true,
+    })
+  );
+  expect(screen.queryByRole('dialog', { name: 'Add a personal routine' })).not.toBeInTheDocument();
   fireEvent.click(button);
   fireEvent.click(screen.getByRole('button', { name: 'Save routine' }));
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: 'Add a personal routine' })).not.toBeInTheDocument()
+  );
+  fireEvent.click(
+    within(screen.getByRole('dialog', { name: 'Settings' })).getByRole('button', {
+      name: 'Close',
+      exact: true,
+    })
+  );
+  expect(screen.queryByRole('button', { name: 'Edit routine' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: "Record Explore what's new" }));
   await waitFor(() => expect(data().routineCheckIns).toHaveLength(1));
   expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toHaveLength(0);
   fireEvent.click(screen.getByRole('button', { name: "Undo Explore what's new" }));
   await waitFor(() => expect(data().routineCheckIns).toHaveLength(0));
+  fireEvent.click(screen.getByRole('button', { name: 'Settings', exact: true }));
+  fireEvent.click(screen.getByText('Routines', { selector: 'h3' }));
   fireEvent.click(screen.getByRole('button', { name: 'Archive routine' }));
   await waitFor(() => expect(data().personalRoutines[0].archivedAt).not.toBeNull());
   fireEvent.click(screen.getByText('Archived routines'));
   fireEvent.click(screen.getByRole('button', { name: "Restore Explore what's new" }));
   await waitFor(() => expect(data().personalRoutines[0].archivedAt).toBeNull());
+});
+it('keeps daily routines on Today and removes weekly routines already recorded on an earlier day', async () => {
+  const organiser = emptyOrganiser();
+  organiser.personalRoutines = [
+    {
+      id: 'daily',
+      title: 'Daily reflection',
+      cadence: 'daily',
+      icon: 'heart',
+      url: null,
+      archivedAt: null,
+    },
+    {
+      id: 'weekly',
+      title: 'Weekly exploration',
+      cadence: 'weekly',
+      icon: 'sparkles',
+      url: null,
+      archivedAt: null,
+    },
+  ];
+  organiser.routineCheckIns = [
+    {
+      id: 'weekly@2026-10-09',
+      routineId: 'weekly',
+      day: '2026-10-09',
+      recordedAt: '2026-10-09T10:00:00.000Z',
+    },
+  ];
+  localStorage.setItem(ORGANISER_KEY, JSON.stringify(organiser));
+  window.history.pushState({}, '', '/');
+  mount();
+  await screen.findByRole('button', { name: 'Record Daily reflection' });
+  expect(
+    screen.queryByRole('button', { name: 'Record Weekly exploration' })
+  ).not.toBeInTheDocument();
+  expect(data().routineCheckIns).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Settings', exact: true }));
+  fireEvent.click(screen.getByText('Routines', { selector: 'h3' }));
+  expect(screen.getByText('Weekly exploration')).toBeInTheDocument();
 });
 it('preserves unreadable organiser data and exposes original export instead of resetting it', async () => {
   localStorage.setItem(ORGANISER_KEY, '{not json');

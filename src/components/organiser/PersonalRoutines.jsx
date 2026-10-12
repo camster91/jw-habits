@@ -15,7 +15,7 @@ const icons = {
   heart: Heart,
   calendar: CalendarDays,
 };
-export default function PersonalRoutines() {
+export default function PersonalRoutines({ manage = false }) {
   const context = useOrganiser(),
     { today } = useStore();
   const [baseline, setBaseline] = useState('');
@@ -25,6 +25,17 @@ export default function PersonalRoutines() {
     [discard, setDiscard] = useState(false);
   if (!context) return null;
   const { organiser, save, ready } = context;
+  const active = organiser.personalRoutines.filter((r) => !r.archivedAt);
+  const routines = manage
+    ? active
+    : active.filter(
+        (r) =>
+          r.cadence === 'daily' ||
+          !organiser.routineCheckIns.some(
+            (c) => c.routineId === r.id && c.day >= weekStart(today) && c.day < today
+          )
+      );
+  if (!manage && routines.length === 0) return null;
   const start = (official = false) => {
     setError('');
     setDiscard(false);
@@ -84,33 +95,36 @@ export default function PersonalRoutines() {
     }
   };
   return (
-    <section aria-label="Personal routines" className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="flex-1 text-lg font-semibold">Your own routines</h2>
-        <button disabled={!ready} className="btn btn-ghost min-h-11" onClick={() => start()}>
-          Add routine
-        </button>
-      </div>
+    <section
+      aria-label={manage ? 'Manage personal routines' : 'Personal routines'}
+      className="space-y-2"
+    >
+      {manage && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button disabled={!ready} className="btn btn-ghost min-h-11" onClick={() => start()}>
+            Add routine
+          </button>
+        </div>
+      )}
       <p role="alert" className="text-error">
         {error}
       </p>
       <ul>
-        {organiser.personalRoutines
-          .filter((r) => !r.archivedAt)
-          .map((r) => {
-            const Icon = icons[r.icon],
-              done = organiser.routineCheckIns.some((c) => c.routineId === r.id && c.day === today),
-              weekly = organiser.routineCheckIns.filter(
-                (c) =>
-                  c.routineId === r.id &&
-                  c.day >= weekStart(today) &&
-                  c.day <= addDays(weekStart(today), 6)
-              ).length;
-            return (
-              <li
-                key={r.id}
-                className="flex flex-wrap items-center gap-2 border-b border-base-content/10 py-3"
-              >
+        {routines.map((r) => {
+          const Icon = icons[r.icon],
+            done = organiser.routineCheckIns.some((c) => c.routineId === r.id && c.day === today),
+            weekly = organiser.routineCheckIns.filter(
+              (c) =>
+                c.routineId === r.id &&
+                c.day >= weekStart(today) &&
+                c.day <= addDays(weekStart(today), 6)
+            ).length;
+          return (
+            <li
+              key={r.id}
+              className="flex flex-wrap items-center gap-2 border-b border-base-content/10 py-3"
+            >
+              {!manage && (
                 <button
                   aria-label={`${done ? 'Undo' : 'Record'} ${r.title}`}
                   aria-pressed={done}
@@ -123,23 +137,25 @@ export default function PersonalRoutines() {
                     <Icon aria-hidden="true" className="h-5 w-5" />
                   )}
                 </button>
-                <div className="min-w-0 flex-1">
-                  <span className="block break-words font-medium">{r.title}</span>
-                  <span className="block text-sm text-base-content/70">
-                    {r.cadence === 'daily' ? 'Daily' : `${weekly} recorded this week`}
-                  </span>
-                </div>
-                {r.url && (
-                  <button
-                    aria-label={`Open reference for ${r.title}`}
-                    className="btn btn-ghost btn-circle min-h-11"
-                    onClick={async () => {
-                      await openLink(r.url);
-                    }}
-                  >
-                    <ExternalLink className="h-5 w-5" aria-hidden="true" />
-                  </button>
-                )}
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="block break-words font-medium">{r.title}</span>
+                <span className="block text-sm text-base-content/70">
+                  {r.cadence === 'daily' ? 'Daily' : `${weekly} recorded this week`}
+                </span>
+              </div>
+              {!manage && r.url && (
+                <button
+                  aria-label={`Open reference for ${r.title}`}
+                  className="btn btn-ghost btn-circle min-h-11"
+                  onClick={async () => {
+                    await openLink(r.url);
+                  }}
+                >
+                  <ExternalLink className="h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
+              {manage && (
                 <button
                   className="btn btn-ghost btn-sm min-h-11"
                   onClick={() => {
@@ -149,29 +165,35 @@ export default function PersonalRoutines() {
                 >
                   Edit routine
                 </button>
+              )}
+              {manage && (
                 <button className="btn btn-ghost btn-sm min-h-11" onClick={() => archive(r)}>
                   Archive routine
                 </button>
-              </li>
-            );
-          })}
+              )}
+            </li>
+          );
+        })}
       </ul>
-      {!organiser.personalRoutines.some(
-        (r) => r.url === whatsNewPageUrl('en') && !r.archivedAt
-      ) && (
-        <button
-          disabled={!ready}
-          className="btn btn-outline min-h-11 w-full"
-          onClick={() => start(true)}
-        >
-          Track exploring What's New
-        </button>
+      {manage &&
+        !organiser.personalRoutines.some(
+          (r) => r.url === whatsNewPageUrl('en') && !r.archivedAt
+        ) && (
+          <button
+            disabled={!ready}
+            className="btn btn-outline min-h-11 w-full"
+            onClick={() => start(true)}
+          >
+            Track exploring What's New
+          </button>
+        )}
+      {manage && (
+        <p className="text-sm text-base-content/70">
+          References open separately. Only your check-in records activity; the app does not detect
+          new website content.
+        </p>
       )}
-      <p className="text-sm text-base-content/70">
-        References open separately. Only your check-in records activity; the app does not detect new
-        website content.
-      </p>
-      {organiser.personalRoutines.some((r) => r.archivedAt) && (
+      {manage && organiser.personalRoutines.some((r) => r.archivedAt) && (
         <details>
           <summary className="min-h-11 cursor-pointer py-2">Archived routines</summary>
           {organiser.personalRoutines
