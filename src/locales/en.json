@@ -246,8 +246,8 @@
         "exported": "Backup ready.",
         "exportError": "The backup couldn't be saved. Please try again.",
         "readError": "That file couldn't be opened.",
-        "confirmTitle": "Replace all data on this device?",
-        "confirmBody": "Everything here will be replaced by the backup, and this can't be undone.",
+        "confirmTitle": "Replace data on this device?",
+        "confirmBody": "The backup replaces your current data as described below. There is no Undo button. Cancel to keep your current data.",
         "replace": "Replace",
         "cancel": "Cancel",
         "errors": {

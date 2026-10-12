@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars -- JSX harness */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { StoreContext } from '../../data/useStore.js';
 import { WorkspaceContext } from '../../data/useWorkspace.js';
 import { defaultStore } from '../../domain/store.js';
@@ -84,6 +84,7 @@ describe('combined backup replacement', () => {
     await screen.findByText(/recovery full/);
     expect(replace).not.toHaveBeenCalled();
     expect(onReplaced).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).not.toHaveTextContent('backup is retained');
   });
   it('rolls routines back when the workspace fails and retains a recovery bundle', async () => {
     save.mockImplementation(async (_fn, before) => {
@@ -109,7 +110,7 @@ describe('combined backup replacement', () => {
     importFile(exportBundle(store, workspace));
     await screen.findByText('Replace');
     fireEvent.click(screen.getByText('Replace'));
-    await screen.findByText(/pre-import backup is retained/);
+    await screen.findByText(/If a pre-import backup is available/);
     expect(onReplaced).not.toHaveBeenCalled();
   });
   it('unreadable workspace blocks export/import and keeps stored routines', async () => {
@@ -122,6 +123,35 @@ describe('combined backup replacement', () => {
     fireEvent.click(screen.getByText('Replace'));
     await screen.findByText(/import is paused/);
     expect(replace).not.toHaveBeenCalled();
+  });
+  it('clears stale recovery feedback and waits for export before announcing success', async () => {
+    renderBackup();
+    durableGet.mockResolvedValueOnce(null).mockResolvedValueOnce('recovery');
+    fireEvent.click(screen.getByText('Export pre-import backup'));
+    await screen.findByText(/no pre-import backup/);
+    let finish;
+    saveBackup.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    fireEvent.click(screen.getByText('Export pre-import backup'));
+    await waitFor(() => expect(saveBackup).toHaveBeenCalled());
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    finish();
+    await screen.findByText('Pre-import backup ready.');
+  });
+  it('does not report a cancelled recovery share as success or failure', async () => {
+    durableGet.mockResolvedValueOnce('recovery');
+    saveBackup.mockRejectedValueOnce(new Error('cancel'));
+    renderBackup();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export pre-import backup'));
+    });
+    expect(saveBackup).toHaveBeenCalled();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.getByRole('alert')).toBeEmptyDOMElement();
   });
   it('exports the recovery copy and handles missing copies or read failures', async () => {
     renderBackup();
@@ -137,6 +167,7 @@ describe('combined backup replacement', () => {
         'Pre-import backup'
       )
     );
+    await screen.findByText('Pre-import backup ready.');
     durableGet.mockRejectedValueOnce(new Error('unreadable'));
     fireEvent.click(screen.getByText('Export pre-import backup'));
     await screen.findByText('unreadable');
