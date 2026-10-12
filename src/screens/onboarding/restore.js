@@ -1,5 +1,5 @@
 /**
- * What "Skip — use defaults" does on each onboarding step: put that step's
+ * What "Skip for now" does on each onboarding step: put that step's
  * fields back to the values onboarding started with, dropping any edits made
  * on the step. Pure; each takes `(draft, initial, today)` and returns a store.
  */

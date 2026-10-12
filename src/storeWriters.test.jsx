@@ -75,7 +75,7 @@ const TIME_VALUES = ['06:45', '23:59', ''];
 
 /** Buttons that leave the screen, open files or navigate steps; never poked. */
 const SKIP =
-  /^(Close|Export a backup|Import a backup|Back|Next|Start my first day|Start with these routines|Get started|Skip)/;
+  /^(Close|Export a backup|Import a backup|Back|Next|Start my first day|Start with these routines|Get started|Skip|Edit routines|Edit week|Edit reading|Edit rhythm|Done editing)/;
 
 /** Change every input and select through several values; click every other button. */
 function pokeAll(root) {
@@ -110,13 +110,14 @@ function pokeAll(root) {
 }
 
 beforeEach(() => {
+  window.scrollTo = vi.fn();
   results = [];
   window.open = vi.fn();
   sessionStorage.clear();
 });
 
 describe('UI writers keep the store valid', () => {
-  for (const finish of ['Next', 'Skip — use defaults']) {
+  for (const finish of ['Next', 'Skip for now']) {
     it(
       `onboarding: every control on every step, then "${finish}" each time`,
       () => {

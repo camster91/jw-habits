@@ -133,7 +133,7 @@
       "stepOf": "Step {{step}} of {{total}}",
       "back": "Back",
       "next": "Next",
-      "skip": "Skip \u2014 use defaults",
+      "skip": "Skip for now",
       "finish": "Start my first day",
       "welcome": {
         "title": "Welcome to Faithful Days",
@@ -158,7 +158,7 @@
       },
       "routines": {
         "title": "Your routines",
-        "body": "Keep the routines you want to track. Turn a switch off to hide a routine, or tap its pencil to give it your own name.",
+        "body": "Use switches to show routines and pencils to rename them.",
         "rename": "Rename {{label}}",
         "nameFor": "Name for {{label}}",
         "reset": "Reset to default",

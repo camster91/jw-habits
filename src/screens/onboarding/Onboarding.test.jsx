@@ -29,7 +29,7 @@ vi.mock('@capacitor/local-notifications', () => ({
 }));
 
 const TODAY = '2026-10-06'; // a Tuesday
-const SKIP = 'Skip — use defaults';
+const SKIP = 'Skip for now';
 
 let current;
 
@@ -65,6 +65,7 @@ const click = (name) => fireEvent.click(screen.getByRole('button', { name }));
 const heading = () => screen.getByRole('heading', { level: 1 });
 
 beforeEach(() => {
+  window.scrollTo = vi.fn();
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(2026, 9, 6, 9));
   platform.isNative = false;
@@ -358,5 +359,120 @@ it('starts quickly with selected routines and own-pace reading without requestin
   expect(current.onboardingDone).toBe(true);
   expect(current.reading.plan).toBe('ownPace');
   expect(current.schedule.at(-1).enabled.personalStudy).toBe(false);
+  expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
+});
+
+describe('direct setup review editing', () => {
+  const reachReview = () => {
+    click('Get started');
+    for (let i = 0; i < 4; i++) click('Next');
+  };
+  it.each([
+    [
+      'routines',
+      'Your routines',
+      () => fireEvent.click(screen.getByRole('switch', { name: 'Ministry', exact: true })),
+      'No routines selected',
+    ],
+    ['week', 'Your week', () => click('Monday'), 'Meetings: Monday'],
+    [
+      'reading',
+      'Your reading',
+      () => {
+        fireEvent.click(screen.getByRole('radio', { name: 'My own pace' }));
+        fireEvent.change(screen.getByLabelText('Starting book'), { target: { value: '19' } });
+      },
+      'Psalms 1',
+    ],
+    [
+      'rhythm',
+      'Your rhythm',
+      () => {
+        fireEvent.click(screen.getByRole('radio', { name: 'Before bed' }));
+        fireEvent.change(screen.getByLabelText('Reminder time'), { target: { value: '21:30' } });
+      },
+      'Daily-text cue: Before bed. Reminder time: 21:30',
+    ],
+  ])('edits %s and returns to review without committing', (section, title, edit, expected) => {
+    const initial = initialStore();
+    renderOnboarding(initial);
+    reachReview();
+    click('Edit ' + section);
+    expect(heading()).toHaveTextContent(title);
+    expect(
+      screen.queryByRole('button', { name: 'Start with these routines' })
+    ).not.toBeInTheDocument();
+    edit();
+    expect(current).toEqual(initial);
+    click('Done editing');
+    expect(heading()).toHaveTextContent('Your look');
+    expect(heading()).toHaveFocus();
+    const review = screen.getByRole('region', { name: 'Review your setup' });
+    if (section === 'routines') expect(review).not.toHaveTextContent('Ministry');
+    else expect(review).toHaveTextContent(expected);
+    expect(current).toEqual(initial);
+    click('Start my first day');
+    expect(current.onboardingDone).toBe(true);
+    expect(current.log).toEqual(initial.log);
+    if (section === 'rhythm')
+      expect(current.anchors.dailyText).toEqual({ phrase: 'beforeBed', time: '21:30' });
+    if (section === 'reading') expect(current.reading.start.book).toBe(19);
+    if (section === 'week') expect(current.schedule.at(-1).meetingDays).toEqual([1]);
+    if (section === 'routines') expect(current.schedule.at(-1).enabled.ministry).toBe(false);
+  });
+  it('Skip from an edit restores only the original section and preserves other draft choices', () => {
+    const initial = initialStore();
+    renderOnboarding(initial);
+    click('Get started');
+    click('Next');
+    click('Wednesday');
+    click('Next');
+    click('Next');
+    fireEvent.click(screen.getByRole('radio', { name: 'Quiet' }));
+    click('Next');
+    click('Edit rhythm');
+    fireEvent.click(screen.getByRole('radio', { name: 'With a scripture reference' }));
+    click(SKIP);
+    expect(heading()).toHaveTextContent('Your look');
+    const review = screen.getByRole('region', { name: 'Review your setup' });
+    expect(review).toHaveTextContent('Encouragement: Warm');
+    expect(review).toHaveTextContent('Meetings: Wednesday');
+    expect(current).toEqual(initial);
+  });
+  it('Back to review keeps a changed cue and clock time without saving', () => {
+    const initial = initialStore();
+    renderOnboarding(initial);
+    reachReview();
+    click('Edit rhythm');
+    fireEvent.click(screen.getByRole('radio', { name: 'Before bed' }));
+    fireEvent.change(screen.getByLabelText('Reminder time'), { target: { value: '22:15' } });
+    const preview = screen.getByRole('region', { name: 'Daily-text reminder preview' });
+    expect(preview).toHaveTextContent('Before bed');
+    expect(preview).toHaveTextContent('10:15');
+    click('Back to review');
+    expect(screen.getByRole('region', { name: 'Review your setup' })).toHaveTextContent(
+      'Reminder time: 22:15'
+    );
+    expect(current).toEqual(initial);
+  });
+});
+
+it('offers an explicit suggested clock time without changing it on cue selection', () => {
+  const initial = initialStore();
+  renderOnboarding(initial);
+  click('Get started');
+  for (let i = 0; i < 3; i++) click('Next');
+  fireEvent.click(screen.getByRole('radio', { name: 'Before bed' }));
+  expect(screen.getByLabelText('Reminder time')).toHaveValue('07:00');
+  click(/^Try 9:30/);
+  expect(screen.getByLabelText('Reminder time')).toHaveValue('21:30');
+  expect(screen.getByRole('region', { name: 'Daily-text reminder preview' })).toHaveTextContent(
+    'Before bed'
+  );
+  expect(current).toEqual(initial);
+  click('Next');
+  click('Start my first day');
+  expect(current.anchors.dailyText).toEqual({ phrase: 'beforeBed', time: '21:30' });
+  expect(current.log).toEqual([]);
   expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
 });

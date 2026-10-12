@@ -8,6 +8,14 @@ import { Choice, TimeField, Toggle } from './controls.jsx';
 const SET_TIME = 'set';
 const DEFAULT_ANCHOR = { time: '07:00', phrase: null };
 
+function formatClock(time, locale) {
+  const [hour, minute] = time.split(':').map(Number);
+  return new Date(2000, 0, 1, hour, minute).toLocaleTimeString(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 /**
  * Step 5 / Settings → Rhythm: when the daily text happens, the evening
  * wrap-up, and the encouragement tone. With `askPermission` (onboarding on a
@@ -15,10 +23,16 @@ const DEFAULT_ANCHOR = { time: '07:00', phrase: null };
  * prompt; declining changes nothing here.
  */
 export default function StepRhythm({ store, change, askPermission = false }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [asked, setAsked] = useState(false);
   const [permissionNote, setPermissionNote] = useState('');
   const anchor = store.anchors.dailyText ?? DEFAULT_ANCHOR;
+  const clockTime = formatClock(anchor.time, i18n.language);
+  const cueLabel = anchor.phrase
+    ? t('fd.anchor.' + anchor.phrase)
+    : t('fd.onboarding.rhythm.setTime');
+  const suggestedTime = ANCHOR_PHRASE_TIMES[anchor.phrase];
+  const suggestedClock = suggestedTime && formatClock(suggestedTime, i18n.language);
 
   const setAnchor = (a) => change((s) => ({ ...s, anchors: { ...s.anchors, dailyText: a } }));
   const pickPhrase = (v) => {
@@ -59,19 +73,43 @@ export default function StepRhythm({ store, change, askPermission = false }) {
           ]}
           onChange={pickPhrase}
         />
-        <p className="text-sm text-base-content/70">
-          A cue helps you connect reading with your own routine. Faithful Days cannot detect
-          breakfast, prayer or bedtime. Choosing a cue does not change your reminder time.
-        </p>
         <TimeField
           label={t('fd.onboarding.rhythm.anchorTime')}
           value={anchor.time}
           onChange={(time) => setAnchor({ ...anchor, time })}
         />
-        <p className="text-sm text-base-content/70">
-          If reminders are enabled, they use this clock time. Choose a time that fits your routine;
-          the cue itself does not trigger a notification.
-        </p>
+        <div
+          aria-label="Daily-text reminder preview"
+          role="region"
+          aria-live="polite"
+          className="rounded-xl bg-base-200 p-3"
+        >
+          <p className="font-medium">
+            {cueLabel} · {clockTime}
+          </p>
+          <p className="text-sm text-base-content/70">
+            When reminders are enabled, they use this clock time.
+          </p>
+          {suggestedTime && suggestedTime !== anchor.time && (
+            <button
+              type="button"
+              className="btn btn-outline min-h-11 mt-2"
+              onClick={() => setAnchor({ ...anchor, time: suggestedTime })}
+            >
+              Try {suggestedClock}
+            </button>
+          )}
+        </div>
+        <details>
+          <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">
+            How cues and reminders work
+          </summary>
+          <p className="text-sm text-base-content/70">
+            A cue is a moment in your own routine. Faithful Days cannot detect breakfast, other
+            meals, prayer or bedtime. Choosing a cue keeps your clock time; edit it above to match
+            your day.
+          </p>
+        </details>
       </section>
       <section className="space-y-3 rounded-2xl bg-base-100 p-4">
         <h2 className="font-semibold">A quiet evening pause</h2>
@@ -109,8 +147,7 @@ export default function StepRhythm({ store, change, askPermission = false }) {
       </section>
       {askPermission && !isNative && (
         <p className="text-sm text-base-content/70">
-          Phone reminders are available in the installed mobile app. This browser preview does not
-          request notification permission.
+          Reminders work in the installed app. This browser preview does not ask for permission.
         </p>
       )}
       {askPermission && isNative && (

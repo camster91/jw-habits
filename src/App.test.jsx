@@ -16,7 +16,9 @@ vi.mock('./utils/native.js', () => ({
 vi.mock('./components/InstallPrompt', () => ({
   default: () => <div data-testid="install-prompt" />,
 }));
-vi.mock('./components/UpdatePrompt', () => ({ default: () => null }));
+vi.mock('./components/UpdatePrompt', () => ({
+  default: () => <div data-testid="update-prompt" />,
+}));
 vi.mock('./components/OfflineIndicator', () => ({ default: () => null }));
 
 // eslint-disable-next-line no-unused-vars -- used inside renderApp() via JSX
@@ -61,6 +63,8 @@ describe('App shell', () => {
     renderApp();
     expect(await screen.findByTestId('onboarding')).toBeInTheDocument();
     expect(screen.queryByTestId('today')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('install-prompt')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('update-prompt')).not.toBeInTheDocument();
   });
 
   it('shows Today once onboarding is done', async () => {
@@ -68,6 +72,8 @@ describe('App shell', () => {
     renderApp();
     expect(await screen.findByTestId('today')).toBeInTheDocument();
     expect(screen.queryByTestId('onboarding')).not.toBeInTheDocument();
+    expect(screen.getByTestId('install-prompt')).toBeInTheDocument();
+    expect(screen.getByTestId('update-prompt')).toBeInTheDocument();
   });
 
   it('shows Progress on /progress', async () => {
@@ -119,6 +125,20 @@ describe('App shell', () => {
     renderApp();
     await screen.findByTestId('today');
     expect(screen.getByTestId('install-prompt')).toBeInTheDocument();
+    expect(screen.getByTestId('update-prompt')).toBeInTheDocument();
+  });
+
+  it('keeps updates available during storage recovery without promoting install or overwriting data', async () => {
+    const original = JSON.stringify({
+      ...defaultStore('2026-10-06', 'en'),
+      version: 4,
+      onboardingDone: true,
+    });
+    localStorage.setItem(STORE_KEY, original);
+    renderApp();
+    expect(await screen.findByTestId('update-prompt')).toBeInTheDocument();
+    expect(screen.queryByTestId('install-prompt')).not.toBeInTheDocument();
+    expect(localStorage.getItem(STORE_KEY)).toBe(original);
   });
 
   it('omits the install prompt outside the web build', async () => {
@@ -127,6 +147,7 @@ describe('App shell', () => {
     renderApp();
     await screen.findByTestId('today');
     expect(screen.queryByTestId('install-prompt')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('update-prompt')).not.toBeInTheDocument();
   });
 
   it('opens and closes the Settings sheet from Today', async () => {
