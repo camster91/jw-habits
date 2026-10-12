@@ -9,7 +9,7 @@ assertion of full conformance or physical-device assistive-technology support.
 mode: onboarding, Today, a completed routine, Settings, Plans, Notes, preparation, Progress, badges
 and shared-content preview, plus newer-schema recovery. The recovery case
 downloads an actual byte-exact copy and checks that reload preserves the primary
-value. Axe A/AA checks include color contrast; page-width
+value. Guided onboarding traverses each body control by Tab and rejects focus covered by its sticky footer. Axe A/AA checks include color contrast; page-width
 checks reject horizontal overflow. Essential routine details and project context
 wrap. Blank-note validation and note deletion confirmation are scanned in both themes, covering shared error text and danger-button labels. Completed labels retain full text contrast, with a checked control as the
 completion cue. VoiceOver, TalkBack, keyboard across browser engines, dynamic
