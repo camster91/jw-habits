@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 
 const itemClass =
-  'flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 text-xs';
+  'flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 px-1 py-1 text-xs';
+const labelClass = 'w-full break-words text-center';
 
 /** Bottom navigation: Today, Plans, Progress, and a button that opens Settings. */
 export default function TabBar({ onOpenSettings }) {
@@ -21,22 +22,22 @@ export default function TabBar({ onOpenSettings }) {
       aria-label={t('fd.tabs.label')}
       className="fixed inset-x-0 bottom-0 z-10 border-t border-base-content/10 bg-base-100 pb-[env(safe-area-inset-bottom)]"
     >
-      <div className="mx-auto flex max-w-md">
+      <div className="mx-auto grid max-w-md grid-cols-5">
         <NavLink to="/" end className={tab}>
           <CalendarCheck aria-hidden="true" className="h-6 w-6" />
-          {t('fd.tabs.today')}
+          <span className={labelClass}>{t('fd.tabs.today')}</span>
         </NavLink>
         <NavLink to="/plans" className={tab}>
           <RouteIcon aria-hidden="true" className="h-6 w-6" />
-          {t('fd.tabs.plans')}
+          <span className={labelClass}>{t('fd.tabs.plans')}</span>
         </NavLink>
         <NavLink to="/notes" className={tab}>
           <NotebookPen aria-hidden="true" className="h-6 w-6" />
-          Notes
+          <span className={labelClass}>Notes</span>
         </NavLink>
         <NavLink to="/progress" className={tab}>
           <ChartNoAxesColumn aria-hidden="true" className="h-6 w-6" />
-          {t('fd.tabs.progress')}
+          <span className={labelClass}>{t('fd.tabs.progress')}</span>
         </NavLink>
         <button
           type="button"
@@ -44,7 +45,7 @@ export default function TabBar({ onOpenSettings }) {
           onClick={onOpenSettings}
         >
           <Settings aria-hidden="true" className="h-6 w-6" />
-          {t('fd.tabs.settings')}
+          <span className={labelClass}>{t('fd.tabs.settings')}</span>
         </button>
       </div>
     </nav>

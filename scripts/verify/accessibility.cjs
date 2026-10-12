@@ -112,6 +112,32 @@ async function scan(page, label) {
           await guide.click();
         }
       }
+      // Narrow screens with enlarged base text exposed clipped fixed tabs.
+      // This exercises text resizing, not OS accessibility or browser zoom.
+      for (const route of ['notes', 'plans', 'progress', '']) {
+        await page.goto(`${BASE}/${route}`, { waitUntil: 'networkidle' });
+        await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+        await scan(page, `${theme} ${route || 'Today'} enlarged text`);
+        if (route === 'plans') {
+          const board = page.getByRole('region', { name: 'Calendar and tasks' });
+          for (const view of ['Week', 'Month', 'Tasks']) {
+            await board.getByRole('button', { name: view, exact: true }).click();
+            await scan(page, `${theme} ${view} enlarged text`);
+          }
+        }
+        const nav = page.getByRole('navigation', { name: 'Main navigation' });
+        for (const item of await nav.locator('a, button').all()) {
+          const bounds = await item.boundingBox();
+          if (!bounds || bounds.x < 0 || bounds.x + bounds.width > 321 || bounds.width < 44)
+            throw new Error('Enlarged-text navigation target is clipped or too narrow');
+          const label = item.locator('span');
+          if (await label.evaluate((el) => el.scrollWidth > el.clientWidth + 1))
+            throw new Error('Enlarged-text navigation label is clipped');
+        }
+      }
+      await page.getByRole('button', { name: 'Settings', exact: true }).click();
+      await scan(page, `${theme} Settings enlarged text`);
+      await page.getByRole('button', { name: 'Close', exact: true }).click();
       const newerRaw = JSON.stringify(
         { version: 4, theme, futureNotes: ['Synthetic private note'] },
         null,

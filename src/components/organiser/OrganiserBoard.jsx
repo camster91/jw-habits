@@ -229,10 +229,12 @@ function OrganiserBoardContent({ compact = false, context }) {
   return (
     <section
       aria-label={compact ? 'Today agenda and tasks' : 'Calendar and tasks'}
-      className={compact && emptyAgenda ? 'space-y-1' : 'space-y-3'}
+      className={`@container ${compact && emptyAgenda ? 'space-y-1' : 'space-y-3'}`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xl font-semibold">{compact ? 'Your agenda' : 'Calendar & tasks'}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="min-w-0 flex-1 basis-[12rem] break-words text-xl font-semibold">
+          {compact ? 'Your agenda' : 'Calendar & tasks'}
+        </h2>
         <button
           disabled={!ready}
           className="btn btn-ghost min-h-11"
@@ -327,17 +329,17 @@ function OrganiserBoardContent({ compact = false, context }) {
               <div
                 role="group"
                 aria-label="Calendar navigation"
-                className="flex items-center gap-2"
+                className="grid grid-cols-2 items-center gap-2 @[16rem]:grid-cols-[auto_minmax(0,1fr)_auto]"
               >
                 <button
                   type="button"
-                  className="btn btn-ghost min-h-11 shrink-0"
+                  className="btn btn-ghost min-h-11 justify-self-start"
                   aria-label={`Previous ${navigationUnit}`}
                   onClick={() => moveDate(-1)}
                 >
                   <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                 </button>
-                <label className="min-w-0 flex-1">
+                <label className="col-span-2 row-start-1 min-w-0 @[16rem]:col-span-1 @[16rem]:row-auto">
                   <span className="sr-only">Choose date</span>
                   <input
                     type="date"
@@ -348,7 +350,7 @@ function OrganiserBoardContent({ compact = false, context }) {
                 </label>
                 <button
                   type="button"
-                  className="btn btn-ghost min-h-11 shrink-0"
+                  className="btn btn-ghost min-h-11 justify-self-end"
                   aria-label={`Next ${navigationUnit}`}
                   onClick={() => moveDate(1)}
                 >
@@ -358,14 +360,17 @@ function OrganiserBoardContent({ compact = false, context }) {
               {view === 'Month' && (
                 <div
                   aria-hidden="true"
-                  className="grid grid-cols-7 gap-1 text-center text-xs text-base-content/70"
+                  className="grid grid-cols-7 gap-[4px] text-center text-xs text-base-content/70"
                 >
                   {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                    <span key={day}>{day}</span>
+                    <span key={day}>
+                      <span className="hidden @[16rem]:inline">{day}</span>
+                      <span className="@[16rem]:hidden">{day.slice(0, 1)}</span>
+                    </span>
                   ))}
                 </div>
               )}
-              <div className="grid grid-cols-7 gap-1">
+              <div className="grid grid-cols-7 gap-[4px]">
                 {Array.from(
                   {
                     length:
@@ -394,9 +399,16 @@ function OrganiserBoardContent({ compact = false, context }) {
                       >
                         {view !== 'Month' && (
                           <span className="block text-xs">
-                            {new Date(day + 'T12:00:00').toLocaleDateString('en', {
-                              weekday: 'short',
-                            })}
+                            <span className="hidden @[16rem]:inline">
+                              {new Date(day + 'T12:00:00').toLocaleDateString('en', {
+                                weekday: 'short',
+                              })}
+                            </span>
+                            <span className="@[16rem]:hidden">
+                              {new Date(day + 'T12:00:00').toLocaleDateString('en', {
+                                weekday: 'narrow',
+                              })}
+                            </span>
                           </span>
                         )}
                         {Number(day.slice(-2))}
