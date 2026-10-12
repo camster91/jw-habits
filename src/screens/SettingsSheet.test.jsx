@@ -151,7 +151,7 @@ describe('SettingsSheet', () => {
     fireEvent.change(input, { target: { files: [backupFile({ ...initial, version: 4 })] } });
     expect(await screen.findByText(/from a newer version of Faithful Days/)).toBeInTheDocument();
     expect(current).toBe(initial);
-    expect(screen.queryByText('Replace all data on this device?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Replace data on this device?')).not.toBeInTheDocument();
   });
 
   it('importing a file that is not JSON explains why', async () => {
@@ -169,10 +169,10 @@ describe('SettingsSheet', () => {
     fireEvent.change(screen.getByLabelText('Import a backup'), {
       target: { files: [backupFile(backup)] },
     });
-    expect(await screen.findByText('Replace all data on this device?')).toBeInTheDocument();
+    expect(await screen.findByText('Replace data on this device?')).toBeInTheDocument();
     expect(current).toBe(initial);
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByText('Replace all data on this device?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Replace data on this device?')).not.toBeInTheDocument();
     expect(current).toBe(initial);
     expect(window.confirm).not.toHaveBeenCalled();
   });

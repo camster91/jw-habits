@@ -138,13 +138,18 @@ export default function BackupSection({ onReplaced = () => {} }) {
           /* recovery bundle remains */
         }
       }
-      setStatus({ error: true, text: error.message + ' The pre-import backup is retained.' });
+      setStatus({
+        error: true,
+        text:
+          error.message + ' If a pre-import backup is available, export it before trying again.',
+      });
     } finally {
       setBusy(false);
     }
   };
 
   const exportRecovery = async () => {
+    setStatus(null);
     try {
       const raw = await durableGet('faithful-days-before-import');
       if (!raw) {
@@ -152,7 +157,9 @@ export default function BackupSection({ onReplaced = () => {} }) {
         return;
       }
       await saveBackup(raw, 'faithful-days-before-import.json', 'Pre-import backup');
+      setStatus({ error: false, text: 'Pre-import backup ready.' });
     } catch (e) {
+      if (isShareCancel(e)) return;
       setStatus({ error: true, text: e.message });
     }
   };
@@ -180,9 +187,17 @@ export default function BackupSection({ onReplaced = () => {} }) {
         </label>
       </div>
       {workspaceState && (
-        <button className="btn min-h-11" disabled={busy} onClick={exportRecovery}>
-          Export pre-import backup
-        </button>
+        <div className="space-y-2">
+          <button className="btn min-h-11" disabled={busy} onClick={exportRecovery}>
+            Export pre-import backup
+          </button>
+          <p className="text-sm text-base-content/70">
+            After an import, this copy holds your data from just before that import. To recover it,
+            export the copy, then choose it with Import a backup. Export it before importing another
+            file: the next import replaces this copy. Keep your exported files somewhere safe;
+            clearing app data or uninstalling can remove the copy on this device.
+          </p>
+        </div>
       )}
       {pending && (
         <div
