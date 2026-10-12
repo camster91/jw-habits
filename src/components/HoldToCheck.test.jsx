@@ -200,8 +200,7 @@ describe('HoldToCheck', () => {
   it('reports its state with aria-pressed and a large touch target', () => {
     const { button } = setup();
     expect(button).toHaveAttribute('aria-pressed', 'false');
-    expect(button.className).toMatch(/min-h-11/);
-    expect(button.className).toMatch(/min-w-11/);
+    expect(button).toHaveClass('min-h-[44px]', 'min-w-[44px]');
   });
 
   it('is pressed when done', () => {

@@ -125,6 +125,11 @@ async function scan(page, label) {
             await scan(page, `${theme} ${view} enlarged text`);
           }
         }
+        if (route === '') {
+          const check = await routineButton(page, 'Daily text').boundingBox();
+          if (!check || check.width < 44 || check.height < 44)
+            throw new Error('Routine check target became too small with enlarged text');
+        }
         const nav = page.getByRole('navigation', { name: 'Main navigation' });
         for (const item of await nav.locator('a, button').all()) {
           const bounds = await item.boundingBox();
