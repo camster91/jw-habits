@@ -105,7 +105,7 @@ export default function HoldToCheck({
         onKeyDown={onKeyDown}
         onKeyUp={onKeyUp}
         onContextMenu={(e) => e.preventDefault()}
-        className="relative flex min-h-11 min-w-11 shrink-0 touch-manipulation select-none items-center justify-center rounded-full border-2 border-[var(--fd-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fd-accent)]"
+        className="relative flex min-h-[44px] min-w-[44px] shrink-0 touch-manipulation select-none items-center justify-center rounded-full border-2 border-[var(--fd-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fd-accent)]"
       >
         <span
           aria-hidden="true"

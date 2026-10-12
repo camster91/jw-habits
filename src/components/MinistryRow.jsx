@@ -74,10 +74,10 @@ export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange
         )}
       </div>
       <label className="mt-2 flex min-h-11 cursor-pointer items-center justify-between gap-3">
-        <span className="text-sm">{t('fd.today.ministryShared')}</span>
+        <span className="min-w-0 flex-1 break-words text-sm">{t('fd.today.ministryShared')}</span>
         <input
           type="checkbox"
-          className="toggle border-[var(--fd-accent)] checked:bg-[var(--fd-accent)] checked:text-white"
+          className="toggle shrink-0 border-[var(--fd-accent)] checked:bg-[var(--fd-accent)] checked:text-white"
           checked={current.shared}
           onChange={(e) => onChange({ shared: e.target.checked })}
         />
@@ -89,18 +89,18 @@ export default function MinistryRow({ label, value, pioneer, hoursGoal, onChange
         onChange={(studies) => onChange({ studies })}
       />
       {pioneer && (
-        <div className="mt-2 flex items-center justify-between gap-3">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <label htmlFor={hoursId} className="text-sm text-base-content/70">
             {t('fd.today.ministryHours')}
           </label>
-          <span className="flex items-center gap-2">
+          <span className="flex min-w-0 flex-wrap items-center gap-2">
             <input
               id={hoursId}
               type="number"
               inputMode="decimal"
               min="0"
               step="0.5"
-              className="input input-sm min-h-11 w-20 text-right"
+              className="input input-sm min-h-11 w-20 max-w-full text-right"
               value={hoursText}
               onChange={(e) => onHours(e.target.value)}
             />
