@@ -313,7 +313,7 @@ function OrganiserBoardContent({ compact = false, context }) {
             {['Agenda', 'Week', 'Month', 'Tasks'].map((v) => (
               <button
                 key={v}
-                className={`btn btn-sm min-h-11 ${view === v ? 'btn-primary' : 'btn-ghost'}`}
+                className={`btn btn-sm min-h-11 transition-none ${view === v ? 'btn-primary' : 'btn-ghost'}`}
                 aria-pressed={view === v}
                 onClick={() => setView(v)}
               >
