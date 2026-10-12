@@ -308,7 +308,7 @@ input[type='range']::-webkit-slider-thumb {
 .fd-guide[open] summary {
   margin-bottom: 8px;
 }
-.fd-guide[open] summary > span:last-child {
+.fd-guide[open] summary > .fd-guide-toggle {
   transform: rotate(45deg);
 }
 .fd-settings-heading,

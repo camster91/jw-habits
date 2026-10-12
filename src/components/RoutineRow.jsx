@@ -37,9 +37,11 @@ export default function RoutineRow({
       data-testid={testId}
       data-routine={routineId}
       data-done={done}
-      className="fd-routine rounded-2xl bg-base-100 p-3 shadow-sm"
+      className="fd-routine @container rounded-2xl bg-base-100 p-3 shadow-sm"
     >
-      <div className="flex items-center gap-3">
+      <div
+        className={`grid grid-cols-[44px_minmax(0,1fr)] items-center gap-[12px] ${link ? '@[16rem]:grid-cols-[44px_minmax(0,1fr)_44px]' : ''}`}
+      >
         <HoldToCheck
           tapToComplete
           done={done}
@@ -48,24 +50,31 @@ export default function RoutineRow({
           label={label}
         />
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 break-words font-semibold">
-            {Icon && <Icon aria-hidden="true" className="fd-routine-icon h-4 w-4 shrink-0" />}
-            <span>{label}</span>
+          <p className="flex items-center gap-[8px] break-words font-semibold">
+            {Icon && (
+              <Icon
+                aria-hidden="true"
+                className="fd-routine-icon hidden h-[16px] w-[16px] shrink-0 @[16rem]:block"
+              />
+            )}
+            <span className="min-w-0 flex-1 break-words">{label}</span>
           </p>
           {detail && <p className="break-words text-sm text-base-content/70">{detail}</p>}
         </div>
         {link && (
           <button
             type="button"
-            className="btn btn-circle btn-ghost min-h-11 min-w-11 text-[var(--fd-accent-text)]"
+            className="col-start-2 justify-self-end btn btn-circle btn-ghost min-h-[44px] min-w-[44px] h-[44px] w-[44px] text-[var(--fd-accent-text)] @[16rem]:col-auto"
             aria-label={linkName ?? t('fd.today.openLink', { label })}
             onClick={() => openLink(link)}
           >
-            <ExternalLink aria-hidden="true" className="h-5 w-5" />
+            <ExternalLink aria-hidden="true" className="h-[20px] w-[20px]" />
           </button>
         )}
       </div>
-      {Children.toArray(children).length > 0 && <div className="mt-2 pl-14">{children}</div>}
+      {Children.toArray(children).length > 0 && (
+        <div className="mt-2 @[16rem]:pl-14">{children}</div>
+      )}
     </li>
   );
 }

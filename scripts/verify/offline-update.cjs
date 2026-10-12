@@ -199,6 +199,15 @@ const server = http.createServer((req, res) => {
       'waiting update did not replace user state'
     );
     await assertWorkspace('waiting update did not replace workspace bytes');
+    await page.setViewportSize({ width: 320, height: 800 });
+    await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+    for (const name of ['Update', 'Dismiss update notification']) {
+      const box = await page.getByRole('button', { name, exact: true }).boundingBox();
+      assert.ok(
+        box && box.x >= 0 && box.x + box.width <= 321 && box.width >= 44 && box.height >= 44,
+        `${name} stays reachable with enlarged text`
+      );
+    }
     await Promise.all([
       page.waitForNavigation({ waitUntil: 'networkidle' }),
       page.getByRole('button', { name: 'Update', exact: true }).click(),

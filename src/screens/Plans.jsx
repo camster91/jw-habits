@@ -82,9 +82,9 @@ function PlanCard({ plan, status, children }) {
 
 function NewButton({ label, onClick }) {
   return (
-    <button type="button" className="btn btn-outline min-h-11 w-full" onClick={onClick}>
-      <Plus aria-hidden="true" className="h-5 w-5" />
-      {label}
+    <button type="button" className="btn btn-outline min-h-11 h-auto w-full py-2" onClick={onClick}>
+      <Plus aria-hidden="true" className="h-5 w-5 shrink-0" />
+      <span className="min-w-0 break-words whitespace-normal">{label}</span>
     </button>
   );
 }
@@ -126,7 +126,7 @@ export default function Plans() {
           className="flex min-h-11 items-center gap-3 rounded-2xl bg-base-100 p-4 font-medium shadow-sm"
         >
           <CalendarDays aria-hidden="true" className="h-5 w-5" />
-          <span className="flex-1">Prepare for meetings and assignments</span>
+          <span className="min-w-0 flex-1 break-words">Prepare for meetings and assignments</span>
           <ChevronRight aria-hidden="true" className="h-5 w-5" />
         </Link>
 
@@ -159,7 +159,7 @@ export default function Plans() {
             className="flex min-h-11 items-center gap-3 rounded-2xl bg-base-100 p-4 font-medium shadow-sm"
           >
             <CalendarDays aria-hidden="true" className="h-5 w-5 text-[var(--fd-accent-text)]" />
-            <span className="flex-1">{t('fd.plans.family.weeks')}</span>
+            <span className="min-w-0 flex-1 break-words">{t('fd.plans.family.weeks')}</span>
             <ChevronRight aria-hidden="true" className="h-5 w-5 text-base-content/50" />
           </Link>
           {family.length > 0 ? (

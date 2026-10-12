@@ -421,9 +421,9 @@ export default function Today({ onOpenSettings = () => {} }) {
       className="min-h-screen bg-base-200 px-4 pb-24 pt-[max(env(safe-area-inset-top),1rem)]"
     >
       <div className="mx-auto max-w-md space-y-4">
-        <header className="fd-today-header space-y-3 rounded-3xl p-4">
+        <header className="fd-today-header @container space-y-3 rounded-3xl p-4">
           <div className="flex items-center justify-between gap-3">
-            <div>
+            <div className="min-w-0 flex-1">
               <h1 tabIndex={-1} className="text-3xl font-bold focus:outline-none">
                 {t('fd.today.title')}
               </h1>
@@ -435,18 +435,23 @@ export default function Today({ onOpenSettings = () => {} }) {
                 }).format(dateOf(today))}
               </p>
             </div>
-            <Sun aria-hidden="true" className="fd-today-sun h-10 w-10 shrink-0" />
+            <Sun
+              aria-hidden="true"
+              className="fd-today-sun hidden h-10 w-10 shrink-0 @[16rem]:block"
+            />
           </div>
-          <p className="flex items-center gap-2 text-sm font-medium">
-            <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" />
-            {rows.length > 0
-              ? t('fd.today.routineSummary', {
-                  done: rows.filter((id) =>
-                    id === 'ministry' ? month?.value.shared : isDone(store, id, today)
-                  ).length,
-                  total: rows.length,
-                })
-              : t('fd.today.gentleDay')}
+          <p className="flex items-center gap-[8px] text-sm font-medium">
+            <Sparkles aria-hidden="true" className="h-[16px] w-[16px] shrink-0" />
+            <span className="min-w-0 flex-1">
+              {rows.length > 0
+                ? t('fd.today.routineSummary', {
+                    done: rows.filter((id) =>
+                      id === 'ministry' ? month?.value.shared : isDone(store, id, today)
+                    ).length,
+                    total: rows.length,
+                  })
+                : t('fd.today.gentleDay')}
+            </span>
           </p>
         </header>
         <p className="text-sm text-base-content/70">{t('fd.today.checkHint')}</p>
