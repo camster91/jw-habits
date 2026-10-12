@@ -7,16 +7,15 @@ export default function StepWelcome() {
   const [interest, setInterest] = useState('rhythm');
   const [lateNight, setLateNight] = useState(true);
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <img
         src="/illustrations/welcome.webp"
         alt=""
         width="200"
         height="112"
-        className="mx-auto h-28 w-50 object-contain"
+        className="mx-auto h-20 w-50 object-contain"
       />
       <p>{t('fd.onboarding.welcome.body')}</p>
-      <p className="text-sm">Tap to explore what you can make your own.</p>
       <div
         role="group"
         aria-label="Explore Faithful Days"
@@ -38,8 +37,7 @@ export default function StepWelcome() {
         {t(`fd.onboarding.welcome.explore.${interest}.body`)}
       </p>
       <p className="text-sm text-base-content/70">
-        Get started lets you choose your routines and begin, or continue a guided setup. Start with
-        defaults takes you straight to Today.
+        Choose your routines next, or go straight to Today with defaults.
       </p>
       <details className="fd-guide rounded-2xl px-4 py-1">
         <summary className="min-h-11 cursor-pointer py-3 font-semibold">

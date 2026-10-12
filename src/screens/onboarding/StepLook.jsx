@@ -43,7 +43,14 @@ function Preview({ store }) {
 }
 
 /** Step 6 / Settings → Look: accent and theme, with an optional live preview. */
-export default function StepLook({ store, change, today, preview = false, review = false }) {
+export default function StepLook({
+  store,
+  change,
+  today,
+  preview = false,
+  review = false,
+  onEditStep,
+}) {
   const { t } = useTranslation();
   const name = useId();
   return (
@@ -88,12 +95,12 @@ export default function StepLook({ store, change, today, preview = false, review
           <Preview store={store} />
         </>
       )}
-      {review && <Review store={store} today={today} />}
+      {review && <Review store={store} today={today} onEditStep={onEditStep} />}
     </div>
   );
 }
 
-function Review({ store, today }) {
+function Review({ store, today, onEditStep }) {
   const { t, i18n } = useTranslation();
   const schedule = scheduleOn(store, today);
   const selected = ROUTINE_IDS.filter((id) => schedule.enabled[id]);
@@ -106,7 +113,19 @@ function Review({ store, today }) {
       <h2 className="text-lg font-bold">Ready for your first day?</h2>
       <dl className="space-y-3 text-sm">
         <div>
-          <dt className="font-semibold">Your routines</dt>
+          <dt className="flex items-center justify-between gap-2 font-semibold">
+            <span>Your routines</span>
+            {onEditStep && (
+              <button
+                type="button"
+                className="btn btn-ghost min-h-11 shrink-0"
+                aria-label="Edit routines"
+                onClick={() => onEditStep('routines')}
+              >
+                Edit
+              </button>
+            )}
+          </dt>
           <dd>
             {selected.length
               ? selected.map((id) => labelFor(store, id, t)).join(', ')
@@ -114,7 +133,19 @@ function Review({ store, today }) {
           </dd>
         </div>
         <div>
-          <dt className="font-semibold">Your week</dt>
+          <dt className="flex items-center justify-between gap-2 font-semibold">
+            <span>Your week</span>
+            {onEditStep && (
+              <button
+                type="button"
+                className="btn btn-ghost min-h-11 shrink-0"
+                aria-label="Edit week"
+                onClick={() => onEditStep('week')}
+              >
+                Edit
+              </button>
+            )}
+          </dt>
           <dd>
             {schedule.meetingDays.length
               ? `Meetings: ${schedule.meetingDays.map(weekday).join(', ')}.`
@@ -123,14 +154,38 @@ function Review({ store, today }) {
           </dd>
         </div>
         <div>
-          <dt className="font-semibold">Your reading</dt>
+          <dt className="flex items-center justify-between gap-2 font-semibold">
+            <span>Your reading</span>
+            {onEditStep && (
+              <button
+                type="button"
+                className="btn btn-ghost min-h-11 shrink-0"
+                aria-label="Edit reading"
+                onClick={() => onEditStep('reading')}
+              >
+                Edit
+              </button>
+            )}
+          </dt>
           <dd>
             {BOOKS[store.reading.start.book - 1].name} {store.reading.start.chapter} ·{' '}
             {t(`fd.onboarding.reading.${store.reading.plan === 'year' ? 'year' : 'ownPace'}`)}
           </dd>
         </div>
         <div>
-          <dt className="font-semibold">Your rhythm</dt>
+          <dt className="flex items-center justify-between gap-2 font-semibold">
+            <span>Your rhythm</span>
+            {onEditStep && (
+              <button
+                type="button"
+                className="btn btn-ghost min-h-11 shrink-0"
+                aria-label="Edit rhythm"
+                onClick={() => onEditStep('rhythm')}
+              >
+                Edit
+              </button>
+            )}
+          </dt>
           <dd>
             Daily-text cue:{' '}
             {store.anchors.dailyText?.phrase
@@ -149,7 +204,7 @@ function Review({ store, today }) {
         )}
       </dl>
       <p className="text-sm text-base-content/70">
-        Use Back to adjust anything. Starting saves these choices; it does not complete a routine.
+        Edit any section before you start. Saving setup does not complete a routine.
       </p>
     </section>
   );

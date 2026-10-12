@@ -102,6 +102,8 @@ function Screens() {
       {onboardingDone && <BadgeToast />}
       <StorageNotice onBackup={openSettings} savingPaused={savingPaused} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {isWeb && (onboardingDone || savingPaused) && <UpdatePrompt />}
+      {isWeb && onboardingDone && !savingPaused && <InstallPrompt />}
     </>
   );
 }
@@ -122,9 +124,7 @@ function App() {
       {isWeb ? (
         <PWAProvider>
           <OfflineIndicator />
-          <UpdatePrompt />
           {shell}
-          <InstallPrompt />
         </PWAProvider>
       ) : (
         shell

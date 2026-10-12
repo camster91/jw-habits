@@ -63,12 +63,16 @@ export default function Onboarding() {
   const [initial] = useState(store);
   const [draft, setDraft] = useState(store);
   const [index, setIndex] = useState(0);
+  const [editingReview, setEditingReview] = useState(false);
   const headingRef = useRef(null);
   const moved = useRef(false);
 
   // Move focus to the new step's heading, but not on first arrival.
   useEffect(() => {
-    if (moved.current) headingRef.current?.focus();
+    if (moved.current) {
+      headingRef.current?.focus({ preventScroll: true });
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
     moved.current = true;
   }, [index]);
 
@@ -77,7 +81,16 @@ export default function Onboarding() {
 
   const advance = (next) => {
     if (last) update((s) => commitOnboarding(s, next));
-    else setIndex(index + 1);
+    else if (editingReview) {
+      setEditingReview(false);
+      setIndex(STEPS.length - 1);
+    } else setIndex(index + 1);
+  };
+  const editReviewStep = (stepKey) => {
+    const step = STEPS.findIndex((s) => s.key === stepKey);
+    if (step < 1 || step >= STEPS.length - 1) return;
+    setEditingReview(true);
+    setIndex(step);
   };
   const skip = () => {
     const next = RESTORE[key](draft, initial, today);
@@ -90,7 +103,9 @@ export default function Onboarding() {
       ? t('fd.onboarding.welcome.start')
       : last
         ? t('fd.onboarding.finish')
-        : t('fd.onboarding.next');
+        : editingReview
+          ? 'Done editing'
+          : t('fd.onboarding.next');
 
   return (
     <main
@@ -130,22 +145,32 @@ export default function Onboarding() {
             />
           </header>
         )}
-        <Body store={draft} change={setDraft} today={today} askPermission preview review={last} />
+        <Body
+          store={draft}
+          change={setDraft}
+          today={today}
+          askPermission
+          preview
+          review={last}
+          onEditStep={last ? editReviewStep : undefined}
+        />
         {index > 0 && (
           <p className="text-sm text-base-content/70">
             {last
-              ? 'Starting saves your choices. You can revisit them in Settings.'
-              : 'These are draft choices. Back keeps them; Skip keeps the settings this step started with.'}
+              ? 'Start saves your choices. Skip keeps your original look.'
+              : 'Your choices stay in draft until you start. Skip restores the original settings for this step.'}
           </p>
         )}
-        {index === 1 && (
+        {index === 1 && !editingReview && (
           <div className="space-y-2 rounded-2xl bg-base-100 p-3">
             <p className="text-sm">
-              Ready to begin? Keep these routines and set schedules, reminders and appearance later.
-              New reading starts at your own pace.
+              Start now with these routines; schedules and reminders can wait.{' '}
+              {store.log.length
+                ? 'Your reading history stays intact.'
+                : 'New reading uses your own pace.'}
             </p>
             <button
-              className="btn btn-primary min-h-11 w-full"
+              className="btn btn-outline min-h-11 w-full"
               onClick={() =>
                 update((s) =>
                   commitOnboarding(s, {
@@ -161,7 +186,11 @@ export default function Onboarding() {
             </button>
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-2 pt-2">
+        <div
+          role="group"
+          aria-label="Setup navigation"
+          className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 border-t border-base-content/10 bg-base-200 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2"
+        >
           {index === 0 && (
             <button
               type="button"
@@ -175,9 +204,12 @@ export default function Onboarding() {
             <button
               type="button"
               className="btn btn-ghost min-h-11"
-              onClick={() => setIndex(index - 1)}
+              onClick={() => {
+                setIndex(editingReview ? STEPS.length - 1 : index - 1);
+                setEditingReview(false);
+              }}
             >
-              {t('fd.onboarding.back')}
+              {editingReview ? 'Back to review' : t('fd.onboarding.back')}
             </button>
           )}
           {index > 0 && (
