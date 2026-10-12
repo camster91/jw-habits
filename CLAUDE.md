@@ -1,6 +1,6 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-11.**
+**Last audited against source: 2026-10-12.**
 
 Finishing onboarding and opening a new screen reset scroll and focus its heading, including lazy routes. History Back restores the saved screen position; physical Android back behavior remains a device gate. Native/browser automatic scroll restoration is suppressed while the shell is mounted.
 
