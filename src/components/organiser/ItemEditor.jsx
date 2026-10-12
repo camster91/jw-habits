@@ -15,7 +15,15 @@ import {
 } from '../../domain/organiser.js';
 import { addDays, weekday } from '../../domain/day.js';
 
-export default function ItemEditor({ kind, date, occurrence, target, initialTitle = '', onClose }) {
+export default function ItemEditor({
+  kind,
+  date,
+  occurrence,
+  target,
+  initialTitle = '',
+  onClose,
+  onSaved,
+}) {
   const { save } = useOrganiser();
   const [draft, setDraft] = useState(
     () =>
@@ -74,6 +82,7 @@ export default function ItemEditor({ kind, date, occurrence, target, initialTitl
         return next;
       });
       setBaseline(JSON.stringify(draft));
+      if (!occurrence) onSaved?.({ kind, id: draft.id });
       onClose();
     } catch (e) {
       setError(e.message);
