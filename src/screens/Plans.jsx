@@ -1,3 +1,4 @@
+import { useOrganiser } from '../data/useOrganiser.js';
 import OrganiserBoard from '../components/organiser/OrganiserBoard.jsx';
 import QuickGuide from '../components/QuickGuide.jsx';
 import ScreenIntro from '../components/ScreenIntro.jsx';
@@ -97,6 +98,8 @@ export default function Plans() {
   const { t } = useTranslation();
   const { store, update } = useStore();
   const [creating, setCreating] = useState(null);
+  const organiser = useOrganiser();
+  const [tool, setTool] = useState(organiser ? 'calendar' : 'projects');
 
   const open = store.plans.filter((p) => p.archivedOn === null);
   const activeId = store.activePlan.personalStudy;
@@ -119,102 +122,127 @@ export default function Plans() {
           art="plans"
           tone="lavender"
         />
-        <OrganiserBoard />
-        <p className="text-base-content/80">{t('fd.plans.intro')}</p>
-        <Link
-          to="/plans/preparation"
-          className="flex min-h-11 items-center gap-3 rounded-2xl bg-base-100 p-4 font-medium shadow-sm"
-        >
-          <CalendarDays aria-hidden="true" className="h-5 w-5" />
-          <span className="min-w-0 flex-1 break-words">Prepare for meetings and assignments</span>
-          <ChevronRight aria-hidden="true" className="h-5 w-5" />
-        </Link>
-
-        <Section title={t('fd.plans.study.heading')}>
-          {active || waiting.length > 0 ? (
-            <ul className="space-y-3">
-              {active && <PlanCard plan={active} status={t('fd.plans.study.active')} />}
-              {waiting.map((p) => (
-                <PlanCard key={p.id} plan={p} status={t('fd.plans.study.waiting')}>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm min-h-11 w-full"
-                    aria-label={t('fd.plans.study.makeActive', { title: p.title })}
-                    onClick={() => update((s) => setActiveStudy(s, p.id))}
-                  >
-                    {t('fd.plans.study.makeActiveShort')}
-                  </button>
-                </PlanCard>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-base-content/70">{t('fd.plans.study.empty')}</p>
-          )}
-          <NewButton label={t('fd.plans.study.new')} onClick={() => setCreating('study')} />
-        </Section>
-
-        <Section title={t('fd.plans.family.heading')}>
+        {organiser && (
+          <nav aria-label="Planning tools" className="flex flex-wrap gap-2">
+            <button
+              className={`btn min-h-11 transition-none ${tool === 'calendar' ? 'btn-primary' : 'btn-ghost'}`}
+              aria-pressed={tool === 'calendar'}
+              onClick={() => setTool('calendar')}
+            >
+              Calendar & tasks
+            </button>
+            <button
+              className={`btn min-h-11 transition-none ${tool === 'projects' ? 'btn-primary' : 'btn-ghost'}`}
+              aria-pressed={tool === 'projects'}
+              onClick={() => setTool('projects')}
+            >
+              Study & family
+            </button>
+            <Link className="btn btn-ghost min-h-11" to="/plans/preparation">
+              Meeting preparation
+            </Link>
+          </nav>
+        )}
+        <div hidden={tool !== 'calendar'}>
+          <OrganiserBoard />
+        </div>
+        <div hidden={tool !== 'projects'} className="space-y-6">
+          <p className="text-base-content/80">{t('fd.plans.intro')}</p>
           <Link
-            to="/plans/family"
+            to="/plans/preparation"
             className="flex min-h-11 items-center gap-3 rounded-2xl bg-base-100 p-4 font-medium shadow-sm"
           >
-            <CalendarDays aria-hidden="true" className="h-5 w-5 text-[var(--fd-accent-text)]" />
-            <span className="min-w-0 flex-1 break-words">{t('fd.plans.family.weeks')}</span>
-            <ChevronRight aria-hidden="true" className="h-5 w-5 text-base-content/50" />
+            <CalendarDays aria-hidden="true" className="h-5 w-5" />
+            <span className="min-w-0 flex-1 break-words">Prepare for meetings and assignments</span>
+            <ChevronRight aria-hidden="true" className="h-5 w-5" />
           </Link>
-          {family.length > 0 ? (
-            <ul className="space-y-3">
-              {family.map((p) => (
-                <PlanCard key={p.id} plan={p} />
-              ))}
-            </ul>
-          ) : (
-            <p className="text-base-content/70">{t('fd.plans.family.empty')}</p>
-          )}
-          <NewButton label={t('fd.plans.family.new')} onClick={() => setCreating('family')} />
-        </Section>
 
-        <details>
-          <summary className="min-h-11 cursor-pointer py-2 font-medium">Completed plans</summary>{' '}
-          <Section title={t('fd.plans.completed.heading')}>
-            {completed.length > 0 ? (
+          <Section title={t('fd.plans.study.heading')}>
+            {active || waiting.length > 0 ? (
               <ul className="space-y-3">
-                {completed.map((p) => (
-                  <PlanCard key={p.id} plan={p}>
+                {active && <PlanCard plan={active} status={t('fd.plans.study.active')} />}
+                {waiting.map((p) => (
+                  <PlanCard key={p.id} plan={p} status={t('fd.plans.study.waiting')}>
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm min-h-11 w-full"
-                      aria-label={t('fd.plans.completed.restore', { title: p.title })}
-                      onClick={() => update((s) => restorePlan(s, p.id))}
+                      aria-label={t('fd.plans.study.makeActive', { title: p.title })}
+                      onClick={() => update((s) => setActiveStudy(s, p.id))}
                     >
-                      <RotateCcw aria-hidden="true" className="h-4 w-4" />
-                      {t('fd.plans.completed.restoreShort')}
+                      {t('fd.plans.study.makeActiveShort')}
                     </button>
                   </PlanCard>
                 ))}
               </ul>
             ) : (
-              <p className="text-base-content/70">{t('fd.plans.completed.empty')}</p>
+              <p className="text-base-content/70">{t('fd.plans.study.empty')}</p>
             )}
+            <NewButton label={t('fd.plans.study.new')} onClick={() => setCreating('study')} />
           </Section>
-        </details>
-        <QuickGuide
-          title="Build your first plan"
-          steps={[
-            {
-              title: 'Choose a focus',
-              body: 'Start a study or family plan. Give it a title that means something to you.',
-            },
-            {
-              title: 'Make it manageable',
-              body: 'Add your own steps, or use the chapter, lesson or weekly step generator. You can add safe links to your references.',
-            },
-            {
-              title: 'Bring it into your day',
-              body: 'Use on Today makes a study plan current. Tap Personal study on Today to record the next step; planning alone never records activity.',
-            },
-          ]}
-        />
+
+          <Section title={t('fd.plans.family.heading')}>
+            <Link
+              to="/plans/family"
+              className="flex min-h-11 items-center gap-3 rounded-2xl bg-base-100 p-4 font-medium shadow-sm"
+            >
+              <CalendarDays aria-hidden="true" className="h-5 w-5 text-[var(--fd-accent-text)]" />
+              <span className="min-w-0 flex-1 break-words">{t('fd.plans.family.weeks')}</span>
+              <ChevronRight aria-hidden="true" className="h-5 w-5 text-base-content/50" />
+            </Link>
+            {family.length > 0 ? (
+              <ul className="space-y-3">
+                {family.map((p) => (
+                  <PlanCard key={p.id} plan={p} />
+                ))}
+              </ul>
+            ) : (
+              <p className="text-base-content/70">{t('fd.plans.family.empty')}</p>
+            )}
+            <NewButton label={t('fd.plans.family.new')} onClick={() => setCreating('family')} />
+          </Section>
+
+          <details>
+            <summary className="min-h-11 cursor-pointer py-2 font-medium">Completed plans</summary>{' '}
+            <Section title={t('fd.plans.completed.heading')}>
+              {completed.length > 0 ? (
+                <ul className="space-y-3">
+                  {completed.map((p) => (
+                    <PlanCard key={p.id} plan={p}>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm min-h-11 w-full"
+                        aria-label={t('fd.plans.completed.restore', { title: p.title })}
+                        onClick={() => update((s) => restorePlan(s, p.id))}
+                      >
+                        <RotateCcw aria-hidden="true" className="h-4 w-4" />
+                        {t('fd.plans.completed.restoreShort')}
+                      </button>
+                    </PlanCard>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-base-content/70">{t('fd.plans.completed.empty')}</p>
+              )}
+            </Section>
+          </details>
+          <QuickGuide
+            title="Build your first plan"
+            steps={[
+              {
+                title: 'Choose a focus',
+                body: 'Start a study or family plan. Give it a title that means something to you.',
+              },
+              {
+                title: 'Make it manageable',
+                body: 'Add your own steps, or use the chapter, lesson or weekly step generator. You can add safe links to your references.',
+              },
+              {
+                title: 'Bring it into your day',
+                body: 'Use on Today makes a study plan current. Tap Personal study on Today to record the next step; planning alone never records activity.',
+              },
+            ]}
+          />
+        </div>
       </div>
       {creating && <NewPlanSheet kind={creating} onClose={() => setCreating(null)} />}
     </main>

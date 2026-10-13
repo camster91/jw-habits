@@ -301,6 +301,7 @@ describe('Onboarding', () => {
   it('explains the tracking day interactively without recording activity', () => {
     const initial = initialStore();
     renderOnboarding(initial);
+    fireEvent.click(screen.getByText('Explore Faithful Days', { selector: 'summary' }));
     click('Your ideas');
     expect(screen.getByText(/Keep your own questions/)).toBeInTheDocument();
     fireEvent.click(screen.getByText('How does a day work?'));

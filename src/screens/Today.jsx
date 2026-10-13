@@ -399,16 +399,19 @@ export default function Today({ onOpenSettings = () => {} }) {
               max={Math.max(3, portionSize(store, today) * 3)}
               onChange={setChapters}
             />
-            <p className="text-sm text-base-content/70">
-              {pace.planned === null
-                ? t('fd.today.readingPaceOwn', pace)
-                : t('fd.today.readingPaceYear', pace)}
-            </p>
-            {pace.daysAhead > 0 && (
-              <p className="text-sm text-base-content/70">
-                {t('fd.today.readingAhead', { count: pace.daysAhead })}
+            <details className="text-sm text-base-content/70">
+              <summary className="min-h-11 cursor-pointer py-2">Reading pace details</summary>
+              <p>
+                {pace.planned === null
+                  ? t('fd.today.readingPaceOwn', pace)
+                  : t('fd.today.readingPaceYear', pace)}
               </p>
-            )}
+              {pace.daysAhead > 0 && (
+                <p className="text-sm text-base-content/70">
+                  {t('fd.today.readingAhead', { count: pace.daysAhead })}
+                </p>
+              )}
+            </details>
           </>
         )}
       </RoutineRow>

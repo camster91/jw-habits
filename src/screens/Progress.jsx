@@ -138,10 +138,18 @@ export default function Progress() {
         )}
         <section className="card space-y-3 bg-base-100 p-4 shadow-sm">
           <h2 className="font-semibold">{t('fd.progress.readingTitle')}</h2>
-          <p>{t('fd.progress.readingDays', { count: sums.readingDaysThisYear })}</p>
-          <p>{t('fd.progress.chapters', { count: sums.chaptersThisYear })}</p>
-          <p>{t('fd.progress.books', { count: sums.booksCompleted })}</p>
-          <BibleMap completed={completed} />
+          <p className="text-sm text-base-content/70">
+            {sums.chaptersThisYear > 0
+              ? `${sums.chaptersThisYear} chapters recorded this year`
+              : 'Record your reading on Today to see it here.'}
+          </p>
+          <details>
+            <summary className="min-h-11 cursor-pointer py-2">View reading progress</summary>
+            <p>{t('fd.progress.readingDays', { count: sums.readingDaysThisYear })}</p>
+            <p>{t('fd.progress.chapters', { count: sums.chaptersThisYear })}</p>
+            <p>{t('fd.progress.books', { count: sums.booksCompleted })}</p>
+            <BibleMap completed={completed} />
+          </details>
         </section>
         <section className="card space-y-3 bg-base-100 p-4 shadow-sm">
           <h2 className="font-semibold">{t('fd.fun.gardenTitle')}</h2>

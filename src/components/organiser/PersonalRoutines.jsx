@@ -15,7 +15,7 @@ const icons = {
   heart: Heart,
   calendar: CalendarDays,
 };
-export default function PersonalRoutines({ manage = false }) {
+export default function PersonalRoutines({ manage = false, children }) {
   const context = useOrganiser(),
     { today } = useStore();
   const [baseline, setBaseline] = useState('');
@@ -23,7 +23,7 @@ export default function PersonalRoutines({ manage = false }) {
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [discard, setDiscard] = useState(false);
-  if (!context) return null;
+  if (!context) return children ?? null;
   const { organiser, save, ready } = context;
   const active = organiser.personalRoutines.filter((r) => !r.archivedAt);
   const routines = manage
@@ -106,6 +106,7 @@ export default function PersonalRoutines({ manage = false }) {
           </button>
         </div>
       )}
+      {children}
       <p role="alert" className="text-error">
         {error}
       </p>

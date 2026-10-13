@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import i18n from 'i18next';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { StoreContext } from '../data/useStore.js';
@@ -45,12 +45,24 @@ function renderProgress(store, organiser = null) {
   );
 }
 
+function readingMap() {
+  const summary = screen.getByText('View reading progress');
+  if (!summary.closest('details').open) fireEvent.click(summary);
+  return screen.getByRole('list', { name: 'Bible books' });
+}
+
 const BANNED = /missed|broke|failed|lost/i;
 
 beforeEach(() => vi.useFakeTimers({ toFake: ['Date'] }));
 afterEach(() => vi.useRealTimers());
 
 describe('Progress', () => {
+  it('keeps the book map out of the empty overview until reading details are requested', () => {
+    renderProgress(makeStore());
+    expect(screen.getByRole('list', { name: 'Bible books' })).not.toBeVisible();
+    expect(screen.getByText('Record your reading on Today to see it here.')).toBeVisible();
+    expect(within(readingMap()).getAllByRole('listitem')).toHaveLength(66);
+  });
   it('shows an empty weekly summary without offering a zero-activity share', () => {
     renderProgress(makeStore());
     const summary = screen.getByRole('region', { name: 'This week' });
@@ -114,7 +126,7 @@ describe('Progress', () => {
   it('fills 13 books when 13 are complete and says so', () => {
     // Start at book 14, earlier books counted: Genesis..2 Kings is 13 books.
     renderProgress(makeStore());
-    const map = screen.getByRole('list', { name: 'Bible books' });
+    const map = readingMap();
     const items = within(map).getAllByRole('listitem');
     expect(items).toHaveLength(66);
     expect(items[0]).toHaveAttribute('aria-label', 'Genesis, read');
@@ -125,9 +137,7 @@ describe('Progress', () => {
 
   it('lists the 66 books in canonical order', () => {
     renderProgress(makeStore());
-    const items = within(screen.getByRole('list', { name: 'Bible books' })).getAllByRole(
-      'listitem'
-    );
+    const items = within(readingMap()).getAllByRole('listitem');
     BOOKS.forEach((b, i) => expect(items[i].getAttribute('aria-label')).toMatch(`${b.name},`));
   });
 
@@ -179,9 +189,7 @@ describe('Progress', () => {
 
   it('marks read cells with an accent fill, solid border and a check; unread are dashed', () => {
     renderProgress(makeStore());
-    const items = within(screen.getByRole('list', { name: 'Bible books' })).getAllByRole(
-      'listitem'
-    );
+    const items = within(readingMap()).getAllByRole('listitem');
     const read = items[0];
     const unread = items[65];
     expect(read.className).toContain('bg-[var(--fd-accent)]');
@@ -195,9 +203,7 @@ describe('Progress', () => {
 
   it('shows a short visible abbreviation on each cell', () => {
     renderProgress(makeStore());
-    const items = within(screen.getByRole('list', { name: 'Bible books' })).getAllByRole(
-      'listitem'
-    );
+    const items = within(readingMap()).getAllByRole('listitem');
     const text = (name) => items[BOOKS.findIndex((b) => b.name === name)].textContent;
     expect(text('Genesis')).toBe('Gen');
     expect(text('1 Samuel')).toBe('1Sa');
@@ -227,7 +233,7 @@ describe('Progress', () => {
     expect(screen.queryByRole('heading', { name: 'Daily text' })).not.toBeInTheDocument();
     // Guides and the Bible map remain; there is no routine-progress list.
     expect(screen.queryByRole('list', { name: 'Routine progress' })).toBeNull();
-    expect(screen.getByRole('list', { name: 'Bible books' })).toBeInTheDocument();
+    expect(readingMap()).toBeInTheDocument();
   });
 
   it('shows the reading totals', () => {

@@ -233,9 +233,11 @@ function OrganiserBoardContent({ compact = false, context }) {
       className={`@container ${compact && emptyAgenda ? 'space-y-1' : 'space-y-3'}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="min-w-0 flex-1 basis-[12rem] break-words text-xl font-semibold">
-          {compact ? 'Your agenda' : 'Calendar & tasks'}
-        </h2>
+        {(!compact || !emptyAgenda) && (
+          <h2 className="min-w-0 flex-1 basis-[12rem] break-words text-xl font-semibold">
+            {compact ? 'Your agenda' : 'Calendar & tasks'}
+          </h2>
+        )}
         <button
           disabled={!ready}
           className="btn btn-ghost min-h-11"

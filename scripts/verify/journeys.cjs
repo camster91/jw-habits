@@ -293,6 +293,7 @@ const closeSettings = async (page) => {
       async (page) => {
         await onboardSkip(page);
         await page.getByRole('link', { name: 'Plan', exact: true }).click();
+        await page.getByRole('button', { name: 'Study & family', exact: true }).click();
         await page.getByRole('button', { name: 'New study plan', exact: true }).click();
         await page
           .getByLabel('How would you like to organise it?', { exact: true })
@@ -390,7 +391,7 @@ const closeSettings = async (page) => {
       async (page) => {
         await onboardSkip(page);
         await page.getByRole('link', { name: 'Plan', exact: true }).click();
-        await page.getByRole('link', { name: 'Prepare for meetings and assignments' }).click();
+        await page.getByRole('link', { name: 'Meeting preparation', exact: true }).click();
         await page.getByLabel('Meeting type', { exact: true }).selectOption('weekend');
         await page.getByRole('button', { name: 'Add meeting', exact: true }).click();
         // The durable save closes the form and moves the checklist. Wait for

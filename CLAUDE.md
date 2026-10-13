@@ -1,6 +1,8 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-12.**
+**Last audited against source: 2026-10-13.**
+
+Plan separates Calendar & tasks from Study & family using two view controls, with a direct Meeting preparation link. Switching views preserves the mounted calendar's selected date/view and any draft; existing projects and links remain available. Legacy rendering without organiser context starts in project view. Settings uses single-line disclosure rows with trailing chevrons, groups rhythm/notifications/quiet hours, and puts Add routine before built-in switches. Today reading pace and Progress reading totals/book map are available through disclosures instead of filling the overview. Welcome exploration is optional, and Notes' privacy caption is concise. No storage, schedule or backup schema changes.
 
 Personal-routine creation, editing, archiving/restoring and the optional What's New template live under Settings → Routines. Today shows only active custom routine check-ins and their optional reference links, without an empty customization section or management controls. Daily routines remain available each day; weekly routines recorded on an earlier day of the current routine week are omitted from Today. A check-in made today stays visible for Undo. Stored routines/history and the 03:00 boundary are unchanged.
 

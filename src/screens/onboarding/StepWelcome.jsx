@@ -16,28 +16,33 @@ export default function StepWelcome() {
         className="mx-auto h-20 w-50 object-contain"
       />
       <p>{t('fd.onboarding.welcome.body')}</p>
-      <div
-        role="group"
-        aria-label="Explore Faithful Days"
-        className="grid grid-cols-3 gap-2 text-center text-sm font-semibold"
-      >
-        {['rhythm', 'ideas', 'pace'].map((key) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={interest === key}
-            onClick={() => setInterest(key)}
-            className="fd-welcome-tile min-h-11 rounded-2xl p-3 aria-pressed:ring-2 aria-pressed:ring-base-content"
-          >
-            {t(`fd.onboarding.welcome.explore.${key}.title`)}
-          </button>
-        ))}
-      </div>
-      <p aria-live="polite" className="rounded-2xl bg-base-100 p-4 text-sm">
-        {t(`fd.onboarding.welcome.explore.${interest}.body`)}
-      </p>
+      <details>
+        <summary className="min-h-11 cursor-pointer py-2 font-medium">
+          Explore Faithful Days
+        </summary>
+        <div
+          role="group"
+          aria-label="Explore Faithful Days"
+          className="grid grid-cols-3 gap-2 text-center text-sm font-semibold"
+        >
+          {['rhythm', 'ideas', 'pace'].map((key) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={interest === key}
+              onClick={() => setInterest(key)}
+              className="fd-welcome-tile min-h-11 rounded-2xl p-3 aria-pressed:ring-2 aria-pressed:ring-base-content"
+            >
+              {t(`fd.onboarding.welcome.explore.${key}.title`)}
+            </button>
+          ))}
+        </div>
+        <p aria-live="polite" className="rounded-2xl bg-base-100 p-4 text-sm">
+          {t(`fd.onboarding.welcome.explore.${interest}.body`)}
+        </p>
+      </details>
       <p className="text-sm text-base-content/70">
-        Choose your routines next, or go straight to Today with defaults.
+        Start with defaults to begin now, or Get started to set up your week.
       </p>
       <details className="fd-guide rounded-2xl px-4 py-1">
         <summary className="min-h-11 cursor-pointer py-3 font-semibold">

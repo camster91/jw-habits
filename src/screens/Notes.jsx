@@ -322,7 +322,7 @@ export default function Notes() {
           art="notes"
           tone="rose"
         />
-        <p>Private on this device. Capture an idea now; organise it later.</p>
+        <p>Private on this device.</p>
         {(error || exportError) && (
           <p role="alert" className="text-error">
             {error || exportError}

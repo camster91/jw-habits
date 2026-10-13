@@ -37,6 +37,18 @@ const mount = () =>
     </StoreProvider>
   );
 const data = () => JSON.parse(localStorage.getItem(ORGANISER_KEY));
+it('separates calendar work from projects without resetting the chosen calendar view', async () => {
+  mount();
+  await board();
+  expect(screen.queryByRole('button', { name: 'New study plan' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Month', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Study & family', exact: true }));
+  expect(screen.getByRole('button', { name: 'New study plan' })).toBeVisible();
+  expect(screen.queryByRole('region', { name: 'Calendar and tasks' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Calendar & tasks', exact: true }));
+  expect(screen.getByRole('button', { name: 'Month', pressed: true })).toBeVisible();
+  expect(localStorage.getItem(ORGANISER_KEY)).toBeNull();
+});
 async function board() {
   const b = await screen.findByRole('region', { name: 'Calendar and tasks' });
   await waitFor(() =>

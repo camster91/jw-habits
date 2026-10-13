@@ -2,7 +2,7 @@ import { useOrganiser } from '../data/useOrganiser.js';
 import QuickGuide from '../components/QuickGuide.jsx';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
+import { X, ChevronRight } from 'lucide-react';
 import { useStore } from '../data/useStore.js';
 import StepRoutines from './onboarding/StepRoutines.jsx';
 import PersonalRoutines from '../components/organiser/PersonalRoutines.jsx';
@@ -35,8 +35,11 @@ function Section({ title, children, headingRef }) {
     </h3>
   );
   return grouped ? (
-    <details className="border-t border-base-300">
-      <summary className="min-h-11 cursor-pointer py-3">{heading}</summary>
+    <details className="group border-t border-base-300">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 py-3 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">{heading}</span>
+        <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 group-open:rotate-90" />
+      </summary>
       <section aria-labelledby={id} className="space-y-3 pb-3">
         {children}
       </section>
@@ -187,8 +190,9 @@ function SettingsDialog({ onClose }) {
             ]}
           />
           <Section title={section('routines')}>
-            <StepRoutines {...props} />
-            <PersonalRoutines manage />
+            <PersonalRoutines manage>
+              <StepRoutines {...props} />
+            </PersonalRoutines>
           </Section>
           <Section title={section('week')}>
             <StepWeek {...props} />
@@ -196,13 +200,14 @@ function SettingsDialog({ onClose }) {
           <Section title={section('reading')}>
             <StepReading {...props} />
           </Section>
-          <Section title={section('rhythm')}>
+          <Section title="Rhythm & reminders">
+            <h4 className="font-semibold">Daily rhythm</h4>
             <StepRhythm {...props} />
-          </Section>
-          <Section title={section('reminders')}>
-            <RemindersSection />
-          </Section>
-          <Section title={section('quietHours')}>
+            <section aria-label={section('reminders')} className="space-y-3">
+              <h4 className="font-semibold">Notifications</h4>
+              <RemindersSection />
+            </section>
+            <h4 className="font-semibold">Quiet hours</h4>
             <QuietHours {...props} />
           </Section>
           <Section title={section('look')}>
