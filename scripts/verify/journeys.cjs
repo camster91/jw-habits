@@ -310,6 +310,7 @@ const closeSettings = async (page) => {
           Boolean(checked?.plans[0]?.steps[0]?.doneOn)
         );
         await page.getByRole('link', { name: 'Plan', exact: true }).click();
+        await page.getByRole('button', { name: 'Study & family', exact: true }).click();
         step(
           `J9 ${width}px project shows 1 of 12`,
           await page.getByText('1 of 12', { exact: true }).isVisible()

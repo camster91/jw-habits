@@ -148,6 +148,10 @@ async function scan(page, label) {
           if (await page.getByRole('dialog').count())
             throw new Error('Discard did not close the editor');
         }
+        if (route === 'plans') {
+          await page.getByRole('button', { name: 'Study & family', exact: true }).click();
+          await scan(page, `${theme} study and family tools`);
+        }
         const guide = page.locator('details.fd-guide summary');
         if (await guide.count()) {
           await guide.click();
