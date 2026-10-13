@@ -73,7 +73,9 @@ describe('Notes UI', () => {
     field('Your note', 'A useful question\nMore detail');
     button('Save note');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'New note', exact: true })).toHaveFocus();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'New note', exact: true })).toHaveFocus()
+    );
     expect(current.notes[0].title).toBe('A useful question');
     expect(current.notes[0].body).toBe('A useful question\nMore detail');
     expect(screen.getByLabelText('Search notes and plans')).toBeInTheDocument();
