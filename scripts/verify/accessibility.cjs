@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 const { AxeBuilder } = require('@axe-core/playwright');
+const fs = require('node:fs');
+const path = require('node:path');
 const { launchBrowser, openPage, go, onboardSkip, hold, routineButton } = require('./lib.cjs');
 const BASE = process.env.A11Y_BASE_URL || 'http://localhost:4173';
 let failures = 0;
@@ -23,6 +25,21 @@ async function scan(page, label) {
     console.error(label, 'horizontal overflow');
   }
   console.log(`${label}: ${result.violations.length} automated violations; overflow=${overflow}`);
+  if (
+    process.env.UI_EVIDENCE_DIR &&
+    /(?:onboarding|Today|Settings|Settings expanded|plans|progress|study and family tools)$/.test(
+      label
+    )
+  ) {
+    fs.mkdirSync(process.env.UI_EVIDENCE_DIR, { recursive: true });
+    await page.screenshot({
+      path: path.join(
+        process.env.UI_EVIDENCE_DIR,
+        label.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.png'
+      ),
+      fullPage: false,
+    });
+  }
 }
 (async () => {
   const browser = await launchBrowser();
