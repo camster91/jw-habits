@@ -125,21 +125,24 @@ export default function Plans() {
         {organiser && (
           <nav aria-label="Planning tools" className="flex flex-wrap gap-2">
             <button
-              className={`btn min-h-11 transition-none ${tool === 'calendar' ? 'btn-primary' : 'btn-ghost'}`}
+              className={`btn min-h-11 h-auto min-w-0 max-w-full py-2 transition-none ${tool === 'calendar' ? 'btn-primary' : 'btn-ghost'}`}
               aria-pressed={tool === 'calendar'}
               onClick={() => setTool('calendar')}
             >
-              Calendar & tasks
+              <span className="min-w-0 break-words whitespace-normal">Calendar & tasks</span>
             </button>
             <button
-              className={`btn min-h-11 transition-none ${tool === 'projects' ? 'btn-primary' : 'btn-ghost'}`}
+              className={`btn min-h-11 h-auto min-w-0 max-w-full py-2 transition-none ${tool === 'projects' ? 'btn-primary' : 'btn-ghost'}`}
               aria-pressed={tool === 'projects'}
               onClick={() => setTool('projects')}
             >
-              Study & family
+              <span className="min-w-0 break-words whitespace-normal">Study & family</span>
             </button>
-            <Link className="btn btn-ghost min-h-11" to="/plans/preparation">
-              Meeting preparation
+            <Link
+              className="btn btn-ghost min-h-11 h-auto min-w-0 max-w-full py-2"
+              to="/plans/preparation"
+            >
+              <span className="min-w-0 break-words whitespace-normal">Meeting preparation</span>
             </Link>
           </nav>
         )}
