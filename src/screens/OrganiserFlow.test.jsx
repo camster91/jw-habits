@@ -475,11 +475,15 @@ it('navigates calendar dates by view and prefills Add without recording activity
   mount();
   const b = await board();
   const date = within(b).getByLabelText('Choose date');
+  expect(
+    within(b).queryByRole('button', { name: 'Sat, Oct 10', exact: true })
+  ).not.toBeInTheDocument();
   fireEvent.click(within(b).getByRole('button', { name: 'Next day', exact: true }));
   expect(date).toHaveValue('2026-10-11');
   fireEvent.click(within(b).getByRole('button', { name: 'Previous day', exact: true }));
   expect(date).toHaveValue('2026-10-10');
   fireEvent.click(within(b).getByRole('button', { name: 'Week', exact: true }));
+  expect(within(b).getByRole('button', { name: 'Sat, Oct 10', exact: true })).toBeInTheDocument();
   fireEvent.click(within(b).getByRole('button', { name: 'Next week', exact: true }));
   expect(date).toHaveValue('2026-10-17');
   fireEvent.click(within(b).getByRole('button', { name: 'Previous week', exact: true }));

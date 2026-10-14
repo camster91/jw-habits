@@ -84,11 +84,13 @@ export default function StepRhythm({ store, change, askPermission = false }) {
           aria-live="polite"
           className="rounded-xl bg-base-200 p-3"
         >
-          <p className="font-medium">
-            {cueLabel} · {clockTime}
-          </p>
-          <p className="text-sm text-base-content/70">
-            When reminders are enabled, they use this clock time.
+          <p className="font-medium">Your cue: {cueLabel}</p>
+          <p className="text-sm">Reminder time: {clockTime}</p>
+          <p className="mt-1 text-sm text-base-content/70">
+            {anchor.phrase
+              ? 'Your cue is a moment in your day, not a fixed time. Set the clock to when that usually happens.'
+              : 'Choose the clock time that fits your day.'}{' '}
+            Reminders use this time when enabled.
           </p>
           {suggestedTime && suggestedTime !== anchor.time && (
             <button

@@ -78,6 +78,7 @@ describe('Notes UI', () => {
     );
     expect(current.notes[0].title).toBe('A useful question');
     expect(current.notes[0].body).toBe('A useful question\nMore detail');
+    expect(screen.getByText('More detail', { exact: true })).toBeVisible();
     expect(screen.getByLabelText('Search notes and plans')).toBeInTheDocument();
     expect(screen.getByLabelText('Related activity')).toBeInTheDocument();
     expect(screen.queryByLabelText('Filter by tag')).not.toBeInTheDocument();

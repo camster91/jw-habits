@@ -90,8 +90,8 @@ export default function StepLook({
       {preview && (
         <>
           <p className="text-sm text-base-content/70">
-            A preview of your colour and theme. The checked circle is a sample, not recorded
-            activity.
+            Your colour and theme appear in the sample below and apply to the app when you finish
+            setup. The checked circle is an example, not recorded activity.
           </p>
           <Preview store={store} />
         </>

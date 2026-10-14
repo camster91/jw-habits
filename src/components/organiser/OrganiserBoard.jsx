@@ -402,58 +402,60 @@ function OrganiserBoardContent({ compact = false, context }) {
                   ))}
                 </div>
               )}
-              <div className="grid grid-cols-7 gap-[4px]">
-                {Array.from(
-                  {
-                    length:
-                      view === 'Month' ? Number(to.slice(-2)) + ((weekday(month) + 6) % 7) : 7,
-                  },
-                  (_, i) => {
-                    const d = view === 'Month' ? i - ((weekday(month) + 6) % 7) + 1 : i + 1;
-                    if (d < 1) return <span key={i} />;
-                    const day =
-                      view === 'Month'
-                        ? month.slice(0, 8) + String(d).padStart(2, '0')
-                        : addDays(monday, i);
-                    const count = eventIndicators.filter(
-                      (e) => e.displayDate <= day && e.displayEndDate >= day
-                    ).length;
-                    return (
-                      <button
-                        key={day}
-                        aria-label={friendlyDate(day)}
-                        aria-pressed={selected === day}
-                        className={`min-h-11 rounded-lg text-sm ${selected === day ? 'bg-[var(--fd-accent)] text-white' : 'bg-base-100'}`}
-                        onClick={() => {
-                          setSelected(day);
-                          if (view === 'Week') setView('Agenda');
-                        }}
-                      >
-                        {view !== 'Month' && (
-                          <span className="block text-xs">
-                            <span className="hidden @[16rem]:inline">
-                              {new Date(day + 'T12:00:00').toLocaleDateString('en', {
-                                weekday: 'short',
-                              })}
+              {view !== 'Agenda' && (
+                <div className="grid grid-cols-7 gap-[4px]">
+                  {Array.from(
+                    {
+                      length:
+                        view === 'Month' ? Number(to.slice(-2)) + ((weekday(month) + 6) % 7) : 7,
+                    },
+                    (_, i) => {
+                      const d = view === 'Month' ? i - ((weekday(month) + 6) % 7) + 1 : i + 1;
+                      if (d < 1) return <span key={i} />;
+                      const day =
+                        view === 'Month'
+                          ? month.slice(0, 8) + String(d).padStart(2, '0')
+                          : addDays(monday, i);
+                      const count = eventIndicators.filter(
+                        (e) => e.displayDate <= day && e.displayEndDate >= day
+                      ).length;
+                      return (
+                        <button
+                          key={day}
+                          aria-label={friendlyDate(day)}
+                          aria-pressed={selected === day}
+                          className={`min-h-11 rounded-lg text-sm ${selected === day ? 'bg-[var(--fd-accent)] text-white' : 'bg-base-100'}`}
+                          onClick={() => {
+                            setSelected(day);
+                            if (view === 'Week') setView('Agenda');
+                          }}
+                        >
+                          {view !== 'Month' && (
+                            <span className="block text-xs">
+                              <span className="hidden @[16rem]:inline">
+                                {new Date(day + 'T12:00:00').toLocaleDateString('en', {
+                                  weekday: 'short',
+                                })}
+                              </span>
+                              <span className="@[16rem]:hidden">
+                                {new Date(day + 'T12:00:00').toLocaleDateString('en', {
+                                  weekday: 'narrow',
+                                })}
+                              </span>
                             </span>
-                            <span className="@[16rem]:hidden">
-                              {new Date(day + 'T12:00:00').toLocaleDateString('en', {
-                                weekday: 'narrow',
-                              })}
+                          )}
+                          {Number(day.slice(-2))}
+                          {count > 0 && (
+                            <span aria-hidden="true" className="block leading-2">
+                              ·
                             </span>
-                          </span>
-                        )}
-                        {Number(day.slice(-2))}
-                        {count > 0 && (
-                          <span aria-hidden="true" className="block leading-2">
-                            ·
-                          </span>
-                        )}
-                      </button>
-                    );
-                  }
-                )}
-              </div>
+                          )}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              )}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium" aria-live="polite">
                   {view === 'Week'

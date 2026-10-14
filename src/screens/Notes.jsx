@@ -13,6 +13,11 @@ import ItemEditor from '../components/organiser/ItemEditor.jsx';
 import { saveBackup } from '../utils/backup.js';
 import Sheet from '../components/plans/Sheet.jsx';
 
+function noteBodyPreview(note) {
+  const [firstLine, ...rest] = note.body.split('\n');
+  return firstLine.trim() === note.title.trim() ? rest.join('\n').trimStart() : note.body;
+}
+
 function NoteEditor({ note, seed, context, target, onClose }) {
   const organiserContext = useOrganiser();
   const stableId = useRef(note?.id ?? newId());
@@ -439,7 +444,7 @@ export default function Notes() {
               >
                 {n.title}
               </button>
-              <p className="whitespace-pre-wrap">{n.body}</p>
+              {noteBodyPreview(n) && <p className="whitespace-pre-wrap">{noteBodyPreview(n)}</p>}
               <p className="text-sm text-base-content/70">{n.tags.join(' · ')}</p>
               <p className="text-sm text-base-content/70">
                 {contextLabel(n.context, store, workspace)}
