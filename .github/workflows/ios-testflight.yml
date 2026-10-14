@@ -20,6 +20,23 @@ on:
         required: false
         type: boolean
         default: false
+      signed_run_id:
+        description: 'Replay a retained signed run without rebuilding (empty: normal archive)'
+        required: false
+        type: string
+      signed_run_attempt:
+        description: 'Retained signing attempt'
+        required: false
+        type: string
+        default: '1'
+      signed_source_sha:
+        description: 'Full source commit of the inspected retained IPA'
+        required: false
+        type: string
+      signed_ipa_sha256:
+        description: 'Separately inspected retained IPA SHA-256'
+        required: false
+        type: string
 permissions:
   contents: read
   actions: read
@@ -30,6 +47,11 @@ concurrency:
 env:
   VERSION_INPUT: ${{ inputs.marketing_version }}
   BUILD_INPUT: ${{ inputs.bundle_version }}
+  REPLAY_RUN: ${{ inputs.signed_run_id }}
+  REPLAY_ATTEMPT: ${{ inputs.signed_run_attempt }}
+  REPLAY_SOURCE: ${{ inputs.signed_source_sha }}
+  REPLAY_SHA256: ${{ inputs.signed_ipa_sha256 }}
+  REPLAY_SKIP_UPLOAD: ${{ inputs.skip_upload }}
 jobs:
   preflight:
     runs-on: ubuntu-24.04
@@ -44,16 +66,21 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --audit-level=high && npm run lint && npm run test:coverage && npm run format:check && npm run build && npm run budgets
-      - run: python3 scripts/native/test_distribution_profiles.py && python3 scripts/native/test_release_guard.py && python3 scripts/native/test_release_evidence.py && python3 scripts/native/test_keystore_generator.py
+      - run: python3 scripts/native/test_distribution_profiles.py && python3 scripts/native/test_release_guard.py && python3 scripts/native/test_release_evidence.py && python3 scripts/native/test_keystore_generator.py && python3 scripts/native/test_signed_ipa_replay.py
       - run: python3 scripts/native/release_evidence.py resolve --output native-version.json
       - name: Require exact-source checks before signing
         if: inputs.skip_upload != true
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/native/release_guard.py source
+      - name: Validate retained signing selection without credentials
+        if: inputs.signed_run_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/native/signed_ipa_replay.py plan
   simulator:
     needs: preflight
-    if: inputs.skip_upload == true
+    if: inputs.skip_upload == true && inputs.signed_run_id == ''
     runs-on: macos-latest
     timeout-minutes: 40
     steps:
@@ -76,7 +103,7 @@ jobs:
       - run: echo 'Unsigned simulator compile passed; signing, upload and device behavior remain unverified.' >> "$GITHUB_STEP_SUMMARY"
   archive:
     needs: preflight
-    if: inputs.skip_upload != true
+    if: inputs.skip_upload != true && inputs.signed_run_id == ''
     environment: ios-signing
     runs-on: macos-latest
     timeout-minutes: 60
@@ -180,7 +207,7 @@ jobs:
 
   upload:
     needs: archive
-    if: inputs.skip_upload != true && inputs.upload
+    if: inputs.skip_upload != true && inputs.upload && inputs.signed_run_id == ''
     environment: testflight-upload
     runs-on: macos-latest
     timeout-minutes: 30
@@ -220,3 +247,50 @@ jobs:
           api-key-id: ${{ secrets.ASC_KEY_ID }}
           api-private-key: ${{ secrets.ASC_API_PRIVATE_KEY }}
       - run: echo 'Upload action completed. Confirm Apple processing, TestFlight availability and physical installation; no App Review submission was requested.' >> "$GITHUB_STEP_SUMMARY"
+
+  upload_existing:
+    needs: preflight
+    if: inputs.signed_run_id != '' && inputs.upload && inputs.skip_upload != true
+    environment: testflight-upload
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Require independent owner upload approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/native/release_guard.py environment --environment testflight-upload
+      - name: Recheck retained run after approval wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/native/signed_ipa_replay.py plan
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.signed_run_id }}
+          name: faithful-days-approved-ipa-${{ inputs.signed_run_id }}-${{ inputs.signed_run_attempt }}
+          path: approved-ipa
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.signed_source_sha }}
+          path: candidate-source
+          persist-credentials: false
+      - name: Validate exact previously inspected bytes and signed source
+        run: python3 scripts/native/signed_ipa_replay.py verify
+      - name: Recheck Apple identity and unused build number
+        env:
+          ASC_API_PRIVATE_KEY: ${{ secrets.ASC_API_PRIVATE_KEY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: python3 scripts/native/apple_build_guard.py
+      - name: Upload exact retained IPA to TestFlight
+        uses: apple-actions/upload-testflight-build@14df18fee5a4ff3b76971dd382f033494a0194e9 # v5.5.0
+        with:
+          app-path: approved-ipa/release-candidate/app.ipa
+          app-type: ios
+          issuer-id: ${{ secrets.ASC_ISSUER_ID }}
+          api-key-id: ${{ secrets.ASC_KEY_ID }}
+          api-private-key: ${{ secrets.ASC_API_PRIVATE_KEY }}
+      - run: echo 'Retained IPA upload completed. Apple processing and physical installation remain separate gates.' >> "$GITHUB_STEP_SUMMARY"

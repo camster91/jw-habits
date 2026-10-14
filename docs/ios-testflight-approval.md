@@ -29,3 +29,30 @@ After exact push and dispatch/sign/upload approval, prefer an approved signing-o
 No fallback to unprotected signing or different artifact attempts exists. A standalone failed-upload rerun may have a different attempt number and therefore fail candidate lookup; inspect Apple state first rather than blindly rerunning a possibly accepted build. Any recovery, credential changes or new build allocation are owner actions. Local tests use fabricated API/process results and synthetic archives, not signing/account calls. They do not certify Xcode behavior, reviewer enforcement, signature validity, Apple processing or installed device behavior.
 
 Record source SHA, build/version, run/attempt, artifact hash, reviewer approvals, private signature/provisioning inspection status and processing/install results separately. #248 closes only after approved upload processes and installs through TestFlight; full launch still requires physical/household/store acceptance and the other release gates.
+
+### Replay an already inspected retained IPA
+
+The optional `signed_run_id`, `signed_run_attempt`, `signed_source_sha` and
+`signed_ipa_sha256` inputs select a previously successful owner-signed artifact.
+Leave all four unset for the existing archive flow. Replay requires
+`skip_upload=false`; with `upload=false` it only validates the selection.
+With `upload=true`, only `upload_existing` can run and it pauses at the existing
+`testflight-upload` environment. It does not export or resign the app.
+
+The adapter checks the original attempt, guarded branch, owner identity,
+archive success, original upload being skipped, owner signing approval, unique
+unexpired artifact, exact IPA checksum, immutable source checkout, lockfile,
+app/widget versions and embedded release identity. After protected approval it
+checks Apple app identity and build history before handing those exact bytes to
+the pinned upload action. It rejects previously reused build numbers. An API
+failure or ambiguous earlier upload must be reconciled; do not bypass a guard.
+
+Before dispatch, manually confirm the environment's administrator bypass stays
+unchecked (the API does not expose that setting) and obtain separate approval
+for uploading the named IPA. Successful upload is still distinct from Apple
+processing, TestFlight availability, invitations and physical-device acceptance.
+If artifact retention expires, prepare a new signed candidate with a new unused
+build number and repeat inspection and approval; do not relabel a rebuild as the
+previously inspected IPA. Publishing this workflow is also separate from upload.
+
+Local validator tests: `python3 scripts/native/test_signed_ipa_replay.py`.

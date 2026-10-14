@@ -1,6 +1,8 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-13.**
+**Last audited against source: 2026-10-14.**
+
+An optional retained-IPA replay mode in `ios-testflight.yml` validates the original signing run, owner approval, exact checksum and immutable app source without resigning. Replay upload uses the existing separate `testflight-upload` environment and a read-only Apple build-history guard. This is workflow capability, not evidence of dispatch, upload, processing or device acceptance. See `docs/ios-testflight-approval.md`.
 
 Plan separates Calendar & tasks from Study & family using two view controls, with a direct Meeting preparation link. Switching views preserves the mounted calendar's selected date/view and any draft; existing projects and links remain available. Legacy rendering without organiser context starts in project view. Settings uses single-line disclosure rows with trailing chevrons, groups rhythm/notifications/quiet hours, and puts Add routine before built-in switches. Today reading pace and Progress reading totals/book map are available through disclosures instead of filling the overview. Welcome exploration is optional, and Notes' privacy caption is concise. No storage, schedule or backup schema changes.
 
