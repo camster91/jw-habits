@@ -55,6 +55,12 @@ class AppleAPIError(RuntimeError):
         super().__init__(summary)
 
 
+def write_private_key(path, value):
+    """Write protected key material without exposing it or relying on umask."""
+    with open(path, 'x', opener=lambda filename, flags: os.open(filename, flags, 0o600)) as output:
+        output.write(value)
+
+
 def _api_error(url, status, body):
     """Build a safe error from an Apple JSON error response.
 
@@ -125,8 +131,7 @@ if __name__ == '__main__':
                 raise ValueError('Missing protected upload authentication')
         with tempfile.TemporaryDirectory(prefix='faithful-apple-') as directory:
             key = Path(directory) / 'private.p8'
-            with key.open('x', opener=lambda path, flags: os.open(path, flags, 0o600)) as output:
-                output.write(os.environ['ASC_API_PRIVATE_KEY'])
+            write_private_key(key, os.environ['ASC_API_PRIVATE_KEY'])
             os.environ['ASC_KEY_PATH'] = str(key)
             main()
     except AppleAPIError as error:

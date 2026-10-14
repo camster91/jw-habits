@@ -1,5 +1,8 @@
 """Fabricated release responses; no credentials, signing or upload."""
 from copy import deepcopy
+import pathlib
+import stat
+import tempfile
 import unittest
 import signed_ipa_replay as replay
 import apple_build_guard as apple
@@ -100,6 +103,13 @@ class ReplayTests(unittest.TestCase):
             'https://api.appstoreconnect.apple.com/v1/builds', 401, {}
         )
         self.assertEqual(str(error), 'Apple API HTTP 401 at /v1/builds')
+
+    def test_private_key_writer_uses_owner_only_permissions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = pathlib.Path(directory) / 'private.p8'
+            apple.write_private_key(path, 'fabricated-key')
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+            self.assertEqual(path.read_text(), 'fabricated-key')
 
 
 if __name__ == '__main__':
