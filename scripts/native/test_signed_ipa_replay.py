@@ -81,6 +81,26 @@ class ReplayTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             apple.get('https://other.example/v1/builds')
 
+    def test_apple_http_error_reports_status_code_and_title_only(self):
+        error = apple._api_error(
+            'https://api.appstoreconnect.apple.com/v1/apps/6821076241',
+            403,
+            {'errors': [{'code': 'FORBIDDEN_ERROR', 'title': 'Forbidden',
+                         'detail': 'do not log this request detail'}]},
+        )
+        self.assertEqual(error.status, 403)
+        self.assertEqual(error.code, 'FORBIDDEN_ERROR')
+        self.assertIn('HTTP 403', str(error))
+        self.assertIn('FORBIDDEN_ERROR', str(error))
+        self.assertIn('Forbidden', str(error))
+        self.assertNotIn('do not log this request detail', str(error))
+
+    def test_apple_http_error_handles_non_json_body(self):
+        error = apple._api_error(
+            'https://api.appstoreconnect.apple.com/v1/builds', 401, {}
+        )
+        self.assertEqual(str(error), 'Apple API HTTP 401 at /v1/builds')
+
 
 if __name__ == '__main__':
     unittest.main()

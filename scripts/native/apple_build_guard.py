@@ -8,6 +8,7 @@ import time
 import tempfile
 import sys
 import urllib.parse
+import urllib.error
 import urllib.request
 
 
@@ -38,12 +39,56 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError('Apple API redirects require reconciliation')
 
 
+class AppleAPIError(RuntimeError):
+    """An Apple API failure reduced to non-sensitive diagnostic fields."""
+
+    def __init__(self, status, path, code=None, title=None):
+        self.status = status
+        self.path = path
+        self.code = code
+        self.title = title
+        summary = f'Apple API HTTP {status} at {path}'
+        if code:
+            summary += f' ({code})'
+        if title:
+            summary += f': {title}'
+        super().__init__(summary)
+
+
+def _api_error(url, status, body):
+    """Build a safe error from an Apple JSON error response.
+
+    Keep response details out of logs: Apple can echo request context, while
+    the status, code and title are sufficient to distinguish auth, permission,
+    endpoint and data failures.
+    """
+    code = title = None
+    try:
+        errors = body.get('errors', [])
+        if errors:
+            first = errors[0]
+            code = str(first.get('code') or '') or None
+            title = str(first.get('title') or '') or None
+    except (AttributeError, TypeError):
+        pass
+    return AppleAPIError(status, urllib.parse.urlparse(url).path, code, title)
+
+
 def get(url):
     if not url.startswith('https://api.appstoreconnect.apple.com/v1/'):
         raise ValueError('Unexpected Apple API destination')
     request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + jwt()})
-    with urllib.request.build_opener(NoRedirect()).open(request, timeout=30) as response:
-        return json.load(response)
+    try:
+        with urllib.request.build_opener(NoRedirect()).open(request, timeout=30) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as error:
+        try:
+            body = json.load(error)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            body = {}
+        raise _api_error(url, error.code, body) from error
+    except urllib.error.URLError as error:
+        raise RuntimeError(f'Apple API connection failed at {urllib.parse.urlparse(url).path}') from error
 
 
 def unused(metadata, builds):
@@ -84,6 +129,9 @@ if __name__ == '__main__':
                 output.write(os.environ['ASC_API_PRIVATE_KEY'])
             os.environ['ASC_KEY_PATH'] = str(key)
             main()
+    except AppleAPIError as error:
+        print(f'Apple build-history verification failed: {error}; reconcile before upload', file=sys.stderr)
+        raise SystemExit(1)
     except Exception:
         print('Apple build-history verification failed; reconcile before upload', file=sys.stderr)
         raise SystemExit(1)
