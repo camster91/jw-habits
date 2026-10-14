@@ -1,5 +1,9 @@
 @import 'tailwindcss' source('./');
 
+html[data-fd-update-visible='true'] main {
+  padding-top: calc(var(--fd-update-clearance) + max(env(safe-area-inset-top), 1rem));
+}
+
 @plugin "daisyui" {
   themes:
     light --default,

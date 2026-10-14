@@ -11,7 +11,7 @@
  */
 
 import { RefreshCw, X } from 'lucide-react';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { usePWAContext } from '../hooks/usePWAContext';
 import { haptics } from '../utils/native';
 import { safeSessionGetItem, safeSessionSetItem } from '../utils/safeStorage';
@@ -24,8 +24,33 @@ function UpdatePrompt() {
   // show it again. We don't persist across sessions — on next reload
   // we'll re-evaluate. sessionStorage can throw in private mode.
   const [dismissed, setDismissed] = useState(() => safeSessionGetItem(DISMISS_KEY) === '1');
+  const bannerRef = useRef(null);
+  const visible = updateAvailable && !dismissed;
 
-  if (!updateAvailable || dismissed) {
+  useLayoutEffect(() => {
+    if (!visible) return;
+    const root = document.documentElement;
+    const measure = () => {
+      if (!bannerRef.current) return;
+      root.style.setProperty(
+        '--fd-update-clearance',
+        `${bannerRef.current.getBoundingClientRect().bottom}px`
+      );
+      root.setAttribute('data-fd-update-visible', 'true');
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(bannerRef.current);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+      root.style.removeProperty('--fd-update-clearance');
+      root.removeAttribute('data-fd-update-visible');
+    };
+  }, [visible]);
+
+  if (!visible) {
     return null;
   }
 
@@ -41,7 +66,10 @@ function UpdatePrompt() {
   };
 
   return (
-    <div className="fixed top-2 left-0 right-0 z-40 px-[12px] safe-area-top pointer-events-none">
+    <div
+      ref={bannerRef}
+      className="fixed top-2 left-0 right-0 z-40 px-[12px] safe-area-top pointer-events-none"
+    >
       <div
         role="status"
         aria-live="polite"
