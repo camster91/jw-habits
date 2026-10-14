@@ -69,6 +69,7 @@ export function applyTheme(store) {
   root.style.setProperty('--fd-accent', ACCENTS[store.accent] ?? ACCENTS[0]);
   const set = (mode) => {
     root.setAttribute('data-theme', mode);
+    root.style.colorScheme = mode;
     const chrome = document.querySelector('meta[name="theme-color"]');
     if (chrome) chrome.content = mode === 'dark' ? '#000000' : '#f3f4f6';
     root.style.setProperty('--fd-accent-text', accentText(store.accent, mode));

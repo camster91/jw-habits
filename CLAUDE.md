@@ -1,6 +1,8 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-13.**
+**Last audited against source: 2026-10-14.**
+
+Resolved themes also set the document colour scheme so native date/time controls follow light/dark. Saved-note previews omit a first line already shown as the title without changing the stored body or editor. The organiser planning toolbar owns the meeting-preparation link; the older project entry remains only in legacy rendering without organiser context. No storage/schema changes.
 
 Plan separates Calendar & tasks from Study & family using two view controls, with a direct Meeting preparation link. Switching views preserves the mounted calendar's selected date/view and any draft; existing projects and links remain available. Legacy rendering without organiser context starts in project view. Settings uses single-line disclosure rows with trailing chevrons, groups rhythm/notifications/quiet hours, and puts Add routine before built-in switches. Today reading pace and Progress reading totals/book map are available through disclosures instead of filling the overview. Welcome exploration is optional, and Notes' privacy caption is concise. No storage, schedule or backup schema changes.
 

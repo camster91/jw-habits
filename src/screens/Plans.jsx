@@ -151,14 +151,18 @@ export default function Plans() {
         </div>
         <div hidden={tool !== 'projects'} className="space-y-6">
           <p className="text-base-content/80">{t('fd.plans.intro')}</p>
-          <Link
-            to="/plans/preparation"
-            className="flex min-h-11 items-center gap-3 rounded-2xl bg-base-100 p-4 font-medium shadow-sm"
-          >
-            <CalendarDays aria-hidden="true" className="h-5 w-5" />
-            <span className="min-w-0 flex-1 break-words">Prepare for meetings and assignments</span>
-            <ChevronRight aria-hidden="true" className="h-5 w-5" />
-          </Link>
+          {!organiser && (
+            <Link
+              to="/plans/preparation"
+              className="flex min-h-11 items-center gap-3 rounded-2xl bg-base-100 p-4 font-medium shadow-sm"
+            >
+              <CalendarDays aria-hidden="true" className="h-5 w-5" />
+              <span className="min-w-0 flex-1 break-words">
+                Prepare for meetings and assignments
+              </span>
+              <ChevronRight aria-hidden="true" className="h-5 w-5" />
+            </Link>
+          )}
 
           <Section title={t('fd.plans.study.heading')}>
             {active || waiting.length > 0 ? (
