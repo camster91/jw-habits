@@ -266,6 +266,8 @@
         "hint": "Gentle notes on this device about what's ready today.",
         "perRoutine": "Remind me about",
         "permissionOff": "Notifications are turned off for Faithful Days. You can turn them on in your phone's Settings.",
+        "webOnly": "This web version does not send notifications. Reminders are sent by the Faithful Days phone app.",
+        "checkAgain": "Check again",
         "routineLabel": "Reminder: {{title}}"
       },
       "quietHours": {

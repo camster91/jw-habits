@@ -172,6 +172,11 @@ export default function BackupSection({ onReplaced = () => {} }) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-base-content/70">{t('fd.settings.backup.body')}</p>
+      {organiserState && (
+        <p className="text-sm text-base-content/70">
+          Backups include tasks and calendar and need Faithful Days 5.3.0 or later to import.
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <button ref={exportRef} type="button" className="btn min-h-11" onClick={exportNow}>
           {t('fd.settings.backup.export')}

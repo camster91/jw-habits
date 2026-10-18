@@ -1,6 +1,6 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-14.**
+**Last audited against source: 2026-10-18.**
 
 An optional retained-IPA replay mode in `ios-testflight.yml` validates the original signing run, owner approval, exact checksum and immutable app source without resigning. Replay upload uses the existing separate `testflight-upload` environment and a read-only Apple build-history guard. This is workflow capability, not evidence of dispatch, upload, processing or device acceptance. See `docs/ios-testflight-approval.md`.
 
@@ -31,6 +31,7 @@ Notes puts capture before guides and starts its editor with the body; a blank ti
 Preparation creation forms start open for an empty collection and collapse after a successful save. Saved records remain accessible; closing a form retains its draft, and Edit opens and focuses the assignment title. Failed saves keep forms and drafts open.
 Widget foreground processing reads native pending taps, flushes the current routine store durably, then acknowledges only those taps; a failed save leaves them pending. Read/ack methods require the updated native bridge.
 Reminder cancel/schedule operations run serially in request order. Foreground clears any stale pending debounce and applies its current settings; failed plugin operations allow later retries without requesting permission.
+Today's agenda lists only today's meetings (meeting prep covers the days before), shows preparation steps for assignments due within a week, and keeps a step ticked there visible so it can be reopened. Between 00:00 and 03:00 it labels the calendar date beside the routine day. Month cells count events and open tasks, visibly and in each day's accessible name. Note links open through `openLink`. Settings says the web version sends no notifications, offers Check again when phone permission is off, notes that full backups need 5.3.0+, and titles the routine editor Edit when editing.
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 Backup replacement explains its scope and has no Undo button. The latest pre-import copy can be exported and imported to recover prior data; another import replaces that copy, and clearing app data or uninstalling can remove it. Recovery export clears stale feedback, announces success only after the file handoff completes, and treats sharing cancellation quietly. Failed imports do not claim a recovery copy was saved when its write may have failed.

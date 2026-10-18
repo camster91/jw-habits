@@ -13,6 +13,8 @@ import Preparation from './Preparation.jsx';
 import Today from './Today.jsx';
 import { saveBackup } from '../utils/backup.js';
 vi.mock('../utils/backup.js', () => ({ saveBackup: vi.fn(async () => {}) }));
+const opened = vi.hoisted(() => vi.fn());
+vi.mock('../native/openLink.js', () => ({ openLink: opened }));
 const today = '2026-10-08';
 let current,
   fail = false;
@@ -255,6 +257,28 @@ describe('Notes UI', () => {
       expect(screen.getByText(/Original context is no longer available/)).toBeInTheDocument();
     }
   );
+  it('opens note links through the system launcher, not the WebView', () => {
+    const initial = putNote(
+      emptyWorkspace(),
+      {
+        title: 'Linked',
+        body: '',
+        tags: [],
+        links: ['https://www.jw.org/en/'],
+        context: null,
+      },
+      today
+    );
+    render(
+      <Harness initial={initial}>
+        <Notes />
+      </Harness>
+    );
+    const link = screen.getByRole('link', { name: 'https://www.jw.org/en/' });
+    expect(link).toHaveAttribute('href', 'https://www.jw.org/en/');
+    fireEvent.click(link);
+    expect(opened).toHaveBeenCalledWith('https://www.jw.org/en/');
+  });
   it('accepts contextual creation from preparation without recording activity', async () => {
     render(
       <Harness route="/notes?new=1&context=meeting&id=m1">

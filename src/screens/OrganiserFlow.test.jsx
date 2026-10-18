@@ -310,6 +310,12 @@ it('tracks a custom What’s New routine separately and restores an archived rou
   await waitFor(() => expect(data().routineCheckIns).toHaveLength(0));
   fireEvent.click(screen.getByRole('button', { name: 'Settings', exact: true }));
   fireEvent.click(screen.getByText('Routines', { selector: 'h3' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Edit routine' }));
+  const editor = screen.getByRole('dialog', { name: 'Edit personal routine' });
+  fireEvent.click(within(editor).getByRole('button', { name: 'Close', exact: true }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: 'Edit personal routine' })).not.toBeInTheDocument()
+  );
   fireEvent.click(screen.getByRole('button', { name: 'Archive routine' }));
   await waitFor(() => expect(data().personalRoutines[0].archivedAt).not.toBeNull());
   fireEvent.click(screen.getByText('Archived routines'));
@@ -452,10 +458,23 @@ it('shows all-day inclusive last days while persisting the exclusive calendar bo
   await save('Event');
   expect(data().events[0].endDate).toBe('2026-10-13');
   fireEvent.click(screen.getByRole('button', { name: 'Month', exact: true }));
-  fireEvent.click(screen.getByRole('button', { name: 'Mon, Oct 12', exact: true }));
+  // Every day of the event, inclusive, carries a counted marker; the day after does not.
+  fireEvent.click(screen.getByRole('button', { name: 'Mon, Oct 12, 1 planned item', exact: true }));
   expect(screen.getByRole('button', { name: /Synthetic convention/ })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Tue, Oct 13', exact: true }));
   expect(screen.queryByRole('button', { name: /Synthetic convention/ })).not.toBeInTheDocument();
+});
+
+it('counts events and open tasks on each Month day for sight and screen readers', async () => {
+  mount();
+  await add('Event', 'Synthetic study group', '2026-10-15');
+  await save('Event');
+  await add('Task', 'Synthetic reading', '2026-10-15');
+  await save('Task');
+  fireEvent.click(screen.getByRole('button', { name: 'Month', exact: true }));
+  const day = screen.getByRole('button', { name: 'Thu, Oct 15, 2 planned items', exact: true });
+  expect(day).toHaveTextContent('152');
+  expect(screen.getByRole('button', { name: 'Fri, Oct 16', exact: true })).toBeInTheDocument();
 });
 
 it('blocks unknown recovery journal versions even when they claim completion', async () => {
@@ -548,4 +567,65 @@ it('shows a dismissible unavailable link without changing stored records', async
   expect(window.location.search).toBe('');
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(JSON.parse(localStorage.getItem(STORE_KEY)).log).toEqual([]);
+});
+
+it('Today lists only today’s meetings and keeps a ticked preparation step for undo', async () => {
+  window.history.pushState({}, '', '/');
+  localStorage.setItem(
+    WORKSPACE_KEY,
+    JSON.stringify({
+      ...emptyWorkspace(),
+      meetings: [
+        { id: 'm-old', type: 'midweek', date: '2026-09-01', prepared: [] },
+        { id: 'm-today', type: 'weekend', date: '2026-10-10', prepared: [] },
+        { id: 'm-next', type: 'midweek', date: '2026-10-14', prepared: [] },
+      ],
+      assignments: [
+        {
+          id: 'a-soon',
+          title: 'Bible reading part',
+          type: 'Bible reading',
+          date: '2026-10-15',
+          details: '',
+          tasks: [{ id: 't-1', title: 'Practise aloud', done: false }],
+        },
+        {
+          id: 'a-later',
+          title: 'Talk',
+          type: 'Talk',
+          date: '2026-11-20',
+          details: '',
+          tasks: [{ id: 't-2', title: 'Outline', done: false }],
+        },
+      ],
+    })
+  );
+  mount();
+  const agenda = await screen.findByRole('region', { name: 'Today agenda and tasks' });
+  await within(agenda).findByText(/weekend meeting/);
+  expect(within(agenda).queryByText(/2026-09-01|Sep 1|1 Sep/)).not.toBeInTheDocument();
+  expect(within(agenda).getAllByText(/meeting ·/)).toHaveLength(1);
+  expect(within(agenda).queryByText(/Outline/)).not.toBeInTheDocument();
+  fireEvent.click(within(agenda).getByRole('button', { name: 'Complete Practise aloud' }));
+  const reopen = await within(agenda).findByRole('button', { name: 'Reopen Practise aloud' });
+  expect(JSON.parse(localStorage.getItem(WORKSPACE_KEY)).assignments[0].tasks[0].done).toBe(true);
+  expect(localStorage.getItem(ORGANISER_KEY)).toBeNull();
+  fireEvent.click(reopen);
+  await within(agenda).findByRole('button', { name: 'Complete Practise aloud' });
+  expect(JSON.parse(localStorage.getItem(WORKSPACE_KEY)).assignments[0].tasks[0].done).toBe(false);
+});
+
+it('labels the calendar date on Today between midnight and the 03:00 routine rollover', async () => {
+  vi.setSystemTime(new Date(2026, 9, 11, 1, 30));
+  window.history.pushState({}, '', '/');
+  mount();
+  await screen.findByText('Agenda for Sun, Oct 11. Routines count for Sat, Oct 10 until 3:00.');
+});
+
+it('shows no date label after the rollover', async () => {
+  vi.setSystemTime(new Date(2026, 9, 11, 9, 0));
+  window.history.pushState({}, '', '/');
+  mount();
+  await screen.findByRole('region', { name: 'Today agenda and tasks' });
+  expect(screen.queryByText(/Routines count for/)).not.toBeInTheDocument();
 });
