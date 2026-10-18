@@ -40,7 +40,7 @@ function routerBasename() {
 }
 
 function Screens() {
-  const { store, savingPaused } = useStore();
+  const { store, savingPaused, conflict } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const openSettings = () => setSettingsOpen(true);
 
@@ -100,7 +100,7 @@ function Screens() {
         )}
       </Routes>
       {onboardingDone && <BadgeToast />}
-      <StorageNotice onBackup={openSettings} savingPaused={savingPaused} />
+      <StorageNotice onBackup={openSettings} savingPaused={savingPaused} conflict={conflict} />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {isWeb && (onboardingDone || savingPaused) && <UpdatePrompt />}
       {isWeb && onboardingDone && !savingPaused && <InstallPrompt />}

@@ -122,7 +122,10 @@ function ScriptureLink({ label, url }) {
 
 export default function Today({ onOpenSettings = () => {} }) {
   const { t, i18n } = useTranslation();
-  const { store, update, today } = useStore();
+  const { store, update, today, ensureToday } = useStore();
+  // After sleep the day may have rolled over unseen; refresh instead of
+  // recording on yesterday (#319). The screen re-renders for the new day.
+  const dayMoved = () => Boolean(ensureToday) && ensureToday() !== today;
   const workspaceState = useWorkspace();
   const nextMeeting = workspaceState?.ready
     ? workspaceState.workspace.meetings
@@ -201,6 +204,7 @@ export default function Today({ onOpenSettings = () => {} }) {
   };
 
   const complete = (id) => {
+    if (dayMoved()) return;
     if (id === 'personalStudy' || id === 'familyWorship') {
       // A refusal changes nothing: say so on the row, with no encouragement.
       const ok = planCheckIn(checkIns[id]);
@@ -221,6 +225,7 @@ export default function Today({ onOpenSettings = () => {} }) {
     familyWorship: (s) => undoFamily(s, today),
   };
   const undo = (id) => {
+    if (dayMoved()) return;
     if (id === 'personalStudy' || id === 'familyWorship') {
       setFinished(null);
       setRefusedId(null);
@@ -230,6 +235,7 @@ export default function Today({ onOpenSettings = () => {} }) {
 
   // 'Did something else': tick another step of the project, or just log a session.
   const pickOther = (stepId) => {
+    if (dayMoved()) return;
     if (!planCheckIn((s) => checkInStudy(s, today, stepId))) {
       setSheetError(t('fd.today.refused'));
       return;
@@ -248,11 +254,13 @@ export default function Today({ onOpenSettings = () => {} }) {
   };
 
   const setChapters = (n) => {
+    if (dayMoved()) return;
     if (chaptersReadOn(store, today) === 0 && n > 0) encourage('bibleReading');
     update((s) => setChaptersRead(s, today, n));
   };
 
   const patchMinistry = (patch) => {
+    if (dayMoved()) return;
     if (patch.shared === true && !ministryEntry(store, today)?.value.shared) encourage('ministry');
     update((s) => setMinistry(s, today, patch));
   };

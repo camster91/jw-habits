@@ -69,6 +69,7 @@ jobs:
           node scripts/verify/journeys.cjs
           node scripts/verify/accessibility.cjs
           node scripts/verify/organiser.cjs
+          node scripts/verify/data-safety.cjs
           node scripts/verify/offline-update.cjs
           node scripts/marketing/screenshot-store-assets.cjs
         env:
@@ -113,3 +114,4 @@ jobs:
           node scripts/verify/journeys.cjs
           node scripts/verify/accessibility.cjs
           node scripts/verify/organiser.cjs
+          node scripts/verify/data-safety.cjs

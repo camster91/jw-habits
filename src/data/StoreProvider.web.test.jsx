@@ -2,6 +2,7 @@ import { it, expect, vi } from 'vitest';
 import { render, act } from '@testing-library/react';
 vi.mock('../utils/native.js', () => ({
   isNative: false,
+  isWeb: true,
   appLifecycle: { onStateChange: () => () => {} },
 }));
 // eslint-disable-next-line no-unused-vars -- used in JSX

@@ -6,7 +6,8 @@
 //
 //   S1: a first run renders onboarding with no console errors
 //   S2: a v1 install (old jw- keys) is migrated and its check-in survives
-//   S3: an unreadable v2 store is kept aside and the app starts fresh
+//   S3: an unreadable v2 store opens recovery untouched; a confirmed fresh
+//       start keeps it aside under -corrupt- and starts onboarding
 //   S4: a check-in does not carry into the next app day
 //   S5: the app day rolls over at 03:00, not midnight
 //   S6: nothing leaves the origin (no third-party content)
@@ -124,7 +125,7 @@ async function runSmoke(browser) {
     await ctx.close();
   }
 
-  // ---- S3: an unreadable v2 store is kept aside, the app starts fresh ----
+  // ---- S3: an unreadable store opens recovery; nothing changes until the user chooses (#315) ----
   {
     const { ctx, page } = await lib.openPage(browser, {
       at: DAY1,
@@ -136,17 +137,29 @@ async function runSmoke(browser) {
       lib.STORE_KEY,
     );
     await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForTimeout(500);
+    const recovery = await page
+      .getByRole('heading', { name: 'Some saved data could not be read' })
+      .isVisible();
+    const untouched = await page.evaluate((key) => ({
+      value: localStorage.getItem(key),
+      copies: Object.keys(localStorage).filter((k) => k.startsWith(key + '-corrupt-')).length,
+    }), lib.STORE_KEY);
+    await page.getByRole('button', { name: 'Start fresh…' }).click();
+    await page.getByRole('button', { name: 'Start fresh', exact: true }).click();
+    await page.getByTestId('onboarding').waitFor({ timeout: 5000 }).catch(() => {});
     const result = await page.evaluate((key) => {
-      const keys = Object.keys(localStorage);
-      const corrupt = keys.find((k) => k.startsWith(key + '-corrupt-'));
+      const corrupt = Object.keys(localStorage).find((k) => k.startsWith(key + '-corrupt-'));
       return { corrupt: corrupt ? localStorage.getItem(corrupt) : null };
     }, lib.STORE_KEY);
     const onboarding = await page.getByTestId('onboarding').isVisible();
     record(
-      'S3: Unreadable store is preserved under -corrupt- and onboarding starts',
-      result.corrupt === '{not json' && onboarding,
-      `copy=${JSON.stringify(result.corrupt)} onboarding=${onboarding}`,
+      'S3: Unreadable store opens recovery untouched; confirmed fresh start keeps a copy',
+      recovery &&
+        untouched.value === '{not json' &&
+        untouched.copies === 0 &&
+        result.corrupt === '{not json' &&
+        onboarding,
+      `recovery=${recovery} untouched=${untouched.value === '{not json'} copy=${JSON.stringify(result.corrupt)} onboarding=${onboarding}`,
     );
     await ctx.close();
   }

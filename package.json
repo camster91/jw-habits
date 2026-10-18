@@ -41,6 +41,7 @@
         "smoke:spawn": "node scripts/verify/smoke.cjs --spawn",
         "journeys": "node scripts/verify/journeys.cjs",
         "organiser:verify": "node scripts/verify/organiser.cjs",
+        "data-safety:verify": "node scripts/verify/data-safety.cjs",
         "preinstall": "node scripts/verify/runtime.cjs",
         "a11y": "node scripts/verify/accessibility.cjs",
         "offline:verify": "node scripts/verify/offline-update.cjs",
