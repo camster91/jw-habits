@@ -101,6 +101,12 @@ jobs:
       - name: Bundle and precache budgets
         run: node scripts/verify/budgets.cjs
 
+      # The image's nginx config must keep slashless redirects relative (#239).
+      - name: Web server redirects
+        run: |
+          command -v nginx >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q nginx-light; }
+          bash ops/test_nginx_redirects.sh dist
+
       # Format check. Was previously a separate format.yml workflow (now
       # removed in the 2026-07-22 review follow-up because it duplicated
       # this ci.yml pipeline). Uses --check so a bad diff fails CI rather
