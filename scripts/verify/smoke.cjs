@@ -97,7 +97,10 @@ async function runSmoke(browser) {
       viewport: { width: 375, height: 812 },
     });
     await page.goto(BASE_URL);
-    // The first load already saved a fresh v2 store; remove it so only v1 data remains.
+    // The first load saves a fresh v2 store (after its Web Lock, so not
+    // necessarily by the load event). Wait for it, then remove it so only
+    // v1 data remains.
+    await lib.storeWhere(page, (stored) => stored.version === 3, 5000);
     await page.evaluate((key) => {
       localStorage.removeItem(key);
       localStorage.setItem(
