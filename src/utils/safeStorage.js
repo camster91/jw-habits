@@ -180,6 +180,16 @@ export function durableSet(key, value, { restore = false } = {}) {
   });
 }
 
+/** @returns {Promise<string[]>} every durable key on this device */
+export async function durableKeys() {
+  if (isNative) {
+    const { keys } = await Preferences.keys();
+    return keys;
+  }
+  if (typeof localStorage === 'undefined') return [];
+  return Object.keys(localStorage);
+}
+
 /** @returns {Promise<void>} */
 export function durableRemove(key) {
   return enqueue(async () => {

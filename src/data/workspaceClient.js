@@ -14,8 +14,13 @@ export function createWorkspaceClient({
   let queue = Promise.resolve();
   return {
     async load() {
+      blocked = true;
       raw = await read(WORKSPACE_KEY);
-      value = raw === null ? emptyWorkspace() : validateWorkspace(JSON.parse(raw)).workspace;
+      try {
+        value = raw === null ? emptyWorkspace() : validateWorkspace(JSON.parse(raw)).workspace;
+      } catch {
+        value = null;
+      }
       if (!value)
         throw new Error(
           'Notes and preparation data cannot be read by this app. Export it before changing anything.'

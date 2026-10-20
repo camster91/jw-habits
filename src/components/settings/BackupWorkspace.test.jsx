@@ -3,12 +3,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { StoreContext } from '../../data/useStore.js';
 import { WorkspaceContext } from '../../data/useWorkspace.js';
-import { defaultStore } from '../../domain/store.js';
+import { defaultStore, exportJson } from '../../domain/store.js';
 import { emptyWorkspace, exportBundle } from '../../domain/workspace.js';
-import { durableGet, durableSet } from '../../utils/safeStorage.js';
+import { durableGet, durableKeys, durableSet } from '../../utils/safeStorage.js';
 import { saveBackup } from '../../utils/backup.js';
 import BackupSection from './BackupSection.jsx';
-vi.mock('../../utils/safeStorage.js', () => ({ durableGet: vi.fn(), durableSet: vi.fn() }));
+vi.mock('../../utils/safeStorage.js', () => ({
+  durableGet: vi.fn(),
+  durableSet: vi.fn(),
+  durableKeys: vi.fn(),
+}));
 vi.mock('../../utils/backup.js', () => ({
   saveBackup: vi.fn(),
   isShareCancel: (e) => e.message === 'cancel',
@@ -113,16 +117,59 @@ describe('combined backup replacement', () => {
     await screen.findByText(/If a pre-import backup is available/);
     expect(onReplaced).not.toHaveBeenCalled();
   });
-  it('unreadable workspace blocks export/import and keeps stored routines', async () => {
-    renderBackup(false);
+  it('unreadable workspace still exports routines, offers original notes bytes and pauses import (#316)', async () => {
+    const rawExport = vi.fn(async () => '{"broken": notes');
+    render(
+      <StoreContext.Provider value={{ store, today, replace }}>
+        <WorkspaceContext.Provider
+          value={{ workspace, ready: false, error: 'cannot be read', save, rawExport }}
+        >
+          <BackupSection onReplaced={onReplaced} />
+        </WorkspaceContext.Provider>
+      </StoreContext.Provider>
+    );
     fireEvent.click(screen.getByText('Export a backup'));
-    await screen.findByText(/couldn't be saved/);
-    expect(saveBackup).not.toHaveBeenCalled();
+    await screen.findByText(/Routines exported\. Notes, tasks or calendar could not be read/);
+    expect(saveBackup).toHaveBeenCalledWith(
+      exportJson(store),
+      `faithful-days-routines-${today}.json`,
+      expect.any(String)
+    );
+    fireEvent.click(screen.getByText('Save original notes data'));
+    await screen.findByText('Original data copy offered.');
+    expect(saveBackup).toHaveBeenLastCalledWith(
+      '{"broken": notes',
+      `faithful-days-notes-original-${today}.json`,
+      expect.any(String)
+    );
+    rawExport.mockResolvedValueOnce('');
+    fireEvent.click(screen.getByText('Save original notes data'));
+    await screen.findByText('There is no saved notes data to export.');
+    rawExport.mockRejectedValueOnce(new Error('read failed'));
+    fireEvent.click(screen.getByText('Save original notes data'));
+    await screen.findByText('Could not read that data to export it.');
     importFile(exportBundle(store, workspace));
     await screen.findByText('Replace');
     fireEvent.click(screen.getByText('Replace'));
     await screen.findByText(/import is paused/);
     expect(replace).not.toHaveBeenCalled();
+  });
+  it('offers the damaged routine copy kept by the recovery screen (#315)', async () => {
+    durableKeys.mockResolvedValue([
+      'jw-habits-v2-corrupt-100',
+      'jw-habits-v2-corrupt-200',
+      'other',
+    ]);
+    durableGet.mockResolvedValue('damaged bytes');
+    renderBackup();
+    fireEvent.click(await screen.findByText('Save damaged routine copy'));
+    await screen.findByText('Original data copy offered.');
+    expect(durableGet).toHaveBeenCalledWith('jw-habits-v2-corrupt-200');
+    expect(saveBackup).toHaveBeenCalledWith(
+      'damaged bytes',
+      'faithful-days-damaged-routines.json',
+      expect.any(String)
+    );
   });
   it('clears stale recovery feedback and waits for export before announcing success', async () => {
     renderBackup();

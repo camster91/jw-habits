@@ -8,7 +8,9 @@ import { useOrganiser } from '../../data/useOrganiser.js';
 import { exportOrganiserBundle, importOrganiserBundle } from '../../domain/organiserBackup.js';
 import { restoreBundle } from '../../data/restoreCoordinator.js';
 import { exportBundle, importBundle } from '../../domain/workspace.js';
-import { durableGet, durableSet } from '../../utils/safeStorage.js';
+import { durableGet, durableKeys, durableSet } from '../../utils/safeStorage.js';
+
+const DAMAGED_PREFIX = 'jw-habits-v2-corrupt-';
 
 /**
  * Export everything as a dated JSON file, or import one. An import is only
@@ -27,13 +29,61 @@ export default function BackupSection({ onReplaced = () => {} }) {
   const confirmId = useId();
   const confirmRef = useRef(null);
   const exportRef = useRef(null);
+  const [damagedCopy, setDamagedCopy] = useState(null);
+  const workspaceUnreadable = Boolean(
+    workspaceState && !workspaceState.ready && workspaceState.error
+  );
+  const organiserUnreadable = Boolean(
+    organiserState && !organiserState.ready && organiserState.error
+  );
+  const partsUnreadable =
+    (workspaceState && !workspaceState.ready) || (organiserState && !organiserState.ready);
 
   useEffect(() => {
     if (pending) confirmRef.current?.focus();
   }, [pending]);
 
+  // A copy of damaged routine data kept by the recovery screen (#315).
+  useEffect(() => {
+    let active = true;
+    Promise.resolve()
+      .then(() => durableKeys())
+      .then((keys) => {
+        const newest = (keys ?? [])
+          .filter((k) => k.startsWith(DAMAGED_PREFIX))
+          .sort(
+            (a, b) =>
+              Number(b.slice(DAMAGED_PREFIX.length)) - Number(a.slice(DAMAGED_PREFIX.length))
+          )[0];
+        if (active) setDamagedCopy(newest ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const exportNow = async () => {
     setStatus(null);
+    // Unreadable notes, tasks or calendar must not block saving routines (#316).
+    if (partsUnreadable) {
+      try {
+        await saveBackup(
+          exportJson(store),
+          `faithful-days-routines-${today}.json`,
+          t('fd.settings.backup.shareTitle')
+        );
+        setStatus({
+          error: false,
+          text: 'Routines exported. Notes, tasks or calendar could not be read, so they are not in this file. Save their original data below.',
+        });
+      } catch (error) {
+        if (isShareCancel(error)) return;
+        console.warn('Export did not complete:', error);
+        setStatus({ error: true, text: t('fd.settings.backup.exportError') });
+      }
+      return;
+    }
     try {
       await saveBackup(
         organiserState
@@ -102,13 +152,16 @@ export default function BackupSection({ onReplaced = () => {} }) {
             await organiserState.save(
               (current) => pending.organiser ?? current,
               async (currentOrganiser) => {
-                await restoreBundle({
-                  backup: exportOrganiserBundle(store, currentWorkspace, currentOrganiser),
-                  store: pending.store,
-                  workspace: pending.workspace ?? currentWorkspace,
-                  organiser: pending.organiser ?? currentOrganiser,
-                });
-                await replaceStore(pending.store);
+                // The restore runs inside the routine writer, so a queued
+                // routine save cannot mistake it for another window's change.
+                await replaceStore(pending.store, () =>
+                  restoreBundle({
+                    backup: exportOrganiserBundle(store, currentWorkspace, currentOrganiser),
+                    store: pending.store,
+                    workspace: pending.workspace ?? currentWorkspace,
+                    organiser: pending.organiser ?? currentOrganiser,
+                  })
+                );
               }
             );
           }
@@ -164,6 +217,23 @@ export default function BackupSection({ onReplaced = () => {} }) {
     }
   };
 
+  // Original bytes of a store that cannot be read, for support or a later app version.
+  const exportOriginal = async (read, name, empty) => {
+    setStatus(null);
+    try {
+      const raw = await read();
+      if (!raw) {
+        setStatus({ error: false, text: empty });
+        return;
+      }
+      await saveBackup(raw, name, 'Faithful Days original data');
+      setStatus({ error: false, text: 'Original data copy offered.' });
+    } catch (e) {
+      if (isShareCancel(e)) return;
+      setStatus({ error: true, text: 'Could not read that data to export it.' });
+    }
+  };
+
   const cancel = () => {
     setPending(null);
     exportRef.current?.focus();
@@ -186,6 +256,60 @@ export default function BackupSection({ onReplaced = () => {} }) {
           />
         </label>
       </div>
+      {(workspaceUnreadable || organiserUnreadable || damagedCopy) && (
+        <div className="space-y-2 rounded-2xl border border-base-300 p-3">
+          <p className="text-sm">
+            Some saved data could not be read. Save its original copy before changing anything.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {workspaceUnreadable && (
+              <button
+                type="button"
+                className="btn min-h-11"
+                onClick={() =>
+                  exportOriginal(
+                    workspaceState.rawExport,
+                    `faithful-days-notes-original-${today}.json`,
+                    'There is no saved notes data to export.'
+                  )
+                }
+              >
+                Save original notes data
+              </button>
+            )}
+            {organiserUnreadable && (
+              <button
+                type="button"
+                className="btn min-h-11"
+                onClick={() =>
+                  exportOriginal(
+                    organiserState.rawExport,
+                    `faithful-days-tasks-calendar-original-${today}.json`,
+                    'There is no saved tasks or calendar data to export.'
+                  )
+                }
+              >
+                Save original tasks and calendar data
+              </button>
+            )}
+            {damagedCopy && (
+              <button
+                type="button"
+                className="btn min-h-11"
+                onClick={() =>
+                  exportOriginal(
+                    () => durableGet(damagedCopy),
+                    'faithful-days-damaged-routines.json',
+                    'The damaged routine copy is empty.'
+                  )
+                }
+              >
+                Save damaged routine copy
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {workspaceState && (
         <div className="space-y-2">
           <button className="btn min-h-11" disabled={busy} onClick={exportRecovery}>
