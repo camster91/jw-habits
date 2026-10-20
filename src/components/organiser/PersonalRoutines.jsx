@@ -17,7 +17,7 @@ const icons = {
 };
 export default function PersonalRoutines({ manage = false, children }) {
   const context = useOrganiser(),
-    { today } = useStore();
+    { today, ensureToday } = useStore();
   const [baseline, setBaseline] = useState('');
   const [draft, setDraft] = useState(null),
     [error, setError] = useState(''),
@@ -75,6 +75,8 @@ export default function PersonalRoutines({ manage = false, children }) {
     }
   };
   const toggle = async (r) => {
+    // A stale day after sleep refreshes the screen instead of recording on yesterday.
+    if (ensureToday && ensureToday() !== today) return;
     try {
       await save((o) => togglePersonalCheckIn(o, r.id, today));
       setError('');

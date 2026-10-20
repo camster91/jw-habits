@@ -169,7 +169,7 @@ they ship in real installs, so renaming them silently discards user history.
 |---|---|---|
 | `jw-habits-v2` | one JSON store (`version: 3`; the key keeps its v2 name) | Everything: `schedule[]`, `log[]`, `reading`, `anchors`, `labels`, `links`, `whatsNew`, `onboardingDone`, and from v3 `plans`, `activePlan`, `familyAgendas`, `badges`, `showGameLayer`, `showShare`, … |
 | `jw-habits-v2-backup` | raw string | The original v2 value, written once before the first load upgrades it to v3 (`domain/upgrade.js`) |
-| `jw-habits-v2-corrupt-<ms>` | raw string | An unreadable `jw-habits-v2` kept aside before starting fresh |
+| `jw-habits-v2-corrupt-<ms>` | raw string | The original bytes of an unreadable `jw-habits-v2`, kept on the device only after the user confirms Repair or Start fresh on the recovery screen; exportable from Settings → Backup |
 | `jw-daily-habits-state`, `jw-bible-reading-days`, `jw-user-settings` | v1 shapes | Read once by `migrateV1`; never written or deleted (rollback) |
 | `jw-error-logs` | `ErrorLog[]` (last 20, at most 7 days) | Dev error capture |
 | `fd-wrapup-dismissed`, `fd-celebrated` | session storage, an app day | Wrap-up dismissed / haptic already fired |
@@ -220,6 +220,19 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
 - **Native compilation is gated in CI.** Android debug and iOS simulator builds cover the app
   and embedded widget. Device check-ins, signing and TestFlight installation remain unverified;
   follow `docs/ios-widget-setup.md` and `docs/release-checklist.md` before store release.
+- **Data safety (#315–#319).** Saved routine data that fails validation opens `DamagedData`
+  without writing anything: the user can save its exact bytes, Repair (`domain/repair.js` keeps
+  every field and check-in that still validates) or confirm Start fresh; both keep the original
+  under `-corrupt-<ms>` first and change nothing if that copy fails. Routine saves go through
+  `data/routineWriter.js`: serialized, coalesced, compare-before-write under a Web Lock where
+  available. Another tab's write is adopted when this tab is in step and idle (`storage` event);
+  otherwise saving pauses with a Reload notice instead of overwriting. Without Web Locks a narrow
+  read/write race remains. Backup import runs its restore inside the writer and notifies
+  `onStoreChange` subscribers (reminders, widget, badges) only after the durable write. On web,
+  `visibilitychange`/`pageshow`/`focus` and a one-minute check roll the day over after sleep, and
+  Today/personal-routine check-ins call `ensureToday()` so a stale day is refreshed, never recorded.
+  When notes or tasks/calendar cannot be read, Settings still exports routines and offers each
+  store's original bytes. `npm run data-safety:verify` checks these states in a real build.
 - **Storage failures are visible.** `StorageNotice` listens for `jw-storage-full` and offers
   backup settings so the current in-memory history can be exported before closing.
   Browser durable reads propagate errors instead of treating them as missing data.

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useEffect } from 'react';
-import { render, act, fireEvent } from '@testing-library/react';
+import { render, act, fireEvent, screen } from '@testing-library/react';
 import i18n from 'i18next';
 
 const prefs = vi.hoisted(() => new Map());
@@ -29,6 +29,13 @@ vi.mock('../domain/migrateV1.js', async () => {
   const actual = await vi.importActual('../domain/migrateV1.js');
   return { migrateV1: vi.fn(actual.migrateV1) };
 });
+const notifications = vi.hoisted(() => ({
+  getPending: vi.fn(async () => ({ notifications: [] })),
+  cancel: vi.fn(async () => {}),
+  checkPermissions: vi.fn(async () => ({ display: 'granted' })),
+  schedule: vi.fn(async () => {}),
+}));
+vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: notifications }));
 vi.mock('@capacitor/preferences', () => ({
   Preferences: {
     get: async ({ key }) => ({ value: prefs.has(key) ? prefs.get(key) : null }),
@@ -129,23 +136,66 @@ describe('StoreProvider persistence', () => {
     expect(JSON.parse(prefs.get(STORE_KEY)).log).toHaveLength(1);
   });
 
-  it('keeps a copy of an invalid stored value, warns once, and starts fresh', async () => {
+  it('shows recovery for an invalid stored value and writes nothing until the user chooses (#315)', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    prefs.set(STORE_KEY, '{"version":2,"nonsense":true}');
+    const raw = JSON.stringify({
+      ...defaultStore('2026-10-01', 'en'),
+      onboardingDone: true,
+      log: [
+        { routine: 'dailyText', day: '2026-10-01', value: true },
+        { routine: 'dailyText', day: 'not a day', value: true },
+        { routine: 'bibleReading', day: '2026-10-02', value: { chapters: [0, 1] } },
+      ],
+    });
+    prefs.set(STORE_KEY, raw);
+    const set = vi.spyOn(Preferences, 'set');
     await mount();
-    const copies = [...prefs.keys()].filter((k) => k.startsWith(`${STORE_KEY}-corrupt-`));
-    expect(copies).toEqual([`${STORE_KEY}-corrupt-${Date.now()}`]);
-    expect(prefs.get(copies[0])).toBe('{"version":2,"nonsense":true}');
-    expect(latest.store.onboardingDone).toBe(false);
+    expect(screen.getByRole('heading', { name: 'Some saved data could not be read' })).toBeTruthy();
+    expect(latest).toBeUndefined();
+    expect(set).not.toHaveBeenCalled();
+    expect(prefs.get(STORE_KEY)).toBe(raw);
+    expect(screen.getByText(/Keeps 2 check-ins/)).toHaveTextContent(
+      '1 check-in that could not be read'
+    );
     expect(warn).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save a copy of your data' }));
+    await flush();
+    expect(backup).toHaveBeenCalledWith(
+      raw,
+      expect.stringMatching(/unreadable-data/),
+      expect.any(String)
+    );
+    expect(prefs.get(STORE_KEY)).toBe(raw);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Repair and continue' }));
+    await flush();
+    await flush();
+    expect(prefs.get(`${STORE_KEY}-corrupt-${Date.now()}`)).toBe(raw);
+    expect(latest.store.onboardingDone).toBe(true);
+    expect(latest.store.log).toEqual([
+      { routine: 'dailyText', day: '2026-10-01', value: true },
+      { routine: 'bibleReading', day: '2026-10-02', value: { chapters: [0, 1] } },
+    ]);
+    expect(validateStore(JSON.parse(prefs.get(STORE_KEY))).ok).toBe(true);
   });
 
-  it('treats unparseable text the same way and never throws', async () => {
+  it('offers only a confirmed fresh start for unparseable text and never throws', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     prefs.set(STORE_KEY, 'not json');
     await mount();
+    expect(screen.queryByRole('button', { name: 'Repair and continue' })).toBeNull();
+    expect(prefs.get(STORE_KEY)).toBe('not json');
+    fireEvent.click(screen.getByRole('button', { name: 'Start fresh…' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(prefs.get(STORE_KEY)).toBe('not json');
+    fireEvent.click(screen.getByRole('button', { name: 'Start fresh…' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start fresh' }));
+    await flush();
+    await flush();
+    expect(prefs.get(`${STORE_KEY}-corrupt-${Date.now()}`)).toBe('not json');
     expect(latest.store.version).toBe(3);
-    expect([...prefs.keys()].some((k) => k.includes('-corrupt-'))).toBe(true);
+    expect(latest.store.onboardingDone).toBe(false);
   });
 
   it('warns but keeps in-memory state when a save fails', async () => {
@@ -412,16 +462,19 @@ describe('storage failures never overwrite stored data', () => {
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
-  it('does not persist when the corrupt copy cannot be kept', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('changes nothing when the damaged copy cannot be kept on the device', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     prefs.set(STORE_KEY, 'garbage');
     vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('full'));
     await mount();
-    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Changed' } })));
+    fireEvent.click(screen.getByRole('button', { name: 'Start fresh…' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start fresh' }));
     await flush();
-    expect(latest.store.labels.dailyText).toBe('Changed');
+    expect(
+      screen.getByText(/Could not keep a copy on this device, so nothing was changed/)
+    ).toBeTruthy();
     expect(prefs.get(STORE_KEY)).toBe('garbage');
-    expect(warn).toHaveBeenCalledTimes(2);
+    expect(latest).toBeUndefined();
   });
 });
 
@@ -517,15 +570,22 @@ describe('upgrading a stored v2 value', () => {
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
-  it('sets a v2 value that fails validation aside as corrupt, without a backup', async () => {
+  it('offers to repair a v2 value that fails validation, keeping its history', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const raw = JSON.stringify({ ...JSON.parse(v2Raw('Daniel')), tone: 'loud' });
     prefs.set(STORE_KEY, raw);
     await mount();
-    expect(latest.store.onboardingDone).toBe(false);
+    expect(prefs.get(STORE_KEY)).toBe(raw);
     expect(prefs.has(BACKUP_KEY)).toBe(false);
+    expect(screen.getByText(/Keeps 1 check-in and/)).toHaveTextContent('some display settings');
+    fireEvent.click(screen.getByRole('button', { name: 'Repair and continue' }));
+    await flush();
+    await flush();
     const copies = [...prefs.keys()].filter((k) => k.includes('-corrupt-'));
     expect(copies.map((k) => prefs.get(k))).toEqual([raw]);
+    expect(latest.store.onboardingDone).toBe(true);
+    expect(latest.store.log).toEqual([{ routine: 'dailyText', day: '2026-10-01', value: true }]);
+    expect(latest.store.plans.map((p) => p.title)).toEqual(['Daniel']);
   });
 
   it('blocks an unknown newer store without replacing or copying its raw bytes', async () => {
@@ -685,4 +745,79 @@ it('durable widget flush cannot replace data after an unreadable-store startup',
   expect(set).not.toHaveBeenCalled();
   warn.mockRestore();
   off();
+});
+
+describe('backup import resync (#318)', () => {
+  const imported = () => ({
+    ...defaultStore('2026-10-01', 'en'),
+    onboardingDone: true,
+    anchors: { dailyText: { time: '20:00', phrase: null } },
+    log: Array.from({ length: 30 }, (_, i) => ({
+      routine: 'dailyText',
+      day: `2026-09-${String(i + 1).padStart(2, '0')}`,
+      value: true,
+    })),
+  });
+
+  it('a durable import reschedules reminders and dates newly earned badges', async () => {
+    const { registerBadgeAwards } = await import('../native/badgeAwards.js');
+    const { registerReminderSync } = await import('../native/reminders.js');
+    const offBadges = registerBadgeAwards();
+    const offReminders = registerReminderSync();
+    await mount();
+    await flush();
+    notifications.getPending.mockClear();
+    notifications.schedule.mockClear();
+    const next = imported();
+    await act(() => latest.replace(next));
+    await flush();
+    expect(latest.store.badges.dailyText30).toBe('2026-10-06');
+    expect(JSON.parse(prefs.get(STORE_KEY)).badges.dailyText30).toBe('2026-10-06');
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    await flush();
+    expect(notifications.getPending).toHaveBeenCalled();
+    expect(notifications.schedule).toHaveBeenCalled();
+    offBadges();
+    offReminders();
+  });
+
+  it('a failed import publishes nothing to dependent services', async () => {
+    const heard = vi.fn();
+    const off = onStoreChange(heard);
+    await mount();
+    vi.spyOn(Preferences, 'set').mockRejectedValueOnce(new Error('disk full'));
+    await act(async () => {
+      await expect(latest.replace(imported())).rejects.toThrow('disk full');
+    });
+    expect(heard).not.toHaveBeenCalled();
+    expect(latest.store.log).toEqual([]);
+    expect(prefs.get(STORE_KEY)).not.toContain('2026-09-01');
+    await expect(latest.replace({ nonsense: true })).rejects.toThrow('Invalid routine data');
+    expect(heard).not.toHaveBeenCalled();
+    off();
+  });
+
+  it('runs the restore step inside the writer before storing the import', async () => {
+    const heard = vi.fn();
+    const off = onStoreChange(heard);
+    await mount();
+    const order = [];
+    const next = imported();
+    await act(() =>
+      latest.replace(next, async () => {
+        order.push('restore');
+        prefs.set(STORE_KEY, JSON.stringify(next));
+      })
+    );
+    order.push('stored');
+    expect(order).toEqual(['restore', 'stored']);
+    expect(heard).toHaveBeenCalledWith(next, expect.objectContaining({ today: '2026-10-06' }));
+    act(() => latest.update((s) => ({ ...s, pioneer: true })));
+    await flush();
+    expect(latest.conflict).toBe(false);
+    expect(JSON.parse(prefs.get(STORE_KEY)).pioneer).toBe(true);
+    off();
+  });
 });

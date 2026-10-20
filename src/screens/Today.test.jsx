@@ -140,6 +140,28 @@ describe('Today: the list', () => {
     expect(checkButton('Daily text')).toBeInTheDocument();
   });
 
+  it('a check-in after sleep refreshes the day instead of recording on yesterday (#319)', () => {
+    vi.setSystemTime(at(9));
+    let store = makeStore();
+    const update = vi.fn((fn) => {
+      store = fn(store);
+    });
+    const ensureToday = vi.fn(() => '2026-10-07');
+    render(
+      <StoreContext.Provider value={{ store, update, today: '2026-10-06', ensureToday }}>
+        <Today />
+      </StoreContext.Provider>
+    );
+    hold(checkButton('Daily text'));
+    expect(ensureToday).toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    expect(store.log).toEqual([]);
+    ensureToday.mockReturnValue('2026-10-06');
+    hold(checkButton('Daily text'));
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(store.log).toEqual([{ routine: 'dailyText', day: '2026-10-06', value: true }]);
+  });
+
   it('undoing extra Bible reading leaves yesterday untouched', () => {
     renderToday(makeStore());
     const stepper = screen.getByRole('group', { name: 'Chapters read today' });
