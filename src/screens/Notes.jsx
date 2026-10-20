@@ -12,6 +12,7 @@ import { putNote, searchNotes, searchRelated } from '../domain/workspace.js';
 import ItemEditor from '../components/organiser/ItemEditor.jsx';
 import { saveBackup } from '../utils/backup.js';
 import Sheet from '../components/plans/Sheet.jsx';
+import { openLink } from '../native/openLink.js';
 
 function noteBodyPreview(note) {
   const [firstLine, ...rest] = note.body.split('\n');
@@ -489,6 +490,11 @@ export default function Notes() {
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => {
+                    // The system launcher on devices; a WebView ignores target.
+                    e.preventDefault();
+                    openLink(url);
+                  }}
                 >
                   {url}
                 </a>

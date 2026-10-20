@@ -224,7 +224,16 @@ export default function PersonalRoutines({ manage = false, children }) {
         </details>
       )}
       {draft && (
-        <Sheet title={discard ? 'Unsaved changes' : 'Add a personal routine'} onClose={close}>
+        <Sheet
+          title={
+            discard
+              ? 'Unsaved changes'
+              : context.organiser.personalRoutines.some((r) => r.id === draft.id)
+                ? 'Edit personal routine'
+                : 'Add a personal routine'
+          }
+          onClose={close}
+        >
           {discard ? (
             <div className="space-y-3">
               <p>Discard this unsaved routine?</p>

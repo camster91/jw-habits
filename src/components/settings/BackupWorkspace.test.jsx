@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { StoreContext } from '../../data/useStore.js';
 import { WorkspaceContext } from '../../data/useWorkspace.js';
+import { OrganiserContext } from '../../data/useOrganiser.js';
+import { emptyOrganiser } from '../../domain/organiser.js';
 import { defaultStore, exportJson } from '../../domain/store.js';
 import { emptyWorkspace, exportBundle } from '../../domain/workspace.js';
 import { durableGet, durableKeys, durableSet } from '../../utils/safeStorage.js';
@@ -218,5 +220,17 @@ describe('combined backup replacement', () => {
     durableGet.mockRejectedValueOnce(new Error('unreadable'));
     fireEvent.click(screen.getByText('Export pre-import backup'));
     await screen.findByText('unreadable');
+  });
+  it('says which app version can import a full backup', () => {
+    render(
+      <StoreContext.Provider value={{ store, today, replace }}>
+        <WorkspaceContext.Provider value={{ workspace, ready: true, save }}>
+          <OrganiserContext.Provider value={{ organiser: emptyOrganiser(), ready: true, save }}>
+            <BackupSection onReplaced={onReplaced} />
+          </OrganiserContext.Provider>
+        </WorkspaceContext.Provider>
+      </StoreContext.Provider>
+    );
+    expect(screen.getByText(/need Faithful Days 5\.3\.0 or later to import/)).toBeInTheDocument();
   });
 });

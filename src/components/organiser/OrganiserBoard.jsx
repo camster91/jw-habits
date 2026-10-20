@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
+import { StoreContext } from '../../data/useStore.js';
 import { Link, useSearchParams } from 'react-router-dom';
 import { linkedOrganiserOccurrence, organiserItemUrl } from '../../domain/organiserLinks.js';
 import {
@@ -46,7 +47,8 @@ function OrganiserBoardContent({ compact = false, context }) {
     [undo, setUndo] = useState(null),
     [savedActivity, setSavedActivity] = useState(null),
     [query, setQuery] = useState(''),
-    [filter, setFilter] = useState('Open');
+    [filter, setFilter] = useState('Open'),
+    [tickedHere, setTickedHere] = useState(() => new Set());
   const { organiser, ready, save, rawExport } = context;
   const linkedKind = params.get('itemKind'),
     linkedId = params.get('itemId');
@@ -69,6 +71,7 @@ function OrganiserBoardContent({ compact = false, context }) {
       setParams(nextParams, { replace: true });
     }
   };
+  const routineDay = useContext(StoreContext)?.today;
   const today = civilDate(),
     monday = weekStart(selected),
     month = selected.slice(0, 7) + '-01';
@@ -114,6 +117,7 @@ function OrganiserBoardContent({ compact = false, context }) {
     (t.title + ' ' + t.details).toLowerCase().includes(query.toLowerCase())
   );
   const eventIndicators = events;
+  const taskIndicators = tasks.filter((t) => t.status === 'open');
   if (!compact && view === 'Month') {
     tasks = tasks.filter((t) => t.date === selected);
     events = events.filter((e) => e.displayDate <= selected && e.displayEndDate >= selected);
@@ -217,12 +221,20 @@ function OrganiserBoardContent({ compact = false, context }) {
       setError(e.message);
     }
   };
+  // Today lists only today's meetings; the meeting-prep routine covers the
+  // days before. Preparation steps include assignments due within a week, and
+  // a step ticked here stays visible so it can be reopened.
   const legacyMeetings =
-    workspaceContext?.workspace.meetings.filter((m) => m.date >= from && m.date <= to) ?? [];
+    workspaceContext?.workspace.meetings.filter((m) =>
+      compact ? m.date === today : m.date >= from && m.date <= to
+    ) ?? [];
+  const prepTo = compact ? addDays(today, 7) : to;
   const legacyTasks =
     workspaceContext?.workspace.assignments.flatMap((a) =>
-      a.date >= from && a.date <= to
-        ? a.tasks.filter((t) => !compact || !t.done).map((t) => ({ ...t, assignment: a }))
+      a.date >= from && a.date <= prepTo
+        ? a.tasks
+            .filter((t) => !compact || !t.done || tickedHere.has(t.id))
+            .map((t) => ({ ...t, assignment: a }))
         : []
     ) ?? [];
   const emptyAgenda =
@@ -232,6 +244,12 @@ function OrganiserBoardContent({ compact = false, context }) {
       aria-label={compact ? 'Today agenda and tasks' : 'Calendar and tasks'}
       className={`@container ${compact && emptyAgenda ? 'space-y-1' : 'space-y-3'}`}
     >
+      {compact && routineDay && routineDay < today && (
+        <p className="text-sm text-base-content/70">
+          Agenda for {friendlyDate(today)}. Routines count for {friendlyDate(routineDay)} until
+          3:00.
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         {(!compact || !emptyAgenda) && (
           <h2 className="min-w-0 flex-1 basis-[12rem] break-words text-xl font-semibold">
@@ -416,13 +434,18 @@ function OrganiserBoardContent({ compact = false, context }) {
                         view === 'Month'
                           ? month.slice(0, 8) + String(d).padStart(2, '0')
                           : addDays(monday, i);
-                      const count = eventIndicators.filter(
-                        (e) => e.displayDate <= day && e.displayEndDate >= day
-                      ).length;
+                      const count =
+                        eventIndicators.filter(
+                          (e) => e.displayDate <= day && e.displayEndDate >= day
+                        ).length + taskIndicators.filter((t) => t.date === day).length;
                       return (
                         <button
                           key={day}
-                          aria-label={friendlyDate(day)}
+                          aria-label={
+                            count
+                              ? `${friendlyDate(day)}, ${count} planned item${count === 1 ? '' : 's'}`
+                              : friendlyDate(day)
+                          }
                           aria-pressed={selected === day}
                           className={`min-h-11 rounded-lg text-sm ${selected === day ? 'bg-[var(--fd-accent)] text-white' : 'bg-base-100'}`}
                           onClick={() => {
@@ -446,8 +469,8 @@ function OrganiserBoardContent({ compact = false, context }) {
                           )}
                           {Number(day.slice(-2))}
                           {count > 0 && (
-                            <span aria-hidden="true" className="block leading-2">
-                              ·
+                            <span aria-hidden="true" className="block text-xs leading-3">
+                              {count === 1 ? '·' : count > 9 ? '9+' : count}
                             </span>
                           )}
                         </button>
@@ -504,6 +527,7 @@ function OrganiserBoardContent({ compact = false, context }) {
             className="btn btn-circle btn-outline min-h-11"
             onClick={async () => {
               try {
+                if (!t.done) setTickedHere((ids) => new Set(ids).add(t.id));
                 await workspaceContext.save((w) => ({
                   ...w,
                   assignments: w.assignments.map((a) =>
@@ -524,6 +548,7 @@ function OrganiserBoardContent({ compact = false, context }) {
           </button>
           <Link className="min-h-11 py-2 text-sm underline" to="/plans/preparation">
             {t.title} · {t.assignment.title}
+            {compact && t.assignment.date !== today && ` · ${friendlyDate(t.assignment.date)}`}
           </Link>
         </div>
       ))}

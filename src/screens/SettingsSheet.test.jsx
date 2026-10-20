@@ -381,6 +381,23 @@ describe('SettingsSheet', () => {
       expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
       expect(within(section('Reminders')).queryByRole('status')).toBeEmptyDOMElement();
       expect(screen.queryByText(HINT)).toBeNull();
+      expect(
+        within(section('Reminders')).getByText(/This web version does not send notifications/)
+      ).toBeInTheDocument();
+    });
+
+    it('re-reads a denied permission when asked to check again', async () => {
+      platform.isNative = true;
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('denied'));
+      renderSheet();
+      await settle();
+      expect(screen.getByText(HINT)).toBeInTheDocument();
+      expect(screen.queryByText(/This web version/)).toBeNull();
+      LocalNotifications.checkPermissions.mockResolvedValue(perm('granted'));
+      fireEvent.click(within(section('Reminders')).getByRole('button', { name: 'Check again' }));
+      await settle();
+      expect(screen.queryByText(HINT)).toBeNull();
+      expect(LocalNotifications.requestPermissions).not.toHaveBeenCalled();
     });
 
     it('never asks on mount, even with reminders on and permission undecided', async () => {

@@ -38,16 +38,20 @@ export default function RemindersSection() {
     if (mounted.current) setPermission(result.display);
   }, []);
 
-  useEffect(() => {
-    if (!isNative) return;
-    const read = () =>
+  const read = useCallback(
+    () =>
       Promise.resolve()
         .then(() => LocalNotifications.checkPermissions())
         .then((result) => result && remember(result))
-        .catch((error) => console.warn('Could not read notification permission:', error));
+        .catch((error) => console.warn('Could not read notification permission:', error)),
+    [remember]
+  );
+
+  useEffect(() => {
+    if (!isNative) return;
     void read();
     return onForeground(read);
-  }, [remember]);
+  }, [read]);
 
   const ensurePermission = () => {
     if (!isNative) return Promise.resolve();
@@ -95,6 +99,14 @@ export default function RemindersSection() {
       <p role="status" className={showHint ? 'text-sm text-base-content/70' : 'sr-only'}>
         {showHint ? t('fd.settings.reminders.permissionOff') : ''}
       </p>
+      {showHint && (
+        <button type="button" className="btn btn-sm min-h-11" onClick={() => void read()}>
+          {t('fd.settings.reminders.checkAgain')}
+        </button>
+      )}
+      {!isNative && (
+        <p className="text-sm text-base-content/70">{t('fd.settings.reminders.webOnly')}</p>
+      )}
       {enabled && routines.length > 0 && (
         <fieldset className="space-y-1">
           <legend className="text-sm text-base-content/70">
