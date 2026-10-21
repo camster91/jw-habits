@@ -94,38 +94,43 @@ async function scan(page, label) {
         await page.getByRole('button', { name: 'Back', exact: true }).click();
       await onboardSkip(page);
       await scan(page, `${theme} Today`);
-      // #181: with reduced motion, no smooth scrolling and no repeating or
-      // long-running animation; without it, smooth scrolling is unchanged.
-      const motion = await page.evaluate(() => ({
-        scroll: getComputedStyle(document.documentElement).scrollBehavior,
-        running: document
-          .getAnimations()
-          .filter((a) => a.playState === 'running')
-          .filter((a) => {
-            const timing = a.effect?.getComputedTiming?.() ?? {};
-            return timing.iterations === Infinity || Number(timing.duration) > 1;
-          }).length,
-      }));
-      if (motion.scroll !== 'auto' || motion.running) {
-        failures++;
-        console.error(`${theme} reduced motion not honoured`, JSON.stringify(motion));
-      }
+      // #181: with reduced motion there is no smooth scrolling; without it,
+      // smooth scrolling is unchanged. Animations are sampled after the
+      // check-in below, when the row's transitions are actually running.
+      const reducedScroll = await page.evaluate(
+        () => getComputedStyle(document.documentElement).scrollBehavior
+      );
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
       const normalScroll = await page.evaluate(
         () => getComputedStyle(document.documentElement).scrollBehavior
       );
-      if (normalScroll !== 'smooth') {
-        failures++;
-        console.error(`${theme} normal motion changed: scroll-behavior ${normalScroll}`);
-      }
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
-      console.log(
-        `${theme} reduced motion: scroll=${motion.scroll}, long animations=${motion.running}; normal scroll=${normalScroll}`
-      );
+      if (reducedScroll !== 'auto' || normalScroll !== 'smooth') {
+        failures++;
+        console.error(`${theme} scroll motion: reduced=${reducedScroll} normal=${normalScroll}`);
+      }
       await page.getByText('A quick guide to Today', { exact: true }).click();
       await scan(page, `${theme} Today guide expanded`);
       await page.getByText('A quick guide to Today', { exact: true }).click();
       await hold(page, routineButton(page, 'Daily text'));
+      // Normal motion runs a 600 ms transition here; reduced motion must not.
+      const longMotion = await page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter((a) => a.playState === 'running')
+            .filter((a) => {
+              const timing = a.effect?.getComputedTiming?.() ?? {};
+              return timing.iterations === Infinity || Number(timing.duration) > 1;
+            }).length
+      );
+      if (longMotion) {
+        failures++;
+        console.error(`${theme} reduced motion: ${longMotion} long or repeating animations`);
+      }
+      console.log(
+        `${theme} reduced motion: scroll=${reducedScroll}, long animations after check-in=${longMotion}; normal scroll=${normalScroll}`
+      );
       await scan(page, `${theme} Today completed`);
       await page.getByRole('button', { name: 'Settings', exact: true }).click();
       await scan(page, `${theme} Settings`);
