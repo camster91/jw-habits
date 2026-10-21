@@ -23,7 +23,6 @@ import {
   validateStore,
 } from './domain/store.js';
 import { setChaptersRead, setMinistry } from './domain/today.js';
-import { applyFeed } from './domain/whatsNew.js';
 import { migrateV1 } from './domain/migrateV1.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import Onboarding from './screens/onboarding/Onboarding.jsx';
@@ -241,8 +240,12 @@ describe('domain writers keep the store valid', () => {
           s = withScheduleChange(s, day, { enabled: { [id]: r() < 0.5 }, meetingDays: [3, 6] });
         }
         if (op === 'feed') {
-          const items = [{ guid: `g${i}`, pubDate: '' }];
-          s = { ...s, whatsNew: applyFeed(s.whatsNew, items, new Date(2026, 9, 6)) };
+          // Legacy saved metadata of the shape older builds wrote.
+          const seen = [`g${i}`, ...s.whatsNew.seen].slice(0, 100);
+          s = {
+            ...s,
+            whatsNew: { ...s.whatsNew, lastCheck: new Date(2026, 9, 6).toISOString(), seen },
+          };
         }
         if (op === 'seen') s = { ...s, lastSeenDay: day };
         const result = validateStore(s);
