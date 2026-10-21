@@ -150,14 +150,20 @@ function NoteEditor({ note, seed, context, target, onClose }) {
               ['task', 'event'].includes(r.target.kind) &&
               !(target && r.target.kind === target.kind && r.target.id === target.id)
           )
-          .map((r) => (
-            <p key={r.id} className="rounded-xl bg-base-200 p-3 text-sm">
-              Attached to {r.target.kind}:{' '}
-              {organiserContext.organiser[r.target.kind === 'task' ? 'tasks' : 'events'].find(
-                (i) => i.id === r.target.id
-              )?.title ?? 'Original activity unavailable'}
-            </p>
-          ))}
+          .map((r) => {
+            const item = organiserContext.organiser[
+              r.target.kind === 'task' ? 'tasks' : 'events'
+            ].find((i) => i.id === r.target.id);
+            return (
+              <p key={r.id} className="rounded-xl bg-base-200 p-3 text-sm">
+                {!item
+                  ? 'Original activity is unavailable; your note is kept.'
+                  : item.archivedAt
+                    ? `Attached ${r.target.kind} "${item.title}" is archived; your note is kept.`
+                    : `Attached to ${r.target.kind}: ${item.title}`}
+              </p>
+            );
+          })}
       <form
         className="space-y-3"
         onSubmit={(e) => {

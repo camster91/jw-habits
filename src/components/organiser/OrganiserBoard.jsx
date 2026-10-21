@@ -135,6 +135,9 @@ function OrganiserBoardContent({ compact = false, context }) {
         : addDays(date, direction * (view === 'Week' ? 7 : 1))
     );
   const dueCount = tasks.length + events.length;
+  // Totals before Today's display caps, for the agenda summary.
+  const allTasks = tasks.length,
+    allEvents = events.length;
   if (compact) {
     tasks = tasks.slice(0, 3);
     events = events.slice(0, 2);
@@ -245,7 +248,7 @@ function OrganiserBoardContent({ compact = false, context }) {
   const emptyAgenda =
     !tasks.length && !events.length && !legacyTasks.length && !legacyMeetings.length;
   const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
-  const agendaSummary = `${plural(tasks.length + legacyTasks.filter((t) => !t.done).length, 'task')} · ${plural(events.length + legacyMeetings.length, 'event')}`;
+  const agendaSummary = `${plural(allTasks + legacyTasks.filter((t) => !t.done).length, 'task')} · ${plural(allEvents + legacyMeetings.length, 'event')}`;
   return (
     <section
       aria-label={compact ? 'Today agenda and tasks' : 'Calendar and tasks'}

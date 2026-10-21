@@ -711,3 +711,63 @@ it('Edit routines on Today opens Settings at Routines without management on Toda
     within(settings).getByText('Routines', { selector: 'h3' }).closest('details')
   ).toHaveAttribute('open');
 });
+
+it('summarises every activity on Today, not only the rows shown', async () => {
+  window.history.pushState({}, '', '/');
+  localStorage.setItem(
+    ORGANISER_KEY,
+    JSON.stringify({
+      ...emptyOrganiser(),
+      tasks: [1, 2, 3, 4].map((i) =>
+        newOrganiserItem('task', { title: `Synthetic task ${i}`, date: '2026-10-10' })
+      ),
+      events: [1, 2, 3].map((i) =>
+        newOrganiserItem('event', { title: `Synthetic event ${i}`, date: '2026-10-10' })
+      ),
+    })
+  );
+  mount();
+  expect(await screen.findByTestId('agenda-summary')).toHaveTextContent('4 tasks · 3 events');
+});
+
+it('says when a note’s attached activity has been archived', async () => {
+  window.history.pushState({}, '', '/notes');
+  const event = {
+    ...newOrganiserItem('event', { title: 'Archived meeting', date: '2026-10-12' }),
+    archivedAt: new Date(2026, 9, 9).toISOString(),
+  };
+  localStorage.setItem(
+    WORKSPACE_KEY,
+    JSON.stringify({
+      ...emptyWorkspace(),
+      notes: [
+        {
+          id: 'n1',
+          title: 'Kept thought',
+          body: '',
+          tags: [],
+          links: [],
+          context: null,
+          createdOn: '2026-10-09',
+          updatedOn: '2026-10-09',
+        },
+      ],
+    })
+  );
+  localStorage.setItem(
+    ORGANISER_KEY,
+    JSON.stringify({
+      ...emptyOrganiser(),
+      events: [event],
+      relations: [
+        { id: 'r1', source: { kind: 'note', id: 'n1' }, target: { kind: 'event', id: event.id } },
+      ],
+    })
+  );
+  mount();
+  fireEvent.click(await screen.findByRole('button', { name: 'Kept thought' }));
+  const editor = await screen.findByRole('dialog', { name: 'Edit note' });
+  expect(
+    within(editor).getByText('Attached event "Archived meeting" is archived; your note is kept.')
+  ).toBeInTheDocument();
+});
