@@ -140,6 +140,24 @@ function NoteEditor({ note, seed, context, target, onClose }) {
           )?.title ?? 'Original activity unavailable'}
         </p>
       )}
+      {/* An edited note keeps showing the activities it is already attached to. */}
+      {note &&
+        organiserContext?.organiser.relations
+          .filter(
+            (r) =>
+              r.source.kind === 'note' &&
+              r.source.id === note.id &&
+              ['task', 'event'].includes(r.target.kind) &&
+              !(target && r.target.kind === target.kind && r.target.id === target.id)
+          )
+          .map((r) => (
+            <p key={r.id} className="rounded-xl bg-base-200 p-3 text-sm">
+              Attached to {r.target.kind}:{' '}
+              {organiserContext.organiser[r.target.kind === 'task' ? 'tasks' : 'events'].find(
+                (i) => i.id === r.target.id
+              )?.title ?? 'Original activity unavailable'}
+            </p>
+          ))}
       <form
         className="space-y-3"
         onSubmit={(e) => {

@@ -325,6 +325,8 @@ export default function Today({ onOpenSettings = () => {} }) {
       ? [...visibleDue, 'ministry']
       : visibleDue;
 
+  const dailyDue = due.filter((id) => id !== 'ministry');
+
   const renderRow = (id) => {
     if (id === 'ministry') {
       return (
@@ -454,14 +456,17 @@ export default function Today({ onOpenSettings = () => {} }) {
           <p className="flex items-center gap-[8px] text-sm font-medium">
             <Sparkles aria-hidden="true" className="h-[16px] w-[16px] shrink-0" />
             <span className="min-w-0 flex-1">
-              {rows.length > 0
+              {/* Count only what is due today; monthly ministry and the advance
+                  meeting-prep row are not part of a daily score. */}
+              {dailyDue.length > 0
                 ? t('fd.today.routineSummary', {
-                    done: rows.filter((id) =>
-                      id === 'ministry' ? month?.value.shared : isDone(store, id, today)
-                    ).length,
-                    total: rows.length,
+                    done: dailyDue.filter((id) => isDone(store, id, today)).length,
+                    total: dailyDue.length,
                   })
                 : t('fd.today.gentleDay')}
+              {rows.includes('ministry') && month?.value.shared && (
+                <> · {t('fd.today.ministrySharedMonth')}</>
+              )}
             </span>
           </p>
         </header>
@@ -513,6 +518,13 @@ export default function Today({ onOpenSettings = () => {} }) {
         </ul>
 
         <PersonalRoutines />
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm min-h-11 self-start"
+          onClick={() => onOpenSettings('routines')}
+        >
+          {t('fd.today.editRoutines')}
+        </button>
         {wrapping && !dismissed && (
           <WrapUpCard
             day={today}

@@ -643,3 +643,71 @@ it('a search typed in Tasks does not hide tasks or counts in other views', async
   fireEvent.click(day);
   expect(screen.getAllByRole('button', { name: /Synthetic reading/ }).length).toBeGreaterThan(0);
 });
+
+it('shows a saved note’s existing attachment while editing it', async () => {
+  mount();
+  await add('Event', 'Weekend meeting');
+  await save('Event');
+  fireEvent.click(screen.getByRole('button', { name: /Weekend meeting/ }));
+  fireEvent.click(screen.getByRole('link', { name: 'Add linked note' }));
+  await screen.findByRole('dialog');
+  fireEvent.change(screen.getByLabelText('Your note', { exact: true }), {
+    target: { value: 'A question to explore' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Save note' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: 'A question to explore' }));
+  const editor = await screen.findByRole('dialog', { name: 'Edit note' });
+  expect(within(editor).getByText(/Attached to event:/)).toHaveTextContent('Weekend meeting');
+});
+
+it('offers an Upcoming task view with only open tasks dated after today', async () => {
+  mount();
+  await add('Task', 'Synthetic later', '2026-10-15');
+  await save('Task');
+  await add('Task', 'Synthetic today', '2026-10-10');
+  await save('Task');
+  fireEvent.click(screen.getByRole('button', { name: 'Tasks', exact: true }));
+  fireEvent.change(screen.getByRole('combobox', { name: 'Task view' }), {
+    target: { value: 'Upcoming' },
+  });
+  expect(screen.getAllByRole('button', { name: /Synthetic later/ }).length).toBeGreaterThan(0);
+  expect(screen.queryByRole('button', { name: /Synthetic today/ })).not.toBeInTheDocument();
+});
+
+it('separates all-day from timed events on a day and summarises Today neutrally', async () => {
+  mount();
+  await add('Event', 'Synthetic assembly');
+  await save('Event');
+  await add('Event', 'Synthetic study');
+  fireEvent.click(screen.getByText('Time, recurrence & details', { exact: true }));
+  fireEvent.change(screen.getByLabelText('Time (optional)', { exact: true }), {
+    target: { value: '19:00' },
+  });
+  await save('Event');
+  expect(
+    within(screen.getByRole('list', { name: 'All-day activities' })).getByRole('button', {
+      name: /Synthetic assembly/,
+    })
+  ).toBeInTheDocument();
+  expect(
+    within(screen.getByRole('list', { name: 'Timed activities' })).getByRole('button', {
+      name: /Synthetic study/,
+    })
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('link', { name: 'Today', exact: true }));
+  expect(await screen.findByTestId('agenda-summary')).toHaveTextContent('0 tasks · 2 events');
+});
+
+it('Edit routines on Today opens Settings at Routines without management on Today', async () => {
+  window.history.pushState({}, '', '/');
+  mount();
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit routines' }));
+  const settings = await screen.findByRole('dialog', { name: 'Settings' });
+  await waitFor(() =>
+    expect(within(settings).getByText('Routines', { selector: 'h3' })).toHaveFocus()
+  );
+  expect(
+    within(settings).getByText('Routines', { selector: 'h3' }).closest('details')
+  ).toHaveAttribute('open');
+});

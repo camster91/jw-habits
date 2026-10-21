@@ -42,7 +42,8 @@ function routerBasename() {
 function Screens() {
   const { store, savingPaused, conflict } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const openSettings = () => setSettingsOpen(true);
+  // A string opens Settings at that section; event handlers pass an event.
+  const openSettings = (focus) => setSettingsOpen(typeof focus === 'string' ? focus : true);
 
   const { accent, theme, onboardingDone } = store;
   // Apply the stored appearance before newly loaded screens paint.
@@ -101,7 +102,11 @@ function Screens() {
       </Routes>
       {onboardingDone && <BadgeToast />}
       <StorageNotice onBackup={openSettings} savingPaused={savingPaused} conflict={conflict} />
-      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsSheet
+        open={Boolean(settingsOpen)}
+        focus={typeof settingsOpen === 'string' ? settingsOpen : null}
+        onClose={() => setSettingsOpen(false)}
+      />
       {isWeb && (onboardingDone || savingPaused) && <UpdatePrompt />}
       {isWeb && onboardingDone && !savingPaused && <InstallPrompt />}
     </>

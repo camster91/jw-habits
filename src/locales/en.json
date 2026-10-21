@@ -125,7 +125,9 @@
       "checkHint": "Tap a circle to record a routine. Tap it again to undo.",
       "whatsNewLink": "What's New on jw.org",
       "whatsNewHint": "Explore the latest on the official website \u2197",
-      "routineSummary": "{{done}} of {{total}} routines recorded · At your pace",
+      "routineSummary": "{{done}} of {{total}} due today recorded · At your pace",
+      "ministrySharedMonth": "Ministry shared this month",
+      "editRoutines": "Edit routines",
       "dailySteps": "{{done}} of {{total}} daily steps \u00b7 A little at a time",
       "gentleDay": "Room to recharge today"
     },
