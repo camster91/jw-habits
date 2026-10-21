@@ -108,9 +108,11 @@ function OrganiserBoardContent({ compact = false, context }) {
         ? t.status === 'done'
         : filter === 'Today'
           ? t.date === today && t.status === 'open'
-          : filter === 'All'
-            ? true
-            : t.status === 'open'
+          : filter === 'Upcoming'
+            ? t.date !== null && t.date > today && t.status === 'open'
+            : filter === 'All'
+              ? true
+              : t.status === 'open'
     );
   }
   // The search box exists only in the Tasks view; a query left there must not
@@ -133,6 +135,9 @@ function OrganiserBoardContent({ compact = false, context }) {
         : addDays(date, direction * (view === 'Week' ? 7 : 1))
     );
   const dueCount = tasks.length + events.length;
+  // Totals before Today's display caps, for the agenda summary.
+  const allTasks = tasks.length,
+    allEvents = events.length;
   if (compact) {
     tasks = tasks.slice(0, 3);
     events = events.slice(0, 2);
@@ -242,6 +247,8 @@ function OrganiserBoardContent({ compact = false, context }) {
     ) ?? [];
   const emptyAgenda =
     !tasks.length && !events.length && !legacyTasks.length && !legacyMeetings.length;
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const agendaSummary = `${plural(allTasks + legacyTasks.filter((t) => !t.done).length, 'task')} · ${plural(allEvents + legacyMeetings.length, 'event')}`;
   return (
     <section
       aria-label={compact ? 'Today agenda and tasks' : 'Calendar and tasks'}
@@ -271,6 +278,11 @@ function OrganiserBoardContent({ compact = false, context }) {
           Add
         </button>
       </div>
+      {compact && !emptyAgenda && (
+        <p className="text-sm text-base-content/70" data-testid="agenda-summary">
+          {agendaSummary}
+        </p>
+      )}
       {savedActivity && (
         <div
           role="status"
@@ -362,7 +374,7 @@ function OrganiserBoardContent({ compact = false, context }) {
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                 >
-                  {['Open', 'Today', 'All', 'Completed'].map((v) => (
+                  {['Open', 'Today', 'Upcoming', 'All', 'Completed'].map((v) => (
                     <option key={v}>{v}</option>
                   ))}
                 </select>
@@ -372,8 +384,9 @@ function OrganiserBoardContent({ compact = false, context }) {
                   About task dates
                 </summary>
                 <p className="text-sm text-base-content/70">
-                  Open includes overdue and undated tasks. Recurring tasks include the last 90 days
-                  and next 180 days. Use the calendar to inspect other dates.
+                  Open includes overdue and undated tasks. Upcoming shows open tasks dated after
+                  today. Recurring tasks include the last 90 days and next 180 days. Use the
+                  calendar to inspect other dates.
                 </p>
               </details>
             </>
@@ -508,7 +521,26 @@ function OrganiserBoardContent({ compact = false, context }) {
       )}
       {view !== 'Tasks' && (
         <>
-          <ul>{events.map(eventRow)}</ul>
+          {/* On a single day, all-day activities sit apart from timed ones.
+              Week keeps one chronological list across its days. */}
+          {view !== 'Week' && events.some((e) => !e.displayTime) ? (
+            <>
+              <h3 className="text-sm font-semibold">All day</h3>
+              <ul aria-label="All-day activities">
+                {events.filter((e) => !e.displayTime).map(eventRow)}
+              </ul>
+              {events.some((e) => e.displayTime) && (
+                <>
+                  <h3 className="text-sm font-semibold">Timed</h3>
+                  <ul aria-label="Timed activities">
+                    {events.filter((e) => e.displayTime).map(eventRow)}
+                  </ul>
+                </>
+              )}
+            </>
+          ) : (
+            <ul>{events.map(eventRow)}</ul>
+          )}
           {legacyMeetings.map((m) => (
             <Link key={m.id} className="block min-h-11 py-2 underline" to="/plans/preparation">
               {m.type} meeting · {friendlyDate(m.date)} · Open preparation

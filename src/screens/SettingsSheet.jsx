@@ -82,13 +82,14 @@ function QuietHours({ store, change }) {
 }
 
 /** The open sheet: a modal dialog that holds focus until it closes. */
-function SettingsDialog({ onClose }) {
+function SettingsDialog({ onClose, focus = null }) {
   const { t } = useTranslation();
   const { store, update, today } = useStore();
   const titleId = useId();
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
   const backupRef = useRef(null);
+  const routinesRef = useRef(null);
 
   // Focus moves in on open and back to whatever opened the sheet on close.
   // While open, focus that lands outside the sheet (however it got there) is
@@ -98,12 +99,18 @@ function SettingsDialog({ onClose }) {
     const guard = (e) => {
       if (dialogRef.current && !dialogRef.current.contains(e.target)) closeRef.current?.focus();
     };
-    closeRef.current?.focus();
+    // Opened for a section (Today's Edit routines): expand it and move focus there.
+    const target = focus === 'routines' ? routinesRef.current : null;
+    const parent = target?.closest('details');
+    if (parent) parent.open = true;
+    (target ?? closeRef.current)?.focus();
     document.addEventListener('focusin', guard);
     return () => {
       document.removeEventListener('focusin', guard);
       if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
     };
+    // Runs once per opening; the focus target is fixed for that opening.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Android back closes the sheet before it navigates or exits.
@@ -189,7 +196,7 @@ function SettingsDialog({ onClose }) {
               },
             ]}
           />
-          <Section title={section('routines')}>
+          <Section title={section('routines')} headingRef={routinesRef}>
             <PersonalRoutines manage>
               <StepRoutines {...props} />
             </PersonalRoutines>
@@ -251,6 +258,6 @@ function SettingsDialog({ onClose }) {
  * hours and About. Every change is saved straight away; schedule changes take effect
  * from today and leave earlier days as they were.
  */
-export default function SettingsSheet({ open, onClose }) {
-  return open ? <SettingsDialog onClose={onClose} /> : null;
+export default function SettingsSheet({ open, onClose, focus = null }) {
+  return open ? <SettingsDialog onClose={onClose} focus={focus} /> : null;
 }

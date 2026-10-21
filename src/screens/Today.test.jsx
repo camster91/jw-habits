@@ -102,6 +102,17 @@ describe('Today: the list', () => {
     expect(screen.getByText("for Tuesday's meeting")).toBeInTheDocument();
   });
 
+  it('counts only routines due today in the summary, never the monthly ministry', () => {
+    renderToday(makeStore());
+    // Due: daily text, Bible reading, meeting prep and study; ministry is shown but monthly.
+    expect(
+      screen.getByRole('checkbox', { name: 'Shared in the ministry this month' })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/due today recorded/).textContent).toMatch(/^0 of 4 due today/);
+    hold(checkButton('Daily text'));
+    expect(screen.getByText(/due today recorded/).textContent).toMatch(/^1 of 4 due today/);
+  });
+
   it("shows today's chapters on the Bible row", () => {
     renderToday(makeStore());
     expect(screen.getByText('Psalms 3')).toBeInTheDocument();
