@@ -80,15 +80,15 @@ test data, not your real journal.
 
 Also check these items, which automated tests can't prove:
 
-| Check | Issue |
-|---|---|
-| Restore a backup in Settings: reminders and the widget update straight away | #318 |
-| Leave the app open overnight past 03:00, reopen it, then check in: the entry is dated today | #319 |
-| Settings → Backup export works when notes and tasks are fine, and the files open on the phone | #316 |
-| OS "Reduce Motion" on: no smooth scrolling or long animations | #181 |
-| VoiceOver (iOS) and TalkBack (Android) on Today, Plan, Notes and Settings | #176 |
-| Notifications: permission prompt, delivery, quiet hours, a time-zone change | #42 |
-| Widgets: add both sizes, check in from the widget, reopen the app | #244 / #243 |
+| Check                                                                                         | Issue       |
+| --------------------------------------------------------------------------------------------- | ----------- |
+| Restore a backup in Settings: reminders and the widget update straight away                   | #318        |
+| Leave the app open overnight past 03:00, reopen it, then check in: the entry is dated today   | #319        |
+| Settings → Backup export works when notes and tasks are fine, and the files open on the phone | #316        |
+| OS "Reduce Motion" on: no smooth scrolling or long animations                                 | #181        |
+| VoiceOver (iOS) and TalkBack (Android) on Today, Plan, Notes and Settings                     | #176        |
+| Notifications: permission prompt, delivery, quiet hours, a time-zone change                   | #42         |
+| Widgets: add both sizes, check in from the widget, reopen the app                             | #244 / #243 |
 
 The damaged-data recovery screen (#315) and two-tab handling (#317) are
 covered by real-browser tests (`npm run data-safety:verify`), so they don't
@@ -97,7 +97,8 @@ need a phone.
 ## 5. Android (#249, then #253)
 
 Do these in order:
-1. Tell the issue *where* the encrypted upload-key backup lives and the path of
+
+1. Tell the issue _where_ the encrypted upload-key backup lives and the path of
    the app-scoped Play service-account file. Names only, never contents.
 2. Decide when to merge the testing branch into `main` (step 7). GitHub can
    only start `android-internal-testing.yml` and `android-closed-testing.yml`
@@ -112,6 +113,7 @@ Do these in order:
 
 You need SSH access to the server. Steps and rollback are in
 `docs/web-redirect-fix-239.md`. In short:
+
 1. Look at what actually answers `jwhabits.ashbi.ca`, and back up the Traefik
    config and that container's config.
 2. Either deploy this repo's image through `deploy-ashbi.yml` after the
@@ -130,6 +132,7 @@ Android workflows and the normal web deploy. Recommended timing: after build
 deploy workflow runs it will publish the website, so plan that with step 6.
 
 Open Dependabot PRs still to review after the merge:
+
 - Majors #284, #286, #288, #290, #291.
 - Workflow-action bumps #287, #289.
 - #295 is an unmerged alternative iOS pipeline that needs a keep-or-close
