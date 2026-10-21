@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { i18nAlias } from './vite.config.js';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: { alias: i18nAlias },
   test: {
     environment: 'jsdom',
     globals: true,

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -19,7 +20,15 @@ const releaseMarker = {
 };
 
 // https://vite.dev/config/
+// English-only release (#259): a small i18next-compatible module stands in
+// for i18next/react-i18next. Remove these aliases to restore them for #46.
+export const i18nAlias = [
+  { find: /^i18next$/, replacement: fileURLToPath(new URL('./src/i18n/lite.js', import.meta.url)) },
+  { find: /^react-i18next$/, replacement: fileURLToPath(new URL('./src/i18n/react.js', import.meta.url)) },
+]
+
 export default defineConfig({
+  resolve: { alias: i18nAlias },
   build: {
     emptyOutDir: true,
     rollupOptions: {

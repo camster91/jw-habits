@@ -78,7 +78,7 @@ user-editable slot instead.
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
-| i18n | i18next + react-i18next | English-only initial release; full es/fr UI tracked in #46 |
+| i18n | `src/i18n/lite.js` + `react.js`, aliased as `i18next`/`react-i18next` in `vite.config.js` | English-only initial release (#259): key lookup, `{{name}}`, `_one`/`_other` plurals and `returnObjects`, checked string-for-string against real i18next in `lite.test.js`. Remove the alias to restore i18next for #46 |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
 | PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
 | Testing | Vitest 5 + Testing Library + Playwright | unit/component coverage gates plus smoke, journeys, accessibility and SW update checks |
