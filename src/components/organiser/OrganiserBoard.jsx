@@ -19,6 +19,7 @@ import {
   changeOccurrence,
   civilDate,
   organiserOccurrences,
+  linkNote,
 } from '../../domain/organiser.js';
 import { saveBackup } from '../../utils/backup.js';
 import Sheet from '../plans/Sheet.jsx';
@@ -48,7 +49,8 @@ function OrganiserBoardContent({ compact = false, context }) {
     [savedActivity, setSavedActivity] = useState(null),
     [query, setQuery] = useState(''),
     [filter, setFilter] = useState('Open'),
-    [tickedHere, setTickedHere] = useState(() => new Set());
+    [tickedHere, setTickedHere] = useState(() => new Set()),
+    [attaching, setAttaching] = useState(false);
   const { organiser, ready, save, rawExport } = context;
   const linkedKind = params.get('itemKind'),
     linkedId = params.get('itemId');
@@ -803,6 +805,56 @@ function OrganiserBoardContent({ compact = false, context }) {
                 </p>
               );
             })}
+          {/* A note can belong to several activities; attaching never copies it. */}
+          {(() => {
+            const linked = new Set(
+              organiser.relations
+                .filter(
+                  (r) =>
+                    r.source.kind === 'note' &&
+                    r.target.kind === detail.kind &&
+                    r.target.id === detail.id
+                )
+                .map((r) => r.source.id)
+            );
+            const available = (workspaceContext?.workspace.notes ?? []).filter(
+              (n) => !linked.has(n.id)
+            );
+            return available.length > 0 ? (
+              <form
+                className="flex flex-wrap items-end gap-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const noteId = new FormData(e.currentTarget).get('note');
+                  // One save at a time: a second tap would replace Undo's snapshot.
+                  if (!noteId || attaching) return;
+                  setAttaching(true);
+                  try {
+                    await act(
+                      (o) => linkNote(o, noteId, { kind: detail.kind, id: detail.id }),
+                      'Note attached'
+                    );
+                  } finally {
+                    setAttaching(false);
+                  }
+                }}
+              >
+                <label className="min-w-0 flex-1 basis-[12rem]">
+                  Attach an existing note
+                  <select name="note" className="select min-h-11 w-full">
+                    {available.map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="submit" className="btn min-h-11" disabled={attaching}>
+                  Attach
+                </button>
+              </form>
+            ) : null;
+          })()}
           <p className="text-sm text-base-content/70">
             This is a planned activity, separate from routine check-ins.
           </p>

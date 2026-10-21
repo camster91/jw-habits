@@ -771,3 +771,51 @@ it('says when a note’s attached activity has been archived', async () => {
     within(editor).getByText('Attached event "Archived meeting" is archived; your note is kept.')
   ).toBeInTheDocument();
 });
+
+it('attaches an existing note to an activity, lists it and can undo it', async () => {
+  const event = newOrganiserItem('event', { title: 'Synthetic meeting', date: '2026-10-10' });
+  localStorage.setItem(ORGANISER_KEY, JSON.stringify({ ...emptyOrganiser(), events: [event] }));
+  localStorage.setItem(
+    WORKSPACE_KEY,
+    JSON.stringify({
+      ...emptyWorkspace(),
+      notes: [
+        {
+          id: 'n1',
+          title: 'Reading question',
+          body: '',
+          tags: [],
+          links: [],
+          context: null,
+          createdOn: '2026-10-09',
+          updatedOn: '2026-10-09',
+        },
+      ],
+    })
+  );
+  mount();
+  await board();
+  fireEvent.click(screen.getByRole('button', { name: /^Synthetic meeting/ }));
+  const detail = await screen.findByRole('dialog', { name: 'Synthetic meeting', exact: true });
+  fireEvent.change(within(detail).getByRole('combobox', { name: 'Attach an existing note' }), {
+    target: { value: 'n1' },
+  });
+  const attach = within(detail).getByRole('button', { name: 'Attach', exact: true });
+  // A quick double tap must not leave Undo restoring the linked state.
+  fireEvent.click(attach);
+  fireEvent.click(attach);
+  await waitFor(() =>
+    expect(data().relations).toEqual([
+      expect.objectContaining({
+        source: { kind: 'note', id: 'n1' },
+        target: { kind: 'event', id: event.id },
+      }),
+    ])
+  );
+  expect(within(detail).getByRole('link', { name: 'Reading question' })).toBeInTheDocument();
+  expect(
+    within(detail).queryByRole('combobox', { name: 'Attach an existing note' })
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Undo', exact: true }));
+  await waitFor(() => expect(data().relations).toEqual([]));
+});
