@@ -800,7 +800,10 @@ it('attaches an existing note to an activity, lists it and can undo it', async (
   fireEvent.change(within(detail).getByRole('combobox', { name: 'Attach an existing note' }), {
     target: { value: 'n1' },
   });
-  fireEvent.click(within(detail).getByRole('button', { name: 'Attach', exact: true }));
+  const attach = within(detail).getByRole('button', { name: 'Attach', exact: true });
+  // A quick double tap must not leave Undo restoring the linked state.
+  fireEvent.click(attach);
+  fireEvent.click(attach);
   await waitFor(() =>
     expect(data().relations).toEqual([
       expect.objectContaining({

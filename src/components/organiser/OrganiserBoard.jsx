@@ -49,7 +49,8 @@ function OrganiserBoardContent({ compact = false, context }) {
     [savedActivity, setSavedActivity] = useState(null),
     [query, setQuery] = useState(''),
     [filter, setFilter] = useState('Open'),
-    [tickedHere, setTickedHere] = useState(() => new Set());
+    [tickedHere, setTickedHere] = useState(() => new Set()),
+    [attaching, setAttaching] = useState(false);
   const { organiser, ready, save, rawExport } = context;
   const linkedKind = params.get('itemKind'),
     linkedId = params.get('itemId');
@@ -825,11 +826,17 @@ function OrganiserBoardContent({ compact = false, context }) {
                 onSubmit={async (e) => {
                   e.preventDefault();
                   const noteId = new FormData(e.currentTarget).get('note');
-                  if (noteId)
+                  // One save at a time: a second tap would replace Undo's snapshot.
+                  if (!noteId || attaching) return;
+                  setAttaching(true);
+                  try {
                     await act(
                       (o) => linkNote(o, noteId, { kind: detail.kind, id: detail.id }),
                       'Note attached'
                     );
+                  } finally {
+                    setAttaching(false);
+                  }
                 }}
               >
                 <label className="min-w-0 flex-1 basis-[12rem]">
@@ -842,7 +849,7 @@ function OrganiserBoardContent({ compact = false, context }) {
                     ))}
                   </select>
                 </label>
-                <button type="submit" className="btn min-h-11">
+                <button type="submit" className="btn min-h-11" disabled={attaching}>
                   Attach
                 </button>
               </form>
