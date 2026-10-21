@@ -94,6 +94,34 @@ async function scan(page, label) {
         await page.getByRole('button', { name: 'Back', exact: true }).click();
       await onboardSkip(page);
       await scan(page, `${theme} Today`);
+      // #181: with reduced motion, no smooth scrolling and no repeating or
+      // long-running animation; without it, smooth scrolling is unchanged.
+      const motion = await page.evaluate(() => ({
+        scroll: getComputedStyle(document.documentElement).scrollBehavior,
+        running: document
+          .getAnimations()
+          .filter((a) => a.playState === 'running')
+          .filter((a) => {
+            const timing = a.effect?.getComputedTiming?.() ?? {};
+            return timing.iterations === Infinity || Number(timing.duration) > 1;
+          }).length,
+      }));
+      if (motion.scroll !== 'auto' || motion.running) {
+        failures++;
+        console.error(`${theme} reduced motion not honoured`, JSON.stringify(motion));
+      }
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'no-preference' });
+      const normalScroll = await page.evaluate(
+        () => getComputedStyle(document.documentElement).scrollBehavior
+      );
+      if (normalScroll !== 'smooth') {
+        failures++;
+        console.error(`${theme} normal motion changed: scroll-behavior ${normalScroll}`);
+      }
+      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+      console.log(
+        `${theme} reduced motion: scroll=${motion.scroll}, long animations=${motion.running}; normal scroll=${normalScroll}`
+      );
       await page.getByText('A quick guide to Today', { exact: true }).click();
       await scan(page, `${theme} Today guide expanded`);
       await page.getByText('A quick guide to Today', { exact: true }).click();
