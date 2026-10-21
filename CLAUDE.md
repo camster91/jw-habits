@@ -138,7 +138,7 @@ src/
 ├── theme/theme.js              # Accent, light/dark, and --fd-accent-text (accent text at 4.5:1)
 ├── theme/planColours.js        # The 8 plan colours (white text at 4.5:1) and their text shades (.fd-plan-text)
 ├── locales/                    # en.json (current UI); unused legacy es/fr catalogs removed
-└── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js, userLinks.js,
+└── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js,
                                 # settingsStore.js (retained legacy helper), backup.js, pwa.js, backStack.js (Android back)
 ios/App/FaithfulDaysWidget/     # Embedded WidgetKit extension sources (iOS 17+)
 docs/ios-widget-setup.md        # Signing/account and device verification for the embedded widget
