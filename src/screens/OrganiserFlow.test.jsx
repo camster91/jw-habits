@@ -629,3 +629,17 @@ it('shows no date label after the rollover', async () => {
   await screen.findByRole('region', { name: 'Today agenda and tasks' });
   expect(screen.queryByText(/Routines count for/)).not.toBeInTheDocument();
 });
+
+it('a search typed in Tasks does not hide tasks or counts in other views', async () => {
+  mount();
+  await add('Task', 'Synthetic reading', '2026-10-15');
+  await save('Task');
+  fireEvent.click(screen.getByRole('button', { name: 'Tasks', exact: true }));
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Search tasks' }), {
+    target: { value: 'no match' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Month', exact: true }));
+  const day = screen.getByRole('button', { name: 'Thu, Oct 15, 1 planned item', exact: true });
+  fireEvent.click(day);
+  expect(screen.getAllByRole('button', { name: /Synthetic reading/ }).length).toBeGreaterThan(0);
+});

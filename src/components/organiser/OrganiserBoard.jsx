@@ -113,9 +113,12 @@ function OrganiserBoardContent({ compact = false, context }) {
             : t.status === 'open'
     );
   }
-  tasks = tasks.filter((t) =>
-    (t.title + ' ' + t.details).toLowerCase().includes(query.toLowerCase())
-  );
+  // The search box exists only in the Tasks view; a query left there must not
+  // hide tasks or day counts in Agenda, Week or Month.
+  if (view === 'Tasks')
+    tasks = tasks.filter((t) =>
+      (t.title + ' ' + t.details).toLowerCase().includes(query.toLowerCase())
+    );
   const eventIndicators = events;
   const taskIndicators = tasks.filter((t) => t.status === 'open');
   if (!compact && view === 'Month') {
