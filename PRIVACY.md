@@ -1,6 +1,6 @@
 # Data lifecycle inventory
 
-See [privacy policy](PRIVACY_POLICY.md) and the [published policy](https://jwhabits.ashbi.ca/privacy.html).
+See [privacy policy](PRIVACY_POLICY.md) and the [published policy](https://camster91.github.io/jw-habits/privacy/).
 The inventory describes current v3 behavior. New notes/capture fields require
 review in the proposed capability map before changing this contract.
 

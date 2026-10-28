@@ -33,8 +33,8 @@ platforms and permissions; final listings must describe the verified release.
 
 Suggested category: Productivity. Age/content-rating questionnaires must be
 answered in the actual consoles; do not invent a published rating.
-Privacy: https://jwhabits.ashbi.ca/privacy.html
-Support: https://jwhabits.ashbi.ca/support.html
+Privacy: https://camster91.github.io/jw-habits/privacy/
+Support: https://camster91.github.io/jw-habits/support/
 
 ## Current UI assets
 

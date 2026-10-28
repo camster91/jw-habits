@@ -238,13 +238,13 @@ describe('SettingsSheet', () => {
     expect(within(about).getByText(DISCLAIMER)).toBeInTheDocument();
     fireEvent.click(within(about).getByRole('button', { name: 'Privacy policy' }));
     expect(window.open).toHaveBeenCalledWith(
-      'https://jwhabits.ashbi.ca/privacy/',
+      'https://camster91.github.io/jw-habits/privacy/',
       '_blank',
       'noopener'
     );
     fireEvent.click(within(about).getByRole('button', { name: 'Support' }));
     expect(window.open).toHaveBeenCalledWith(
-      'https://jwhabits.ashbi.ca/support/',
+      'https://camster91.github.io/jw-habits/support/',
       '_blank',
       'noopener'
     );

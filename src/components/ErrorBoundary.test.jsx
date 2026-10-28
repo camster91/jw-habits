@@ -28,3 +28,15 @@ it('offers a recovery copy and requires acknowledgement before scoped reset', ()
     )
   );
 });
+it('links the fallback support text to the hosted support page', () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  render(
+    <ErrorBoundary>
+      <Broken />
+    </ErrorBoundary>
+  );
+  expect(screen.getByRole('link', { name: 'Support' })).toHaveAttribute(
+    'href',
+    'https://camster91.github.io/jw-habits/support/'
+  );
+});

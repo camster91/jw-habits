@@ -1,7 +1,7 @@
 # Faithful Days privacy policy
 
 Effective: 2026-10-07. Developer: Ashbi Design. Contact: cameron@ashbi.ca.
-Published policy: https://jwhabits.ashbi.ca/privacy.html
+Published policy: https://camster91.github.io/jw-habits/privacy/
 
 Faithful Days keeps routine history, Bible chapter records, study/family plans,
 user-written step notes, settings and badges on your device. No account backend,
