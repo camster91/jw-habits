@@ -15,7 +15,7 @@ sets it up in six skippable steps. Reminders (including date and monthly backup 
 home-screen widgets (iOS WidgetKit, Android) sit on top. Settings shows the last backup and nudges
 after 30 days. All state is on-device. The website was retired on 2026-10-28: Vite builds the
 bundle that runs inside Capacitor's WebView, and `site/` holds only the privacy and support
-pages, published to GitHub Pages by `pages.yml`.
+pages, published to https://faithfuldays.ashbi.ca by Cloudflare Pages (project `faithful-days`, deploys `site/` from `main`).
 
 - **App ID:** `ca.ashbi.habittracker`
 - **Version:** 5.3.0
@@ -112,7 +112,7 @@ ios/App/FaithfulDaysWidget/     # Embedded WidgetKit extension sources (iOS 17+)
 docs/ios-widget-setup.md        # Signing/account and device verification for the embedded widget
 docs/release-checklist.md       # Manual on-device checklist to run before every store release
 scripts/verify/                 # smoke.cjs, journeys.cjs, accessibility.cjs, lib.cjs (Playwright)
-site/                           # Privacy and support pages (GitHub Pages, via .github/workflows/pages.yml)
+site/                           # Privacy and support pages (Cloudflare Pages project faithful-days)
 docs/terms-checklist.md         # jw.org Terms of Use clauses and how the app meets them
 ```
 

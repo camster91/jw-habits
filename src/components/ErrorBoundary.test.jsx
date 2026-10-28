@@ -37,6 +37,6 @@ it('links the fallback support text to the hosted support page', () => {
   );
   expect(screen.getByRole('link', { name: 'Support' })).toHaveAttribute(
     'href',
-    'https://camster91.github.io/jw-habits/support/'
+    'https://faithfuldays.ashbi.ca/support/'
   );
 });
