@@ -393,7 +393,7 @@ const closeSettings = async (page) => {
         await page.getByRole('button', { name: 'Export a backup', exact: true }).click();
         const download = await downloading;
         const backup = JSON.parse(require('node:fs').readFileSync(await download.path(), 'utf8'));
-        step(`J11 ${width}px combined backup includes both stores`, backup.routines.version === 3 && backup.workspace.notes.length === 1);
+        step(`J11 ${width}px combined backup includes both stores`, backup.routines.version === 4 && backup.workspace.notes.length === 1);
         await closeSettings(page);
       }, sink);
   }

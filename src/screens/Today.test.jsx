@@ -424,7 +424,7 @@ describe('Today: wrap-up', () => {
 
   it('celebrates when everything is done', () => {
     const store = makeStore();
-    const due = ['dailyText', 'bibleReading', 'meetingPrep', 'personalStudy'];
+    const due = ['dailyText', 'whatsNew', 'bibleReading', 'meetingPrep', 'personalStudy'];
     const log = due.map((routine) => ({ routine, day: '2026-10-06', value: true }));
     log.push({ routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 0 } });
     renderToday({ ...store, log }, at(21));
@@ -433,7 +433,7 @@ describe('Today: wrap-up', () => {
   });
 
   it('fires the celebration haptic at most once per app day', () => {
-    const due = ['dailyText', 'bibleReading', 'meetingPrep', 'personalStudy'];
+    const due = ['dailyText', 'whatsNew', 'bibleReading', 'meetingPrep', 'personalStudy'];
     const log = due.map((routine) => ({ routine, day: '2026-10-06', value: true }));
     log.push({ routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 0 } });
     const first = renderToday(makeStore({ log }), at(21));
@@ -446,7 +446,7 @@ describe('Today: wrap-up', () => {
   });
 
   it('does not celebrate with the quiet tone', () => {
-    const due = ['dailyText', 'bibleReading', 'meetingPrep', 'personalStudy'];
+    const due = ['dailyText', 'whatsNew', 'bibleReading', 'meetingPrep', 'personalStudy'];
     const log = due.map((routine) => ({ routine, day: '2026-10-06', value: true }));
     log.push({ routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 0 } });
     renderToday(makeStore({ tone: 'quiet', log }), at(21));

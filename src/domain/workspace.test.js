@@ -10,6 +10,7 @@ import {
   MEETING_PARTS,
 } from './workspace.js';
 import { defaultStore } from './store.js';
+import { v3Store } from '../test/legacyStores.js';
 
 const today = '2026-10-08';
 const note = () =>
@@ -186,6 +187,25 @@ describe('workspace records', () => {
       ).ok
     ).toBe(false);
   });
+});
+
+it('imports a v3 routine store from a combined or legacy backup upgraded to v4', () => {
+  const day = '2026-10-08';
+  const v3 = v3Store('2026-09-01');
+  const w = note();
+  for (const [raw, legacy] of [
+    [exportBundle(v3, w), false],
+    [JSON.stringify(v3), true],
+  ]) {
+    const r = importBundle(raw, day);
+    expect(r).toMatchObject({ ok: true, legacy });
+    expect(r.store.version).toBe(4);
+    expect(r.store.schedule.map((e) => [e.from, e.enabled.whatsNew])).toEqual([
+      ['2026-09-01', false],
+      [day, true],
+    ]);
+    if (!legacy) expect(r.workspace).toEqual(w);
+  }
 });
 
 it('searches plans, short step notes, dated meetings and assignment checklists locally', () => {

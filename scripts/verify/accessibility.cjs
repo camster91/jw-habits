@@ -34,7 +34,7 @@ async function scan(page, label) {
         await page.goto(`${BASE}/${route}`,{waitUntil:'networkidle'});
         await scan(page,`${theme} ${route}`);
       }
-      const newerRaw=JSON.stringify({version:4,theme,futureNotes:['Synthetic private note']},null,2);
+      const newerRaw=JSON.stringify({version:5,theme,futureNotes:['Synthetic private note']},null,2);
       await page.evaluate(raw=>localStorage.setItem('jw-habits-v2',raw),newerRaw);
       await page.goto(BASE,{waitUntil:'networkidle'});
       await page.getByRole('heading',{name:'Update Faithful Days to open your data'}).waitFor();
