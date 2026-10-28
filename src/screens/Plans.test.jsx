@@ -21,14 +21,14 @@ const TODAY = '2026-10-07';
 let current;
 
 // eslint-disable-next-line no-unused-vars -- used via JSX
-function Harness({ initial }) {
+function Harness({ initial, entry = '/plans' }) {
   const [store, setStore] = useState(initial);
   current = store;
   const update = useCallback((fn) => setStore((s) => fn(s)), []);
   const value = useMemo(() => ({ store, update, today: TODAY }), [store, update]);
   return (
     <StoreContext.Provider value={value}>
-      <MemoryRouter initialEntries={['/plans']}>
+      <MemoryRouter initialEntries={[entry]}>
         <Routes>
           <Route path="/plans" element={<Plans />} />
           <Route path="/plans/:planId" element={<p>trail</p>} />
@@ -55,6 +55,19 @@ describe('Plans', () => {
     expect(section('Personal study')).toBeInTheDocument();
     expect(section('Family worship')).toBeInTheDocument();
     expect(section('Completed')).toBeInTheDocument();
+  });
+
+  it('shows the Dates card, and brings it into view when opened from Coming up', () => {
+    const { unmount } = renderPlans();
+    expect(section('Dates')).toBeInTheDocument();
+    expect(document.activeElement).not.toBe(screen.getByRole('heading', { name: 'Dates' }));
+    unmount();
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    render(<Harness initial={base()} entry={{ pathname: '/plans', state: { focus: 'dates' } }} />);
+    expect(scroll).toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'Dates' }));
+    delete Element.prototype.scrollIntoView;
   });
 
   it('creates "Daniel" with the Bible-book generator and lists it with 0 of 12', () => {

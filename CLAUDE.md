@@ -85,13 +85,15 @@ src/
 │   ├── today.js                # Today helpers: chapters, ministry entry, meeting day, study progress
 │   ├── bible.js                # Books, chapter counts, reading plans, finder URLs (no verse text)
 │   ├── progress.js, wrapup.js, encouragement.js, notifications.js, links.js, whatsNew.js
+│   ├── events.js               # Big dates: add/update/remove, upcoming, the Coming up event, short dates
 │   └── migrateV1.js            # One-time import of the v1 jw- keys (read-only on them)
 ├── screens/
 │   ├── Today.jsx, Plans.jsx, PlanTrail.jsx, FamilyWeeks.jsx, Progress.jsx, SettingsSheet.jsx
 │   └── onboarding/             # Six steps; StepRoutines/Week/Reading/Rhythm/Look are reused by Settings
 ├── components/                 # HoldToCheck, RoutineRow, MinistryRow, Stepper, WrapUpCard, TabBar,
-│                               # MeetingDaysCard, BibleMap, settings/* (Reminders, Links,
-│                               # Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet, PlanIcon, and Today's
+│                               # MeetingDaysCard, BibleMap, ComingUp (Today's next big date), settings/*
+│                               # (Reminders, Links, Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet,
+│                               # PlanIcon, DatesCard + EventSheet on Plans, and Today's
 │                               # SomethingElseSheet, TodayAgenda, PlanFinishedCard)
 ├── native/                     # reminders.js, whatsNewClient.js, widgetBridge.js (each exports register*())
 ├── theme/theme.js              # Accent, light/dark, and --fd-accent-text (accent text at 4.5:1)

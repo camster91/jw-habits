@@ -547,6 +547,50 @@
       "resetConfirm": "Reset current routines, check-ins, reading, study/family plans, badges and settings? Notes, meeting preparation, assignments, recovery copies and other site data will remain. This cannot be undone without a saved backup.",
       "resetFailed": "Could not reset the app data. Contact support before uninstalling.",
       "support": "Avoid reinstalling until you have saved a recovery copy."
+    },
+    "events": {
+      "kind": {
+        "memorial": "Memorial",
+        "convention": "Regional convention",
+        "assembly": "Circuit assembly",
+        "coVisit": "Circuit overseer visit",
+        "other": "Other"
+      },
+      "title": "Dates",
+      "intro": "Big dates you add yourself, like the Memorial, conventions and assemblies.",
+      "add": "Add date",
+      "full": "You have the most dates the app can keep. Delete a past one to add another.",
+      "past": "Past",
+      "empty": "No dates coming up.",
+      "comingUp": "{{label}} · {{date}}",
+      "today": "{{label}} · today",
+      "comingUpLabel": "Coming up",
+      "openLink": "Open link for {{label}}",
+      "sheet": {
+        "new": "Add a date",
+        "edit": "Edit date",
+        "kind": "Type",
+        "name": "Name",
+        "nameOptional": "Name (optional)",
+        "start": "Starts",
+        "end": "Ends (optional)",
+        "link": "Link (optional)",
+        "save": "Save",
+        "delete": "Delete date",
+        "confirmDelete": "Delete this date?",
+        "confirm": "Delete",
+        "keep": "Keep it",
+        "refused": "That date couldn't be saved. Close and try again."
+      },
+      "error": {
+        "kindNeeded": "Choose a type",
+        "titleNeeded": "Other dates need a name",
+        "titleTooLong": "Use 60 characters or fewer",
+        "startNeeded": "Choose a start date",
+        "badEnd": "Choose a real end date",
+        "endBeforeStart": "The end can't be before the start",
+        "badLink": "Use a web address that starts with https:// or http://"
+      }
     }
   }
 }

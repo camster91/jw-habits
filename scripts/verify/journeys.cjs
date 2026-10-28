@@ -13,6 +13,7 @@
 //   J6  the ministry toggle
 //   J7  the wrap-up card at 21:00
 //   J8  no console errors or third-party requests across all of the above
+//   J-dates  add a big date on Plans, see the Coming up line on Today
 //
 // Run:
 //   npm run build && npm run preview &
@@ -422,6 +423,50 @@ const closeSettings = async (page) => {
       step('J12 the link opens the What\'s New page', (await page.evaluate(() => window.__opened)).join() === 'https://www.jw.org/en/whats-new/');
       step('J12 opening the link clears the count', !!s && s.whatsNew.newCount === 0);
       step('J12 the count text is gone', (await row.getByText('3 new').count()) === 0);
+    },
+    sink
+  );
+
+  // J-dates: a circuit assembly 5 days ahead shows as Today's "Coming up" line,
+  // and tapping the line opens the Dates card on Plans.
+  await journey(
+    'J-dates big dates',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await onboardSkip(page);
+      const nav = page.getByRole('navigation', { name: 'Main navigation' });
+      await nav.getByRole('link', { name: 'Plans' }).click();
+      const card = page.getByRole('region', { name: 'Dates' });
+      await card.getByRole('button', { name: 'Add date' }).click();
+      const sheet = page.getByRole('dialog', { name: 'Add a date' });
+      await sheet.getByLabel('Type').selectOption('assembly');
+      await sheet.getByLabel('Starts').fill('2026-10-11'); // Sunday, 5 days after MORNING
+      await sheet.getByRole('button', { name: 'Save' }).click();
+      await sheet.waitFor({ state: 'detached' });
+      const s = await storeWhere(page, (x) => x.events.length === 1);
+      step(
+        'J-dates the date is saved',
+        !!s && s.events[0].kind === 'assembly' && s.events[0].start === '2026-10-11',
+        s ? JSON.stringify(s.events) : 'no store'
+      );
+      step(
+        'J-dates the Dates card lists it',
+        (await card.getByRole('button', { name: /Circuit assembly/ }).count()) === 1
+      );
+      await nav.getByRole('link', { name: 'Today' }).click();
+      const line = page.getByTestId('coming-up');
+      await line.waitFor();
+      const text = (await line.innerText()).replace(/\s+/g, ' ').trim();
+      step(
+        'J-dates Today shows the Coming up line',
+        text === 'Coming up Circuit assembly · Sun 11 Oct',
+        text
+      );
+      await line.click();
+      await card.waitFor();
+      const focused = await page.evaluate(() => document.activeElement?.textContent);
+      step('J-dates the line opens the Dates card', focused === 'Dates', String(focused));
     },
     sink
   );

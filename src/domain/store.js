@@ -247,7 +247,7 @@ function validReminders(r) {
   );
 }
 
-function validEvent(e) {
+export function validEvent(e) {
   return (
     isObject(e) &&
     exactKeys(e, ['id', 'kind', 'title', 'start', 'end', 'link']) &&

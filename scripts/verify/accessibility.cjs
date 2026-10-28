@@ -34,6 +34,18 @@ async function scan(page, label) {
         await page.goto(`${BASE}/${route}`,{waitUntil:'networkidle'});
         await scan(page,`${theme} ${route}`);
       }
+      await page.goto(`${BASE}/plans`,{waitUntil:'networkidle'});
+      await page.getByRole('button',{name:'Add date'}).click();
+      const sheet=page.getByRole('dialog',{name:'Add a date'});
+      await scan(page,`${theme} date sheet`);
+      await sheet.getByLabel('Starts').fill('2026-10-11');
+      await sheet.getByLabel('Link (optional)').fill('https://example.org/assembly');
+      await sheet.getByRole('button',{name:'Save'}).click();
+      await sheet.waitFor({state:'detached'});
+      await scan(page,`${theme} plans with a date`);
+      await page.goto(BASE,{waitUntil:'networkidle'});
+      await page.getByTestId('coming-up').waitFor();
+      await scan(page,`${theme} Today coming up`);
       const newerRaw=JSON.stringify({version:5,theme,futureNotes:['Synthetic private note']},null,2);
       await page.evaluate(raw=>localStorage.setItem('jw-habits-v2',raw),newerRaw);
       await page.goto(BASE,{waitUntil:'networkidle'});

@@ -1,12 +1,13 @@
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { CalendarDays, ChevronRight, Plus, RotateCcw } from 'lucide-react';
 import { useStore } from '../data/useStore.js';
 import { nextStep, progress, restorePlan, setActiveStudy } from '../domain/plans.js';
 import { planStyle } from '../theme/planColours.js';
 import PlanIcon from '../components/plans/PlanIcon.jsx';
 import NewPlanSheet from '../components/plans/NewPlanSheet.jsx';
+import DatesCard from '../components/plans/DatesCard.jsx';
 
 function Section({ title, children }) {
   const id = useId();
@@ -88,12 +89,15 @@ function NewButton({ label, onClick }) {
 
 /**
  * The Plans tab: study projects (the active one, then those waiting), family
- * worship (the weeks view and family plans) and the Completed shelf.
+ * worship (the weeks view and family plans), big dates and the Completed
+ * shelf. Opened from Today's "Coming up" line (route state `focus: 'dates'`),
+ * it brings the Dates card into view.
  */
 export default function Plans() {
   const { t } = useTranslation();
   const { store, update } = useStore();
   const [creating, setCreating] = useState(null);
+  const location = useLocation();
 
   const open = store.plans.filter((p) => p.archivedOn === null);
   const activeId = store.activePlan.personalStudy;
@@ -164,6 +168,8 @@ export default function Plans() {
           )}
           <NewButton label={t('fd.plans.family.new')} onClick={() => setCreating('family')} />
         </Section>
+
+        <DatesCard focused={location.state?.focus === 'dates'} />
 
         <Section title={t('fd.plans.completed.heading')}>
           {completed.length > 0 ? (

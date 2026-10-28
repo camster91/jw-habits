@@ -45,6 +45,7 @@ import PlanIcon from '../components/plans/PlanIcon.jsx';
 import TodayAgenda from '../components/plans/TodayAgenda.jsx';
 import SomethingElseSheet from '../components/plans/SomethingElseSheet.jsx';
 import PlanFinishedCard from '../components/plans/PlanFinishedCard.jsx';
+import ComingUp from '../components/ComingUp.jsx';
 
 const DISMISS_KEY = 'fd-wrapup-dismissed';
 const ENCOURAGE_MS = 3000;
@@ -467,6 +468,8 @@ export default function Today({ onOpenSettings = () => {} }) {
             />
           )}
         </div>
+
+        <ComingUp />
 
         {schedule.enabled.meetingPrep && schedule.meetingDays.length === 0 && !nextMeeting && (
           <MeetingDaysCard onOpen={onOpenSettings} />

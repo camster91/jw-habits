@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useCallback, useMemo, useState } from 'react';
+// eslint-disable-next-line no-unused-vars -- used via JSX
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { openLink } from '../native/openLink.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { StoreContext } from '../data/useStore.js';
@@ -15,6 +17,7 @@ import { haptics } from '../utils/native.js';
 import { CapacitorHttp } from '@capacitor/core';
 import en from '../locales/en.json';
 import { checkInStudy } from '../domain/planCheckins.js';
+import { addEvent } from '../domain/events.js';
 
 vi.mock('../native/openLink.js', () => ({ openLink: vi.fn() }));
 vi.mock('../utils/native.js', () => ({ haptics: { success: vi.fn() } }));
@@ -61,9 +64,21 @@ function Harness({ initial, onOpenSettings }) {
   const value = useMemo(() => ({ store, update, today }), [store, update, today]);
   return (
     <StoreContext.Provider value={value}>
-      <Today onOpenSettings={onOpenSettings} />
+      <MemoryRouter>
+        <Routes>
+          <Route path="/" element={<Today onOpenSettings={onOpenSettings} />} />
+          <Route path="/plans" element={<PlansProbe />} />
+        </Routes>
+      </MemoryRouter>
     </StoreContext.Provider>
   );
+}
+
+/** Stands in for the Plans screen: shows the route state it was opened with. */
+// eslint-disable-next-line no-unused-vars -- used via JSX
+function PlansProbe() {
+  const location = useLocation();
+  return <p data-testid="plans-probe">{JSON.stringify(location.state)}</p>;
 }
 
 function renderToday(store, now = at(9), onOpenSettings = () => {}) {
@@ -884,5 +899,45 @@ describe('Today: fix round 1', () => {
     fireEvent.change(picker, { target: { value: 'pr' } });
     fireEvent.click(screen.getByRole('button', { name: 'Start next study plan' }));
     expect(current.activePlan.personalStudy).toBe('pr');
+  });
+});
+
+describe('Today: Coming up', () => {
+  // Sunday 1 November 2026, 09:00.
+  const nov = (d) => new Date(2026, 10, d, 9);
+  const withAssembly = () => addEvent(makeStore(), { kind: 'assembly', start: '2026-11-14' });
+
+  it('shows "Circuit assembly · Sat 14 Nov" two weeks ahead', () => {
+    renderToday(withAssembly(), nov(1));
+    const line = screen.getByRole('link', { name: /Coming up/ });
+    expect(line).toHaveTextContent('Circuit assembly · Sat 14 Nov');
+  });
+
+  it('says "today" on the day', () => {
+    renderToday(withAssembly(), nov(14));
+    expect(screen.getByRole('link', { name: /Coming up/ })).toHaveTextContent(
+      'Circuit assembly · today'
+    );
+  });
+
+  it('uses the name the user gave', () => {
+    const s = addEvent(makeStore(), { kind: 'memorial', title: 'Memorial', start: '2026-11-03' });
+    renderToday(s, nov(1));
+    expect(screen.getByRole('link', { name: /Coming up/ })).toHaveTextContent(
+      'Memorial · Tue 3 Nov'
+    );
+  });
+
+  it('has no line with nothing within 14 days', () => {
+    const s = addEvent(makeStore(), { kind: 'assembly', start: '2026-11-16' });
+    renderToday(s, nov(1));
+    expect(screen.queryByRole('link', { name: /Coming up/ })).toBeNull();
+    expect(screen.queryByText(/Circuit assembly/)).toBeNull();
+  });
+
+  it('opens the Dates card on Plans', () => {
+    renderToday(withAssembly(), nov(1));
+    fireEvent.click(screen.getByRole('link', { name: /Coming up/ }));
+    expect(screen.getByTestId('plans-probe')).toHaveTextContent('{"focus":"dates"}');
   });
 });
