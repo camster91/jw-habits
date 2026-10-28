@@ -313,3 +313,59 @@ describe('backupDue', () => {
     expect(backupDue(withBackup(null, { backup: false }), '2026-11-01', NOW1)).toBe(false);
   });
 });
+
+describe('ministry report line', () => {
+  const NOV = new Date(2026, 9, 31, 20, 0);
+  const first = (p) => p.find((n) => n.kind === 'morning' && n.at.getDate() === 1);
+  // Ministry already shared on the 1st (so no routine line), backup reminder off.
+  const withMinistry = (on = ['ministry'], patch = {}, day = '2026-11-01') =>
+    storeWith(on, {
+      log: [{ routine: 'ministry', day, value: { shared: true, studies: 0 } }],
+      reminders: { enabled: true, off: [], events: true, backup: false },
+      ...patch,
+    });
+
+  it('adds the line on the 1st, after routine and event lines and before backup', () => {
+    const store = storeWith(['dailyText', 'ministry'], {
+      events: [
+        { id: 'e1', kind: 'other', title: 'Assembly', start: '2026-11-02', end: null, link: null },
+      ],
+      log: [{ routine: 'ministry', day: '2026-11-01', value: { shared: true, studies: 0 } }],
+    });
+    expect(first(plan(store, NOV, 3)).body).toBe(
+      '07:00 \u00b7 Daily text is ready\nAssembly tomorrow\nTime to send your October report\nTime for a backup'
+    );
+  });
+  it('is absent on the 2nd', () => {
+    const p = plan(withMinistry(['ministry', 'dailyText']), NOV, 3);
+    const second = p.find((n) => n.kind === 'morning' && n.at.getDate() === 2);
+    expect(second.body).not.toContain('report');
+  });
+  it('is absent when the Ministry reminder switch is off', () => {
+    const store = withMinistry(['ministry'], {
+      reminders: { enabled: true, off: ['ministry'], events: true, backup: false },
+    });
+    expect(first(plan(store, NOV, 3))).toBeUndefined();
+  });
+  it('is absent when the ministry routine is disabled', () => {
+    expect(first(plan(withMinistry(['dailyText']), NOV, 3)).body).not.toContain('report');
+  });
+  it('makes a report-only entry at the fallback time', () => {
+    const [m] = plan(withMinistry(), NOV, 3);
+    expect(m.body).toBe('Time to send your October report');
+    expect(hhmm(m.at)).toBe('07:00');
+  });
+  it('is dropped by quiet hours covering the fallback time', () => {
+    const store = withMinistry(['ministry'], { quietHours: { start: '22:00', end: '08:00' } });
+    expect(plan(store, NOV, 3)).toEqual([]);
+  });
+  it('names December on January 1st', () => {
+    const p = plan(withMinistry(['ministry'], {}, '2027-01-01'), new Date(2026, 11, 31, 20, 0), 3);
+    expect(p[0].body).toBe('Time to send your December report');
+  });
+  it('never plans more than two entries a day', () => {
+    const store = storeWith(['dailyText', 'ministry'], { wrapUpNotification: true });
+    const p = plan(store, NOV, 3);
+    expect(p.filter((n) => n.at.getDate() === 1).length).toBeLessThanOrEqual(2);
+  });
+});

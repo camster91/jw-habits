@@ -23,7 +23,8 @@
       "meetingEve": "Tomorrow's meeting — prep is ready when you are",
       "eventSoon": "{{label}} in 7 days",
       "eventTomorrow": "{{label}} tomorrow",
-      "backup": "Time for a backup"
+      "backup": "Time for a backup",
+      "report": "Time to send your {{month}} report"
     },
     "wrapUp": {
       "restWell": "Rest well — tomorrow's a fresh start.",
@@ -71,6 +72,19 @@
     },
     "today": {
       "title": "Today",
+      "report": {
+        "title": "{{month}} report",
+        "none": "Nothing logged for {{month}}.",
+        "shared": "Shared in the ministry: {{answer}}",
+        "yes": "Yes",
+        "no": "No",
+        "studies": "Bible studies: {{count}}",
+        "hours": "Hours: {{hours}}",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copyFailed": "Couldn't copy. Select the text instead.",
+        "hide": "Hide report reminder"
+      },
       "holdToCheck": "Hold to check",
       "tapToUndo": "Done. Tap to undo",
       "openLink": "Open {{label}}",

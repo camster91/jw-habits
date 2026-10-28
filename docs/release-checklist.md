@@ -109,6 +109,11 @@ a v3 store must not be fed to a v2-only build without an explicit recovery proce
 - [ ] Settings shows the last backup line; export a backup and confirm the line updates.
 - [ ] With no backup for 30 days (or never), the Settings nudge appears; with "Monthly backup
       reminder" on, the morning reminder carries the backup line.
+- [ ] Ministry report: on the 1st (device clock set to the 1st, ministry on, its reminder switch on),
+      the morning reminder carries "Time to send your <last month> report" and it is dropped with the
+      Ministry switch off or inside quiet hours. On days 1-7 Today shows the "<last month> report"
+      card with last month's totals; Copy puts the text on the clipboard ("Copied" is announced),
+      Hide removes it for that month, and it is gone on day 8.
 - [ ] Upgrade on a real install: install 5.2, record some history, install 5.3 over it. All old
       data is kept, the seven routines show (What's new after the daily text), and
       `jw-habits-v3-backup` is written. (The backup key is checked on a debuggable build or via

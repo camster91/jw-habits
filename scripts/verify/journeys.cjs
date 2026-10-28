@@ -14,6 +14,7 @@
 //   J7  the wrap-up card at 21:00
 //   J8  no console errors or third-party requests across all of the above
 //   J-dates  add a big date on Plans, see the Coming up line on Today
+//   J-report  the ministry report card on the 3rd: see it, hide it, reload
 //
 // Run:
 //   npm run build && npm run preview &
@@ -399,6 +400,35 @@ const closeSettings = async (page) => {
         await closeSettings(page);
       }, sink);
   }
+
+  // J-report: on the 3rd the report card shows last month's totals; hiding it
+  // survives a reload (the dismissed month is kept in localStorage).
+  await journey(
+    'J-report ministry report card',
+    browser,
+    { at: new Date(2026, 9, 12, 10, 0) },
+    async (page) => {
+      await onboardSkip(page);
+      await page.getByRole('checkbox', { name: 'Shared in the ministry this month' }).check();
+      const saved = await storeWhere(page, (x) => x.log.some((e) => e.routine === 'ministry'));
+      step('J-report October ministry is logged', !!saved);
+      await page.clock.setSystemTime(new Date(2026, 10, 3, 10, 0));
+      await page.reload({ waitUntil: 'networkidle' });
+      const card = page.getByTestId('report-card');
+      await card.waitFor();
+      const text = (await card.innerText()).replace(/\s+/g, ' ');
+      step(
+        'J-report the card shows October totals',
+        text.includes('October report') && text.includes('Shared in the ministry: Yes'),
+        text
+      );
+      await card.getByRole('button', { name: 'Hide report reminder' }).click();
+      step('J-report hiding removes the card', (await page.getByTestId('report-card').count()) === 0);
+      await page.reload({ waitUntil: 'networkidle' });
+      step('J-report the card stays hidden after a reload', (await page.getByTestId('report-card').count()) === 0);
+    },
+    sink
+  );
 
   // J12: the What's new row carries the feed count; its link opens the page and clears it.
   await journey(
