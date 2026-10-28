@@ -253,7 +253,7 @@
         "permissionOff": "Notifications are turned off for Faithful Days. You can turn them on in your phone's Settings.",
         "routineLabel": "Reminder: {{title}}",
         "events": "Date reminders",
-        "backup": "Backup reminder"
+        "backup": "Monthly backup reminder"
       },
       "quietHours": {
         "toggle": "Quiet hours",

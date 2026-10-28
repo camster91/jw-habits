@@ -323,7 +323,7 @@ describe('SettingsSheet', () => {
     renderSheet();
     const reminders = section('Reminders');
     const events = within(reminders).getByRole('switch', { name: 'Date reminders' });
-    const backup = within(reminders).getByRole('switch', { name: 'Backup reminder' });
+    const backup = within(reminders).getByRole('switch', { name: 'Monthly backup reminder' });
     expect(events).toBeChecked();
     expect(backup).toBeChecked();
     fireEvent.click(events);
