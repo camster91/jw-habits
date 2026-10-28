@@ -84,7 +84,7 @@ upgrades automatically and the original is preserved as a backup.
 Native JW Library hand-off and card sharing need the device release checklist
 before a mobile release. The widget remains subject to its existing device checks.
 
-Current automated gates: [quality gates](docs/quality-gates.md). Native/store checklist: [release checklist](docs/release-checklist.md), [platform matrix](docs/platform-matrix.md) and [store pack](docs/store-release-pack.md). Security reporting: [SECURITY.md](SECURITY.md). Future prepare-ahead and memory/capture boundaries: [proposed capability map](CAPABILITY-MAP.md).
+Current automated gates: [quality gates](docs/quality-gates.md). Native/store checklist: [release checklist](docs/release-checklist.md), [platform matrix](docs/platform-matrix.md) and [store pack](docs/store-release-pack.md). First-time store setup (keys, secrets, listings): [store setup guide](docs/store-setup-guide.md). Security reporting: [SECURITY.md](SECURITY.md). Future prepare-ahead and memory/capture boundaries: [proposed capability map](CAPABILITY-MAP.md).
 
 The initial app release is English-only. Full Spanish/French app localization remains tracked in #46; native widget chrome resources alone do not imply a translated app. Existing user labels, links, plans and legacy language preferences are preserved.
 

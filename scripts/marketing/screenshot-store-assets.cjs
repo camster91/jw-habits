@@ -17,6 +17,7 @@ const targets=[
 (async()=>{
   const domain=await import(pathToFileURL(path.resolve('src/domain/store.js')));
   const plans=await import(pathToFileURL(path.resolve('src/domain/plans.js')));
+  const events=await import(pathToFileURL(path.resolve('src/domain/events.js')));
   const {addDays}=await import(pathToFileURL(path.resolve('src/domain/day.js')));
   let seed=domain.defaultStore('2026-09-14','en');
   seed.onboardingDone=true;
@@ -38,6 +39,24 @@ const targets=[
   const {newlyEarned}=await import(pathToFileURL(path.resolve('src/domain/badges.js')));
   for(const id of newlyEarned(seed,TODAY)) seed.badges[id]=TODAY;
   if(!domain.validateStore(seed).ok) throw Error('Synthetic screenshot fixture is invalid');
+  // Synthetic scene fixtures: user-typed event titles and counts only, no jw.org text.
+  const whatsNewScene=base=>({...base,whatsNew:{...base.whatsNew,enabled:true,newCount:3}});
+  const datesScene=base=>{
+    let next=base;
+    for(const event of [
+      {kind:'assembly',title:'Circuit assembly',start:'2026-10-24'},
+      {kind:'memorial',title:'Memorial',start:'2027-03-22'},
+      {kind:'convention',title:'Regional convention',start:'2027-06-18',end:'2027-06-20'}
+    ]) next=events.addEvent(next,event);
+    if(next.events.length!==3) throw Error('Synthetic events were rejected');
+    return next;
+  };
+  // Day 3 of the next month, with the previous month's ministry entry logged.
+  const reportScene=base=>{
+    const next=domain.addCheckIn(base,{routine:'ministry',day:'2026-10-28',value:{shared:true,studies:2}});
+    next.lastSeenDay='2026-11-03';
+    return next;
+  };
   fs.mkdirSync(OUT,{recursive:true});
   const browser=await chromium.launch();
   const manifest=[];
@@ -48,24 +67,34 @@ const targets=[
         {name:'wrap-up',route:'/',hour:21},
         {name:'plans',route:'/plans',hour:10},
         {name:'progress',route:'/progress',hour:10},
-        {name:'onboarding',route:'/',hour:10,onboarding:true}
+        {name:'onboarding',route:'/',hour:10,onboarding:true},
+        {name:'whats-new',route:'/',hour:10,patch:whatsNewScene},
+        {name:'dates',route:'/plans',hour:10,patch:datesScene,scrollTo:'dates-card'},
+        {name:'report',route:'/',hour:10,date:[2026,10,3],patch:reportScene}
       ]) {
         const ctx=await browser.newContext({locale:'en-CA',viewport:{width:target.width,height:target.height},deviceScaleFactor:target.scale,colorScheme:theme,reducedMotion:'reduce',serviceWorkers:'block'});
         const page=await ctx.newPage();
-        await page.clock.install({time:new Date(2026,9,6,shot.hour)});
-        const fixture={...seed,theme,onboardingDone:!shot.onboarding};
-        await page.addInitScript(store=>{
+        await page.clock.install({time:new Date(...(shot.date||[2026,9,6]),shot.hour)});
+        const fixture={...(shot.patch?shot.patch(seed):seed),theme,onboardingDone:!shot.onboarding};
+        if(!domain.validateStore(fixture).ok) throw Error(`Invalid fixture for ${shot.name}`);
+        await page.addInitScript(({store,report})=>{
           localStorage.setItem('jw-habits-v2',JSON.stringify(store));
+          // Hide the first-week report card except in the report scene.
+          if(!report) localStorage.setItem('fd-report-dismissed','2026-09');
           localStorage.setItem('fd-boot-theme',store.theme);
-        },fixture);
+        },{store:fixture,report:shot.name==='report'});
         await page.goto(BASE.replace(/\/$/,'')+shot.route,{waitUntil:'networkidle'});
         await page.evaluate(()=>document.fonts.ready);
+        if(shot.scrollTo) {
+          await page.getByTestId(shot.scrollTo).evaluate(el=>el.scrollIntoView({block:'start'}));
+          await page.waitForTimeout(150);
+        }
         const file=`${shot.name}-${target.name}-${theme}.png`;
         const bytes=await page.screenshot({fullPage:false,omitBackground:false});
         await sharp(bytes).flatten({background:'#ffffff'}).removeAlpha().png().toFile(path.join(OUT,file));
         const meta=await sharp(path.join(OUT,file)).metadata();
         if(meta.width!==target.width*target.scale || meta.height!==target.height*target.scale || meta.hasAlpha) throw Error('Invalid screenshot export');
-        manifest.push({file,width:meta.width,height:meta.height,theme,route:shot.route,synthetic:true,source:'browser-rendered current app; native device recapture required'});
+        manifest.push({file,scene:shot.name,width:meta.width,height:meta.height,theme,route:shot.route,synthetic:true,source:'browser-rendered current app; native device recapture required'});
         await ctx.close();
       }
       console.log(`Captured ${target.name} ${theme}`);
