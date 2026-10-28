@@ -18,7 +18,7 @@ The old key was exposed, so make a new one. Do not reuse the old key.
    `keytool -export -rfc -keystore <NEW_UPLOAD.keystore> -alias <KEY_ALIAS> -file <upload_certificate.pem>`
 6. In Play Console, open your app, then Setup, App integrity, App signing. Choose the option to request an upload key reset.
 7. Upload the `.pem` file when asked and send the request.
-8. Wait for Google to approve. You will get an email.
+8. Wait for Google to approve. You will get an email. After approval, Google accepts both the old and new upload key for a short window (the runbook, [keystore-rotation-2026-07.md](keystore-rotation-2026-07.md), says 7 days). Upload at least one build signed with the new key (Internal testing is enough) within that window.
 9. After approval, issue #133 (rewriting git history to remove the old key) can be done. It comes after this step.
 
 ## 2. Android: GitHub secrets and the first build
