@@ -10,6 +10,7 @@ import { scheduleOn } from './schedule.js';
 import { labelFor } from './store.js';
 import { backupStale } from './backup.js';
 import { eventLabel, sortedEvents } from './events.js';
+import { reportMonth, reportNotifyDue } from './report.js';
 
 const ROLLOVER_HOUR = 3;
 const DEFAULT_MORNING = { time: '07:00', phrase: null };
@@ -87,7 +88,8 @@ export function backupDue(store, day, entryAt) {
 }
 
 /**
- * The morning entry: the routine line, then date lines, then the backup line.
+ * The morning entry: the routine line, then date lines, the ministry report
+ * line (the 1st), then the backup line.
  * With no routine due, the lines alone make the entry, at the daily text time.
  */
 function morningEntry(store, day, t) {
@@ -96,6 +98,9 @@ function morningEntry(store, day, t) {
   const lines = [
     ...(routine ? [routine.body] : []),
     ...eventLines(store, day, t),
+    ...(reportNotifyDue(store, day)
+      ? [t('fd.notify.report', { month: reportMonth(day).name })]
+      : []),
     ...(backupDue(store, day, at(day, time)) ? [t('fd.notify.backup')] : []),
   ];
   if (lines.length === 0) return null;

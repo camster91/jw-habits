@@ -18,6 +18,7 @@ import { CapacitorHttp } from '@capacitor/core';
 import en from '../locales/en.json';
 import { checkInStudy } from '../domain/planCheckins.js';
 import { addEvent } from '../domain/events.js';
+import { setMinistry } from '../domain/today.js';
 
 vi.mock('../native/openLink.js', () => ({ openLink: vi.fn() }));
 vi.mock('../utils/native.js', () => ({ haptics: { success: vi.fn() } }));
@@ -750,7 +751,13 @@ describe('Today: v5.1 copy', () => {
       expect(document.body.textContent).not.toMatch(BANNED);
       unmount();
     }
-    expect(JSON.stringify(en.fd.today)).not.toMatch(BANNED);
+    // Only the wording users read: key names (fd.today.report.copyFailed) are not copy.
+    const strings = [];
+    JSON.stringify(en.fd.today, (_key, value) => {
+      if (typeof value === 'string') strings.push(value);
+      return value;
+    });
+    expect(strings.join('\n')).not.toMatch(BANNED);
   });
 });
 
@@ -939,5 +946,31 @@ describe('Today: Coming up', () => {
     renderToday(withAssembly(), nov(1));
     fireEvent.click(screen.getByRole('link', { name: /Coming up/ }));
     expect(screen.getByTestId('plans-probe')).toHaveTextContent('{"focus":"dates"}');
+  });
+});
+
+describe('Today: the report card', () => {
+  const novStore = (ministry = true) => {
+    const s = makeStore({ pioneer: false });
+    const on = withScheduleChange(s, '2026-09-01', {
+      meetingDays: [2, 0],
+      enabled: { ...s.schedule[0].enabled, ministry },
+    });
+    return setMinistry(on, '2026-10-12', { shared: true, studies: 3 });
+  };
+  beforeEach(() => localStorage.clear());
+
+  it("shows on the 3rd with last month's totals", () => {
+    renderToday(novStore(), new Date(2026, 10, 3, 9, 0));
+    expect(screen.getByText('October report')).toBeInTheDocument();
+    expect(screen.getByText('Bible studies: 3')).toBeInTheDocument();
+  });
+  it('is hidden on the 8th', () => {
+    renderToday(novStore(), new Date(2026, 10, 8, 9, 0));
+    expect(screen.queryByText('October report')).not.toBeInTheDocument();
+  });
+  it('is hidden when the ministry routine is off', () => {
+    renderToday(novStore(false), new Date(2026, 10, 3, 9, 0));
+    expect(screen.queryByText('October report')).not.toBeInTheDocument();
   });
 });

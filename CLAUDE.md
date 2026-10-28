@@ -11,11 +11,12 @@ and the ministry. Today shows what is due and a long press checks it off; the Wh
 carries the "N new" count from jw.org's public feed. Plans holds study and family plans, preparation
 and a Dates card for big yearly dates (Memorial, conventions, assemblies, the circuit overseer
 visit) that Today surfaces under "Coming up". Progress shows how the weeks are going; onboarding
-sets it up in six skippable steps. Reminders (including date and monthly backup reminders) and
+sets it up in six skippable steps. On days 1-7 Today shows a ministry report card (last month's
+totals, Copy and Hide). Reminders (including date, monthly backup and ministry report reminders) and
 home-screen widgets (iOS WidgetKit, Android) sit on top. Settings shows the last backup and nudges
 after 30 days. All state is on-device. The website was retired on 2026-10-28: Vite builds the
 bundle that runs inside Capacitor's WebView, and `site/` holds only the privacy and support
-pages, published to GitHub Pages by `pages.yml`.
+pages, published to https://faithfuldays.ashbi.ca by Cloudflare Pages (project `faithful-days`, deploys `site/` from `main`).
 
 - **App ID:** `ca.ashbi.habittracker`
 - **Version:** 5.3.0
@@ -112,7 +113,7 @@ ios/App/FaithfulDaysWidget/     # Embedded WidgetKit extension sources (iOS 17+)
 docs/ios-widget-setup.md        # Signing/account and device verification for the embedded widget
 docs/release-checklist.md       # Manual on-device checklist to run before every store release
 scripts/verify/                 # smoke.cjs, journeys.cjs, accessibility.cjs, lib.cjs (Playwright)
-site/                           # Privacy and support pages (GitHub Pages, via .github/workflows/pages.yml)
+site/                           # Privacy and support pages (Cloudflare Pages project faithful-days)
 docs/terms-checklist.md         # jw.org Terms of Use clauses and how the app meets them
 ```
 
@@ -126,7 +127,7 @@ docs/terms-checklist.md         # jw.org Terms of Use clauses and how the app me
 | Meeting prep | `meetingPrep` | meeting | Due the day before each meeting day; prompts for meeting days if none set |
 | Family worship | `familyWorship` | weekly | On the chosen weekday; lists the week's agenda, and the check-in marks its plan steps (`checkInFamily` / `undoFamily`) |
 | Personal study | `personalStudy` | weekly target | N per week; with an active project (`activePlan.personalStudy`) shows its next step, and the check-in ticks it (`checkInStudy` / `undoStudy`) |
-| Ministry | `ministry` | monthly | Shared-this-month toggle, studies count, hours goal for pioneers |
+| Ministry | `ministry` | monthly | Shared-this-month toggle, studies count, hours goal for pioneers; on the 1st the morning notification adds "Time to send your {month} report" and days 1-7 show `ReportCard` on Today (`domain/report.js`) |
 
 `ROUTINE_IDS` and `dueToday` in `domain/routines.js` are the source of truth for what Today lists.
 Users can switch any routine off or rename it (`labels`); the id never changes.
@@ -145,6 +146,7 @@ they ship in real installs, so renaming them silently discards user history.
 | `jw-daily-habits-state`, `jw-bible-reading-days`, `jw-user-settings` | v1 shapes | Read once by `migrateV1`; never written or deleted (rollback) |
 | `jw-error-logs` | `ErrorLog[]` (last 20, at most 7 days) | Dev error capture |
 | `fd-wrapup-dismissed`, `fd-celebrated` | session storage, an app day | Wrap-up dismissed / haptic already fired |
+| `fd-report-dismissed` | localStorage, a month key (`YYYY-MM`) | The month whose report card was hidden (UI convenience, not app state) |
 
 - **The 03:00 app day.** `appDay(now)` in `domain/day.js` is the local date, or the previous one
   before 03:00 local time, so late-night use counts for the day that is still going. Never use

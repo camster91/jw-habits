@@ -88,4 +88,4 @@ Current automated gates: [quality gates](docs/quality-gates.md). Native/store ch
 
 The initial app release is English-only. Full Spanish/French app localization remains tracked in #46; native widget chrome resources alone do not imply a translated app. Existing user labels, links, plans and legacy language preferences are preserved.
 
-The privacy and support pages live in `site/` and are published to GitHub Pages by `.github/workflows/pages.yml`. The jw.org Terms of Use mapping is in [docs/terms-checklist.md](./docs/terms-checklist.md).
+The privacy and support pages live in `site/` and are published to https://faithfuldays.ashbi.ca by Cloudflare Pages (project `faithful-days`), which deploys `site/` from `main` on every merge. The jw.org Terms of Use mapping is in [docs/terms-checklist.md](./docs/terms-checklist.md).

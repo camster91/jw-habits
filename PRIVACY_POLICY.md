@@ -2,8 +2,8 @@
 
 Effective: 2026-10-28. Developer: Cameron Ashley (Ashbi Design).
 The published policy is the authoritative text:
-https://camster91.github.io/jw-habits/privacy/ (source: `site/privacy/index.html`).
-Support: https://camster91.github.io/jw-habits/support/
+https://faithfuldays.ashbi.ca/privacy/ (source: `site/privacy/index.html`).
+Support: https://faithfuldays.ashbi.ca/support/
 
 In short, nothing is collected and nothing is shared.
 

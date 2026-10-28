@@ -60,4 +60,4 @@ The Smoke workflow also runs independent Firefox and WebKit jobs against the rea
 
 ## Pages
 
-`.github/workflows/pages.yml` publishes `site/` (privacy and support) to GitHub Pages. The repository owner must enable Pages with source "GitHub Actions"; until then the store URLs do not resolve.
+Cloudflare Pages (project `faithful-days`, account with the `ashbi.ca` zone) publishes `site/` (privacy and support) from `main` to https://faithfuldays.ashbi.ca on every merge; there is no workflow in this repository for it.

@@ -5,8 +5,8 @@ import { ExternalLink } from 'lucide-react';
 import { version } from '../../../package.json';
 import { openLink } from '../../native/openLink.js';
 
-const PRIVACY_URL = 'https://camster91.github.io/jw-habits/privacy/';
-const SUPPORT_URL = 'https://camster91.github.io/jw-habits/support/';
+const PRIVACY_URL = 'https://faithfuldays.ashbi.ca/privacy/';
+const SUPPORT_URL = 'https://faithfuldays.ashbi.ca/support/';
 
 function LinkButton({ url, children }) {
   return (

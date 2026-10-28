@@ -19,8 +19,8 @@
 |---|---|
 | App name | **JW Habits** |
 | Subtitle / Tagline | Daily spiritual habits |
-| Privacy Policy URL | `https://camster91.github.io/jw-habits/privacy/` |
-| Support URL | `https://camster91.github.io/jw-habits/support/` |
+| Privacy Policy URL | `https://faithfuldays.ashbi.ca/privacy/` |
+| Support URL | `https://faithfuldays.ashbi.ca/support/` |
 | Developer / Seller | Cameron Ashley (ashbi.ca) |
 | Contact | dev@ashbi.ca |
 | Category | Lifestyle (iOS) / Lifestyle (Play) |
@@ -124,7 +124,7 @@ bible,prayer,meeting,worship,family,habit,tracker,spiritual,devotional,streak,go
 ### Support URL
 
 ```
-https://camster91.github.io/jw-habits/support/
+https://faithfuldays.ashbi.ca/support/
 ```
 
 ### Marketing URL (optional)

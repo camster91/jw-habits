@@ -108,7 +108,7 @@ Required for both stores. Minimum content:
 - No account required
 - No analytics or tracking
 
-Host at: https://camster91.github.io/jw-habits/privacy/
+Host at: https://faithfuldays.ashbi.ca/privacy/
 
 ---
 

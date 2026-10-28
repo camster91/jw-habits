@@ -35,9 +35,9 @@ platforms and permissions; final listings must describe the verified release.
 
 Suggested category: Productivity. Age/content-rating questionnaires must be
 answered in the actual consoles; do not invent a published rating.
-Privacy policy URL (store listing and in the app): https://camster91.github.io/jw-habits/privacy/
-Support URL: https://camster91.github.io/jw-habits/support/
-The pages are published from `site/` by `pages.yml`; the owner must enable GitHub Pages (source: GitHub Actions) before submitting.
+Privacy policy URL (store listing and in the app): https://faithfuldays.ashbi.ca/privacy/
+Support URL: https://faithfuldays.ashbi.ca/support/
+The pages are published from `site/` by Cloudflare Pages (project `faithful-days`) to https://faithfuldays.ashbi.ca on every merge to `main`.
 
 ## Current UI assets
 
@@ -95,7 +95,6 @@ open Progress, and use Settings for reminders, backup, privacy and support.
 
 ## Owner items
 
-- Enable GitHub Pages (source: GitHub Actions) so the privacy and support URLs resolve.
 - Confirm the developer name "Cameron Ashley (Ashbi Design)" and the support email
   shown on the support page.
 - Decide whether to write to DeveloperSupport@jw.org about the feed check
