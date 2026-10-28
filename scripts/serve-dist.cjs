@@ -67,12 +67,6 @@ const server = http.createServer((req, res) => {
       }
       const ext = path.extname(filePath).toLowerCase();
       const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
-      // Service worker must never be cached (PWA update flow)
-      if (url === '/sw.js' || url === '/sw.mjs') {
-        headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
-        headers['Pragma'] = 'no-cache';
-        headers['Expires'] = '0';
-      }
       res.writeHead(200, headers);
       res.end(data);
     });

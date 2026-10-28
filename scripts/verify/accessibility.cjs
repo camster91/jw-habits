@@ -22,7 +22,6 @@ async function scan(page, label) {
       const requests=[];
       page.on('request',request=>requests.push(request.url()));
       await go(page,BASE);
-      if(requests.some(url=>/\/Share-[^/]+\.js/.test(url))) { failures++; console.error('Share code fetched during initial startup'); }
       await scan(page,`${theme} onboarding`);
       await onboardSkip(page);
       await scan(page,`${theme} Today`);
@@ -31,7 +30,7 @@ async function scan(page, label) {
       await page.getByRole('button',{name:'Settings',exact:true}).click();
       await scan(page,`${theme} Settings`);
       await page.getByRole('button',{name:'Close',exact:true}).click();
-      for (const route of ['plans','plans/preparation','notes','progress','progress/badges','share?text=Example%20shared%20text']) {
+      for (const route of ['plans','plans/preparation','notes','progress','progress/badges']) {
         await page.goto(`${BASE}/${route}`,{waitUntil:'networkidle'});
         await scan(page,`${theme} ${route}`);
       }

@@ -7,7 +7,7 @@ import en from './locales/en.json';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { recordDiagnostic, pruneDiagnostics } from './utils/diagnostics.js';
-import { initializeNative, isNative, isWeb, appLifecycle } from './utils/native.js';
+import { initializeNative, isNative, appLifecycle } from './utils/native.js';
 import { consumeBack } from './utils/backStack.js';
 import { StoreProvider } from './data/StoreProvider.jsx';
 import { registerReminderSync } from './native/reminders.js';
@@ -96,50 +96,3 @@ root.render(
     </ErrorBoundary>
   </StrictMode>
 );
-
-// Service worker update handler. The UpdatePrompt banner (driven
-// by usePWA) is the user-visible flow for applying updates — we
-// do NOT auto-reload on controllerchange, which would destroy any
-// in-progress state. See src/components/UpdatePrompt.jsx for the
-// banner and src/utils/native.js for the applyUpdate flow.
-if (isWeb && 'serviceWorker' in navigator) {
-  // Register the service worker (the plugin's auto-injection is off, so the
-  // native build never registers one).
-  // Register directly: the plugin helper also reloads on activation, which
-  // would race our explicit Update button's single controllerchange reload.
-  navigator.serviceWorker
-    .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
-    .catch((error) => console.warn('Service worker registration failed:', error));
-
-  // Handle notification clicks — focus app window. Only accept
-  // messages from our controlling SW, and only same-origin paths.
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data?.type !== 'NOTIFICATION_CLICK') return;
-    if (event.source && event.source !== navigator.serviceWorker.controller) return;
-    const raw = typeof event.data.url === 'string' ? event.data.url : '/';
-    const safePath =
-      raw.startsWith('/') && !raw.startsWith('//') && !raw.includes('\\')
-        ? raw
-        : (() => {
-            try {
-              const parsed = new URL(raw, window.location.origin);
-              return parsed.origin === window.location.origin
-                ? `${parsed.pathname}${parsed.search}${parsed.hash}`
-                : '/';
-            } catch {
-              return '/';
-            }
-          })();
-    window.focus();
-    window.location.href = safePath;
-  });
-}
-
-// Listen for notification clicks directly (for when SW isn't controlling)
-if (isWeb && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.ready
-    .then(() => {
-      // No-op: registration ready for notification scheduling
-    })
-    .catch(() => {});
-}

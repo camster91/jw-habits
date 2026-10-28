@@ -553,6 +553,7 @@ describe('upgrading a stored v2 value', () => {
     const raw = '{ "version": 99, "future": {"body":"Private notes"} }';
     prefs.set(STORE_KEY, raw);
     const view = await mount();
+    expect(view.queryByRole('button', { name: /update|refresh now/i })).toBeNull();
     fireEvent.click(view.getByRole('button', { name: 'Save a copy of your data' }));
     await flush();
     expect(backup).toHaveBeenCalledWith(

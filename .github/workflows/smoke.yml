@@ -1,6 +1,6 @@
 name: Smoke
 
-# Real-build routines, storage, English UI/locale, responsive/a11y and offline gates.
+# Real-build routines, storage, English UI/locale, responsive and a11y gates.
 # Chromium owns the worker-update checks and synthetic screenshot references.
 # Firefox/WebKit independently run smoke, journeys and accessibility checks.
 
@@ -68,7 +68,6 @@ jobs:
           done
           node scripts/verify/journeys.cjs
           node scripts/verify/accessibility.cjs
-          node scripts/verify/offline-update.cjs
           node scripts/marketing/screenshot-store-assets.cjs
         env:
           CI: true

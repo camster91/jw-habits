@@ -60,10 +60,6 @@ async function render(size, filename, opts) {
 }
 
 async function generateIcons() {
-  await render(192, 'pwa-192x192.png');
-  await render(512, 'pwa-512x512.png');
-  // Maskable gets a bigger inset so a launcher crop cannot clip the mark.
-  await render(512, 'pwa-maskable-512x512.png', { maskable: true });
   await render(180, 'apple-touch-icon.png');
   await render(32, 'favicon-32x32.png');
   await render(16, 'favicon-16x16.png');

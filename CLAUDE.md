@@ -5,7 +5,7 @@ If you change anything in this doc, bump the date. If you change anything in `sr
 
 ## What this is
 
-A Capacitor (React + Vite) mobile/PWA routine tracker for six spiritual routines: the daily
+A Capacitor (React + Vite) mobile routine tracker for six spiritual routines: the daily
 text, Bible reading, meeting prep, family worship, personal study and the ministry. Today shows
 what is due and a long press checks it off; Progress shows how the weeks are going; onboarding
 sets it up in six skippable steps. Reminders, a "What's New" count from jw.org's public feed, and
@@ -19,8 +19,8 @@ home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
 - **Node:** >= 22.12.0
 - **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
   trail at `/plans/:planId`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
-  sheet opened from the tab bar, not a route. `/share` (lazy, preview-only PWA share target) exists in the web
-  build only.
+  sheet opened from the tab bar, not a route. There is no PWA and no `/share` route; unknown paths fall
+  back to Today.
 
 ### No third-party content in shipped code
 
@@ -39,13 +39,12 @@ user-editable slot instead.
 | Layer | Technology | Version |
 |---|---|---|
 | Frontend | React 19 + Vite 8 | `react: 19.3.0` (exact, with `react-dom`), `vite: ^8.1.5` |
-| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, `/progress/badges`, web-only `/share`; `*` falls back to Today |
+| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, `/progress/badges`; `*` falls back to Today |
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
 | i18n | i18next + react-i18next | English-only initial release; full es/fr UI tracked in #46 |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
-| PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
 | Testing | Vitest 5 + Testing Library + Playwright | unit/component coverage gates plus smoke, journeys, accessibility and SW update checks |
 | Linting | ESLint 9 + Prettier 3 | |
 
@@ -63,7 +62,6 @@ user-editable slot instead.
 | `npm run journeys` | End-to-end UI journeys (needs preview running) |
 | `npm run test:coverage` | All-source coverage with global and critical-module thresholds |
 | `npm run a11y` | Real-build light/dark 320px checks (build and preview required) |
-| `npm run offline:verify` | Real worker update/offline checks (build required) |
 | `npm run budgets` | Built JS/CSS gzip and precache size limits (build required) |
 
 The smoke and journey suites pin the browser clock with `page.clock` (e.g. `Date(2026, 9, 6, 21, 0)`
@@ -74,8 +72,7 @@ for the wrap-up), so never rely on the real date in them. Shared helpers: `scrip
 ```
 src/
 ├── main.jsx                    # Entry: i18n, error logging, register*() wiring, back button, SW updates
-├── App.jsx                     # Router: onboarding gate, Today/Progress, Settings sheet, PWA chrome
-├── sw.js                       # Workbox service worker (web build)
+├── App.jsx                     # Router: onboarding gate, Today/Progress, Settings sheet
 ├── data/
 │   ├── StoreProvider.jsx       # Loads/validates/saves the store; onForeground, onStoreChange, 03:00 rollover
 │   └── useStore.js             # { store, update, today }
@@ -95,16 +92,13 @@ src/
 ├── components/                 # HoldToCheck, RoutineRow, MinistryRow, Stepper, WrapUpCard, TabBar,
 │                               # MeetingDaysCard, WhatsNewBadge, BibleMap, settings/* (Reminders, Links,
 │                               # Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet, PlanIcon, and Today's
-│                               # SomethingElseSheet, TodayAgenda, PlanFinishedCard), and the PWA
-│                               # chrome (PWAProvider, InstallPrompt, UpdatePrompt, OfflineIndicator)
+│                               # SomethingElseSheet, TodayAgenda, PlanFinishedCard)
 ├── native/                     # reminders.js, whatsNewClient.js, widgetBridge.js (each exports register*())
-├── pages/Share.jsx             # PWA share_target landing (web only)
-├── hooks/                      # usePWA, usePWAContext
 ├── theme/theme.js              # Accent, light/dark, and --fd-accent-text (accent text at 4.5:1)
 ├── theme/planColours.js        # The 8 plan colours (white text at 4.5:1) and their text shades (.fd-plan-text)
 ├── locales/                    # en.json (current UI); unused legacy es/fr catalogs removed
 └── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js, userLinks.js,
-                                # settingsStore.js (retained legacy helper), backup.js, pwa.js, backStack.js (Android back)
+                                # settingsStore.js (retained legacy helper), backup.js, backStack.js (Android back)
 ios/App/FaithfulDaysWidget/     # Embedded WidgetKit extension sources (iOS 17+)
 docs/ios-widget-setup.md        # Signing/account and device verification for the embedded widget
 docs/release-checklist.md       # Manual on-device checklist to run before every store release

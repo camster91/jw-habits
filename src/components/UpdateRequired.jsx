@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { appDay } from '../domain/day.js';
 import { isShareCancel, saveBackup } from '../utils/backup.js';
-import { isWeb } from '../utils/native.js';
-import { PWAProvider } from './PWAProvider.jsx';
-import UpdatePrompt from './UpdatePrompt.jsx';
 
 /** A recovery surface for data this build is too old to understand. */
 export default function UpdateRequired({ raw }) {
@@ -31,7 +28,7 @@ export default function UpdateRequired({ raw }) {
     }
   };
 
-  const content = (
+  return (
     <main
       className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 px-5 text-base-content"
       style={{
@@ -59,15 +56,5 @@ export default function UpdateRequired({ raw }) {
         {status}
       </p>
     </main>
-  );
-
-  // The normal App never mounts in this state, so keep its web update action reachable.
-  return isWeb ? (
-    <PWAProvider>
-      <UpdatePrompt />
-      {content}
-    </PWAProvider>
-  ) : (
-    content
   );
 }

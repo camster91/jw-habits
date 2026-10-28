@@ -15,11 +15,7 @@ function walk(dir) {
   }
 }
 walk(root);
-const worker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
-const urls=[...new Set([...worker.matchAll(/\burl["'`]?\s*:["'`]([^"'`]+)["'`]/g)].map(match=>match[1]))];
-if(!urls.includes('index.html')) throw Error('Missing precache manifest; refusing an empty budget measurement');
-const precache=urls.reduce((sum,url)=>sum+fs.statSync(path.join(root,url)).size,0);
-const measured={jsGzip:js,cssGzip:css,precacheBytes:precache,precacheEntries:urls.length};
-const limits={jsGzip:Number(process.env.BUDGET_JS_GZIP_BYTES || 210000),cssGzip:30000,precacheBytes:850000};
+const measured={jsGzip:js,cssGzip:css};
+const limits={jsGzip:Number(process.env.BUDGET_JS_GZIP_BYTES || 210000),cssGzip:30000};
 console.log(JSON.stringify({measured,limits},null,2));
 if(Object.keys(limits).some(key=>measured[key]>limits[key])) { console.error('Production bundle budget exceeded');process.exit(1); }

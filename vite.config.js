@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { VitePWA } from 'vite-plugin-pwa'
 
 const version = JSON.parse(readFileSync(new URL('./package.json', import.meta.url))).version;
 let revision = process.env.APP_REVISION;
@@ -24,7 +23,7 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        // Share is dynamically imported by App; the other screens are eager.
+        // Notes and Preparation are dynamically imported by App; the other screens are eager.
         // Keep one dependency chunk to avoid React/component dependency cycles.
         manualChunks(id) {
           // Extract the npm package name from a node_modules path.
@@ -48,96 +47,5 @@ export default defineConfig({
     releaseMarker,
     tailwindcss(),
     react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      // main.jsx registers the worker itself, and only on the web.
-      injectRegister: false,
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-maskable-512x512.png'],
-      strategies: 'injectManifest',
-      srcDir: 'src',
-      filename: 'sw.js',
-      manifest: {
-    id: '/',
-        name: 'Faithful Days',
-        short_name: 'Faithful Days',
-        description: 'Track daily habits and routines on your own device.',
-        theme_color: '#4A6FA4',
-        background_color: '#ffffff',
-        display: 'standalone',
-        orientation: 'portrait-primary',
-        scope: '/',
-        start_url: '/',
-        categories: ['lifestyle', 'education', 'productivity'],
-        icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: 'pwa-maskable-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable'
-          }
-        ],
-        shortcuts: [
-          // All shortcuts route to `/` (the only page). Each shortcut's
-          // URL is informational for the OS launcher; the home renders
-          // the full list of habit rows. Future per-shortcut focus
-          // behavior (e.g., scroll to a specific row, open a specific
-          // section) requires Home.jsx to read `useSearchParams` and
-          // match against row ids — deferred until the Home.jsx split
-          // (issue #140) lands.
-          {
-            name: 'Today\'s Habits',
-            short_name: 'Today',
-            description: 'Open the home screen and start your daily habits',
-            url: '/',
-            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
-          }
-        ],
-        // Enable share target for receiving shared content
-        share_target: {
-          action: '/share',
-          method: 'GET',
-          params: {
-            title: 'title',
-            text: 'text',
-            url: 'url'
-          }
-        },
-        // No `screenshots` entry: the previous one pointed at the app icon
-        // and labelled it a Home screenshot. A 512x512 square icon is not a
-        // valid narrow-form-factor screenshot, and shipping a wrong one is
-        // worse than shipping none. Add real captures here when available.
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}'],
-        cleanupOutdatedCaches: true,
-        // We deliberately do NOT set skipWaiting/clientsClaim here —
-        // those are controlled in src/sw.js so the user gets a
-        // "Update available — reload now?" prompt instead of a silent
-        // hard-reload that destroys unsaved form state.
-        // The SPA navigation fallback is also handled in src/sw.js
-        // (via NavigationRoute + precached /index.html) rather than
-        // here, so the workbox-generated manifest picks up the
-        // /index.html entry from the precache glob.
-        navigationPreload: false,
-      },
-
-      // Development options
-      devOptions: {
-        enabled: true,
-        type: 'module',
-        navigateFallback: 'index.html'
-      }
-    })
   ],
 })
