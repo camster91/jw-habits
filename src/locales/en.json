@@ -20,7 +20,10 @@
       "ready_other": "{{prefix}} · {{list}} are ready",
       "and": "{{head}} and {{last}}",
       "wrapUp": "Your day in review is ready",
-      "meetingEve": "Tomorrow's meeting — prep is ready when you are"
+      "meetingEve": "Tomorrow's meeting — prep is ready when you are",
+      "eventSoon": "{{label}} in 7 days",
+      "eventTomorrow": "{{label}} tomorrow",
+      "backup": "Time for a backup"
     },
     "wrapUp": {
       "restWell": "Rest well — tomorrow's a fresh start.",
@@ -248,7 +251,9 @@
         "hint": "Gentle notes on this device about what's ready today.",
         "perRoutine": "Remind me about",
         "permissionOff": "Notifications are turned off for Faithful Days. You can turn them on in your phone's Settings.",
-        "routineLabel": "Reminder: {{title}}"
+        "routineLabel": "Reminder: {{title}}",
+        "events": "Date reminders",
+        "backup": "Backup reminder"
       },
       "quietHours": {
         "toggle": "Quiet hours",

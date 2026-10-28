@@ -319,6 +319,21 @@ describe('SettingsSheet', () => {
     });
   });
 
+  it('reminders: the date and backup switches write through', () => {
+    renderSheet();
+    const reminders = section('Reminders');
+    const events = within(reminders).getByRole('switch', { name: 'Date reminders' });
+    const backup = within(reminders).getByRole('switch', { name: 'Backup reminder' });
+    expect(events).toBeChecked();
+    expect(backup).toBeChecked();
+    fireEvent.click(events);
+    expect(current.reminders).toMatchObject({ events: false, backup: true });
+    fireEvent.click(backup);
+    expect(current.reminders).toMatchObject({ events: false, backup: false });
+    fireEvent.click(events);
+    expect(current.reminders).toMatchObject({ events: true, backup: false });
+  });
+
   it('reminders: lists only enabled routines, and a migrated "off" can be turned on', () => {
     const s = withScheduleChange(
       { ...makeStore(), reminders: { enabled: false, off: [] } },

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import i18n from 'i18next';
-import { planNotifications } from './notifications.js';
+import { planNotifications, backupDue } from './notifications.js';
 import { defaultStore } from './store.js';
 import { ROUTINE_IDS } from './routines.js';
 
@@ -167,5 +167,134 @@ describe('planNotifications', () => {
   it('has no morning entry when the only due routine has reminders off', () => {
     const store = storeWith(['dailyText'], { reminders: { enabled: true, off: ['dailyText'] } });
     expect(plan(store, NOW, 1)).toEqual([]);
+  });
+});
+
+describe('date and backup lines', () => {
+  const event = (start, title = 'Circuit assembly') => ({
+    id: 'e1',
+    kind: 'other',
+    title,
+    start,
+    end: null,
+    link: null,
+  });
+  const withEvent = (start, on = ['dailyText'], patch = {}) =>
+    storeWith(on, { events: [event(start)], ...patch });
+  const morningOn = (p, day) => p.find((n) => n.kind === 'morning' && n.at.getDate() === day);
+
+  it('adds "in 7 days" to the morning body 7 days before', () => {
+    // Today is 2026-10-06; the event is on the 13th, so the 6th is 7 days before.
+    const [m] = plan(withEvent('2026-10-13'), NOW, 1);
+    expect(m.body).toBe('07:00 · Daily text is ready\nCircuit assembly in 7 days');
+  });
+
+  it('adds "tomorrow" the day before', () => {
+    const [m] = plan(withEvent('2026-10-07'), NOW, 1);
+    expect(m.body).toBe('07:00 · Daily text is ready\nCircuit assembly tomorrow');
+  });
+
+  it('adds nothing 3 days before', () => {
+    const [m] = plan(withEvent('2026-10-09'), NOW, 1);
+    expect(m.body).toBe('07:00 · Daily text is ready');
+  });
+
+  it('makes a morning entry from the event alone, at the daily text time', () => {
+    const store = withEvent('2026-10-13', [], {
+      anchors: { dailyText: { time: '08:30', phrase: null } },
+    });
+    const p = plan(store, NOW, 1);
+    expect(p).toHaveLength(1);
+    expect(p[0].body).toBe('Circuit assembly in 7 days');
+    expect(hhmm(p[0].at)).toBe('08:30');
+  });
+
+  it('uses 07:00 when there is no daily text anchor', () => {
+    const p = plan(withEvent('2026-10-13', [], { anchors: {} }), NOW, 1);
+    expect(hhmm(p[0].at)).toBe('07:00');
+  });
+
+  it('drops the event-only entry inside quiet hours', () => {
+    const store = withEvent('2026-10-13', [], { quietHours: { start: '22:00', end: '08:00' } });
+    expect(plan(store, NOW, 1)).toEqual([]);
+  });
+
+  it('shows no event lines when reminders.events is off', () => {
+    const base = withEvent('2026-10-13');
+    const store = { ...base, reminders: { ...base.reminders, events: false } };
+    expect(plan(store, NOW, 1)[0].body).toBe('07:00 · Daily text is ready');
+    const none = {
+      ...withEvent('2026-10-13', []),
+      reminders: { ...base.reminders, events: false },
+    };
+    expect(plan(none, NOW, 1)).toEqual([]);
+  });
+
+  it('joins several events and uses the kind name for an untitled one', () => {
+    const store = storeWith([], {
+      events: [
+        { ...event('2026-10-07'), id: 'a' },
+        { ...event('2026-10-07', null), id: 'b', kind: 'memorial' },
+      ],
+    });
+    const [m] = plan(store, NOW, 1);
+    expect(m.body.split('\n')).toHaveLength(2);
+    expect(m.body).toContain('Circuit assembly tomorrow');
+  });
+
+  it('adds the backup line on the 1st when no backup was made', () => {
+    const now = new Date(2026, 9, 31, 20, 0);
+    const store = storeWith(['dailyText']);
+    const p = plan(store, now, 3);
+    const first = p.find((n) => n.kind === 'morning' && n.at.getMonth() === 10);
+    expect(first.body).toBe('07:00 · Daily text is ready\nTime for a backup');
+    const second = p.find((n) => n.kind === 'morning' && n.at.getDate() === 2);
+    expect(second.body).toBe('07:00 · Daily text is ready');
+  });
+
+  it('makes a morning entry from the backup line alone', () => {
+    const now = new Date(2026, 9, 31, 20, 0);
+    const p = plan(storeWith([]), now, 2);
+    expect(p).toHaveLength(1);
+    expect(p[0].body).toBe('Time for a backup');
+  });
+
+  it('never plans more than two entries a day, however many lines there are', () => {
+    const now = new Date(2026, 9, 31, 20, 0);
+    const store = storeWith(['dailyText'], {
+      wrapUpNotification: true,
+      events: [event('2026-11-02'), { ...event('2026-11-08'), id: 'e2' }],
+    });
+    const p = plan(store, now, 10);
+    const perDay = {};
+    for (const n of p) {
+      const key = n.at.toDateString();
+      perDay[key] = (perDay[key] ?? 0) + 1;
+    }
+    expect(Math.max(...Object.values(perDay))).toBeLessThanOrEqual(2);
+    expect(morningOn(p, 1).body).toContain('Circuit assembly tomorrow');
+  });
+});
+
+describe('backupDue', () => {
+  const NOW1 = new Date(2026, 10, 1, 5, 0);
+  const DAY = 24 * 60 * 60 * 1000;
+  const base = () => storeWith(['dailyText']);
+  const withBackup = (lastExportAt, reminders = {}) => {
+    const s = base();
+    return { ...s, backup: { lastExportAt }, reminders: { ...s.reminders, ...reminders } };
+  };
+  const iso = (ms) => new Date(NOW1.getTime() + ms).toISOString();
+
+  it('is true on the 1st with no backup, an old one, or one in the future', () => {
+    expect(backupDue(withBackup(null), '2026-11-01', NOW1)).toBe(true);
+    expect(backupDue(withBackup(iso(-31 * DAY)), '2026-11-01', NOW1)).toBe(true);
+    expect(backupDue(withBackup(iso(DAY)), '2026-11-01', NOW1)).toBe(true);
+  });
+
+  it('is false with a recent backup, on other days, or with the switch off', () => {
+    expect(backupDue(withBackup(iso(-5 * DAY)), '2026-11-01', NOW1)).toBe(false);
+    expect(backupDue(withBackup(null), '2026-11-02', NOW1)).toBe(false);
+    expect(backupDue(withBackup(null, { backup: false }), '2026-11-01', NOW1)).toBe(false);
   });
 });
