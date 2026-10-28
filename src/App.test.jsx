@@ -3,21 +3,12 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { defaultStore } from './domain/store.js';
 import { ACCENTS, accentText, applyTheme } from './theme/theme.js';
 
-const platform = vi.hoisted(() => ({ isWeb: true }));
-
 vi.mock('./utils/native.js', () => ({
-  get isWeb() {
-    return platform.isWeb;
-  },
+  isWeb: true,
   isNative: false,
   haptics: { success: () => {} },
   appLifecycle: { onStateChange: () => () => {} },
 }));
-vi.mock('./components/InstallPrompt', () => ({
-  default: () => <div data-testid="install-prompt" />,
-}));
-vi.mock('./components/UpdatePrompt', () => ({ default: () => null }));
-vi.mock('./components/OfflineIndicator', () => ({ default: () => null }));
 
 // eslint-disable-next-line no-unused-vars -- used inside renderApp() via JSX
 import App from './App.jsx';
@@ -50,7 +41,6 @@ beforeEach(() => {
     addEventListener: (_type, fn) => listeners.add(fn),
     removeEventListener: (_type, fn) => listeners.delete(fn),
   }));
-  platform.isWeb = true;
   window.history.pushState({}, '', '/');
 });
 
@@ -67,6 +57,13 @@ describe('App shell', () => {
     renderApp();
     expect(await screen.findByTestId('today')).toBeInTheDocument();
     expect(screen.queryByTestId('onboarding')).not.toBeInTheDocument();
+  });
+
+  it('falls back to Today on /share', async () => {
+    seed({ onboardingDone: true });
+    window.history.pushState({}, '', '/share?text=hello');
+    renderApp();
+    expect(await screen.findByTestId('row-dailyText')).toBeInTheDocument();
   });
 
   it('shows Progress on /progress', async () => {
@@ -111,21 +108,6 @@ describe('App shell', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Progress' }));
     expect(await screen.findByTestId('progress')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Progress' })).toHaveAttribute('aria-current', 'page');
-  });
-
-  it('renders the install prompt on the web', async () => {
-    seed({ onboardingDone: true });
-    renderApp();
-    await screen.findByTestId('today');
-    expect(screen.getByTestId('install-prompt')).toBeInTheDocument();
-  });
-
-  it('omits the install prompt outside the web build', async () => {
-    platform.isWeb = false;
-    seed({ onboardingDone: true });
-    renderApp();
-    await screen.findByTestId('today');
-    expect(screen.queryByTestId('install-prompt')).not.toBeInTheDocument();
   });
 
   it('opens and closes the Settings sheet from Today', async () => {

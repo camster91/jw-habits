@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { StoreContext } from '../data/useStore.js';
 import { defaultStore, exportJson } from '../domain/store.js';
 import { scheduleOn, withScheduleChange } from '../domain/schedule.js';
+import { v2Store } from '../test/legacyStores.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import SettingsSheet from './SettingsSheet.jsx';
 import { consumeBack } from '../utils/backStack.js';
@@ -134,11 +135,11 @@ describe('SettingsSheet', () => {
     expect(scheduleOn(current, '2026-10-05').enabled.ministry).toBe(true);
   });
 
-  it('importing a file with version 4 explains why and changes nothing', async () => {
+  it('importing a file with version 5 explains why and changes nothing', async () => {
     const { initial } = renderSheet();
     const input = screen.getByLabelText('Import a backup');
     expect(input).toHaveAttribute('accept', '.json,application/json');
-    fireEvent.change(input, { target: { files: [backupFile({ ...initial, version: 4 })] } });
+    fireEvent.change(input, { target: { files: [backupFile({ ...initial, version: 5 })] } });
     expect(await screen.findByText(/from a newer version of Faithful Days/)).toBeInTheDocument();
     expect(current).toBe(initial);
     expect(screen.queryByText('Replace all data on this device?')).not.toBeInTheDocument();
@@ -181,16 +182,14 @@ describe('SettingsSheet', () => {
     expect(window.alert).not.toHaveBeenCalled();
   });
 
-  it('Replace on a v2 backup adopts it upgraded to v3, its topic a plan made today', async () => {
-    const { initial } = renderSheet();
-    // eslint-disable-next-line no-unused-vars
-    const { plans, activePlan, familyAgendas, badges, showGameLayer, showShare, ...rest } = initial;
-    const v2 = { ...rest, version: 2, studyTopic: 'Daniel', tone: 'quiet' };
+  it('Replace on a v2 backup adopts it upgraded to v4, its topic a plan made today', async () => {
+    renderSheet();
+    const v2 = { ...v2Store('2026-09-01', 'Daniel'), tone: 'quiet' };
     fireEvent.change(screen.getByLabelText('Import a backup'), {
       target: { files: [backupFile(v2)] },
     });
     fireEvent.click(await screen.findByRole('button', { name: 'Replace' }));
-    expect(current.version).toBe(3);
+    expect(current.version).toBe(4);
     expect(current.tone).toBe('quiet');
     expect(current).not.toHaveProperty('studyTopic');
     expect(current.plans.map((p) => [p.title, p.createdOn])).toEqual([['Daniel', TODAY]]);
@@ -238,13 +237,13 @@ describe('SettingsSheet', () => {
     expect(within(about).getByText(DISCLAIMER)).toBeInTheDocument();
     fireEvent.click(within(about).getByRole('button', { name: 'Privacy policy' }));
     expect(window.open).toHaveBeenCalledWith(
-      'https://jwhabits.ashbi.ca/privacy/',
+      'https://camster91.github.io/jw-habits/privacy/',
       '_blank',
       'noopener'
     );
     fireEvent.click(within(about).getByRole('button', { name: 'Support' }));
     expect(window.open).toHaveBeenCalledWith(
-      'https://jwhabits.ashbi.ca/support/',
+      'https://camster91.github.io/jw-habits/support/',
       '_blank',
       'noopener'
     );
@@ -301,13 +300,38 @@ describe('SettingsSheet', () => {
       expect(within(reminders).getByRole('switch', { name: `Reminder: ${name}` })).toBeChecked();
     }
     fireEvent.click(within(reminders).getByRole('switch', { name: 'Reminder: Bible reading' }));
-    expect(current.reminders).toEqual({ enabled: true, off: ['bibleReading'] });
+    expect(current.reminders).toEqual({
+      enabled: true,
+      off: ['bibleReading'],
+      events: true,
+      backup: true,
+    });
     fireEvent.click(within(reminders).getByRole('switch', { name: 'Reminder: Ministry' }));
     expect(current.reminders.off).toEqual(['bibleReading', 'ministry']);
     fireEvent.click(within(reminders).getByRole('switch', { name: 'Reminder: Bible reading' }));
     expect(current.reminders.off).toEqual(['ministry']);
     fireEvent.click(master);
-    expect(current.reminders).toEqual({ enabled: false, off: ['ministry'] });
+    expect(current.reminders).toEqual({
+      enabled: false,
+      off: ['ministry'],
+      events: true,
+      backup: true,
+    });
+  });
+
+  it('reminders: the date and backup switches write through', () => {
+    renderSheet();
+    const reminders = section('Reminders');
+    const events = within(reminders).getByRole('switch', { name: 'Date reminders' });
+    const backup = within(reminders).getByRole('switch', { name: 'Monthly backup reminder' });
+    expect(events).toBeChecked();
+    expect(backup).toBeChecked();
+    fireEvent.click(events);
+    expect(current.reminders).toMatchObject({ events: false, backup: true });
+    fireEvent.click(backup);
+    expect(current.reminders).toMatchObject({ events: false, backup: false });
+    fireEvent.click(events);
+    expect(current.reminders).toMatchObject({ events: true, backup: false });
   });
 
   it('reminders: lists only enabled routines, and a migrated "off" can be turned on', () => {

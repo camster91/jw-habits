@@ -1,5 +1,5 @@
 /**
- * The six fixed routines, their cadences, and what is due on a given app day.
+ * The seven fixed routines, their cadences, and what is due on a given app day.
  * Log entries dated after the day being judged are ignored everywhere.
  *
  * @typedef {import('./schedule.js').RoutineId} RoutineId
@@ -11,6 +11,7 @@ import { scheduleOn } from './schedule.js';
 /** @type {RoutineId[]} */
 export const ROUTINE_IDS = [
   'dailyText',
+  'whatsNew',
   'bibleReading',
   'meetingPrep',
   'familyWorship',
@@ -20,6 +21,7 @@ export const ROUTINE_IDS = [
 
 export const DEFAULT_LABELS = {
   dailyText: 'Daily text',
+  whatsNew: "What's new",
   bibleReading: 'Bible reading',
   meetingPrep: 'Meeting preparation',
   familyWorship: 'Family worship',
@@ -34,6 +36,7 @@ export const DEFAULT_LABELS = {
  */
 export const CADENCE = {
   dailyText: 'daily',
+  whatsNew: 'daily',
   bibleReading: 'daily',
   meetingPrep: 'meeting',
   familyWorship: 'weekly',

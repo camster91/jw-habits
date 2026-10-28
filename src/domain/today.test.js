@@ -14,6 +14,7 @@ import {
 import { defaultStore } from './store.js';
 import { chapterIndex, portionSize } from './bible.js';
 import { withScheduleChange } from './schedule.js';
+import { ROUTINE_IDS } from './routines.js';
 
 const TUE = '2026-10-06';
 const READING = {
@@ -229,9 +230,10 @@ describe('studyProgress', () => {
 
 describe('encouragementSeed', () => {
   it('is day-of-year × 7 + the routine index', () => {
+    const index = (id) => ROUTINE_IDS.indexOf(id);
     expect(encouragementSeed('2026-01-01', 'dailyText')).toBe(7);
-    expect(encouragementSeed('2026-01-02', 'bibleReading')).toBe(15);
-    expect(encouragementSeed('2026-12-31', 'ministry')).toBe(365 * 7 + 5);
+    expect(encouragementSeed('2026-01-02', 'bibleReading')).toBe(14 + index('bibleReading'));
+    expect(encouragementSeed('2026-12-31', 'ministry')).toBe(365 * 7 + index('ministry'));
   });
 });
 

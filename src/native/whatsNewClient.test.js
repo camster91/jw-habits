@@ -20,6 +20,8 @@ vi.mock('../data/StoreProvider.jsx', () => ({
 import i18n from 'i18next';
 import { checkWhatsNew, registerWhatsNewCheck, whatsNewPageUrl } from './whatsNewClient.js';
 import { defaultStore, validateStore } from '../domain/store.js';
+import { withScheduleChange } from '../domain/schedule.js';
+import { appDay } from '../domain/day.js';
 import { FEED_XML, FIXTURE_TITLES } from '../domain/whatsNew.fixture.js';
 
 const NOW = new Date('2026-10-06T12:00:00.000Z');
@@ -122,6 +124,17 @@ describe('registerWhatsNewCheck', () => {
     const wn = { ...base, lastCheck: '2026-10-04T00:00:00.000Z', seen: ['ccc333'] };
     await hooks.foreground({ store: storeWith(wn), update });
     expect(validateStore(update.mock.calls[0][0](storeWith(wn))).ok).toBe(true);
+  });
+
+  it('makes no request while the What’s new routine is switched off', async () => {
+    http.get.mockResolvedValue({ status: 200, data: FEED_XML });
+    registerWhatsNewCheck();
+    const today = appDay(new Date());
+    const off = withScheduleChange(storeWith(base), today, { enabled: { whatsNew: false } });
+    const update = vi.fn();
+    await hooks.foreground({ store: off, update, today });
+    expect(http.get).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
   });
 
   it('does not update when the check yields null', async () => {

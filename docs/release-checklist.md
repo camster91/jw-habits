@@ -71,12 +71,12 @@ See [platform matrix](platform-matrix.md) and [store release pack](store-release
 - [ ] Airplane mode, force-quit, relaunch: the app opens to Today with all data, no error.
 - [ ] Check-ins made offline are still there after a relaunch.
 
-## 5. What's New badge
+## 5. What's new row
 
-- [ ] Online, first foreground of the day: the badge "N new on jw.org" appears when there are
-      new items (or none, if there are none).
-- [ ] Tapping the badge opens jw.org's What's New page externally and clears the badge.
-- [ ] Offline or with the feature off in Settings: no badge and no error.
+- [ ] Online, first foreground of the day: the What's new row on Today shows "N new" when there
+      are new items (nothing extra, if there are none).
+- [ ] Tapping the row opens jw.org's What's New page externally and clears the count.
+- [ ] Offline or with the feature off in Settings: no count and no error.
 - [ ] A second foreground within 24 h makes no request.
 
 ## 6. Accent and theme
@@ -94,10 +94,24 @@ See [platform matrix](platform-matrix.md) and [store release pack](store-release
 - [ ] Hide points and levels: XP and level labels disappear; garden and badges remain.
 - [ ] Quiet tone and reduced motion suppress level confetti as configured.
 - [ ] Hide share buttons and confirm every card surface honours the switch.
-- [ ] Download each of the four PNG card types on web. Confirm no private notes or links appear.
-- [ ] On iOS and Android, open the share sheet with a PNG, cancel, then share again.
+- [ ] On iOS and Android, share each of the four PNG card types through the share sheet, cancel, then share again. Confirm no private notes or links appear on any card.
 - [ ] Open a finder link with JW Library installed, then without it (browser fallback).
-- [ ] Check 390px mobile, 768px tablet and 1440px desktop for clipping, focus and readable contrast.
+- [ ] Check a small phone, a large phone and (the iOS target also supports iPad) an iPad for clipping, focus and readable contrast.
 
 Rollback: the preserved v2 backup supports returning to the previous data schema;
 a v3 store must not be fed to a v2-only build without an explicit recovery procedure.
+
+## v5.3 dates, backup and upgrade
+
+- [ ] Plans > Dates: add, edit and delete a date; a date within 14 days appears under "Coming up"
+      on Today.
+- [ ] With "Date reminders" on, the morning reminder includes a line for a date that is due.
+- [ ] Settings shows the last backup line; export a backup and confirm the line updates.
+- [ ] With no backup for 30 days (or never), the Settings nudge appears; with "Monthly backup
+      reminder" on, the morning reminder carries the backup line.
+- [ ] Upgrade on a real install: install 5.2, record some history, install 5.3 over it. All old
+      data is kept, the seven routines show (What's new after the daily text), and
+      `jw-habits-v3-backup` is written. (The backup key is checked on a debuggable build or via
+      a web inspector.)
+- [ ] Note for release notes: encouragement lines shift once because a routine was inserted.
+- [ ] The embedded privacy manifests (app and widget) are present in the signed archive.

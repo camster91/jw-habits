@@ -169,7 +169,7 @@ class ErrorBoundary extends Component {
               {/* Support Message */}
               <p className="text-xs text-base-content/70 mt-4">
                 {i18n.t('fd.recovery.support')}{' '}
-                <a href="https://jwhabits.ashbi.ca/support/" className="underline">
+                <a href="https://camster91.github.io/jw-habits/support/" className="underline">
                   {i18n.t('fd.settings.about.support')}
                 </a>
               </p>

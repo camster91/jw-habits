@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useCallback, useMemo, useState } from 'react';
+// eslint-disable-next-line no-unused-vars -- used via JSX
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { openLink } from '../native/openLink.js';
 // eslint-disable-next-line no-unused-vars -- used via JSX
 import { StoreContext } from '../data/useStore.js';
@@ -15,6 +17,7 @@ import { haptics } from '../utils/native.js';
 import { CapacitorHttp } from '@capacitor/core';
 import en from '../locales/en.json';
 import { checkInStudy } from '../domain/planCheckins.js';
+import { addEvent } from '../domain/events.js';
 
 vi.mock('../native/openLink.js', () => ({ openLink: vi.fn() }));
 vi.mock('../utils/native.js', () => ({ haptics: { success: vi.fn() } }));
@@ -61,9 +64,21 @@ function Harness({ initial, onOpenSettings }) {
   const value = useMemo(() => ({ store, update, today }), [store, update, today]);
   return (
     <StoreContext.Provider value={value}>
-      <Today onOpenSettings={onOpenSettings} />
+      <MemoryRouter>
+        <Routes>
+          <Route path="/" element={<Today onOpenSettings={onOpenSettings} />} />
+          <Route path="/plans" element={<PlansProbe />} />
+        </Routes>
+      </MemoryRouter>
     </StoreContext.Provider>
   );
+}
+
+/** Stands in for the Plans screen: shows the route state it was opened with. */
+// eslint-disable-next-line no-unused-vars -- used via JSX
+function PlansProbe() {
+  const location = useLocation();
+  return <p data-testid="plans-probe">{JSON.stringify(location.state)}</p>;
 }
 
 function renderToday(store, now = at(9), onOpenSettings = () => {}) {
@@ -331,32 +346,56 @@ describe('Today: cards and lines', () => {
     expect(screen.queryByText('Set your meeting days')).toBeNull();
   });
 
-  it('shows the What’s New badge; a tap opens the page and zeroes the count, offline', () => {
-    const whatsNew = {
+  describe("What's new row", () => {
+    const wn = (over = {}) => ({
       enabled: true,
       lastCheck: '2026-10-05T00:00:00.000Z',
       seen: ['a'],
-      newCount: 2,
-    };
-    window.fetch = vi.fn();
-    renderToday(makeStore({ whatsNew }));
-    fireEvent.click(screen.getByRole('button', { name: '2 new on jw.org' }));
-    expect(openLink).toHaveBeenCalledWith('https://www.jw.org/en/whats-new/');
-    expect(current.whatsNew).toEqual({ ...whatsNew, newCount: 0 });
-    expect(CapacitorHttp.get).not.toHaveBeenCalled();
-    expect(window.fetch).not.toHaveBeenCalled();
-    expect(screen.queryByText(/new on jw\.org/)).toBeNull();
-  });
+      newCount: 3,
+      ...over,
+    });
 
-  it('shows no badge once What’s New is switched off, even with a count left over', () => {
-    const whatsNew = { enabled: false, lastCheck: null, seen: ['a'], newCount: 2 };
-    renderToday(makeStore({ whatsNew }));
-    expect(screen.queryByRole('button', { name: '2 new on jw.org' })).toBeNull();
-  });
+    it('shows the count on its row', () => {
+      renderToday(makeStore({ whatsNew: wn() }));
+      expect(within(screen.getByTestId('row-whatsNew')).getByText('3 new')).toBeInTheDocument();
+    });
 
-  it('shows no badge when nothing is new', () => {
-    renderToday(makeStore());
-    expect(screen.queryByText(/new on jw\.org/)).toBeNull();
+    it('shows no count when nothing is new', () => {
+      renderToday(makeStore({ whatsNew: wn({ newCount: 0 }) }));
+      expect(screen.getByTestId('row-whatsNew')).toBeInTheDocument();
+      expect(screen.queryByText(/^\d+ new$/)).toBeNull();
+    });
+
+    it('hides the count once the feed check is switched off', () => {
+      renderToday(makeStore({ whatsNew: wn({ enabled: false }) }));
+      expect(screen.queryByText('3 new')).toBeNull();
+    });
+
+    it('the link opens the page and zeroes the count, offline', () => {
+      window.fetch = vi.fn();
+      renderToday(makeStore({ whatsNew: wn() }));
+      fireEvent.click(
+        within(screen.getByTestId('row-whatsNew')).getByRole('button', { name: /^Open/ })
+      );
+      expect(openLink).toHaveBeenCalledWith('https://www.jw.org/en/whats-new/');
+      expect(current.whatsNew).toEqual(wn({ newCount: 0 }));
+      expect(CapacitorHttp.get).not.toHaveBeenCalled();
+      expect(window.fetch).not.toHaveBeenCalled();
+      expect(screen.queryByText('3 new')).toBeNull();
+    });
+
+    it('a hold logs a check-in and leaves the count', () => {
+      renderToday(makeStore({ whatsNew: wn() }));
+      hold(checkButton("What's new"));
+      expect(entry('whatsNew')).toBeTruthy();
+      expect(current.whatsNew.newCount).toBe(3);
+    });
+
+    it('has no old badge', () => {
+      renderToday(makeStore({ whatsNew: wn() }));
+      expect(screen.queryByTestId('whats-new-badge')).toBeNull();
+      expect(screen.queryByText(/new on jw\.org/)).toBeNull();
+    });
   });
 
   it('opens a week with a fresh-start line on Monday', () => {
@@ -424,7 +463,7 @@ describe('Today: wrap-up', () => {
 
   it('celebrates when everything is done', () => {
     const store = makeStore();
-    const due = ['dailyText', 'bibleReading', 'meetingPrep', 'personalStudy'];
+    const due = ['dailyText', 'whatsNew', 'bibleReading', 'meetingPrep', 'personalStudy'];
     const log = due.map((routine) => ({ routine, day: '2026-10-06', value: true }));
     log.push({ routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 0 } });
     renderToday({ ...store, log }, at(21));
@@ -433,7 +472,7 @@ describe('Today: wrap-up', () => {
   });
 
   it('fires the celebration haptic at most once per app day', () => {
-    const due = ['dailyText', 'bibleReading', 'meetingPrep', 'personalStudy'];
+    const due = ['dailyText', 'whatsNew', 'bibleReading', 'meetingPrep', 'personalStudy'];
     const log = due.map((routine) => ({ routine, day: '2026-10-06', value: true }));
     log.push({ routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 0 } });
     const first = renderToday(makeStore({ log }), at(21));
@@ -446,7 +485,7 @@ describe('Today: wrap-up', () => {
   });
 
   it('does not celebrate with the quiet tone', () => {
-    const due = ['dailyText', 'bibleReading', 'meetingPrep', 'personalStudy'];
+    const due = ['dailyText', 'whatsNew', 'bibleReading', 'meetingPrep', 'personalStudy'];
     const log = due.map((routine) => ({ routine, day: '2026-10-06', value: true }));
     log.push({ routine: 'ministry', day: '2026-10-06', value: { shared: true, studies: 0 } });
     renderToday(makeStore({ tone: 'quiet', log }), at(21));
@@ -860,5 +899,45 @@ describe('Today: fix round 1', () => {
     fireEvent.change(picker, { target: { value: 'pr' } });
     fireEvent.click(screen.getByRole('button', { name: 'Start next study plan' }));
     expect(current.activePlan.personalStudy).toBe('pr');
+  });
+});
+
+describe('Today: Coming up', () => {
+  // Sunday 1 November 2026, 09:00.
+  const nov = (d) => new Date(2026, 10, d, 9);
+  const withAssembly = () => addEvent(makeStore(), { kind: 'assembly', start: '2026-11-14' });
+
+  it('shows "Circuit assembly · Sat 14 Nov" two weeks ahead', () => {
+    renderToday(withAssembly(), nov(1));
+    const line = screen.getByRole('link', { name: /Coming up/ });
+    expect(line).toHaveTextContent('Circuit assembly · Sat 14 Nov');
+  });
+
+  it('says "today" on the day', () => {
+    renderToday(withAssembly(), nov(14));
+    expect(screen.getByRole('link', { name: /Coming up/ })).toHaveTextContent(
+      'Circuit assembly · today'
+    );
+  });
+
+  it('uses the name the user gave', () => {
+    const s = addEvent(makeStore(), { kind: 'memorial', title: 'Memorial', start: '2026-11-03' });
+    renderToday(s, nov(1));
+    expect(screen.getByRole('link', { name: /Coming up/ })).toHaveTextContent(
+      'Memorial · Tue 3 Nov'
+    );
+  });
+
+  it('has no line with nothing within 14 days', () => {
+    const s = addEvent(makeStore(), { kind: 'assembly', start: '2026-11-16' });
+    renderToday(s, nov(1));
+    expect(screen.queryByRole('link', { name: /Coming up/ })).toBeNull();
+    expect(screen.queryByText(/Circuit assembly/)).toBeNull();
+  });
+
+  it('opens the Dates card on Plans', () => {
+    renderToday(withAssembly(), nov(1));
+    fireEvent.click(screen.getByRole('link', { name: /Coming up/ }));
+    expect(screen.getByTestId('plans-probe')).toHaveTextContent('{"focus":"dates"}');
   });
 });

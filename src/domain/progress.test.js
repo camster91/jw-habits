@@ -331,6 +331,7 @@ describe('totals', () => {
       booksCompleted: 3, // Genesis, Exodus (baseline) + Obadiah
       perRoutineDaysThisYear: {
         dailyText: 1,
+        whatsNew: 0,
         bibleReading: 3,
         meetingPrep: 0,
         familyWorship: 0,

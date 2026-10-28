@@ -8,6 +8,7 @@ import i18n from 'i18next';
 import { CapacitorHttp } from '@capacitor/core';
 import { applyFeed, feedUrl, parseFeed, whatsNewPageUrl } from '../domain/whatsNew.js';
 import { linkLocale } from '../domain/links.js';
+import { scheduleOn } from '../domain/schedule.js';
 import { onForeground } from '../data/StoreProvider.jsx';
 import { isNative } from '../utils/native.js';
 
@@ -63,8 +64,9 @@ let inFlight = false;
 
 /** Check on every foreground; the check itself rate-limits to once a day. */
 export function registerWhatsNewCheck() {
-  return onForeground(async ({ store, update }) => {
+  return onForeground(async ({ store, update, today }) => {
     if (inFlight) return;
+    if (!scheduleOn(store, today).enabled.whatsNew) return;
     inFlight = true;
     try {
       const now = new Date();

@@ -1,26 +1,32 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-08.**
+**Last audited against source: 2026-10-28.**
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
 
-A Capacitor (React + Vite) mobile/PWA routine tracker for six spiritual routines: the daily
-text, Bible reading, meeting prep, family worship, personal study and the ministry. Today shows
-what is due and a long press checks it off; Progress shows how the weeks are going; onboarding
-sets it up in six skippable steps. Reminders, a "What's New" count from jw.org's public feed, and
-home-screen widgets (iOS WidgetKit, Android) sit on top. All state is on-device.
+A phone-only (iOS and Android) Capacitor (React + Vite) routine tracker for seven spiritual
+routines: the daily text, What's new, Bible reading, meeting prep, family worship, personal study
+and the ministry. Today shows what is due and a long press checks it off; the What's new row
+carries the "N new" count from jw.org's public feed. Plans holds study and family plans, preparation
+and a Dates card for big yearly dates (Memorial, conventions, assemblies, the circuit overseer
+visit) that Today surfaces under "Coming up". Progress shows how the weeks are going; onboarding
+sets it up in six skippable steps. Reminders (including date and monthly backup reminders) and
+home-screen widgets (iOS WidgetKit, Android) sit on top. Settings shows the last backup and nudges
+after 30 days. All state is on-device. The website was retired on 2026-10-28: Vite builds the
+bundle that runs inside Capacitor's WebView, and `site/` holds only the privacy and support
+pages, published to GitHub Pages by `pages.yml`.
 
 - **App ID:** `ca.ashbi.habittracker`
-- **Version:** 5.2.0
+- **Version:** 5.3.0
 - **Current product contract:** `docs/feature-ui-reconciliation.md` records the
   approved UI and notes/preparation boundaries. Today has no garden illustration;
   Progress retains the garden. Study plans use "Use on Today" and "Current plan".
 - **Node:** >= 22.12.0
 - **Screens:** onboarding (until `onboardingDone`), then Today (`/`), Plans (`/plans`, each plan's
   trail at `/plans/:planId`) and Progress (`/progress`, badges at `/progress/badges`) behind a tab bar; Settings is a modal
-  sheet opened from the tab bar, not a route. `/share` (lazy, preview-only PWA share target) exists in the web
-  build only.
+  sheet opened from the tab bar, not a route. There is no PWA and no `/share` route; unknown paths fall
+  back to Today.
 
 ### No third-party content in shipped code
 
@@ -28,25 +34,25 @@ This is the central design constraint. The app bundles no jw.org text, no verses
 Bible book names and chapter counts are public facts (`domain/bible.js`); encouragement lines
 carry scripture *references* as data, never verse text. Link buttons open jw.org / JW Library
 URLs built from those facts, or a link the user typed (`links` in the store, validated by
-`isSafeHttpUrl`). The one network call is the What's New feed check (dates and counts only, at
-most daily, can be switched off in Settings).
+`isSafeHttpUrl`). The one network call is the What's New feed check (reads only `guid` and
+`pubDate`, at most daily, on by default, can be switched off in Settings). The jw.org Terms of
+Use mapping is in `docs/terms-checklist.md`.
 
 Do not add bundled third-party content. If a feature seems to need some, it needs a
 user-editable slot instead.
 
-## Stack (verified against `package.json` 2026-10-07)
+## Stack (verified against `package.json` 2026-10-28)
 
 | Layer | Technology | Version |
 |---|---|---|
 | Frontend | React 19 + Vite 8 | `react: 19.3.0` (exact, with `react-dom`), `vite: ^8.1.5` |
-| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, `/progress/badges`, web-only `/share`; `*` falls back to Today |
+| Routing | React Router DOM 7 | `/`, `/plans`, `/plans/family`, `/plans/:planId`, `/progress`, `/progress/badges`; `*` falls back to Today |
 | State | `StoreProvider` (React context) over one JSON store in storage | no Redux/Zustand |
 | Styling | Tailwind CSS 4 + DaisyUI 5 | `@tailwindcss/vite` plugin |
 | Icons | lucide-react | `1.16.0` |
 | i18n | i18next + react-i18next | English-only initial release; full es/fr UI tracked in #46 |
 | Mobile | Capacitor 8 (iOS + Android) | `@capacitor/* ^8.x`, local notifications |
-| PWA | vite-plugin-pwa 1.3 + Workbox (injectManifest, `src/sw.js`) | web build only |
-| Testing | Vitest 5 + Testing Library + Playwright | unit/component coverage gates plus smoke, journeys, accessibility and SW update checks |
+| Testing | Vitest 5 + Testing Library + Playwright | unit/component coverage gates plus smoke, journeys and accessibility checks against `vite preview` (a test harness only) |
 | Linting | ESLint 9 + Prettier 3 | |
 
 ## Commands
@@ -55,7 +61,7 @@ user-editable slot instead.
 |---|---|
 | `npm run dev` | Vite dev server |
 | `npm run build` | Production build to `dist/` |
-| `npm run preview` | Serve `dist/` on :4173 |
+| `npm run preview` | Serve `dist/` on :4173 (test harness for the Playwright suites) |
 | `npm test` | Unit tests (Vitest) |
 | `npm run lint` | ESLint |
 | `npm run format:check` | Prettier check (`format` to write) |
@@ -63,8 +69,7 @@ user-editable slot instead.
 | `npm run journeys` | End-to-end UI journeys (needs preview running) |
 | `npm run test:coverage` | All-source coverage with global and critical-module thresholds |
 | `npm run a11y` | Real-build light/dark 320px checks (build and preview required) |
-| `npm run offline:verify` | Real worker update/offline checks (build required) |
-| `npm run budgets` | Built JS/CSS gzip and precache size limits (build required) |
+| `npm run budgets` | Built JS/CSS gzip size limits (build required) |
 
 The smoke and journey suites pin the browser clock with `page.clock` (e.g. `Date(2026, 9, 6, 21, 0)`
 for the wrap-up), so never rely on the real date in them. Shared helpers: `scripts/verify/lib.cjs`.
@@ -73,49 +78,50 @@ for the wrap-up), so never rely on the real date in them. Shared helpers: `scrip
 
 ```
 src/
-├── main.jsx                    # Entry: i18n, error logging, register*() wiring, back button, SW updates
-├── App.jsx                     # Router: onboarding gate, Today/Progress, Settings sheet, PWA chrome
-├── sw.js                       # Workbox service worker (web build)
+├── main.jsx                    # Entry: i18n, error logging, register*() wiring, Android back button
+├── App.jsx                     # Router: onboarding gate, Today/Progress, Settings sheet
 ├── data/
 │   ├── StoreProvider.jsx       # Loads/validates/saves the store; onForeground, onStoreChange, 03:00 rollover
 │   └── useStore.js             # { store, update, today }
 ├── domain/                     # Pure logic, no React or storage (all unit-tested)
 │   ├── day.js                  # appDay: the 03:00 app day, date maths
 │   ├── store.js                # defaultStore, validateStore, newId, addCheckIn/removeCheckIn, export/import, labelFor
-│   ├── upgrade.js              # upgradeStore: v2 -> v3 (studyTopic becomes the active study plan)
+│   ├── upgrade.js              # upgradeStore: v2 -> v3 (studyTopic becomes the active study plan), v3 -> v4 (whatsNew routine, events, backup, reminder flags)
 │   ├── schedule.js             # Dated schedule history: scheduleOn, withScheduleChange
-│   ├── routines.js             # The six routines, cadences, dueToday, isDone
+│   ├── routines.js             # The seven routines, cadences, dueToday, isDone
 │   ├── today.js                # Today helpers: chapters, ministry entry, meeting day, study progress
 │   ├── bible.js                # Books, chapter counts, reading plans, finder URLs (no verse text)
 │   ├── progress.js, wrapup.js, encouragement.js, notifications.js, links.js, whatsNew.js
+│   ├── events.js               # Big dates: add/update/remove, upcoming, the Coming up event, short dates
 │   └── migrateV1.js            # One-time import of the v1 jw- keys (read-only on them)
 ├── screens/
 │   ├── Today.jsx, Plans.jsx, PlanTrail.jsx, FamilyWeeks.jsx, Progress.jsx, SettingsSheet.jsx
 │   └── onboarding/             # Six steps; StepRoutines/Week/Reading/Rhythm/Look are reused by Settings
 ├── components/                 # HoldToCheck, RoutineRow, MinistryRow, Stepper, WrapUpCard, TabBar,
-│                               # MeetingDaysCard, WhatsNewBadge, BibleMap, settings/* (Reminders, Links,
-│                               # Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet, PlanIcon, and Today's
-│                               # SomethingElseSheet, TodayAgenda, PlanFinishedCard), and the PWA
-│                               # chrome (PWAProvider, InstallPrompt, UpdatePrompt, OfflineIndicator)
+│                               # MeetingDaysCard, BibleMap, ComingUp (Today's next big date), settings/*
+│                               # (Reminders, Links, Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet,
+│                               # PlanIcon, DatesCard + EventSheet on Plans, and Today's
+│                               # SomethingElseSheet, TodayAgenda, PlanFinishedCard)
 ├── native/                     # reminders.js, whatsNewClient.js, widgetBridge.js (each exports register*())
-├── pages/Share.jsx             # PWA share_target landing (web only)
-├── hooks/                      # usePWA, usePWAContext
 ├── theme/theme.js              # Accent, light/dark, and --fd-accent-text (accent text at 4.5:1)
 ├── theme/planColours.js        # The 8 plan colours (white text at 4.5:1) and their text shades (.fd-plan-text)
 ├── locales/                    # en.json (current UI); unused legacy es/fr catalogs removed
 └── utils/                      # safeStorage (the storage chokepoint), native.js, safeUrls.js, userLinks.js,
-                                # settingsStore.js (retained legacy helper), backup.js, pwa.js, backStack.js (Android back)
+                                # settingsStore.js (retained legacy helper), backup.js, backStack.js (Android back)
 ios/App/FaithfulDaysWidget/     # Embedded WidgetKit extension sources (iOS 17+)
 docs/ios-widget-setup.md        # Signing/account and device verification for the embedded widget
 docs/release-checklist.md       # Manual on-device checklist to run before every store release
-scripts/verify/                 # smoke.cjs, journeys.cjs, lib.cjs (Playwright)
+scripts/verify/                 # smoke.cjs, journeys.cjs, accessibility.cjs, lib.cjs (Playwright)
+site/                           # Privacy and support pages (GitHub Pages, via .github/workflows/pages.yml)
+docs/terms-checklist.md         # jw.org Terms of Use clauses and how the app meets them
 ```
 
-## The six routines
+## The seven routines
 
 | Routine | Id | Cadence | Notes |
 |---|---|---|---|
 | Daily text | `dailyText` | daily | Link to the day's text (locale default or user link) |
+| What's new | `whatsNew` | daily | Opens jw.org's What's New page; the row shows the "N new" count from the daily feed check (on by default, off switch in Settings) |
 | Bible reading | `bibleReading` | daily (or N days/week) | Chapters-read stepper; link to the day's first chapter |
 | Meeting prep | `meetingPrep` | meeting | Due the day before each meeting day; prompts for meeting days if none set |
 | Family worship | `familyWorship` | weekly | On the chosen weekday; lists the week's agenda, and the check-in marks its plan steps (`checkInFamily` / `undoFamily`) |
@@ -132,8 +138,9 @@ they ship in real installs, so renaming them silently discards user history.
 
 | Key | Shape | Purpose |
 |---|---|---|
-| `jw-habits-v2` | one JSON store (`version: 3`; the key keeps its v2 name) | Everything: `schedule[]`, `log[]`, `reading`, `anchors`, `labels`, `links`, `whatsNew`, `onboardingDone`, and from v3 `plans`, `activePlan`, `familyAgendas`, `badges`, `showGameLayer`, `showShare`, … |
-| `jw-habits-v2-backup` | raw string | The original v2 value, written once before the first load upgrades it to v3 (`domain/upgrade.js`) |
+| `jw-habits-v2` | one JSON store (`version: 4`; the key keeps its v2 name) | Everything: `schedule[]`, `log[]`, `reading`, `anchors`, `labels`, `links`, `whatsNew`, `onboardingDone`, from v3 `plans`, `activePlan`, `familyAgendas`, `badges`, `showGameLayer`, `showShare`, and from v4 `events[]` (the Dates card), `backup.lastExportAt`, `reminders.events` and `reminders.backup` |
+| `jw-habits-v3-backup` | raw string | The v3 value, written once before the first load upgrades it to v4 (`domain/upgrade.js`) |
+| `jw-habits-v2-backup` | raw string | The original v2 value, written once before a v2 store is upgraded to v3 |
 | `jw-habits-v2-corrupt-<ms>` | raw string | An unreadable `jw-habits-v2` kept aside before starting fresh |
 | `jw-daily-habits-state`, `jw-bible-reading-days`, `jw-user-settings` | v1 shapes | Read once by `migrateV1`; never written or deleted (rollback) |
 | `jw-error-logs` | `ErrorLog[]` (last 20, at most 7 days) | Dev error capture |
@@ -151,8 +158,8 @@ they ship in real installs, so renaming them silently discards user history.
   days as they were. Read it with `scheduleOn(store, day)`.
 - **`safeStorage` is the app-state storage chokepoint.** Store reads and writes go through
   `utils/safeStorage.js` (`durableGet/durableSet` for the v2 store, which uses Capacitor
-  Preferences natively and localStorage on the web, plus quota handling and the
-  `jw-storage-full` event). New app-state code must use these helpers. Legacy language-detector preferences are preserved but no longer read/written for the English-only UI; Share reads `store.links` and does not use the legacy settings adapter.
+  Preferences natively and localStorage in the WebView, plus quota handling and the
+  `jw-storage-full` event). New app-state code must use these helpers. Legacy language-detector preferences are preserved but no longer read/written for the English-only UI.
 - **Wiring in `src/main.jsx`.** `registerReminderSync()`, `registerWhatsNewCheck()` and
   `registerWidgetBridge()` and `registerBadgeAwards()` each subscribe to the store from outside React using
   `onForeground(cb)` (app opened / came to the foreground; gets `{ store, update, today }`) and
@@ -163,23 +170,11 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
 
 ## Known issues
 
-- **Deploy was down from 2026-07-24.** `deploy-ashbi.yml` called a reusable workflow in the
-  private, archived `camster91/ashbi-deploy` repo, so every run failed at startup. It is now
-  self-contained: it runs after a successful `Build and Push Image` on `main` and deploys the
-  tested `ghcr.io/camster91/jw-habits@sha256:<digest>` image from the exact publication artifact over SSH, stages it privately, validates the public revision, and restores the retained container on failure. A brief port-transfer interruption remains; zero-downtime edge cutover is tracked in #173. Can also be run by hand
-  (`workflow_dispatch`, optional `sha`).
-- **The live site served a self-signed TLS certificate** (seen 2026-10-04, fixed 2026-10-05).
-  Cause: `tls.yml` pinned a hand-copied cert file for `jwhabits.ashbi.ca`, which overrides the
-  router's `letsencrypt` resolver, and that file became a self-signed placeholder on 2026-07-20.
-  `ops/traefik-guard.py` now removes the pinned entry. It stayed broken a day longer because the
-  VPS checkout (`/root/jw-habits`, run by cron every minute) was never pulled, so the old guard
-  kept re-pinning the cert. After merging a guard change, `git pull` on the VPS and check that
-  the `guard @ <sha>` in `/var/log/jwhabits-traefik-guard.log` matches.
-- **`ops/traefik-guard.py` edits files shared by every site on the VPS.** It writes them
-  atomically and refuses output that is not valid YAML. Run `python3 -m unittest
-  ops/test_traefik_guard.py` before changing it.
+- **The website was retired on 2026-10-28.** `jwhabits.ashbi.ca`, its Docker image, deploy and
+  monitoring workflows, the PWA and the `/share` page are gone. Owner-side VPS and DNS cleanup is
+  listed in `docs/store-release-pack.md`.
 - **Hosted CI runs again** (re-enabled 2026-10-02 after being disabled since 2026-09-22).
-  `ci.yml` runs install, `npm audit --audit-level=high`, lint, all-source coverage thresholds, build, size/workflow policies, format check and gitleaks. Playwright smoke + journeys (`smoke.yml`) and the image build also run on PRs.
+  `ci.yml` runs install, `npm audit --audit-level=high`, lint, all-source coverage thresholds, build, size/workflow policies, format check and gitleaks. Playwright smoke + journeys (`smoke.yml`) also run on PRs.
 - **npm 10 crashes** (`edgesOut`) re-resolving the lockfile. Use
   `npx npm@11 install --package-lock-only`.
 - **Native compilation is gated in CI.** Android debug and iOS simulator builds cover the app
@@ -191,10 +186,10 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   A failed startup read or upgrade backup pauses saving for the session and shows an
   explicit warning; the original stored value is never replaced in that state.
 - **Newer stored schemas block startup.** `UpdateRequired` offers a byte-exact raw
-  export and retains the web update prompt. The provider does not initialize routines,
+  export and asks the user to update the app. The provider does not initialize routines,
   cleanup, rollover or foreground callbacks, and leaves the primary stored value intact.
-  This startup guard does not prevent a previously loaded old tab from writing; a
-  compatible multiple-client policy still gates any future store-v4 rollout.
+  The app is phone-only, so the app and its widgets are the only writers of the stored
+  value; there is no second browser tab to guard against.
 - **The initial release UI is English-only (#259).** The document language, dates and
   notifications use English. Legacy Spanish/French detector preferences and user data
   remain untouched. Native widget chrome has es/fr resources, but full app localization
@@ -204,7 +199,7 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
 ## Rules for changes
 
 - **No third-party *content* in shipped code; user-editable links to jw.org/JW Library and the What's New feed check are allowed.**
-- **Do not rename `jw-` storage keys** or the `jw-storage-full` / `jw-offline-open` events.
+- **Do not rename `jw-` storage keys** or the `jw-storage-full` event.
 - **Keep the smoke + journey suites green.** Both exit non-zero on failure; do not let a
   suite print FAIL and still return 0.
 - **Tool hazard: Edit/Write/Bash payloads can collapse one backslash.** A regex or escape you
@@ -212,8 +207,6 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   newline, and a "fix" can come out byte-identical to what it replaced). Prefer backslash-free
   regexes (character classes, `String.fromCharCode(92)`), and verify on disk afterwards
   (`grep -n`, byte counts), not by trusting the tool's success message.
-- **`deploy-ashbi.yml` keeps its `jw-habits` identifiers** — they name a real container and
-  a ghcr.io image. Renaming them breaks the deploy path.
 
 
 ## v5.1 plans, garden and sharing
@@ -221,7 +214,7 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
 Plans use store v3 with `plans`, `activePlan.personalStudy`, `familyAgendas`,
 `badges`, `showGameLayer` and `showShare`. The Plans tab provides study and family
 plans; Today checks in their steps with exact undo. `openLink` uses the system
-launcher on native devices and a browser tab on web.
+launcher on native devices.
 
 Progress has an original eight-stage garden and a derived XP/level bar. Awards
 are recorded once by `registerBadgeAwards`, announced through `fd-badge`, and
@@ -230,8 +223,8 @@ penalties; badges are retained after undo. There are no rankings, shops or compa
 Hiding points removes XP/levels while keeping the garden and badges. Quiet tone
 suppresses level haptics/confetti; reduced motion suppresses confetti.
 
-Share buttons draw a 1080×1350 PNG locally, then open the native share sheet or
-download it on web. Nothing is sent automatically. Copy builders only read explicit
+Share buttons draw a 1080×1350 PNG locally, then open the native share sheet.
+Nothing is sent automatically. Copy builders only read explicit
 public display fields; step notes and links never enter card copy. Temporary native
 files are removed when sharing finishes. `showShare` hides all share buttons.
 
@@ -250,9 +243,9 @@ JW meeting instructions; no assigned publication text is supplied.
 `faithful-days-workspace-v1` is a separate version-1 store, validated by
 `domain/workspace.js`, with notes, meetings, assignments and a revision counter.
 `data/workspaceClient.js` serializes writes, checks the previously read raw bytes,
-and uses Web Locks where available. Unknown schemas, malformed records, failed
+and never locks when native; Web Locks apply only in the web test harness. Unknown schemas, malformed records, failed
 reads and stale windows cannot overwrite that store. Forms retain failed-save
-drafts; notes offer a draft export. Main routine store/key remains version 3.
+drafts; notes offer a draft export. Main routine store/key is version 4.
 
 Settings exports a combined versioned bundle and validates both payloads before
 import. Routine-only imports explicitly leave workspace records alone. Durable

@@ -2,6 +2,7 @@
   "fd": {
     "routine": {
       "dailyText": "Daily text",
+      "whatsNew": "What's new",
       "bibleReading": "Bible reading",
       "meetingPrep": "Meeting preparation",
       "familyWorship": "Family worship",
@@ -19,7 +20,10 @@
       "ready_other": "{{prefix}} · {{list}} are ready",
       "and": "{{head}} and {{last}}",
       "wrapUp": "Your day in review is ready",
-      "meetingEve": "Tomorrow's meeting — prep is ready when you are"
+      "meetingEve": "Tomorrow's meeting — prep is ready when you are",
+      "eventSoon": "{{label}} in 7 days",
+      "eventTomorrow": "{{label}} tomorrow",
+      "backup": "Time for a backup"
     },
     "wrapUp": {
       "restWell": "Rest well — tomorrow's a fresh start.",
@@ -83,7 +87,9 @@
       "ministryEdit": "Edit",
       "setMeetingDays": "Set your meeting days",
       "setMeetingDaysBody": "Choose your meeting days. Preparation appears the day before each meeting.",
-      "whatsNew": "{{count}} new on jw.org",
+      "whatsNew": {
+        "count": "{{count}} new"
+      },
       "newWeek": "A new week, a fresh start.",
       "newMonth": "A new month, a fresh start.",
       "allClear": "Nothing else is due today. Enjoy your day.",
@@ -137,7 +143,7 @@
       },
       "routines": {
         "title": "Your routines",
-        "body": "All six are on. Turn off any you'd rather not keep here, or give them your own names.",
+        "body": "All are on. Turn off any you'd rather not keep here, or give them your own names.",
         "rename": "Rename {{label}}",
         "nameFor": "Name for {{label}}",
         "reset": "Reset to default",
@@ -219,6 +225,10 @@
       },
       "backup": {
         "body": "Save a copy of everything on this device, or bring a copy back.",
+        "last": "Last backup: {{date}}",
+        "never": "No backup yet",
+        "nudge": "It has been a while — export a backup to keep your history safe.",
+        "nudgeNever": "Export a backup to keep your history safe.",
         "export": "Export a backup",
         "import": "Import a backup",
         "shareTitle": "Faithful Days backup",
@@ -238,14 +248,16 @@
       },
       "whatsNew": {
         "toggle": "Show what's new on jw.org",
-        "hint": "A small count on Today when jw.org has something new."
+        "hint": "Once a day, checks jw.org's public What's New feed for new item dates. Sends no personal data."
       },
       "reminders": {
         "toggle": "Reminders",
         "hint": "Gentle notes on this device about what's ready today.",
         "perRoutine": "Remind me about",
         "permissionOff": "Notifications are turned off for Faithful Days. You can turn them on in your phone's Settings.",
-        "routineLabel": "Reminder: {{title}}"
+        "routineLabel": "Reminder: {{title}}",
+        "events": "Date reminders",
+        "backup": "Monthly backup reminder"
       },
       "quietHours": {
         "toggle": "Quiet hours",
@@ -544,6 +556,50 @@
       "resetConfirm": "Reset current routines, check-ins, reading, study/family plans, badges and settings? Notes, meeting preparation, assignments, recovery copies and other site data will remain. This cannot be undone without a saved backup.",
       "resetFailed": "Could not reset the app data. Contact support before uninstalling.",
       "support": "Avoid reinstalling until you have saved a recovery copy."
+    },
+    "events": {
+      "kind": {
+        "memorial": "Memorial",
+        "convention": "Regional convention",
+        "assembly": "Circuit assembly",
+        "coVisit": "Circuit overseer visit",
+        "other": "Other"
+      },
+      "title": "Dates",
+      "intro": "Big dates you add yourself, like the Memorial, conventions and assemblies.",
+      "add": "Add date",
+      "full": "You have the most dates the app can keep. Delete a past one to add another.",
+      "past": "Past",
+      "empty": "No dates coming up.",
+      "comingUp": "{{label}} · {{date}}",
+      "today": "{{label}} · today",
+      "comingUpLabel": "Coming up",
+      "openLink": "Open link for {{label}}",
+      "sheet": {
+        "new": "Add a date",
+        "edit": "Edit date",
+        "kind": "Type",
+        "name": "Name",
+        "nameOptional": "Name (optional)",
+        "start": "Starts",
+        "end": "Ends (optional)",
+        "link": "Link (optional)",
+        "save": "Save",
+        "delete": "Delete date",
+        "confirmDelete": "Delete this date?",
+        "confirm": "Delete",
+        "keep": "Keep it",
+        "refused": "That date couldn't be saved. Close and try again."
+      },
+      "error": {
+        "kindNeeded": "Choose a type",
+        "titleNeeded": "Other dates need a name",
+        "titleTooLong": "Use 60 characters or fewer",
+        "startNeeded": "Choose a start date",
+        "badEnd": "Choose a real end date",
+        "endBeforeStart": "The end can't be before the start",
+        "badLink": "Use a web address that starts with https:// or http://"
+      }
     }
   }
 }

@@ -5,9 +5,9 @@ assertion of full conformance or physical-device assistive-technology support.
 
 ## Accessibility and reflow
 
-`npm run a11y` scans the real build at 320 px in light/dark and reduced-motion
+`npm run a11y` scans the real build (served by `vite preview` as a test harness) at 320 px in light/dark and reduced-motion
 mode: onboarding, Today, a completed routine, Settings, Plans, Progress, badges
-and shared-content preview, plus newer-schema recovery. The recovery case
+and the Dates card, plus newer-schema recovery. The recovery case
 downloads an actual byte-exact copy and checks that reload preserves the primary
 value. Axe A/AA checks include color contrast; page-width
 checks reject horizontal overflow. Essential routine details and project context
@@ -24,7 +24,7 @@ native scheduling, storage and URL safety have their own risk-based floors.
 These are deliberately below the measured all-source baseline (87.7% statements,
 85.96% branches) and do not require 100%. Unimported application files are
 included at zero; browser-owned bootstrap/worker entry points are exercised by
-the built browser/worker/container gates. An intentional 100% URL-safety branch
+the built-app gates (smoke, journeys, accessibility). An intentional 100% URL-safety branch
 floor was confirmed to fail at 81.81%.
 
 Rollover tests execute isolated Node processes in Toronto, Los Angeles, Tokyo
@@ -32,50 +32,32 @@ and Auckland. All daily state follows the approved local 03:00 app-day policy,
 including negative/positive offsets, midnight, DST boundaries, year changes
 and leap-day arithmetic. This replaces the historical local-midnight proposal.
 
-## Startup, route and precache budgets
+## Bundle budgets
 
-Each build prints measured gzip JS/CSS, precache bytes and entry counts. Enforced limits: 210,000 bytes gzip JS,
-30,000 bytes gzip CSS and 850,000 bytes precache. `npm run budgets` measures
-actual files and the injected worker manifest; a missing manifest also fails.
-An intentional 1-byte JS limit was confirmed to fail. These artifact budgets
-protect size; they do not substitute for real-device Core Web Vitals.
-
-The `/share` preview is a real lazy import. With workers disabled, startup must
-not request its chunk. Installation intentionally precaches its approximately
-3 kB raw chunk so an installed PWA can receive shared content while offline.
-Vite explicitly empties the output directory to prevent stale bundles from
-inflating an update. Other screens remain eager; no broad lazy-route claim is
-made.
-
-## Worker install and update
-
-`npm run offline:verify` serves the real build/worker from an isolated local
-HTTP server. It installs the worker, records a routine, navigates deep links and
-lazy Share offline, supplies a changed worker, checks the waiting update and
-activates it through the actual Update button. The persisted store must remain
-byte-for-byte unchanged through update and offline reload. Initial installation
-must not announce an available update. Workbox's revision-aware `matchPrecache`
-serves the offline navigation fallback.
-
-The worker drill disables install-prompt support and also activates an update
-from newer-data recovery, then reloads offline and checks the unknown raw store
-byte-for-byte. Service-worker update detection is independent of the optional
-install-prompt API used by some browsers.
+Each build prints measured gzip JS/CSS. Enforced limits: 210,000 bytes gzip JS
+and 30,000 bytes gzip CSS. `npm run budgets` measures the actual files in
+`dist/`. An intentional 1-byte JS limit was confirmed to fail. These artifact
+budgets protect size; they do not substitute for real-device startup timing.
+Vite explicitly empties the output directory to prevent stale bundles. Screens
+are eager; no lazy-route claim is made. There is no service worker, precache or
+offline-update drill: the app ships inside the native package.
 
 ## Workflow and runtime policy
 
 `node scripts/verify/workflow-policy.cjs` rejects mutable remote action/reusable
 references. Its negative `actions/checkout@main` fixture was confirmed to fail.
 Pins are updated through Dependabot PRs, reviewed with their version comments
-and normal CI. Node 22 is the contributor/CI/Docker baseline; the app requires
+and normal CI. Node 22 is the contributor and CI baseline; the app requires
 22.12 or newer. The preinstall helper was tested with actual Node 18 and returns
 an actionable error before attempting a build.
 
-These gates complement the digest-specific container/PWA/public probes in
-[production recovery](production-recovery.md), not store signing or a native
-device pilot. Historical audit and listing documents are explicitly marked as
+These gates do not replace store signing or a native device pilot. Historical audit and listing documents are explicitly marked as
 superseded by the current architecture and commitment ledger.
 
 ## Browser-engine compatibility
 
-The Smoke workflow also runs independent Firefox and WebKit jobs against the real build: storage/onboarding smoke, complete user journeys and the same light/dark 320px axe/reflow matrix. Image publication requires both exact-commit checks in addition to Chromium and native compile checks. The service-worker update drill and screenshot generator remain Chromium-specific. These engine checks do not certify actual Safari/iOS WebViews, OS share targets, VoiceOver/TalkBack, or physical-device notifications.
+The Smoke workflow also runs independent Firefox and WebKit jobs against the real build as a test harness: storage/onboarding smoke, complete user journeys and the same light/dark 320px axe/reflow matrix. Image publication no longer exists; native compile checks gate the phone builds. The screenshot generator is Chromium-specific. These engine checks do not certify the iOS or Android WebView, VoiceOver/TalkBack, or physical-device notifications.
+
+## Pages
+
+`.github/workflows/pages.yml` publishes `site/` (privacy and support) to GitHub Pages. The repository owner must enable Pages with source "GitHub Actions"; until then the store URLs do not resolve.

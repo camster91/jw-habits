@@ -57,7 +57,6 @@ const targets=[
         await page.addInitScript(store=>{
           localStorage.setItem('jw-habits-v2',JSON.stringify(store));
           localStorage.setItem('fd-boot-theme',store.theme);
-          localStorage.setItem('installPromptDismissed','true');
         },fixture);
         await page.goto(BASE.replace(/\/$/,'')+shot.route,{waitUntil:'networkidle'});
         await page.evaluate(()=>document.fonts.ready);

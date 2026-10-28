@@ -8,6 +8,8 @@ import { addDays, appDay, weekday } from './day.js';
 import { dueToday, isDone } from './routines.js';
 import { scheduleOn } from './schedule.js';
 import { labelFor } from './store.js';
+import { backupStale } from './backup.js';
+import { eventLabel, sortedEvents } from './events.js';
 
 const ROLLOVER_HOUR = 3;
 const DEFAULT_MORNING = { time: '07:00', phrase: null };
@@ -40,7 +42,8 @@ function joinLabels(labels, t) {
   return t('fd.notify.and', { head: labels.slice(0, -1).join(', '), last: labels.at(-1) });
 }
 
-function morningEntry(store, day, t) {
+/** The routine line and the time it is anchored to, or null when none is due. */
+function routineLine(store, day, t) {
   const off = store.reminders.off;
   const list = dueToday(store, day).filter((id) => !isDone(store, id, day) && !off.includes(id));
   if (list.length === 0) return null;
@@ -54,6 +57,49 @@ function morningEntry(store, day, t) {
   const labels = list.map((id) => labelFor(store, id, t));
   const body = t('fd.notify.ready', { count: list.length, prefix, list: joinLabels(labels, t) });
   return { time: anchor.time, body };
+}
+
+/** One line per event starting in 7 days or tomorrow. */
+function eventLines(store, day, t) {
+  if (!store.reminders.events) return [];
+  const soon = addDays(day, 7);
+  const tomorrow = addDays(day, 1);
+  const lines = [];
+  for (const event of sortedEvents(store)) {
+    const label = eventLabel(event, t);
+    if (event.start === tomorrow) lines.push(t('fd.notify.eventTomorrow', { label }));
+    else if (event.start === soon) lines.push(t('fd.notify.eventSoon', { label }));
+  }
+  return lines;
+}
+
+/**
+ * True on the 1st of a month when the backup reminder is on and the last
+ * backup is missing, unreadable, in the future, or 30 or more days old as of
+ * `entryAt`, the moment the notification would show (not when it is planned).
+ */
+export function backupDue(store, day, entryAt) {
+  return (
+    day.endsWith('-01') &&
+    store.reminders.backup &&
+    backupStale(store.backup?.lastExportAt, entryAt)
+  );
+}
+
+/**
+ * The morning entry: the routine line, then date lines, then the backup line.
+ * With no routine due, the lines alone make the entry, at the daily text time.
+ */
+function morningEntry(store, day, t) {
+  const routine = routineLine(store, day, t);
+  const time = routine?.time ?? (store.anchors?.dailyText ?? DEFAULT_MORNING).time;
+  const lines = [
+    ...(routine ? [routine.body] : []),
+    ...eventLines(store, day, t),
+    ...(backupDue(store, day, at(day, time)) ? [t('fd.notify.backup')] : []),
+  ];
+  if (lines.length === 0) return null;
+  return { time, body: lines.join('\n') };
 }
 
 function meetingEveToday(store, day) {

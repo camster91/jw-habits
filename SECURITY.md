@@ -17,5 +17,4 @@ signing material. Key-manager and Play-account ownership are required gates.
 
 CI checks dependencies, committed secrets, immutable Actions references,
 coverage and release artifacts. Source code cannot certify hosting log retention,
-key escrow or recovery of device-local user data. See `PRIVACY.md` and
-`docs/operations-monitoring.md` for those boundaries.
+key escrow or recovery of device-local user data. See `PRIVACY.md` for those boundaries.

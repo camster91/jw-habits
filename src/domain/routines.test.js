@@ -32,9 +32,10 @@ const log = (routine, day, value = true) => ({ routine, day, value });
 // Calendar used below (October 2026): Mon 5, Tue 6, Wed 7, Thu 8, Fri 9, Sat 10, Sun 11.
 
 describe('routine constants', () => {
-  it('lists the six fixed ids in order', () => {
+  it('lists the seven fixed ids in order', () => {
     expect(ROUTINE_IDS).toEqual([
       'dailyText',
+      'whatsNew',
       'bibleReading',
       'meetingPrep',
       'familyWorship',
@@ -46,6 +47,7 @@ describe('routine constants', () => {
   it('has the default English labels', () => {
     expect(DEFAULT_LABELS).toEqual({
       dailyText: 'Daily text',
+      whatsNew: "What's new",
       bibleReading: 'Bible reading',
       meetingPrep: 'Meeting preparation',
       familyWorship: 'Family worship',
@@ -56,6 +58,8 @@ describe('routine constants', () => {
 
   it('has a cadence per routine, and bibleReading resolves through the schedule', () => {
     expect(CADENCE.dailyText).toBe('daily');
+    expect(CADENCE.whatsNew).toBe('daily');
+    expect(Object.keys(CADENCE)).toEqual(ROUTINE_IDS);
     expect(CADENCE.meetingPrep).toBe('meeting');
     expect(CADENCE.familyWorship).toBe('weekly');
     expect(CADENCE.personalStudy).toBe('weeklyTarget');

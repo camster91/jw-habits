@@ -2,11 +2,6 @@ import StorageNotice from './components/StorageNotice.jsx';
 import { lazy, Suspense, useLayoutEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
-import InstallPrompt from './components/InstallPrompt';
-import UpdatePrompt from './components/UpdatePrompt';
-import OfflineIndicator from './components/OfflineIndicator';
-import { PWAProvider } from './components/PWAProvider';
-const Share = lazy(() => import('./pages/Share.jsx'));
 import Today from './screens/Today';
 import Badges from './screens/Badges.jsx';
 import BadgeToast from './components/fun/BadgeToast.jsx';
@@ -19,14 +14,12 @@ import TabBar from './components/TabBar';
 import SettingsSheet from './screens/SettingsSheet';
 import { useStore } from './data/useStore.js';
 import { applyTheme } from './theme/theme.js';
-import { isWeb } from './utils/native.js';
 import WorkspaceProvider from './data/WorkspaceProvider.jsx';
 const Notes = lazy(() => import('./screens/Notes.jsx'));
 const Preparation = lazy(() => import('./screens/Preparation.jsx'));
 
 // Faithful Days shell: onboarding until it is done, then Today, Plans
-// (and each plan's trail) and Progress. The install/update/offline chrome and the /share route exist
-// only in the web build; the native app has no use for them.
+// (and each plan's trail) and Progress. Unknown paths fall back to Today.
 
 function routerBasename() {
   try {
@@ -56,16 +49,6 @@ function Screens() {
   return (
     <>
       <Routes>
-        {isWeb && (
-          <Route
-            path="/share"
-            element={
-              <Suspense fallback={<p role="status">Loading shared content…</p>}>
-                <Share />
-              </Suspense>
-            }
-          />
-        )}
         {!onboardingDone ? (
           <Route path="*" element={<Onboarding />} />
         ) : (
@@ -104,26 +87,13 @@ function Screens() {
 }
 
 function App() {
-  const shell = (
-    <Router basename={routerBasename()}>
-      <WorkspaceProvider>
-        <Screens />
-      </WorkspaceProvider>
-    </Router>
-  );
-
   return (
     <ErrorBoundary>
-      {isWeb ? (
-        <PWAProvider>
-          <OfflineIndicator />
-          <UpdatePrompt />
-          {shell}
-          <InstallPrompt />
-        </PWAProvider>
-      ) : (
-        shell
-      )}
+      <Router basename={routerBasename()}>
+        <WorkspaceProvider>
+          <Screens />
+        </WorkspaceProvider>
+      </Router>
     </ErrorBoundary>
   );
 }

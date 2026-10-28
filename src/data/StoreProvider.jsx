@@ -1,5 +1,5 @@
 /**
- * Loads the store from durable storage (upgrading a v2 value to v3), exposes it through `useStore`, and
+ * Loads the store from durable storage (upgrading a v2 or v3 value to v4), exposes it through `useStore`, and
  * persists every change. Nothing in here throws out to React: bad storage
  * falls back to a migrated or default store, and write failures are warned
  * about while the in-memory state stays current.
@@ -19,6 +19,11 @@ import UpdateRequired from '../components/UpdateRequired.jsx';
 export const STORE_KEY = 'jw-habits-v2';
 /** The original v2 text, kept once, the first time a v2 value is upgraded. */
 export const BACKUP_KEY = `${STORE_KEY}-backup`;
+/** The original v3 text, kept once, the first time a v3 value is upgraded. */
+export const V3_BACKUP_KEY = 'jw-habits-v3-backup';
+
+/** Where the original text of a stored value of each upgradable version is kept. */
+const BACKUP_KEYS = { 2: BACKUP_KEY, 3: V3_BACKUP_KEY };
 
 const foregroundCallbacks = new Set();
 
@@ -115,12 +120,12 @@ async function readStored() {
 }
 
 /**
- * Keeps the original v2 text under BACKUP_KEY unless a backup already exists.
+ * Keeps the original text under `key` unless a backup already exists there.
  * @returns {Promise<boolean>} false when the backup could not be checked or written
  */
-async function keepV2Backup(raw) {
+async function keepBackup(raw, key) {
   try {
-    if ((await durableGet(BACKUP_KEY)) == null) await durableSet(BACKUP_KEY, raw);
+    if ((await durableGet(key)) == null) await durableSet(key, raw);
     return true;
   } catch (error) {
     console.warn('Could not back up the data before upgrading it; not saving this session:', error);
@@ -131,8 +136,8 @@ async function keepV2Backup(raw) {
 /**
  * @returns {Promise<{store: object, persisted: boolean, readOnly: boolean}>}
  *   `persisted`: the store came from storage unchanged. `readOnly`: storage
- *   could not be read, the unreadable value could not be kept, or a v2 value
- *   could not be backed up before its upgrade, so nothing may be written this
+ *   could not be read, the unreadable value could not be kept, or a v2 or v3
+ *   value could not be backed up before its upgrade, so nothing may be written this
  *   session (the stored value must survive).
  */
 async function loadStore() {
@@ -149,10 +154,12 @@ async function loadStore() {
   if (raw != null) {
     let result = { ok: false };
     let upgraded = false;
+    let backupKey = null;
     try {
       const parsed = JSON.parse(raw);
       const current = upgradeStore(parsed, today);
       upgraded = current !== parsed;
+      backupKey = BACKUP_KEYS[parsed?.version] ?? null;
       result = validateStore(current);
       // An older app cannot interpret a newer schema. Preserve its raw value
       // and block the normal app before defaults, cleanup or timers can write.
@@ -162,9 +169,10 @@ async function loadStore() {
     }
     if (result.ok && !upgraded) return { store: result.store, persisted: true, readOnly: false };
     if (result.ok) {
-      // Saving the upgraded store replaces the v2 text, so keep that first.
-      // Without a backup, leave storage alone and run read-only this session.
-      const backedUp = await keepV2Backup(raw);
+      // Saving the upgraded store replaces the older text, so keep that first,
+      // under its version's key. Without a backup (or a key to keep it under),
+      // leave storage alone and run read-only this session.
+      const backedUp = backupKey !== null && (await keepBackup(raw, backupKey));
       return { store: result.store, persisted: false, readOnly: !backedUp };
     }
     console.warn('Stored data failed validation; keeping a copy and starting over.');

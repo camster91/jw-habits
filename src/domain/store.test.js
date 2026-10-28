@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   STORE_VERSION,
   ANCHOR_PHRASE_TIMES,
+  EVENT_KINDS,
+  MAX_EVENTS,
   defaultStore,
   validateStore,
   addCheckIn,
@@ -12,6 +14,7 @@ import {
   newId,
 } from './store.js';
 import { ROUTINE_IDS } from './routines.js';
+import { v3Store } from '../test/legacyStores.js';
 
 const TODAY = '2026-10-06';
 const fresh = () => defaultStore(TODAY, 'en');
@@ -22,7 +25,7 @@ describe('defaultStore', () => {
   it('seeds the spec defaults with schedule fields only inside store.schedule', () => {
     const s = fresh();
     expect(s.version).toBe(STORE_VERSION);
-    expect(STORE_VERSION).toBe(3);
+    expect(STORE_VERSION).toBe(4);
     expect(s.schedule).toEqual([
       {
         from: TODAY,
@@ -49,7 +52,9 @@ describe('defaultStore', () => {
     expect(s.wrapUpNotification).toBe(false);
     expect(s.quietHours).toBeNull();
     expect(s.tone).toBe('warm');
-    expect(s.reminders).toEqual({ enabled: true, off: [] });
+    expect(s.reminders).toEqual({ enabled: true, off: [], events: true, backup: true });
+    expect(s.events).toEqual([]);
+    expect(s.backup).toEqual({ lastExportAt: null });
     expect(s.accent).toBe(0);
     expect(s.theme).toBe('system');
     expect(s.labels).toEqual({});
@@ -104,8 +109,9 @@ describe('export / import', () => {
     expect(importJson('42').reason).toBe('notObject');
   });
 
-  it('version 4 is newerVersion, version 1 olderVersion, missing is badShape', () => {
-    expect(importJson(JSON.stringify({ ...fresh(), version: 4 })).reason).toBe('newerVersion');
+  it('version 5 is newerVersion, versions 1-3 olderVersion, missing is badShape', () => {
+    expect(importJson(JSON.stringify({ ...fresh(), version: 5 })).reason).toBe('newerVersion');
+    expect(reasonOf({ ...fresh(), version: 3 })).toBe('olderVersion');
     expect(reasonOf({ ...fresh(), version: 2 })).toBe('olderVersion');
     expect(importJson(JSON.stringify({ ...fresh(), version: 1 })).reason).toBe('olderVersion');
     const noVersion = fresh();
@@ -120,7 +126,7 @@ describe('export / import', () => {
   });
 
   it('never mutates its input and returns a deep copy', () => {
-    const bad = { ...fresh(), version: 4 };
+    const bad = { ...fresh(), version: 5 };
     const before = clone(bad);
     validateStore(bad);
     expect(bad).toEqual(before);
@@ -302,7 +308,7 @@ describe('validateStore remaining fields and log integrity', () => {
     expect(logOk(entry('ministry', { shared: true, studies: 0, hours: 1.5 }))).toBe(true);
   });
 
-  it('requires all six enabled ids and strictly ascending schedule dates', () => {
+  it('requires every routine id in enabled and strictly ascending schedule dates', () => {
     expect(bad((s) => (s.schedule[0].enabled = {}))).toBe('badShape');
     expect(bad((s) => delete s.schedule[0].enabled.ministry)).toBe('badShape');
     expect(bad((s) => (s.schedule[0].enabled.ministry = 1))).toBe('badShape');
@@ -618,5 +624,130 @@ describe('validateStore v3 fields', () => {
     const r = importJson(exportJson(s), TODAY);
     expect(r.ok).toBe(true);
     expect(r.store).toEqual(s);
+  });
+});
+
+describe('store version 4', () => {
+  const event = (over = {}) => ({
+    id: 'e1',
+    kind: 'assembly',
+    title: null,
+    start: '2026-11-14',
+    end: null,
+    link: null,
+    ...over,
+  });
+  const withEvents = (events) => ({ ...fresh(), events });
+  const okEvents = (events) => validateStore(withEvents(events)).ok;
+
+  it('defaultStore is valid at version 4', () => {
+    const s = fresh();
+    expect(s.version).toBe(4);
+    expect(validateStore(s).ok).toBe(true);
+    expect(Object.keys(s.schedule[0].enabled)).toEqual(ROUTINE_IDS);
+    expect(s.schedule[0].enabled.whatsNew).toBe(true);
+  });
+
+  it('exports the event kinds and limit', () => {
+    expect(EVENT_KINDS).toEqual(['memorial', 'convention', 'assembly', 'coVisit', 'other']);
+    expect(MAX_EVENTS).toBe(200);
+  });
+
+  it('accepts well-formed events', () => {
+    expect(
+      okEvents([
+        event(),
+        event({ id: 'e2', kind: 'convention', start: '2026-07-10', end: '2026-07-12' }),
+        event({ id: 'e3', kind: 'memorial', start: '2027-03-23', end: '2027-03-23' }),
+        event({ id: 'e4', kind: 'coVisit', title: 'Visit', link: 'https://www.jw.org/en/' }),
+        event({ id: 'e5', kind: 'other', title: 'Hall cleaning' }),
+      ])
+    ).toBe(true);
+    const max = Array.from({ length: MAX_EVENTS }, (_, i) => event({ id: 'e' + i }));
+    expect(okEvents(max)).toBe(true);
+  });
+
+  it('rejects an event whose end is before its start', () => {
+    expect(okEvents([event({ start: '2026-11-14', end: '2026-11-13' })])).toBe(false);
+  });
+
+  it("rejects kind 'other' with no title", () => {
+    expect(okEvents([event({ kind: 'other', title: null })])).toBe(false);
+    expect(okEvents([event({ kind: 'other', title: '' })])).toBe(false);
+  });
+
+  it('rejects an unknown kind', () => {
+    expect(okEvents([event({ kind: 'party' })])).toBe(false);
+  });
+
+  it('rejects a javascript: link', () => {
+    expect(okEvents([event({ link: 'javascript:alert(1)' })])).toBe(false);
+  });
+
+  it('rejects more than 200 events', () => {
+    const many = Array.from({ length: MAX_EVENTS + 1 }, (_, i) => event({ id: 'e' + i }));
+    expect(okEvents(many)).toBe(false);
+  });
+
+  it('rejects a duplicate event id', () => {
+    expect(okEvents([event(), event({ start: '2026-12-01' })])).toBe(false);
+  });
+
+  it('rejects other malformed events', () => {
+    expect(validateStore({ ...fresh(), events: {} }).ok).toBe(false);
+    expect(okEvents([null])).toBe(false);
+    expect(okEvents([event({ id: '' })])).toBe(false);
+    expect(okEvents([event({ start: '2026-02-30' })])).toBe(false);
+    expect(okEvents([event({ end: 'soon' })])).toBe(false);
+    expect(okEvents([event({ title: 'x'.repeat(61) })])).toBe(false);
+    expect(okEvents([{ ...event(), extra: 1 }])).toBe(false);
+    const missing = event();
+    delete missing.link;
+    expect(okEvents([missing])).toBe(false);
+  });
+
+  it('rejects backup.lastExportAt that is not null or a parseable ISO string', () => {
+    const withBackup = (backup) => validateStore({ ...fresh(), backup }).ok;
+    expect(withBackup({ lastExportAt: null })).toBe(true);
+    expect(withBackup({ lastExportAt: '2026-10-12T08:30:00.000Z' })).toBe(true);
+    expect(withBackup({ lastExportAt: 'yesterday' })).toBe(false);
+    expect(withBackup({ lastExportAt: '2026-13-45T99:00:00.000Z' })).toBe(false);
+    expect(withBackup({ lastExportAt: '' })).toBe(false);
+    expect(withBackup({ lastExportAt: 1760000000000 })).toBe(false);
+    expect(withBackup({})).toBe(false);
+    expect(withBackup({ lastExportAt: null, extra: 1 })).toBe(false);
+    expect(withBackup(null)).toBe(false);
+  });
+
+  it('rejects a reminders object missing events or backup', () => {
+    const withReminders = (reminders) => validateStore({ ...fresh(), reminders }).ok;
+    expect(withReminders({ enabled: true, off: [] })).toBe(false);
+    expect(withReminders({ enabled: true, off: [], backup: true })).toBe(false);
+    expect(withReminders({ enabled: true, off: [], events: true })).toBe(false);
+    expect(withReminders({ enabled: true, off: [], events: 'yes', backup: true })).toBe(false);
+    expect(withReminders({ enabled: true, off: ['whatsNew'], events: false, backup: false })).toBe(
+      true
+    );
+  });
+
+  it('accepts whatsNew as a routine in the log, labels and anchors', () => {
+    const s = addCheckIn(fresh(), { routine: 'whatsNew', day: TODAY, value: true });
+    expect(validateStore({ ...s, labels: { whatsNew: 'Updates' } }).ok).toBe(true);
+    const valued = { ...fresh(), log: [{ routine: 'whatsNew', day: TODAY, value: { x: 1 } }] };
+    expect(validateStore(valued).ok).toBe(false);
+  });
+
+  it('importJson of a v3 file upgrades to v4', () => {
+    const v3 = { ...v3Store('2026-09-01'), onboardingDone: true };
+    v3.log = [{ routine: 'dailyText', day: '2026-10-01', value: true }];
+    const r = importJson(exportJson(v3), TODAY);
+    expect(r.ok).toBe(true);
+    expect(r.store.version).toBe(4);
+    expect(r.store.log).toEqual(v3.log);
+    expect(r.store.events).toEqual([]);
+    expect(r.store.schedule.map((e) => [e.from, e.enabled.whatsNew])).toEqual([
+      ['2026-09-01', false],
+      [TODAY, true],
+    ]);
   });
 });

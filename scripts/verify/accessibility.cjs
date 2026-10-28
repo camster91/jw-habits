@@ -22,7 +22,6 @@ async function scan(page, label) {
       const requests=[];
       page.on('request',request=>requests.push(request.url()));
       await go(page,BASE);
-      if(requests.some(url=>/\/Share-[^/]+\.js/.test(url))) { failures++; console.error('Share code fetched during initial startup'); }
       await scan(page,`${theme} onboarding`);
       await onboardSkip(page);
       await scan(page,`${theme} Today`);
@@ -31,11 +30,23 @@ async function scan(page, label) {
       await page.getByRole('button',{name:'Settings',exact:true}).click();
       await scan(page,`${theme} Settings`);
       await page.getByRole('button',{name:'Close',exact:true}).click();
-      for (const route of ['plans','plans/preparation','notes','progress','progress/badges','share?text=Example%20shared%20text']) {
+      for (const route of ['plans','plans/preparation','notes','progress','progress/badges']) {
         await page.goto(`${BASE}/${route}`,{waitUntil:'networkidle'});
         await scan(page,`${theme} ${route}`);
       }
-      const newerRaw=JSON.stringify({version:4,theme,futureNotes:['Synthetic private note']},null,2);
+      await page.goto(`${BASE}/plans`,{waitUntil:'networkidle'});
+      await page.getByRole('button',{name:'Add date'}).click();
+      const sheet=page.getByRole('dialog',{name:'Add a date'});
+      await scan(page,`${theme} date sheet`);
+      await sheet.getByLabel('Starts').fill('2026-10-11');
+      await sheet.getByLabel('Link (optional)').fill('https://example.org/assembly');
+      await sheet.getByRole('button',{name:'Save'}).click();
+      await sheet.waitFor({state:'detached'});
+      await scan(page,`${theme} plans with a date`);
+      await page.goto(BASE,{waitUntil:'networkidle'});
+      await page.getByTestId('coming-up').waitFor();
+      await scan(page,`${theme} Today coming up`);
+      const newerRaw=JSON.stringify({version:5,theme,futureNotes:['Synthetic private note']},null,2);
       await page.evaluate(raw=>localStorage.setItem('jw-habits-v2',raw),newerRaw);
       await page.goto(BASE,{waitUntil:'networkidle'});
       await page.getByRole('heading',{name:'Update Faithful Days to open your data'}).waitFor();

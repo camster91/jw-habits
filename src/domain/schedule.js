@@ -3,7 +3,7 @@
  * `from`; the entry in force on a day is the latest one starting on or before
  * it. Changing the schedule never rewrites history, it adds a new entry.
  *
- * @typedef {'dailyText'|'bibleReading'|'meetingPrep'|'familyWorship'|'personalStudy'|'ministry'} RoutineId
+ * @typedef {'dailyText'|'whatsNew'|'bibleReading'|'meetingPrep'|'familyWorship'|'personalStudy'|'ministry'} RoutineId
  * @typedef {Object} ScheduleEntry
  * @property {string} from 'YYYY-MM-DD' first day this entry applies
  * @property {Record<RoutineId, boolean>} enabled

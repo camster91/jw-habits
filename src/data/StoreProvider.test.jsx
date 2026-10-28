@@ -42,7 +42,9 @@ vi.mock('@capacitor/preferences', () => ({
 }));
 
 // eslint-disable-next-line no-unused-vars -- used inside mount() via JSX
-import { StoreProvider, onForeground, onStoreChange, STORE_KEY } from './StoreProvider.jsx';
+import { StoreProvider } from './StoreProvider.jsx';
+import { onForeground, onStoreChange, STORE_KEY, V3_BACKUP_KEY } from './StoreProvider.jsx';
+import { v2Store, v3Store } from '../test/legacyStores.js';
 import { useStore } from './useStore.js';
 import { defaultStore, validateStore } from '../domain/store.js';
 import { migrateV1 } from '../domain/migrateV1.js';
@@ -95,7 +97,7 @@ describe('StoreProvider persistence', () => {
     );
     expect(view.container).toBeEmptyDOMElement();
     await flush();
-    expect(latest.store.version).toBe(3);
+    expect(latest.store.version).toBe(4);
     expect(latest.today).toBe('2026-10-06');
   });
 
@@ -144,7 +146,7 @@ describe('StoreProvider persistence', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     prefs.set(STORE_KEY, 'not json');
     await mount();
-    expect(latest.store.version).toBe(3);
+    expect(latest.store.version).toBe(4);
     expect([...prefs.keys()].some((k) => k.includes('-corrupt-'))).toBe(true);
   });
 
@@ -339,7 +341,7 @@ describe('onForeground', () => {
     await mount();
     expect(good).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledTimes(2);
-    expect(latest.store.version).toBe(3);
+    expect(latest.store.version).toBe(4);
     offs.forEach((off) => off());
   });
 });
@@ -377,7 +379,7 @@ describe('late onForeground registration', () => {
     );
     await flush();
     expect(calls).toHaveBeenCalledTimes(1);
-    expect(calls.mock.calls[0][0].store.version).toBe(3);
+    expect(calls.mock.calls[0][0].store.version).toBe(4);
     act(() => lifecycle.handler({ isActive: true }));
     await flush();
     expect(calls).toHaveBeenCalledTimes(2);
@@ -448,25 +450,20 @@ describe('locale selection', () => {
 describe('upgrading a stored v2 value', () => {
   const BACKUP_KEY = `${STORE_KEY}-backup`;
   const v2Raw = (studyTopic) => {
-    // eslint-disable-next-line no-unused-vars
-    const { plans, activePlan, familyAgendas, badges, showGameLayer, showShare, ...rest } =
-      defaultStore('2026-09-01', 'en');
     return JSON.stringify({
-      ...rest,
-      version: 2,
-      studyTopic,
+      ...v2Store('2026-09-01', studyTopic),
       onboardingDone: true,
       log: [{ routine: 'dailyText', day: '2026-10-01', value: true }],
     });
   };
   const backupWrites = (spy) => spy.mock.calls.filter(([{ key }]) => key === BACKUP_KEY).length;
 
-  it('loads it as v3, persists v3, and keeps the original once as a backup', async () => {
+  it('loads it as v4, persists v4, and keeps the original once as a backup', async () => {
     const raw = v2Raw('Daniel');
     prefs.set(STORE_KEY, raw);
     const set = vi.spyOn(Preferences, 'set');
     await mount();
-    expect(latest.store.version).toBe(3);
+    expect(latest.store.version).toBe(4);
     expect(latest.store.onboardingDone).toBe(true);
     expect(latest.store.log).toEqual([{ routine: 'dailyText', day: '2026-10-01', value: true }]);
     expect(latest.store.plans.map((p) => [p.title, p.createdOn])).toEqual([
@@ -474,11 +471,12 @@ describe('upgrading a stored v2 value', () => {
     ]);
     expect(latest.store.activePlan.personalStudy).toBe(latest.store.plans[0].id);
     const saved = JSON.parse(prefs.get(STORE_KEY));
-    expect(saved.version).toBe(3);
+    expect(saved.version).toBe(4);
     expect(saved).not.toHaveProperty('studyTopic');
     expect(validateStore(saved).ok).toBe(true);
     expect(prefs.get(BACKUP_KEY)).toBe(raw);
     expect(backupWrites(set)).toBe(1);
+    expect(prefs.has(V3_BACKUP_KEY)).toBe(false);
     expect([...prefs.keys()].some((k) => k.includes('-corrupt-'))).toBe(false);
   });
 
@@ -500,7 +498,7 @@ describe('upgrading a stored v2 value', () => {
     prefs.set(STORE_KEY, v2Raw('Daniel'));
     await mount();
     expect(prefs.get(BACKUP_KEY)).toBe('older backup');
-    expect(JSON.parse(prefs.get(STORE_KEY)).version).toBe(3);
+    expect(JSON.parse(prefs.get(STORE_KEY)).version).toBe(4);
   });
 
   it('leaves the v2 value in place when the backup cannot be written', async () => {
@@ -509,7 +507,7 @@ describe('upgrading a stored v2 value', () => {
     prefs.set(STORE_KEY, raw);
     vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('full'));
     await mount();
-    expect(latest.store.version).toBe(3);
+    expect(latest.store.version).toBe(4);
     act(() => latest.update((s) => ({ ...s, pioneer: true })));
     await flush();
     expect(prefs.get(STORE_KEY)).toBe(raw);
@@ -529,7 +527,7 @@ describe('upgrading a stored v2 value', () => {
   });
 
   it('blocks an unknown newer store without replacing or copying its raw bytes', async () => {
-    const raw = '{ "version": 4, "privateFutureNotes": ["Keep exactly"] }';
+    const raw = '{ "version": 5, "privateFutureNotes": ["Keep exactly"] }';
     prefs.set(STORE_KEY, raw);
     const foreground = vi.fn();
     const unsubscribe = onForeground(foreground);
@@ -553,6 +551,7 @@ describe('upgrading a stored v2 value', () => {
     const raw = '{ "version": 99, "future": {"body":"Private notes"} }';
     prefs.set(STORE_KEY, raw);
     const view = await mount();
+    expect(view.queryByRole('button', { name: /update|refresh now/i })).toBeNull();
     fireEvent.click(view.getByRole('button', { name: 'Save a copy of your data' }));
     await flush();
     expect(backup).toHaveBeenCalledWith(
@@ -565,7 +564,7 @@ describe('upgrading a stored v2 value', () => {
   });
 
   it('announces a failed or cancelled newer-store export and preserves the original', async () => {
-    const raw = '{"version":4,"future":"Keep me"}';
+    const raw = '{"version":5,"future":"Keep me"}';
     prefs.set(STORE_KEY, raw);
     backup.mockRejectedValueOnce(new Error('File write failed'));
     const view = await mount();
@@ -578,6 +577,123 @@ describe('upgrading a stored v2 value', () => {
     await flush();
     expect(view.getByRole('status').textContent).toContain('Copy cancelled');
     expect([...prefs.entries()]).toEqual([[STORE_KEY, raw]]);
+  });
+});
+
+describe('upgrading a stored v3 value', () => {
+  const V2_BACKUP_KEY = `${STORE_KEY}-backup`;
+  const v3Raw = () =>
+    JSON.stringify({
+      ...v3Store('2026-09-01'),
+      onboardingDone: true,
+      log: [{ routine: 'dailyText', day: '2026-10-01', value: true }],
+    });
+  const backupWrites = (spy) => spy.mock.calls.filter(([{ key }]) => key === V3_BACKUP_KEY).length;
+
+  it('exports the v3 backup key without renaming any existing key', () => {
+    expect(V3_BACKUP_KEY).toBe('jw-habits-v3-backup');
+    expect(STORE_KEY).toBe('jw-habits-v2');
+  });
+
+  it('keeps the raw v3 value under jw-habits-v3-backup before saving v4', async () => {
+    const raw = v3Raw();
+    prefs.set(STORE_KEY, raw);
+    const set = vi.spyOn(Preferences, 'set');
+    await mount();
+    expect(latest.store.version).toBe(4);
+    expect(latest.store.onboardingDone).toBe(true);
+    expect(latest.store.log).toEqual([{ routine: 'dailyText', day: '2026-10-01', value: true }]);
+    expect(latest.store.schedule.map((e) => [e.from, e.enabled.whatsNew])).toEqual([
+      ['2026-09-01', false],
+      ['2026-10-06', true],
+    ]);
+    expect(prefs.get(V3_BACKUP_KEY)).toBe(raw);
+    expect(prefs.has(V2_BACKUP_KEY)).toBe(false);
+    const keys = set.mock.calls.map(([{ key }]) => key);
+    expect(keys.indexOf(V3_BACKUP_KEY)).toBeLessThan(keys.indexOf(STORE_KEY));
+    expect(backupWrites(set)).toBe(1);
+    const saved = JSON.parse(prefs.get(STORE_KEY));
+    expect(saved.version).toBe(4);
+    expect(validateStore(saved).ok).toBe(true);
+    expect([...prefs.keys()].some((k) => k.includes('-corrupt-'))).toBe(false);
+  });
+
+  it('writes the v3 backup only once across launches', async () => {
+    const raw = v3Raw();
+    prefs.set(STORE_KEY, raw);
+    const set = vi.spyOn(Preferences, 'set');
+    const first = await mount();
+    const schedule = latest.store.schedule;
+    first.unmount();
+    await mount();
+    expect(backupWrites(set)).toBe(1);
+    expect(prefs.get(V3_BACKUP_KEY)).toBe(raw);
+    expect(latest.store.schedule).toEqual(schedule);
+  });
+
+  it('never overwrites an existing v3 backup', async () => {
+    prefs.set(V3_BACKUP_KEY, 'older v3 backup');
+    prefs.set(STORE_KEY, v3Raw());
+    await mount();
+    expect(prefs.get(V3_BACKUP_KEY)).toBe('older v3 backup');
+    expect(JSON.parse(prefs.get(STORE_KEY)).version).toBe(4);
+  });
+
+  it('leaves the v3 value in place and runs read-only when the backup cannot be written', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const raw = v3Raw();
+    prefs.set(STORE_KEY, raw);
+    vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('full'));
+    await mount();
+    expect(latest.store.version).toBe(4);
+    expect(latest.savingPaused).toBe(true);
+    act(() => latest.update((s) => ({ ...s, pioneer: true })));
+    await flush();
+    expect(prefs.get(STORE_KEY)).toBe(raw);
+    expect(prefs.has(V3_BACKUP_KEY)).toBe(false);
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs read-only when the existing v3 backup cannot be checked', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const raw = v3Raw();
+    prefs.set(STORE_KEY, raw);
+    const realGet = Preferences.get;
+    vi.spyOn(Preferences, 'get').mockImplementation(async (arg) => {
+      if (arg.key === V3_BACKUP_KEY) throw new Error('unreadable');
+      return realGet(arg);
+    });
+    await mount();
+    act(() => latest.update((s) => ({ ...s, pioneer: true })));
+    await flush();
+    expect(prefs.get(STORE_KEY)).toBe(raw);
+    expect(prefs.has(V3_BACKUP_KEY)).toBe(false);
+  });
+
+  it('sets a v3 value that fails validation aside as corrupt, without a backup', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const raw = JSON.stringify({ ...JSON.parse(v3Raw()), tone: 'loud' });
+    prefs.set(STORE_KEY, raw);
+    await mount();
+    expect(latest.store.onboardingDone).toBe(false);
+    expect(prefs.has(V3_BACKUP_KEY)).toBe(false);
+    const copies = [...prefs.keys()].filter((k) => k.includes('-corrupt-'));
+    expect(copies.map((k) => prefs.get(k))).toEqual([raw]);
+  });
+
+  it('loads a stored v4 value as is without any backup', async () => {
+    const v4 = {
+      ...defaultStore('2026-10-01', 'en'),
+      onboardingDone: true,
+      lastSeenDay: '2026-10-06',
+    };
+    prefs.set(STORE_KEY, JSON.stringify(v4));
+    const set = vi.spyOn(Preferences, 'set');
+    await mount();
+    expect(latest.store).toEqual(v4);
+    expect(set).not.toHaveBeenCalled();
+    expect(prefs.has(V3_BACKUP_KEY)).toBe(false);
+    expect(prefs.has(V2_BACKUP_KEY)).toBe(false);
   });
 });
 

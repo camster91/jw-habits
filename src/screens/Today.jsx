@@ -21,7 +21,6 @@ import {
 import { planStyle } from '../theme/planColours.js';
 import { isWrapUpTime, wrapUp } from '../domain/wrapup.js';
 import { pickEncouragement } from '../domain/encouragement.js';
-import { whatsNewPageUrl } from '../domain/whatsNew.js';
 import { linkLocale, routineLink } from '../domain/links.js';
 import { openLink } from '../native/openLink.js';
 import {
@@ -42,11 +41,11 @@ import MinistryRow from '../components/MinistryRow.jsx';
 import Stepper from '../components/Stepper.jsx';
 import WrapUpCard, { WrapUpSummary } from '../components/WrapUpCard.jsx';
 import MeetingDaysCard from '../components/MeetingDaysCard.jsx';
-import WhatsNewBadge from '../components/WhatsNewBadge.jsx';
 import PlanIcon from '../components/plans/PlanIcon.jsx';
 import TodayAgenda from '../components/plans/TodayAgenda.jsx';
 import SomethingElseSheet from '../components/plans/SomethingElseSheet.jsx';
 import PlanFinishedCard from '../components/plans/PlanFinishedCard.jsx';
+import ComingUp from '../components/ComingUp.jsx';
 
 const DISMISS_KEY = 'fd-wrapup-dismissed';
 const ENCOURAGE_MS = 3000;
@@ -256,8 +255,7 @@ export default function Today({ onOpenSettings = () => {} }) {
   };
 
   // Opening the page zeroes the count; the checks already keep every guid seen.
-  const openWhatsNew = () => {
-    openLink(whatsNewPageUrl(linkLocale(language)));
+  const clearWhatsNewCount = () => {
     update((s) => ({ ...s, whatsNew: { ...s.whatsNew, newCount: 0 } }));
   };
 
@@ -298,6 +296,8 @@ export default function Today({ onOpenSettings = () => {} }) {
       const topic = store.plans.find((p) => p.id === store.activePlan.personalStudy)?.title;
       return topic ? `${progress} · ${topic}` : progress;
     }
+    if (id === 'whatsNew' && store.whatsNew.enabled && store.whatsNew.newCount > 0)
+      return t('fd.today.whatsNew.count', { count: store.whatsNew.newCount });
     return null;
   };
 
@@ -347,6 +347,7 @@ export default function Today({ onOpenSettings = () => {} }) {
         onComplete={() => complete(id)}
         onUndo={() => undo(id)}
         link={project ? projectLink : routineLink(store, id, language, firstChapter, today)}
+        onLink={id === 'whatsNew' ? clearWhatsNewCount : undefined}
         linkName={
           projectLink ? t('fd.today.study.openStep', { title: project.step.title }) : undefined
         }
@@ -437,10 +438,6 @@ export default function Today({ onOpenSettings = () => {} }) {
 
         {fresh && <p className="text-base-content/80">{t(`fd.today.${fresh}`)}</p>}
 
-        {store.whatsNew.enabled && store.whatsNew.newCount > 0 && (
-          <WhatsNewBadge count={store.whatsNew.newCount} onOpen={openWhatsNew} />
-        )}
-
         <div role="status" aria-live="polite" className="min-h-6 text-[var(--fd-accent-text)]">
           {line && (
             <>
@@ -471,6 +468,8 @@ export default function Today({ onOpenSettings = () => {} }) {
             />
           )}
         </div>
+
+        <ComingUp />
 
         {schedule.enabled.meetingPrep && schedule.meetingDays.length === 0 && !nextMeeting && (
           <MeetingDaysCard onOpen={onOpenSettings} />

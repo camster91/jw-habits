@@ -1,8 +1,6 @@
 #!/usr/bin/env node
-// SPA-aware static server for local QA. Mirrors the nginx.conf in this
-// repo: serves files from a build dist, falls back to index.html on
-// missing paths so client-side routes work, and disables caching for
-// the service worker.
+// SPA-aware static server for local QA. Serves files from a build dist,
+// falls back to index.html on missing paths so client-side routes work.
 //
 // Usage: node scripts/serve-dist.cjs [dist-path] [port]
 //   defaults: ./dist, 8765
@@ -68,12 +66,6 @@ const server = http.createServer((req, res) => {
       }
       const ext = path.extname(filePath).toLowerCase();
       const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
-      // Service worker must never be cached (PWA update flow)
-      if (url === '/sw.js' || url === '/sw.mjs') {
-        headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
-        headers['Pragma'] = 'no-cache';
-        headers['Expires'] = '0';
-      }
       res.writeHead(200, headers);
       res.end(data);
     });

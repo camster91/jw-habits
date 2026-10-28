@@ -6,6 +6,7 @@
 import { finderUrl } from './bible.js';
 import { dailyTextUrl } from './jwlinks.js';
 import { appDay } from './day.js';
+import { whatsNewPageUrl } from './whatsNew.js';
 import { isSafeHttpUrl } from '../utils/safeUrls.js';
 
 const DEFAULTS = {
@@ -37,6 +38,7 @@ export function routineLink(store, id, language, chapter, day) {
   if (typeof custom === 'string' && custom !== '' && isSafeHttpUrl(custom)) return custom.trim();
   const locale = linkLocale(language);
   if (id === 'dailyText') return dailyTextUrl(locale, day ?? appDay(new Date()));
+  if (id === 'whatsNew') return whatsNewPageUrl(locale);
   if (DEFAULTS[id]) return DEFAULTS[id][locale];
   if (id === 'bibleReading' && chapter) return finderUrl(locale, chapter.book, chapter.chapter);
   return null;

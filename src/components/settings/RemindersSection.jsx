@@ -20,7 +20,7 @@ import { isNative } from '../../utils/native.js';
 export default function RemindersSection() {
   const { t } = useTranslation();
   const { store, update, today } = useStore();
-  const { enabled, off } = store.reminders;
+  const { enabled, off, events, backup } = store.reminders;
   const routines = ROUTINE_IDS.filter((id) => scheduleOn(store, today).enabled[id]);
 
   // null = unknown (web, not yet read, or the plugin failed).
@@ -82,6 +82,11 @@ export default function RemindersSection() {
     if (on) void ensurePermission();
   };
 
+  const setFlag = (key, on) => {
+    update((s) => ({ ...s, reminders: { ...s.reminders, [key]: on } }));
+    if (on) void ensurePermission();
+  };
+
   const showHint = isNative && enabled && permission !== null && permission !== 'granted';
 
   return (
@@ -109,6 +114,20 @@ export default function RemindersSection() {
             />
           ))}
         </fieldset>
+      )}
+      {enabled && (
+        <>
+          <Toggle
+            label={t('fd.settings.reminders.events')}
+            checked={events}
+            onChange={(on) => setFlag('events', on)}
+          />
+          <Toggle
+            label={t('fd.settings.reminders.backup')}
+            checked={backup}
+            onChange={(on) => setFlag('backup', on)}
+          />
+        </>
       )}
     </div>
   );

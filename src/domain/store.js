@@ -1,5 +1,5 @@
 /**
- * The v3 store: its shape, defaults, validation, export and import.
+ * The v4 store: its shape, defaults, validation, export and import.
  * Everything here is pure. Functions return new stores and never mutate their
  * input; `validateStore` hands back a deep copy so a caller that adopts an
  * imported store cannot alias the text it came from.
@@ -20,8 +20,14 @@
  * game-layer and share switches. References between them (an agenda step
  * item, `activePlan.personalStudy`, a `{stepId}` / `{stepIds}` log value) may dangle:
  * validation checks only their shape, and a dangling one never makes a store
- * unloadable. Stored v2 values and v2 backup files go through `upgradeStore`
- * (upgrade.js) first.
+ * unloadable.
+ *
+ * v4 adds the `whatsNew` routine (so every `schedule[].enabled` has seven
+ * keys), big dates in `events` (`{id, kind, title, start, end, link}`, at most
+ * MAX_EVENTS, ids unique; `title` is required for kind 'other'), the last
+ * backup time in `backup.lastExportAt`, and the `events` and `backup` reminder
+ * switches. Stored v2/v3 values and v2/v3 backup files go through
+ * `upgradeStore` (upgrade.js) first.
  */
 import { addDays, appDay, weekday } from './day.js';
 import { BOOKS } from './bible.js';
@@ -32,7 +38,10 @@ import { isSafeHttpUrl } from '../utils/safeUrls.js';
 
 export { newId };
 
-export const STORE_VERSION = 3;
+export const STORE_VERSION = 4;
+
+export const EVENT_KINDS = ['memorial', 'convention', 'assembly', 'coVisit', 'other'];
+export const MAX_EVENTS = 200;
 
 export const PLAN_KINDS = ['study', 'family'];
 export const PLAN_ICONS = ['book', 'scroll', 'lamp', 'mountain', 'seedling', 'dove', 'sun', 'path'];
@@ -103,7 +112,7 @@ export function defaultStore(today, locale) {
     wrapUpNotification: false,
     quietHours: null,
     tone: 'warm',
-    reminders: { enabled: true, off: [] },
+    reminders: { enabled: true, off: [], events: true, backup: true },
     accent: 0,
     theme: 'system',
     labels: {},
@@ -117,6 +126,8 @@ export function defaultStore(today, locale) {
     badges: {},
     showGameLayer: true,
     showShare: true,
+    events: [],
+    backup: { lastExportAt: null },
   };
 }
 
@@ -230,7 +241,47 @@ function validReminders(r) {
     isObject(r) &&
     typeof r.enabled === 'boolean' &&
     Array.isArray(r.off) &&
-    r.off.every(isRoutineId)
+    r.off.every(isRoutineId) &&
+    typeof r.events === 'boolean' &&
+    typeof r.backup === 'boolean'
+  );
+}
+
+export function validEvent(e) {
+  return (
+    isObject(e) &&
+    exactKeys(e, ['id', 'kind', 'title', 'start', 'end', 'link']) &&
+    isId(e.id) &&
+    EVENT_KINDS.includes(e.kind) &&
+    (e.title === null ? e.kind !== 'other' : isTitle(e.title)) &&
+    isDay(e.start) &&
+    (e.end === null || (isDay(e.end) && e.end >= e.start)) &&
+    isLink(e.link)
+  );
+}
+
+/** At most MAX_EVENTS valid events with unique ids. */
+function validEvents(events) {
+  return (
+    Array.isArray(events) &&
+    events.length <= MAX_EVENTS &&
+    events.every(validEvent) &&
+    new Set(events.map((e) => e.id)).size === events.length
+  );
+}
+
+/** An ISO 8601 date-time string on a real calendar day that parses to a real time. */
+const isIsoTime = (x) =>
+  typeof x === 'string' &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(x) &&
+  isDay(x.slice(0, 10)) &&
+  !Number.isNaN(Date.parse(x));
+
+function validBackup(b) {
+  return (
+    isObject(b) &&
+    exactKeys(b, ['lastExportAt']) &&
+    (b.lastExportAt === null || isIsoTime(b.lastExportAt))
   );
 }
 
@@ -367,6 +418,8 @@ function validShape(s) {
     validBadges(s.badges) &&
     typeof s.showGameLayer === 'boolean' &&
     typeof s.showShare === 'boolean' &&
+    validEvents(s.events) &&
+    validBackup(s.backup) &&
     (s.lastSeenDay === null || isDay(s.lastSeenDay))
   );
 }
@@ -402,10 +455,11 @@ export function exportJson(store) {
 }
 
 /**
- * Parses, upgrades a v2 file to v3, and validates; returns a result and
- * writes nowhere.
+ * Parses, upgrades a v2 or v3 file to v4 (`upgradeStore`), and validates;
+ * returns a result and writes nowhere.
  * @param {string} text
- * @param {string} [today] app day the upgrade dates a migrated plan from
+ * @param {string} [today] app day the upgrade dates a migrated plan and the
+ *   schedule entry that turns on `whatsNew` from
  */
 export function importJson(text, today = appDay(new Date())) {
   let parsed;

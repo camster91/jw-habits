@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { backupStale } from '../../domain/backup.js';
+import { shortDate } from '../../domain/events.js';
 import { useStore } from '../../data/useStore.js';
 import { exportJson, importJson } from '../../domain/store.js';
 import { isShareCancel, saveBackup } from '../../utils/backup.js';
@@ -14,7 +16,7 @@ import { durableGet, durableSet } from '../../utils/safeStorage.js';
  * import is adopted (Settings closes then).
  */
 export default function BackupSection({ onReplaced = () => {} }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { store, update, replace: replaceStore, today } = useStore();
   const workspaceState = useWorkspace();
   const [busy, setBusy] = useState(false);
@@ -42,6 +44,8 @@ export default function BackupSection({ onReplaced = () => {} }) {
         `faithful-days-backup-${today}.json`,
         t('fd.settings.backup.shareTitle')
       );
+      // Only a completed save counts; a cancel or failure throws above.
+      update((s) => ({ ...s, backup: { ...s.backup, lastExportAt: new Date().toISOString() } }));
       setStatus({ error: false, text: t('fd.settings.backup.exported') });
     } catch (error) {
       if (isShareCancel(error)) return;
@@ -122,9 +126,33 @@ export default function BackupSection({ onReplaced = () => {} }) {
     exportRef.current?.focus();
   };
 
+  const now = new Date();
+  const lastExportAt = store.backup?.lastExportAt ?? null;
+  const lastAt = lastExportAt ? new Date(lastExportAt) : null;
+  const hasLast = lastAt !== null && !Number.isNaN(lastAt.getTime());
+  const lastDay = hasLast
+    ? `${lastAt.getFullYear()}-${String(lastAt.getMonth() + 1).padStart(2, '0')}-${String(lastAt.getDate()).padStart(2, '0')}`
+    : null;
+
   return (
     <div className="space-y-3">
       <p className="text-sm text-base-content/70">{t('fd.settings.backup.body')}</p>
+      <p className="text-sm font-medium">
+        {hasLast
+          ? t('fd.settings.backup.last', {
+              date: shortDate(lastDay, i18n.language, lastDay.slice(0, 4) !== today.slice(0, 4)),
+            })
+          : t('fd.settings.backup.never')}
+      </p>
+      {backupStale(lastExportAt, now) && (
+        <p className="text-sm text-base-content/70">
+          {t(
+            hasLast && lastAt.getTime() <= now.getTime()
+              ? 'fd.settings.backup.nudge'
+              : 'fd.settings.backup.nudgeNever'
+          )}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <button ref={exportRef} type="button" className="btn min-h-11" onClick={exportNow}>
           {t('fd.settings.backup.export')}

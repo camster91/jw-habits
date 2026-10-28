@@ -12,7 +12,7 @@ colors and their light/dark text shades are defined in theme/planColours.js.
 | User accent and contrast-safe accent text | applyTheme / --fd-accent / --fd-accent-text | Routine, progress, garden and widget feedback |
 | Plan identity and contrast-safe plan text | planColours / planStyle | Trails, study/family plan summaries and links |
 | Share title/group surface | Two retained ios-* primitives | Existing Share appearance; one label token source, no retired Home row/switch system |
-| Device safe areas | env(safe-area-inset-*) | Current native screens/sheets/tab bar and PWA banner helper |
+| Device safe areas | env(safe-area-inset-*) | Current native screens/sheets/tab bar |
 | Decorative motion | fd-celebrate, confetti.css, install slide-down | Finite feedback; reduced-motion policy suppresses decorative movement |
 
 Retired Home rows/icons/switches, segmented pickers, floating/tab helpers,
@@ -22,8 +22,7 @@ The separate original garden/confetti styles are active and retained.
 
 Automated references: the Smoke workflow captures 40 synthetic current-UI PNGs
 and runs real-build journeys plus light/dark 320px axe/reflow in Chromium,
-Firefox and WebKit. Worker update/offline state preservation remains a separate
-Chromium gate. Capture artifacts are references, not an approved pixel baseline.
+Firefox and WebKit. The worker update/offline gate was retired with the PWA. Capture artifacts are references, not an approved pixel baseline.
 
 #196 remains open for an approved complete visual state matrix and physical
 landscape/zoom/AT review (#176/#192/#251). In particular, screenshot automation

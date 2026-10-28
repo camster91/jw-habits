@@ -108,7 +108,7 @@ Required for both stores. Minimum content:
 - No account required
 - No analytics or tracking
 
-Host at: https://ashbi.ca/privacy/jw-habits (or similar)
+Host at: https://camster91.github.io/jw-habits/privacy/
 
 ---
 
