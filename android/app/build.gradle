@@ -17,7 +17,8 @@ android {
         applicationId "ca.ashbi.habittracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 530
+        // VERSION_CODE env overrides the default (used by the Android release workflow).
+        versionCode Integer.parseInt(System.getenv('VERSION_CODE') ?: '530')
         versionName "5.3.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
