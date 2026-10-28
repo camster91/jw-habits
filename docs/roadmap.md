@@ -20,7 +20,7 @@
 | Human usability/household research | Blocked | #199 / #252: recruit consenting participants; do not fabricate results |
 | Prepare ahead and assignments | Active | #263; dated meeting preparation and assignment checklists implemented in v5.2; year-plan pace comparison and actual activity dates implemented; device validation remains |
 | Second brain / capture | Active | #264; local notes/tags/search implemented in v5.2; native share extension after device verification |
-| Retire live web app | Shipped (5.3.0) | Website, PWA, deploy and monitoring removed 2026-10-28; privacy and support pages on GitHub Pages. Owner VPS/DNS cleanup remains |
+| Retire live web app | Shipped in code (owner cleanup open) | Website, PWA, deploy and monitoring removed 2026-10-28; privacy and support pages on GitHub Pages. Owner VPS/DNS cleanup remains |
 | Phone-only 5.3.0: What's new routine, Dates card, backup reminder, iOS privacy manifests | Shipped in code | Store v4; device verification and store submission remain gates |
 | jw.org Terms of Use review | Active | [terms checklist](terms-checklist.md); DeveloperSupport@jw.org decision is the owner's |
 | Remote accounts, sync, analytics, congregation content | Deferred | No authorization/product contract; revisit only with an explicit privacy-reviewed spec |

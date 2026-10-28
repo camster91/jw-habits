@@ -22,8 +22,7 @@ The separate original garden/confetti styles are active and retained.
 
 Automated references: the Smoke workflow captures 40 synthetic current-UI PNGs
 and runs real-build journeys plus light/dark 320px axe/reflow in Chromium,
-Firefox and WebKit. Worker update/offline state preservation remains a separate
-Chromium gate. Capture artifacts are references, not an approved pixel baseline.
+Firefox and WebKit. The worker update/offline gate was retired with the PWA. Capture artifacts are references, not an approved pixel baseline.
 
 #196 remains open for an approved complete visual state matrix and physical
 landscape/zoom/AT review (#176/#192/#251). In particular, screenshot automation

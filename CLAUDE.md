@@ -41,7 +41,7 @@ Use mapping is in `docs/terms-checklist.md`.
 Do not add bundled third-party content. If a feature seems to need some, it needs a
 user-editable slot instead.
 
-## Stack (verified against `package.json` 2026-10-07)
+## Stack (verified against `package.json` 2026-10-28)
 
 | Layer | Technology | Version |
 |---|---|---|
@@ -159,7 +159,7 @@ they ship in real installs, so renaming them silently discards user history.
 - **`safeStorage` is the app-state storage chokepoint.** Store reads and writes go through
   `utils/safeStorage.js` (`durableGet/durableSet` for the v2 store, which uses Capacitor
   Preferences natively and localStorage in the WebView, plus quota handling and the
-  `jw-storage-full` event). New app-state code must use these helpers. Legacy language-detector preferences are preserved but no longer read/written for the English-only UI; 
+  `jw-storage-full` event). New app-state code must use these helpers. Legacy language-detector preferences are preserved but no longer read/written for the English-only UI.
 - **Wiring in `src/main.jsx`.** `registerReminderSync()`, `registerWhatsNewCheck()` and
   `registerWidgetBridge()` and `registerBadgeAwards()` each subscribe to the store from outside React using
   `onForeground(cb)` (app opened / came to the foreground; gets `{ store, update, today }`) and

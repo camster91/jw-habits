@@ -94,10 +94,9 @@ See [platform matrix](platform-matrix.md) and [store release pack](store-release
 - [ ] Hide points and levels: XP and level labels disappear; garden and badges remain.
 - [ ] Quiet tone and reduced motion suppress level confetti as configured.
 - [ ] Hide share buttons and confirm every card surface honours the switch.
-- [ ] Download each of the four PNG card types on web. Confirm no private notes or links appear.
-- [ ] On iOS and Android, open the share sheet with a PNG, cancel, then share again.
+- [ ] On iOS and Android, share each of the four PNG card types through the share sheet, cancel, then share again. Confirm no private notes or links appear on any card.
 - [ ] Open a finder link with JW Library installed, then without it (browser fallback).
-- [ ] Check 390px mobile, 768px tablet and 1440px desktop for clipping, focus and readable contrast.
+- [ ] Check a small phone, a large phone and (the iOS target also supports iPad) an iPad for clipping, focus and readable contrast.
 
 Rollback: the preserved v2 backup supports returning to the previous data schema;
 a v3 store must not be fed to a v2-only build without an explicit recovery procedure.
