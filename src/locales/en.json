@@ -225,6 +225,9 @@
       },
       "backup": {
         "body": "Save a copy of everything on this device, or bring a copy back.",
+        "last": "Last backup: {{date}}",
+        "never": "No backup yet",
+        "nudge": "It has been a while — export a backup to keep your history safe.",
         "export": "Export a backup",
         "import": "Import a backup",
         "shareTitle": "Faithful Days backup",

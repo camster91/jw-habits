@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 function renderBackup(ready = true) {
   return render(
-    <StoreContext.Provider value={{ store, today, replace }}>
+    <StoreContext.Provider value={{ store, today, replace, update: vi.fn() }}>
       <WorkspaceContext.Provider value={{ workspace, ready, save }}>
         <BackupSection onReplaced={onReplaced} />
       </WorkspaceContext.Provider>
