@@ -14,7 +14,6 @@ A calm, private routine tracker for iOS, Android and the web. Faithful Days keep
 | PWA | vite-plugin-pwa, Workbox (custom `src/sw.js`) |
 | Testing | Vitest, Testing Library, Playwright |
 | Quality | ESLint 9, Prettier 3, CodeQL, gitleaks |
-| Container | Multi-stage Docker build (Node builder, nginx runtime) |
 
 ## Getting started
 

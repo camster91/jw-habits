@@ -1,6 +1,6 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-08.**
+**Last audited against source: 2026-10-28.**
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -163,23 +163,8 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
 
 ## Known issues
 
-- **Deploy was down from 2026-07-24.** `deploy-ashbi.yml` called a reusable workflow in the
-  private, archived `camster91/ashbi-deploy` repo, so every run failed at startup. It is now
-  self-contained: it runs after a successful `Build and Push Image` on `main` and deploys the
-  tested `ghcr.io/camster91/jw-habits@sha256:<digest>` image from the exact publication artifact over SSH, stages it privately, validates the public revision, and restores the retained container on failure. A brief port-transfer interruption remains; zero-downtime edge cutover is tracked in #173. Can also be run by hand
-  (`workflow_dispatch`, optional `sha`).
-- **The live site served a self-signed TLS certificate** (seen 2026-10-04, fixed 2026-10-05).
-  Cause: `tls.yml` pinned a hand-copied cert file for `jwhabits.ashbi.ca`, which overrides the
-  router's `letsencrypt` resolver, and that file became a self-signed placeholder on 2026-07-20.
-  `ops/traefik-guard.py` now removes the pinned entry. It stayed broken a day longer because the
-  VPS checkout (`/root/jw-habits`, run by cron every minute) was never pulled, so the old guard
-  kept re-pinning the cert. After merging a guard change, `git pull` on the VPS and check that
-  the `guard @ <sha>` in `/var/log/jwhabits-traefik-guard.log` matches.
-- **`ops/traefik-guard.py` edits files shared by every site on the VPS.** It writes them
-  atomically and refuses output that is not valid YAML. Run `python3 -m unittest
-  ops/test_traefik_guard.py` before changing it.
 - **Hosted CI runs again** (re-enabled 2026-10-02 after being disabled since 2026-09-22).
-  `ci.yml` runs install, `npm audit --audit-level=high`, lint, all-source coverage thresholds, build, size/workflow policies, format check and gitleaks. Playwright smoke + journeys (`smoke.yml`) and the image build also run on PRs.
+  `ci.yml` runs install, `npm audit --audit-level=high`, lint, all-source coverage thresholds, build, size/workflow policies, format check and gitleaks. Playwright smoke + journeys (`smoke.yml`) also run on PRs.
 - **npm 10 crashes** (`edgesOut`) re-resolving the lockfile. Use
   `npx npm@11 install --package-lock-only`.
 - **Native compilation is gated in CI.** Android debug and iOS simulator builds cover the app
@@ -212,8 +197,6 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   newline, and a "fix" can come out byte-identical to what it replaced). Prefer backslash-free
   regexes (character classes, `String.fromCharCode(92)`), and verify on disk afterwards
   (`grep -n`, byte counts), not by trusting the tool's success message.
-- **`deploy-ashbi.yml` keeps its `jw-habits` identifiers** — they name a real container and
-  a ghcr.io image. Renaming them breaks the deploy path.
 
 
 ## v5.1 plans, garden and sharing

@@ -71,9 +71,7 @@ and normal CI. Node 22 is the contributor/CI/Docker baseline; the app requires
 22.12 or newer. The preinstall helper was tested with actual Node 18 and returns
 an actionable error before attempting a build.
 
-These gates complement the digest-specific container/PWA/public probes in
-[production recovery](production-recovery.md), not store signing or a native
-device pilot. Historical audit and listing documents are explicitly marked as
+These gates do not replace store signing or a native device pilot. Historical audit and listing documents are explicitly marked as
 superseded by the current architecture and commitment ledger.
 
 ## Browser-engine compatibility
