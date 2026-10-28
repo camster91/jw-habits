@@ -84,7 +84,9 @@
       "ministryEdit": "Edit",
       "setMeetingDays": "Set your meeting days",
       "setMeetingDaysBody": "Choose your meeting days. Preparation appears the day before each meeting.",
-      "whatsNew": "{{count}} new on jw.org",
+      "whatsNew": {
+        "count": "{{count}} new"
+      },
       "newWeek": "A new week, a fresh start.",
       "newMonth": "A new month, a fresh start.",
       "allClear": "Nothing else is due today. Enjoy your day.",
@@ -138,7 +140,7 @@
       },
       "routines": {
         "title": "Your routines",
-        "body": "All six are on. Turn off any you'd rather not keep here, or give them your own names.",
+        "body": "All are on. Turn off any you'd rather not keep here, or give them your own names.",
         "rename": "Rename {{label}}",
         "nameFor": "Name for {{label}}",
         "reset": "Reset to default",
@@ -239,7 +241,7 @@
       },
       "whatsNew": {
         "toggle": "Show what's new on jw.org",
-        "hint": "A small count on Today when jw.org has something new."
+        "hint": "Once a day, checks jw.org's public What's New feed for new item dates. Sends no personal data."
       },
       "reminders": {
         "toggle": "Reminders",

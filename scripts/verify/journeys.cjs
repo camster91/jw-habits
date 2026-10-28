@@ -123,6 +123,7 @@ const closeSettings = async (page) => {
       step(
         'J2 Today lists the daily text and Bible reading',
         (await routineButton(page, 'Daily text').count()) === 1 &&
+          (await routineButton(page, "What's new").count()) === 1 &&
           (await routineButton(page, 'Bible reading').count()) === 1
       );
     },
@@ -397,6 +398,33 @@ const closeSettings = async (page) => {
         await closeSettings(page);
       }, sink);
   }
+
+  // J12: the What's new row carries the feed count; its link opens the page and clears it.
+  await journey(
+    'J12 what is new row',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await onboardSkip(page);
+      step('J12 Today lists the What\'s new row', (await routineButton(page, "What's new").count()) === 1);
+      await page.evaluate(() => {
+        const s = JSON.parse(localStorage.getItem('jw-habits-v2'));
+        s.whatsNew = { ...s.whatsNew, enabled: true, newCount: 3 };
+        localStorage.setItem('jw-habits-v2', JSON.stringify(s));
+      });
+      await page.reload({ waitUntil: 'networkidle' });
+      const row = page.getByTestId('row-whatsNew');
+      step('J12 the row shows the count', (await row.getByText('3 new').count()) === 1);
+      step('J12 the old badge is gone', (await page.getByText('new on jw.org').count()) === 0);
+      await page.evaluate(() => { window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; });
+      await row.getByRole('button', { name: /^Open/ }).click();
+      const s = await storeWhere(page, (x) => x.whatsNew.newCount === 0);
+      step('J12 the link opens the What\'s New page', (await page.evaluate(() => window.__opened)).join() === 'https://www.jw.org/en/whats-new/');
+      step('J12 opening the link clears the count', !!s && s.whatsNew.newCount === 0);
+      step('J12 the count text is gone', (await row.getByText('3 new').count()) === 0);
+    },
+    sink
+  );
 
   // J10: before the application loads, persisted theme wins and motion is optional.
   for (const theme of ['dark', 'light']) {

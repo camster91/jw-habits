@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { linkLocale, routineLink } from './links.js';
 import { defaultStore } from './store.js';
+import { whatsNewPageUrl } from './whatsNew.js';
 
 const store = (links = {}) => ({ ...defaultStore('2026-10-06', 'en'), links });
 const psalms3 = { book: 19, chapter: 3 };
@@ -19,6 +20,13 @@ describe('linkLocale', () => {
 });
 
 describe('routineLink', () => {
+  it("links What's new to the jw.org page, unless the user set their own", () => {
+    expect(routineLink(store(), 'whatsNew', 'en')).toBe(whatsNewPageUrl('en'));
+    expect(routineLink(store(), 'whatsNew', 'fr')).toBe(whatsNewPageUrl('fr'));
+    expect(routineLink(store({ whatsNew: 'https://example.org/n' }), 'whatsNew', 'en')).toBe(
+      'https://example.org/n'
+    );
+  });
   it('gives the daily text finder link per locale', () => {
     const d = '2026-10-07';
     expect(routineLink(store(), 'dailyText', 'en', undefined, d)).toContain('wtlocale=E');

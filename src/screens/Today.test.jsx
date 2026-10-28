@@ -331,32 +331,56 @@ describe('Today: cards and lines', () => {
     expect(screen.queryByText('Set your meeting days')).toBeNull();
   });
 
-  it('shows the What’s New badge; a tap opens the page and zeroes the count, offline', () => {
-    const whatsNew = {
+  describe("What's new row", () => {
+    const wn = (over = {}) => ({
       enabled: true,
       lastCheck: '2026-10-05T00:00:00.000Z',
       seen: ['a'],
-      newCount: 2,
-    };
-    window.fetch = vi.fn();
-    renderToday(makeStore({ whatsNew }));
-    fireEvent.click(screen.getByRole('button', { name: '2 new on jw.org' }));
-    expect(openLink).toHaveBeenCalledWith('https://www.jw.org/en/whats-new/');
-    expect(current.whatsNew).toEqual({ ...whatsNew, newCount: 0 });
-    expect(CapacitorHttp.get).not.toHaveBeenCalled();
-    expect(window.fetch).not.toHaveBeenCalled();
-    expect(screen.queryByText(/new on jw\.org/)).toBeNull();
-  });
+      newCount: 3,
+      ...over,
+    });
 
-  it('shows no badge once What’s New is switched off, even with a count left over', () => {
-    const whatsNew = { enabled: false, lastCheck: null, seen: ['a'], newCount: 2 };
-    renderToday(makeStore({ whatsNew }));
-    expect(screen.queryByRole('button', { name: '2 new on jw.org' })).toBeNull();
-  });
+    it('shows the count on its row', () => {
+      renderToday(makeStore({ whatsNew: wn() }));
+      expect(within(screen.getByTestId('row-whatsNew')).getByText('3 new')).toBeInTheDocument();
+    });
 
-  it('shows no badge when nothing is new', () => {
-    renderToday(makeStore());
-    expect(screen.queryByText(/new on jw\.org/)).toBeNull();
+    it('shows no count when nothing is new', () => {
+      renderToday(makeStore({ whatsNew: wn({ newCount: 0 }) }));
+      expect(screen.getByTestId('row-whatsNew')).toBeInTheDocument();
+      expect(screen.queryByText(/^\d+ new$/)).toBeNull();
+    });
+
+    it('hides the count once the feed check is switched off', () => {
+      renderToday(makeStore({ whatsNew: wn({ enabled: false }) }));
+      expect(screen.queryByText('3 new')).toBeNull();
+    });
+
+    it('the link opens the page and zeroes the count, offline', () => {
+      window.fetch = vi.fn();
+      renderToday(makeStore({ whatsNew: wn() }));
+      fireEvent.click(
+        within(screen.getByTestId('row-whatsNew')).getByRole('button', { name: /^Open/ })
+      );
+      expect(openLink).toHaveBeenCalledWith('https://www.jw.org/en/whats-new/');
+      expect(current.whatsNew).toEqual(wn({ newCount: 0 }));
+      expect(CapacitorHttp.get).not.toHaveBeenCalled();
+      expect(window.fetch).not.toHaveBeenCalled();
+      expect(screen.queryByText('3 new')).toBeNull();
+    });
+
+    it('a hold logs a check-in and leaves the count', () => {
+      renderToday(makeStore({ whatsNew: wn() }));
+      hold(checkButton("What's new"));
+      expect(entry('whatsNew')).toBeTruthy();
+      expect(current.whatsNew.newCount).toBe(3);
+    });
+
+    it('has no old badge', () => {
+      renderToday(makeStore({ whatsNew: wn() }));
+      expect(screen.queryByTestId('whats-new-badge')).toBeNull();
+      expect(screen.queryByText(/new on jw\.org/)).toBeNull();
+    });
   });
 
   it('opens a week with a fresh-start line on Monday', () => {

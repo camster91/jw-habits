@@ -90,7 +90,7 @@ src/
 │   ├── Today.jsx, Plans.jsx, PlanTrail.jsx, FamilyWeeks.jsx, Progress.jsx, SettingsSheet.jsx
 │   └── onboarding/             # Six steps; StepRoutines/Week/Reading/Rhythm/Look are reused by Settings
 ├── components/                 # HoldToCheck, RoutineRow, MinistryRow, Stepper, WrapUpCard, TabBar,
-│                               # MeetingDaysCard, WhatsNewBadge, BibleMap, settings/* (Reminders, Links,
+│                               # MeetingDaysCard, BibleMap, settings/* (Reminders, Links,
 │                               # Backup, About), plans/* (Sheet, StepSheet, NewPlanSheet, PlanIcon, and Today's
 │                               # SomethingElseSheet, TodayAgenda, PlanFinishedCard)
 ├── native/                     # reminders.js, whatsNewClient.js, widgetBridge.js (each exports register*())

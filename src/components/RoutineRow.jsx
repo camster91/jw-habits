@@ -6,7 +6,7 @@ import { openLink } from '../native/openLink.js';
 
 /**
  * One routine on Today: the hold-to-check, its label and detail line, an
- * optional link out, and optional extra controls (the Bible stepper, a
+ * optional link out (`onLink` runs after it opens), and optional extra controls (the Bible stepper, a
  * project's progress). `detail` may be a node; `linkName` names the link
  * button when it opens something more specific than the routine.
  */
@@ -18,6 +18,7 @@ export default function RoutineRow({
   onUndo,
   link,
   linkName,
+  onLink,
   testId,
   children,
 }) {
@@ -35,7 +36,10 @@ export default function RoutineRow({
             type="button"
             className="btn btn-circle btn-ghost min-h-11 min-w-11 text-[var(--fd-accent-text)]"
             aria-label={linkName ?? t('fd.today.openLink', { label })}
-            onClick={() => openLink(link)}
+            onClick={() => {
+              openLink(link);
+              onLink?.();
+            }}
           >
             <ExternalLink aria-hidden="true" className="h-5 w-5" />
           </button>
