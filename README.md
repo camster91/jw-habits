@@ -1,6 +1,6 @@
 # Faithful Days
 
-A calm, private routine tracker for iOS, Android and the web. Faithful Days keeps six spiritual routines in one place (the daily text, Bible reading, meeting prep, family worship, personal study and the ministry): Today shows what is due and a long press checks it off, Progress shows how the weeks are going, and gentle reminders and home-screen widgets are optional. There is no account, no backend and no tracking, and everything stays on the device. It is an independent app and contains no third-party content.
+A calm, private routine tracker for iOS and Android phones. Faithful Days keeps seven spiritual routines in one place (the daily text, what's new, Bible reading, meeting prep, family worship, personal study and the ministry): Today shows what is due and a long press checks it off, Plans keeps a Dates card for big yearly dates, Progress shows how the weeks are going, and gentle reminders (including a monthly backup reminder) and home-screen widgets are optional. There is no account, no backend and no tracking, and everything stays on the device. It is an independent app and contains no third-party content.
 
 ## Tech stack
 
@@ -11,7 +11,6 @@ A calm, private routine tracker for iOS, Android and the web. Faithful Days keep
 | Styling | Tailwind CSS 4, DaisyUI 5, lucide-react icons |
 | i18n | i18next, react-i18next |
 | Mobile | Capacitor 8 (iOS + Android), local notifications, home-screen widgets |
-| PWA | vite-plugin-pwa, Workbox (custom `src/sw.js`) |
 | Testing | Vitest, Testing Library, Playwright |
 | Quality | ESLint 9, Prettier 3, CodeQL, gitleaks |
 
@@ -26,15 +25,15 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:5173. If the `sharp` native build fails on macOS, use `npm install --ignore-scripts`.
+Then open http://localhost:5173 in a phone-sized browser window for quick UI work; the product is the iOS and Android app. If the `sharp` native build fails on macOS, use `npm install --ignore-scripts`.
 
 ### Scripts
 
 | Command | What it does |
 |---|---|
 | `npm run dev` | Vite dev server with HMR |
-| `npm run build` | Production build to `dist/` (includes the service worker) |
-| `npm run preview` | Serve the production build at http://localhost:4173 |
+| `npm run build` | Production build to `dist/` (bundled into the native apps) |
+| `npm run preview` | Serve the production build at http://localhost:4173 (test harness for the Playwright suites) |
 | `npm run lint` | ESLint |
 | `npm run format:check` | Prettier check (`npm run format` to write) |
 
@@ -88,3 +87,5 @@ before a mobile release. The widget remains subject to its existing device check
 Current automated gates: [quality gates](docs/quality-gates.md). Native/store checklist: [release checklist](docs/release-checklist.md), [platform matrix](docs/platform-matrix.md) and [store pack](docs/store-release-pack.md). Security reporting: [SECURITY.md](SECURITY.md). Future prepare-ahead and memory/capture boundaries: [proposed capability map](CAPABILITY-MAP.md).
 
 The initial app release is English-only. Full Spanish/French app localization remains tracked in #46; native widget chrome resources alone do not imply a translated app. Existing user labels, links, plans and legacy language preferences are preserved.
+
+The privacy and support pages live in `site/` and are published to GitHub Pages by `.github/workflows/pages.yml`. The jw.org Terms of Use mapping is in [docs/terms-checklist.md](./docs/terms-checklist.md).

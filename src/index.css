@@ -112,7 +112,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* PWA banners respect the device safe-area inset. */
+/* Banners respect the device safe-area inset. */
 .safe-area-top {
   padding-top: env(safe-area-inset-top);
 }

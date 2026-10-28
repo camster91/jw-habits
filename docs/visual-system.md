@@ -12,7 +12,7 @@ colors and their light/dark text shades are defined in theme/planColours.js.
 | User accent and contrast-safe accent text | applyTheme / --fd-accent / --fd-accent-text | Routine, progress, garden and widget feedback |
 | Plan identity and contrast-safe plan text | planColours / planStyle | Trails, study/family plan summaries and links |
 | Share title/group surface | Two retained ios-* primitives | Existing Share appearance; one label token source, no retired Home row/switch system |
-| Device safe areas | env(safe-area-inset-*) | Current native screens/sheets/tab bar and PWA banner helper |
+| Device safe areas | env(safe-area-inset-*) | Current native screens/sheets/tab bar |
 | Decorative motion | fd-celebrate, confetti.css, install slide-down | Finite feedback; reduced-motion policy suppresses decorative movement |
 
 Retired Home rows/icons/switches, segmented pickers, floating/tab helpers,

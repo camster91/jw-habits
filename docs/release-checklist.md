@@ -71,12 +71,12 @@ See [platform matrix](platform-matrix.md) and [store release pack](store-release
 - [ ] Airplane mode, force-quit, relaunch: the app opens to Today with all data, no error.
 - [ ] Check-ins made offline are still there after a relaunch.
 
-## 5. What's New badge
+## 5. What's new row
 
-- [ ] Online, first foreground of the day: the badge "N new on jw.org" appears when there are
-      new items (or none, if there are none).
-- [ ] Tapping the badge opens jw.org's What's New page externally and clears the badge.
-- [ ] Offline or with the feature off in Settings: no badge and no error.
+- [ ] Online, first foreground of the day: the What's new row on Today shows "N new" when there
+      are new items (nothing extra, if there are none).
+- [ ] Tapping the row opens jw.org's What's New page externally and clears the count.
+- [ ] Offline or with the feature off in Settings: no count and no error.
 - [ ] A second foreground within 24 h makes no request.
 
 ## 6. Accent and theme
@@ -101,3 +101,18 @@ See [platform matrix](platform-matrix.md) and [store release pack](store-release
 
 Rollback: the preserved v2 backup supports returning to the previous data schema;
 a v3 store must not be fed to a v2-only build without an explicit recovery procedure.
+
+## v5.3 dates, backup and upgrade
+
+- [ ] Plans > Dates: add, edit and delete a date; a date within 14 days appears under "Coming up"
+      on Today.
+- [ ] With "Date reminders" on, the morning reminder includes a line for a date that is due.
+- [ ] Settings shows the last backup line; export a backup and confirm the line updates.
+- [ ] With no backup for 30 days (or never), the Settings nudge appears; with "Monthly backup
+      reminder" on, the morning reminder carries the backup line.
+- [ ] Upgrade on a real install: install 5.2, record some history, install 5.3 over it. All old
+      data is kept, the seven routines show (What's new after the daily text), and
+      `jw-habits-v3-backup` is written. (The backup key is checked on a debuggable build or via
+      a web inspector.)
+- [ ] Note for release notes: encouragement lines shift once because a routine was inserted.
+- [ ] The embedded privacy manifests (app and widget) are present in the signed archive.

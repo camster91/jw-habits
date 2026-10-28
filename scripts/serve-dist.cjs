@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // SPA-aware static server for local QA. Serves files from a build dist,
-// falls back to index.html on missing paths so client-side routes work,
-// and disables caching for the service worker.
+// falls back to index.html on missing paths so client-side routes work.
 //
 // Usage: node scripts/serve-dist.cjs [dist-path] [port]
 //   defaults: ./dist, 8765

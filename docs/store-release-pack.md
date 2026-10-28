@@ -1,11 +1,13 @@
-# Faithful Days 5.2 store release pack
+# Faithful Days 5.3 store release pack
 
-Current code and web release, not a claim that either store listing is live.
+Current phone-app code, not a claim that either store listing is live.
+Faithful Days is phone-only; the website was retired on 2026-10-28.
 Cameron / Ashbi Design owns name reservation, account declarations and submission.
 
 ## Listing copy
 
 Name: **Faithful Days** (availability/reservation still requires the store owner).
+Name and keyword rule: no JW marks. Do not use "JW", "Jehovah" or "Watchtower" in the app name, subtitle, icon or keywords (Apple 5.2 / 4.1, Google Play impersonation and metadata rules). The description may name the audience in plain words and must carry the not-affiliated disclaimer. See [terms checklist](terms-checklist.md).
 Subtitle: **Spiritual routines, your way**.
 Play short description: **A private, on-device routine and study planner for Jehovah's Witnesses.**
 
@@ -14,13 +16,13 @@ Long description:
 Faithful Days helps Jehovah's Witnesses organise daily spiritual routines and
 personal study on their own device. Choose the routines that fit your life:
 daily text, Bible reading, meeting preparation, family worship, personal study
-and ministry. Keep a steady rhythm with gentle progress, optional reminders,
+and ministry, with a daily What's new check that links to jw.org. Keep a steady rhythm with gentle progress, optional reminders,
 and a daily wrap-up.
 
-Create study and family projects with your own titles and steps. Plan a family
+Add big yearly dates such as the Memorial or an assembly and see what is coming up. Create study and family projects with your own titles and steps. Plan a family
 worship agenda, track Bible chapters, and choose an optional garden, badges and
-levels. Export a JSON backup to move or protect your data, and import it on
-another device. No account or cloud sync is required. The app contains no
+levels. Export a JSON backup to move or protect your data, with an optional monthly
+reminder, and import it on another device. No account or cloud sync is required. The app contains no
 publication text or verses; you choose your own links and written plan content.
 
 Faithful Days is an independent app. It is not affiliated with, endorsed by,
@@ -33,8 +35,9 @@ platforms and permissions; final listings must describe the verified release.
 
 Suggested category: Productivity. Age/content-rating questionnaires must be
 answered in the actual consoles; do not invent a published rating.
-Privacy: https://camster91.github.io/jw-habits/privacy/
-Support: https://camster91.github.io/jw-habits/support/
+Privacy policy URL (store listing and in the app): https://camster91.github.io/jw-habits/privacy/
+Support URL: https://camster91.github.io/jw-habits/support/
+The pages are published from `site/` by `pages.yml`; the owner must enable GitHub Pages (source: GitHub Actions) before submitting.
 
 ## Current UI assets
 
@@ -51,30 +54,59 @@ These are browser-rendered current-app references. Recapture the signed native
 release and real widgets on the required devices before store submission. No
 widget image is fabricated, and these captures are not device certification.
 
-## Reviewer notes draft (validate against signed build)
+## App Review notes (validate against the signed build)
 
-No login is required. The app stores user routines/plans/history locally and
-works offline. Native functionality includes local notification permissions,
-haptics, system sharing, JSON export/import and home-screen widget integration.
-Test native reminders/widgets on a physical device before describing them as
-verified. Widget interaction requires the widget's supported OS and App Group
-configuration. The app day rolls at local 03:00. Reviewers can complete or skip
-onboarding, hold a routine to check it in, create a plan in Plans, open Progress,
-and access Settings for reminders, backup and privacy/support.
+No login is required. Faithful Days is a native Capacitor app, not a web wrapper:
+it is installed from the store and works fully offline. Features to note:
 
-## Privacy declaration review
+- **Widgets:** an iOS WidgetKit widget (iOS 17+) and an Android home-screen widget
+  show today's routines and let the user check one in. Widget interaction needs
+  the supported OS and App Group configuration.
+- **Local reminders:** morning, evening, date and monthly backup reminders are
+  scheduled on the device after the user grants notification permission. Nothing
+  is sent from a server.
+- **Offline use:** all routines, plans, dates and history are stored on the
+  device and need no network. The only network request is an optional daily
+  read of jw.org's public What's New feed (two fields, on by default, off switch
+  in Settings).
+- **Share sheet:** the user can share a locally drawn PNG encouragement card, and
+  export or import a JSON backup, through the system share sheet. Nothing is sent
+  automatically.
 
-The app has no account backend, analytics or remote habit/note storage. It
-reads a public What's New feed if enabled, and hosting/feed operators may see
-network metadata. The owner must review those recipients and retention before
-asserting Apple Data Not Collected or the Play equivalent. OS backups and
-user-invoked exports/shares are also described in the public policy. Native
-required-reason manifests compile; store-console privacy answers remain an
-account-holder task. Do not mark the declarations complete from unit tests.
+Test reminders, widgets and sharing on a physical device before describing them
+as verified. The app day rolls at local 03:00. Reviewers can complete or skip
+onboarding, hold a routine to check it in, open Plans to add a date or a plan,
+open Progress, and use Settings for reminders, backup, privacy and support.
+
+## Privacy declaration
+
+- **Apple App Privacy:** select **Data Not Collected**. The app has no account
+  backend, analytics, advertising or remote storage and no third-party SDK that
+  collects data. The iOS privacy manifests (`ios/App/App/PrivacyInfo.xcprivacy`,
+  `ios/App/FaithfulDaysWidget/PrivacyInfo.xcprivacy`) declare the required-reason
+  APIs used and no tracking.
+- **Google Play Data safety:** declare **no data collected or shared**, and answer
+  that the app has no accounts and no data deletion request flow beyond
+  uninstalling.
+- The daily What's New request carries no personal data from the app; jw.org sees
+  ordinary network information such as an IP address, which is the same as opening
+  any link. The account holder confirms this reading in each console before
+  submitting. Do not mark the declarations complete from unit tests.
+
+## Owner items
+
+- Enable GitHub Pages (source: GitHub Actions) so the privacy and support URLs resolve.
+- Confirm the developer name "Cameron Ashley (Ashbi Design)" and the support email
+  shown on the support page.
+- Decide whether to write to DeveloperSupport@jw.org about the feed check
+  ([terms checklist](terms-checklist.md)).
+- Retire the old website: stop the `jw-habits` container on the VPS, remove the
+  `traefik-guard` cron and the Traefik router, remove the `jwhabits.ashbi.ca` DNS
+  record, and delete the deploy secrets from the repository.
 
 Outstanding gates: #132/#133 signing incident, #246 name reservations,
 #248/#249 signed artifacts, #251 physical QA, #252 pilot, #253 account-specific
-Play eligibility, #254 submission/review and #255 web-retirement prerequisites.
+Play eligibility, #254 submission/review and #255 owner-side retirement cleanup (above).
 
 ## Initial language claim
 

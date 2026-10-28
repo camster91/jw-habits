@@ -1,7 +1,7 @@
 name: Smoke
 
 # Real-build routines, storage, English UI/locale, responsive and a11y gates.
-# Chromium owns the worker-update checks and synthetic screenshot references.
+# Chromium owns the synthetic screenshot references.
 # Firefox/WebKit independently run smoke, journeys and accessibility checks.
 
 on:

@@ -25,9 +25,8 @@ export default defineConfig({
         'src/test/',
         '*.config.js',
         'scripts/',
-        // Browser/container gates exercise these environment-owned entry points.
+        // The built-app gates (smoke, journeys, accessibility) exercise this entry point.
         'src/main.jsx',
-        'src/sw.js',
       ],
     },
   },
