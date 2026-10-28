@@ -188,8 +188,8 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
 - **Newer stored schemas block startup.** `UpdateRequired` offers a byte-exact raw
   export and asks the user to update the app. The provider does not initialize routines,
   cleanup, rollover or foreground callbacks, and leaves the primary stored value intact.
-  This startup guard does not prevent a previously loaded old tab from writing; a
-  compatible multiple-client policy still gates any future store-v5 rollout.
+  The app is phone-only, so the app and its widgets are the only writers of the stored
+  value; there is no second browser tab to guard against.
 - **The initial release UI is English-only (#259).** The document language, dates and
   notifications use English. Legacy Spanish/French detector preferences and user data
   remain untouched. Native widget chrome has es/fr resources, but full app localization
@@ -243,7 +243,7 @@ JW meeting instructions; no assigned publication text is supplied.
 `faithful-days-workspace-v1` is a separate version-1 store, validated by
 `domain/workspace.js`, with notes, meetings, assignments and a revision counter.
 `data/workspaceClient.js` serializes writes, checks the previously read raw bytes,
-and uses Web Locks where available. Unknown schemas, malformed records, failed
+and never locks when native; Web Locks apply only in the web test harness. Unknown schemas, malformed records, failed
 reads and stale windows cannot overwrite that store. Forms retain failed-save
 drafts; notes offer a draft export. Main routine store/key is version 4.
 

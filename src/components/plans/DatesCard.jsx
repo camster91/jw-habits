@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronRight, ExternalLink, Plus } from 'lucide-react';
 import { useStore } from '../../data/useStore.js';
 import { MAX_EVENTS } from '../../domain/store.js';
-import { eventDates, eventLabel, pastEvents, upcoming } from '../../domain/events.js';
+import { eventDates, datesAhead, eventLabel, pastEvents } from '../../domain/events.js';
 import { openLink } from '../../native/openLink.js';
 import EventSheet from './EventSheet.jsx';
 
@@ -66,7 +66,7 @@ export default function DatesCard({ focused = false }) {
     headingRef.current?.focus({ preventScroll: true });
   }, [focused]);
 
-  const next = upcoming(store, today, Infinity);
+  const next = datesAhead(store, today);
   const past = pastEvents(store, today);
   const full = store.events.length >= MAX_EVENTS;
 

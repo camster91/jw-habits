@@ -87,11 +87,16 @@ export function upcoming(store, day, withinDays) {
   return sortedEvents(store).filter((e) => e.start >= day && (last === null || e.start <= last));
 }
 
-/** Events that started before `day`, the most recent first. */
+/** Events that ended before `day` (a one-day event ends on its start), most recent first. */
 export function pastEvents(store, day) {
   return sortedEvents(store)
-    .filter((e) => e.start < day)
+    .filter((e) => (e.end ?? e.start) < day)
     .reverse();
+}
+
+/** Events not yet past on `day`: upcoming ones and any still under way, sorted. */
+export function datesAhead(store, day) {
+  return sortedEvents(store).filter((e) => (e.end ?? e.start) >= day);
 }
 
 /** Today's "Coming up" event: the first starting within 14 days, or null. */

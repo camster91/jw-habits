@@ -252,6 +252,21 @@ describe('date and backup lines', () => {
     expect(second.body).toBe('07:00 · Daily text is ready');
   });
 
+  it('judges the backup at the morning of the 1st, not at planning time', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const now = new Date(2026, 9, 26, 12, 0);
+    const old = storeWith(['dailyText'], {
+      backup: { lastExportAt: new Date(now.getTime() - 25 * DAY).toISOString() },
+    });
+    const withLine = plan(old, now, 7).find((n) => n.kind === 'morning' && n.at.getDate() === 1);
+    expect(withLine.body).toContain('Time for a backup');
+    const recent = storeWith(['dailyText'], {
+      backup: { lastExportAt: new Date(2026, 9, 27, 12, 0).toISOString() },
+    });
+    const without = plan(recent, now, 7).find((n) => n.kind === 'morning' && n.at.getDate() === 1);
+    expect(without.body).toBe('07:00 · Daily text is ready');
+  });
+
   it('makes a morning entry from the backup line alone', () => {
     const now = new Date(2026, 9, 31, 20, 0);
     const p = plan(storeWith([]), now, 2);
@@ -277,7 +292,7 @@ describe('date and backup lines', () => {
 });
 
 describe('backupDue', () => {
-  const NOW1 = new Date(2026, 10, 1, 5, 0);
+  const NOW1 = new Date(2026, 10, 1, 7, 0); // the entry time on the 1st
   const DAY = 24 * 60 * 60 * 1000;
   const base = () => storeWith(['dailyText']);
   const withBackup = (lastExportAt, reminders = {}) => {

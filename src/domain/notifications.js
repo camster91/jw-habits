@@ -75,11 +75,14 @@ function eventLines(store, day, t) {
 
 /**
  * True on the 1st of a month when the backup reminder is on and the last
- * backup is missing, unreadable, in the future, or 30 or more days old.
+ * backup is missing, unreadable, in the future, or 30 or more days old as of
+ * `entryAt`, the moment the notification would show (not when it is planned).
  */
-export function backupDue(store, day, now) {
+export function backupDue(store, day, entryAt) {
   return (
-    day.endsWith('-01') && store.reminders.backup && backupStale(store.backup?.lastExportAt, now)
+    day.endsWith('-01') &&
+    store.reminders.backup &&
+    backupStale(store.backup?.lastExportAt, entryAt)
   );
 }
 
@@ -87,15 +90,15 @@ export function backupDue(store, day, now) {
  * The morning entry: the routine line, then date lines, then the backup line.
  * With no routine due, the lines alone make the entry, at the daily text time.
  */
-function morningEntry(store, day, now, t) {
+function morningEntry(store, day, t) {
   const routine = routineLine(store, day, t);
+  const time = routine?.time ?? (store.anchors?.dailyText ?? DEFAULT_MORNING).time;
   const lines = [
     ...(routine ? [routine.body] : []),
     ...eventLines(store, day, t),
-    ...(backupDue(store, day, now) ? [t('fd.notify.backup')] : []),
+    ...(backupDue(store, day, at(day, time)) ? [t('fd.notify.backup')] : []),
   ];
   if (lines.length === 0) return null;
-  const time = routine?.time ?? (store.anchors?.dailyText ?? DEFAULT_MORNING).time;
   return { time, body: lines.join('\n') };
 }
 
@@ -132,7 +135,7 @@ export function planNotifications(store, now, t, days = 7) {
   for (let offset = 0; offset < days; offset++) {
     const day = addDays(today, offset);
     const candidates = [
-      ['morning', 1, morningEntry(store, day, now, t)],
+      ['morning', 1, morningEntry(store, day, t)],
       ['evening', 2, eveningEntry(store, day, t)],
     ];
     for (const [kind, slot, entry] of candidates) {

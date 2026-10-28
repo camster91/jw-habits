@@ -145,7 +145,13 @@ export default function BackupSection({ onReplaced = () => {} }) {
           : t('fd.settings.backup.never')}
       </p>
       {backupStale(lastExportAt, now) && (
-        <p className="text-sm text-base-content/70">{t('fd.settings.backup.nudge')}</p>
+        <p className="text-sm text-base-content/70">
+          {t(
+            hasLast && lastAt.getTime() <= now.getTime()
+              ? 'fd.settings.backup.nudge'
+              : 'fd.settings.backup.nudgeNever'
+          )}
+        </p>
       )}
       <div className="flex flex-wrap gap-2">
         <button ref={exportRef} type="button" className="btn min-h-11" onClick={exportNow}>

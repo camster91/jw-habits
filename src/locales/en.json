@@ -228,6 +228,7 @@
         "last": "Last backup: {{date}}",
         "never": "No backup yet",
         "nudge": "It has been a while — export a backup to keep your history safe.",
+        "nudgeNever": "Export a backup to keep your history safe.",
         "export": "Export a backup",
         "import": "Import a backup",
         "shareTitle": "Faithful Days backup",

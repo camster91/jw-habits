@@ -13,7 +13,7 @@ jw.org. Re-check at each release.
 | The Terms forbid distributing tools "specifically made to collect, copy, download, extract, harvest, or scrape data" from the site. | The app is a routine tracker, not a collection tool. Its one request reads two fields (`guid`, `pubDate`) from the official What's New feed, to show a count. It stores no article text, titles or media and republishes nothing. |
 | The exception names free apps that download "EPUB, PDF, MP3, and MP4 files". | The app downloads none of these. It does not rely on the exception for its links or its count. |
 | Sharing links and "directing others to this website" are allowed. | Link buttons open jw.org / JW Library URLs built from public facts, or a link the user typed, in the system browser or app. |
-| The feed (`/en/whats-new/rss/WhatsNewWebArticles/feed.xml`) describes itself as "See what has been recently added to jw.org" and is not blocked by robots.txt, but the exception does not name feeds. | Low but non-zero risk, mitigated by: reading only `guid` and `pubDate`; at most one request a day; an off switch in Settings (on by default); and removing the check if jw.org asks. |
+| The feed (`/en/whats-new/rss/WhatsNewWebArticles/feed.xml`) describes itself as "See what has been recently added to jw.org" and is not blocked by robots.txt and is not linked from the What's New page, and the exception does not name feeds. | Low but non-zero risk, mitigated by: reading only `guid` and `pubDate`; at most one request a day; an off switch in Settings (on by default); and removing the check if jw.org asks. |
 
 ## Before release
 

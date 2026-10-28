@@ -169,6 +169,13 @@ describe('DatesCard', () => {
     expect(within(upcomingList()).getByText(/Circuit assembly/)).toBeInTheDocument();
   });
 
+  it('lists an event still under way with the upcoming ones, not under Past', () => {
+    const s = addEvent(base(), { kind: 'convention', start: '2026-10-30', end: '2026-11-02' });
+    renderCard(s);
+    expect(within(upcomingList()).getByText(/Regional convention/)).toBeInTheDocument();
+    expect(within(card()).queryByRole('list', { name: 'Past' })).toBeNull();
+  });
+
   it('closes the sheet without saving', () => {
     renderCard();
     const d = openAdd();

@@ -8,6 +8,7 @@ import {
   sortedEvents,
   upcoming,
   pastEvents,
+  datesAhead,
   eventLabel,
   eventErrors,
   nextComing,
@@ -170,6 +171,14 @@ describe('sortedEvents, upcoming and pastEvents', () => {
     );
     expect(pastEvents(s, TODAY).map((e) => e.start)).toEqual(['2026-10-20', '2026-10-01']);
     expect(upcoming(s, TODAY, Infinity).map((e) => e.start)).toEqual([TODAY, '2027-01-01']);
+  });
+
+  it('keeps an event still under way out of Past and lists it ahead', () => {
+    const going = assembly(addDays(TODAY, -1), { end: addDays(TODAY, 1) });
+    const ended = assembly(addDays(TODAY, -3), { end: addDays(TODAY, -1) });
+    const s = withEvents(going, ended);
+    expect(pastEvents(s, TODAY).map((e) => e.start)).toEqual([addDays(TODAY, -3)]);
+    expect(datesAhead(s, TODAY).map((e) => e.start)).toEqual([addDays(TODAY, -1)]);
   });
 
   it('nextComing is the first event starting within 14 days', () => {

@@ -13,6 +13,7 @@ vi.mock('../../utils/backup.js', () => ({
 const NOW = new Date(2026, 9, 28, 12, 0, 0);
 const today = '2026-10-28';
 const NUDGE = 'It has been a while — export a backup to keep your history safe.';
+const NUDGE_NEVER = 'Export a backup to keep your history safe.';
 let store, update;
 beforeEach(() => {
   vi.resetAllMocks();
@@ -60,7 +61,8 @@ describe('last backup line and nudge', () => {
   it('shows no backup yet and the nudge when never exported', () => {
     renderBackup(null);
     expect(screen.getByText('No backup yet')).toBeTruthy();
-    expect(screen.getByText(NUDGE)).toBeTruthy();
+    expect(screen.getByText(NUDGE_NEVER)).toBeTruthy();
+    expect(screen.queryByText(NUDGE)).toBeNull();
   });
   it('shows the date and no nudge after a recent export', () => {
     renderBackup(daysAgo(3));
@@ -71,9 +73,11 @@ describe('last backup line and nudge', () => {
     renderBackup(daysAgo(31));
     expect(screen.getByText(/^Last backup:/)).toBeTruthy();
     expect(screen.getByText(NUDGE)).toBeTruthy();
+    expect(screen.queryByText(NUDGE_NEVER)).toBeNull();
   });
-  it('nudges when the date is in the future', () => {
+  it('uses the no-backup nudge when the date is in the future', () => {
     renderBackup(daysAgo(-2));
-    expect(screen.getByText(NUDGE)).toBeTruthy();
+    expect(screen.getByText(NUDGE_NEVER)).toBeTruthy();
+    expect(screen.queryByText(NUDGE)).toBeNull();
   });
 });

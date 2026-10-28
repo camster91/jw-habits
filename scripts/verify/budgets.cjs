@@ -15,6 +15,7 @@ function walk(dir) {
   }
 }
 walk(root);
+if (js === 0) { console.error('Refusing an empty budget measurement: no JavaScript found in ' + root); process.exit(1); }
 const measured={jsGzip:js,cssGzip:css};
 const limits={jsGzip:Number(process.env.BUDGET_JS_GZIP_BYTES || 210000),cssGzip:30000};
 console.log(JSON.stringify({measured,limits},null,2));
