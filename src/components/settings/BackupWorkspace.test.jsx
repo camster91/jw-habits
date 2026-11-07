@@ -225,6 +225,15 @@ describe('combined backup replacement', () => {
         'Pre-import backup'
       )
     );
+    durableGet.mockResolvedValueOnce('');
+    fireEvent.click(screen.getByText('Export pre-import backup'));
+    await waitFor(() =>
+      expect(saveBackup).toHaveBeenLastCalledWith(
+        '',
+        'faithful-days-before-import.json',
+        'Pre-import backup'
+      )
+    );
     durableGet.mockRejectedValueOnce(new Error('unreadable'));
     fireEvent.click(screen.getByText('Export pre-import backup'));
     await screen.findByText('unreadable');

@@ -137,7 +137,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
   const exportRecovery = async () => {
     try {
       const raw = await durableGet('faithful-days-before-import');
-      if (!raw) {
+      if (raw === null || raw === undefined) {
         setStatus({ error: false, text: 'There is no pre-import backup on this device yet.' });
         return;
       }
