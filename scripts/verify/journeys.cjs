@@ -590,6 +590,191 @@ const closeSettings = async (page) => {
     sink
   );
 
+  // J13-import-recovery: a combined import must retain the pre-import bytes
+  // and surface a global recovery action when both the workspace write and
+  // routine rollback fail. The storage failures are isolated browser faults;
+  // the fixture contains no user data and the import is driven through the
+  // rendered Settings file input.
+  await journey(
+    'J13-import-recovery failed combined import remains recoverable',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await onboardSkip(page);
+      await openSettings(page);
+      const dialog = page.getByRole('dialog');
+      const backupRegion = dialog.getByRole('region', { name: 'Backup', exact: true });
+      const fixtureRaw = await page.evaluate(() => {
+        const routines = JSON.parse(localStorage.getItem('jw-habits-v2'));
+        const workspace = JSON.parse(
+          localStorage.getItem('faithful-days-workspace-v1') ||
+            JSON.stringify({
+              version: 1,
+              revision: 0,
+              notes: [],
+              meetings: [],
+              assignments: [],
+            })
+        );
+        return JSON.stringify(
+          {
+            format: 'faithful-days-backup',
+            version: 1,
+            routines: { ...routines, tone: 'quiet' },
+            workspace: { ...workspace, revision: workspace.revision + 1 },
+          },
+          null,
+          2
+        );
+      });
+      await backupRegion.getByLabel('Import a backup', { exact: true }).setInputFiles({
+        name: 'synthetic-import.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from(fixtureRaw, 'utf8'),
+      });
+      await backupRegion
+        .getByText(
+          'This replaces routines, notes and preparation. A pre-import backup will be retained.'
+        )
+        .waitFor();
+
+      const injected = await page.evaluate(() => {
+        const routinesKey = 'jw-habits-v2';
+        const workspaceKey = 'faithful-days-workspace-v1';
+        const recoveryKey = 'faithful-days-before-import';
+        const previousRoutines = localStorage.getItem(routinesKey);
+        const originalSetItem = Storage.prototype.setItem;
+        window.__importRecoveryFixture = {
+          previousRoutines,
+          retained: null,
+          workspaceFailures: 0,
+          rollbackFailures: 0,
+        };
+        Storage.prototype.setItem = function setItem(key, value) {
+          if (key === recoveryKey) window.__importRecoveryFixture.retained = value;
+          if (key === workspaceKey) {
+            window.__importRecoveryFixture.workspaceFailures += 1;
+            throw new Error('Synthetic workspace write failure');
+          }
+          if (key === routinesKey && value === previousRoutines) {
+            window.__importRecoveryFixture.rollbackFailures += 1;
+            throw new Error('Synthetic routine rollback failure');
+          }
+          return originalSetItem.call(this, key, value);
+        };
+        return { previousRoutines };
+      });
+      await backupRegion.getByRole('button', { name: 'Replace', exact: true }).click();
+      await backupRegion.getByRole('alert').waitFor();
+      const afterFailure = await page.evaluate(() => ({
+        retained: window.__importRecoveryFixture.retained,
+        recovery: localStorage.getItem('faithful-days-before-import'),
+        routines: localStorage.getItem('jw-habits-v2'),
+        workspaceFailures: window.__importRecoveryFixture.workspaceFailures,
+        rollbackFailures: window.__importRecoveryFixture.rollbackFailures,
+      }));
+      if (!afterFailure.retained || afterFailure.recovery !== afterFailure.retained)
+        throw new Error('Pre-import recovery bytes were not retained');
+      if (afterFailure.routines === injected.previousRoutines)
+        throw new Error('Synthetic rollback unexpectedly rewrote the prior routines');
+      if (afterFailure.workspaceFailures < 1 || afterFailure.rollbackFailures < 1)
+        throw new Error('The browser did not exercise both targeted failure paths');
+
+      await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+      await dialog.waitFor({ state: 'detached' });
+      const notice = page
+        .getByRole('alert')
+        .filter({ hasText: 'The last import could not be completed safely.' });
+      await notice.waitFor();
+      step(
+        'J13 global recovery notice appears after closing Settings',
+        (await notice
+          .getByRole('button', { name: 'Open backup settings', exact: true })
+          .count()) === 1
+      );
+      const evidenceDir = path.resolve(process.env.JOURNEYS_EVIDENCE_DIR || 'store-screenshots');
+      fs.mkdirSync(evidenceDir, { recursive: true });
+      const screenshotPath = path.join(evidenceDir, 'faithful-import-recovery-required.png');
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+
+      await notice.getByRole('button', { name: 'Open backup settings', exact: true }).click();
+      const reopened = page.getByRole('dialog');
+      const reopenedBackup = reopened.getByRole('region', { name: 'Backup', exact: true });
+      await reopenedBackup
+        .getByRole('button', { name: 'Export pre-import backup', exact: true })
+        .waitFor();
+      const downloading = page.waitForEvent('download');
+      await reopenedBackup
+        .getByRole('button', { name: 'Export pre-import backup', exact: true })
+        .click();
+      const download = await downloading;
+      const downloadPath = await download.path();
+      if (!downloadPath) throw new Error('Pre-import download did not expose a file path');
+      const downloaded = fs.readFileSync(downloadPath);
+      const retained = Buffer.from(afterFailure.retained, 'utf8');
+      step(
+        'J13 retained pre-import download bytes are exact',
+        downloaded.equals(retained),
+        `bytes=${downloaded.length}`
+      );
+
+      const beforeEdit = await page.evaluate(() => localStorage.getItem('jw-habits-v2'));
+      const routinesRegion = reopened.getByRole('region', { name: 'Routines', exact: true });
+      const dailyText = routinesRegion.getByRole('switch', { name: 'Daily text', exact: true });
+      const beforeChecked = await dailyText.isChecked();
+      await dailyText.click();
+      await page.waitForTimeout(200);
+      const afterEdit = await page.evaluate(() => localStorage.getItem('jw-habits-v2'));
+      step(
+        'J13 recovery-required state blocks routine edits',
+        (await dailyText.isChecked()) === beforeChecked && afterEdit === beforeEdit
+      );
+
+      const sha256 = (value) =>
+        require('node:crypto').createHash('sha256').update(value).digest('hex');
+      let sourceCommit = 'unknown';
+      try {
+        sourceCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+      } catch {
+        /* The rendered proof remains useful without local git metadata. */
+      }
+      fs.writeFileSync(
+        path.join(evidenceDir, 'faithful-import-recovery-provenance.json'),
+        JSON.stringify(
+          {
+            test: 'J13-import-recovery failed combined import remains recoverable',
+            checkedOutCommit: sourceCommit,
+            candidateHeadCommit: process.env.GITHUB_SHA || sourceCommit,
+            browser: process.env.PLAYWRIGHT_BROWSER || 'chromium',
+            workflowRunId: process.env.GITHUB_RUN_ID || null,
+            fixture:
+              'fabricated valid bundle; workspace and routine rollback writes fault-injected in browser',
+            failureInjection: {
+              workspaceWrite: 'throw for faithful-days-workspace-v1',
+              routineRollback: 'throw when jw-habits-v2 equals pre-import routines',
+              workspaceFailures: afterFailure.workspaceFailures,
+              rollbackFailures: afterFailure.rollbackFailures,
+            },
+            evidence: {
+              screenshot: path.basename(screenshotPath),
+              retainedBytes: retained.length,
+              retainedSha256: sha256(retained),
+              downloadedBytes: downloaded.length,
+              downloadedSha256: sha256(downloaded),
+              exactMatch: downloaded.equals(retained),
+              routinesBeforeImportSha256: sha256(Buffer.from(injected.previousRoutines, 'utf8')),
+              routinesAfterFailureSha256: sha256(Buffer.from(afterFailure.routines, 'utf8')),
+              blockedEdit: afterEdit === beforeEdit,
+            },
+          },
+          null,
+          2
+        ) + '\n'
+      );
+    },
+    sink
+  );
+
   // J-report: on the 3rd the report card shows last month's totals; hiding it
   // survives a reload (the dismissed month is kept in localStorage).
   await journey(
