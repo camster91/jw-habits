@@ -8,6 +8,7 @@ def keystorePropertiesFile = rootProject.file('keystore.properties')
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
+def unsignedRelease = System.getenv('ANDROID_UNSIGNED_RELEASE') == 'true'
 
 android {
     namespace = "ca.ashbi.habittracker"
@@ -18,7 +19,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // VERSION_CODE env overrides the default (used by the Android release workflow).
-        versionCode Integer.parseInt(System.getenv('VERSION_CODE') ?: '530')
+        versionCode Integer.parseInt(System.getenv('VERSION_CODE') ?: '533')
         versionName "5.3.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -42,7 +43,12 @@ android {
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            // CI candidate bundles are intentionally unsigned and signed later
+            // with the owner-held upload key. The normal release path retains
+            // local/managed signing through signingConfigs.release.
+            if (!unsignedRelease) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
