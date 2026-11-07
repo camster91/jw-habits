@@ -1,0 +1,88 @@
+name: iOS native store screenshots
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ios-native-screenshots.yml
+      - scripts/verify/capture-native-store-screenshots.sh
+      - scripts/verify/verify-native-screenshot.swift
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: faithful-ios-native-screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: macos-26
+    timeout-minutes: 40
+    env:
+      EXPECTED_COMMIT: ff02bed994d0707ef9533fd75e1b487c62faf696
+    steps:
+      - name: Check out the screenshot harness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: ci-harness
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Check out the exact signed-candidate source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ff02bed994d0707ef9533fd75e1b487c62faf696
+          path: candidate
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: candidate/package-lock.json
+
+      - name: Record and check the native toolchain
+        run: |
+          xcodebuild -version
+          xcode_major="$(xcodebuild -version | awk '/^Xcode / {split($2, v, "."); print v[1]}')"
+          test -n "$xcode_major" && test "$xcode_major" -ge 26
+          node --version
+          npm --version
+
+      - name: Install locked dependencies and prepare the local web bundle
+        working-directory: candidate
+        run: |
+          npm ci
+          npm run build
+          npx --no-install cap sync ios
+
+      - name: Capture and verify native simulator screens
+        run: |
+          SOURCE_ROOT="$GITHUB_WORKSPACE/candidate" \
+          HARNESS_ROOT="$GITHUB_WORKSPACE/ci-harness" \
+          OUTPUT_ROOT="$GITHUB_WORKSPACE/artifacts/ios-native-screenshots" \
+          "$GITHUB_WORKSPACE/ci-harness/scripts/verify/capture-native-store-screenshots.sh"
+
+      - name: Preserve source and artifact provenance
+        if: always()
+        run: |
+          mkdir -p artifacts/ios-native-screenshots
+          git -C ci-harness rev-parse HEAD > artifacts/ios-native-screenshots/harness-commit.txt
+          git -C candidate rev-parse HEAD > artifacts/ios-native-screenshots/candidate-commit.txt
+          test "$(cat artifacts/ios-native-screenshots/candidate-commit.txt)" = "$EXPECTED_COMMIT"
+          find artifacts/ios-native-screenshots -type f \
+            \( -name '*.png' -o -name '*.json' -o -name '*.txt' \) \
+            -exec shasum -a 256 {} + > artifacts/ios-native-screenshots/SHA256SUMS
+
+      - name: Upload native screenshots and verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: faithful-days-ios-native-screenshots-${{ github.run_id }}
+          path: artifacts/ios-native-screenshots
+          retention-days: 14
+          if-no-files-found: error
