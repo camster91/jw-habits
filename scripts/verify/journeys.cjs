@@ -543,14 +543,26 @@ const closeSettings = async (page) => {
       } catch {
         /* The journey still proves the UI contract if git metadata is absent. */
       }
+      let candidateHeadCommit = sourceCommit;
+      try {
+        const eventPath = process.env.GITHUB_EVENT_PATH;
+        if (eventPath) {
+          const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
+          candidateHeadCommit = event.pull_request?.head?.sha || event.workflow_run?.head_sha || sourceCommit;
+        }
+      } catch {
+        /* Local runs have no GitHub event payload; checked-out HEAD remains useful. */
+      }
       fs.writeFileSync(
         path.join(evidenceDir, 'faithful-backup-recovery-provenance.json'),
         JSON.stringify(
           {
             test: 'J11-recovery unreadable workspace backup recovery',
-            sourceCommit,
+            checkedOutCommit: sourceCommit,
+            candidateHeadCommit,
             browser: process.env.PLAYWRIGHT_BROWSER || 'chromium',
             candidateRef: process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF || 'local',
+            workflowRunId: process.env.GITHUB_RUN_ID || null,
             fixture: {
               workspaceKey: 'faithful-days-workspace-v1',
               routinesKey: 'jw-habits-v2',
