@@ -680,7 +680,9 @@ const closeSettings = async (page) => {
       if (afterFailure.workspaceFailures < 1 || afterFailure.rollbackFailures < 1)
         throw new Error('The browser did not exercise both targeted failure paths');
 
-      await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+      // The recovery notice intentionally sits above the modal after the
+      // rollback failure, so close through the dialog's normal Escape action.
+      await page.keyboard.press('Escape');
       await dialog.waitFor({ state: 'detached' });
       const notice = page
         .getByRole('alert')
