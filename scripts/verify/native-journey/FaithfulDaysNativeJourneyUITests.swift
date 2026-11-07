@@ -29,6 +29,7 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
     func testCoreJourney() throws {
         let getStarted = app.buttons["Get started"]
         XCTAssertTrue(getStarted.waitForExistence(timeout: 30), "Real onboarding UI did not expose Get started")
+        XCTAssertTrue(waitForHeading("Welcome to Faithful Days"), "Onboarding heading did not appear before first capture")
         try capture("onboarding")
         getStarted.tap()
         tapButton("Next") // week
@@ -100,57 +101,168 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
     }
 
     private func setWrapUpBeforeNow() {
-        let field = app.textFields["Evening wrap-up time"]
-        XCTAssertTrue(field.waitForExistence(timeout: 15), "Evening wrap-up time control was not exposed")
+        let label = "Evening wrap-up time"
+        var field: XCUIElement?
 
-        field.tap()
-        let wheels = app.pickerWheels
-        if wheels.count > 0 {
-            var adjustedByLabel = false
-            for wheel in wheels.allElementsBoundByIndex {
-                let label = "\(wheel.label) \(String(describing: wheel.value))".lowercased()
-                if label.contains("hour") {
-                    wheel.adjust(toPickerWheelValue: "3")
-                    adjustedByLabel = true
-                } else if label.contains("minute") {
-                    wheel.adjust(toPickerWheelValue: "00")
-                    adjustedByLabel = true
-                } else if label.contains("am") || label.contains("pm") || label.contains("meridiem") {
-                    wheel.adjust(toPickerWheelValue: "AM")
-                    adjustedByLabel = true
-                }
+        // The label and HTML input are separate WebKit accessibility nodes.
+        // Search by the exact label, exclude static text, and use normal
+        // native swipes when the Rhythm form is below the first viewport.
+        for attempt in 0...3 {
+            let controls = labeledControls(label)
+            if let hittable = controls.first(where: { $0.isHittable }) {
+                field = hittable
+                break
             }
-            // WebKit's iOS time picker can expose value-only wheels without
-            // the semantic labels. Its stable order is hour, minute, AM/PM.
-            // Use that documented UI surface only as a fallback; never touch
-            // the app's storage or JavaScript state.
-            if !adjustedByLabel && wheels.count >= 3 {
-                let ordered = wheels.allElementsBoundByIndex
-                ordered[0].adjust(toPickerWheelValue: "3")
-                ordered[1].adjust(toPickerWheelValue: "00")
-                ordered[2].adjust(toPickerWheelValue: "AM")
-            }
-            if app.buttons["Done"].exists { app.buttons["Done"].tap() }
-        } else {
-            // WebKit may expose an HTML time input as a text field rather than
-            // picker wheels. Select the existing value through the normal edit
-            // menu and type 03:00 (no storage or JS injection). The 03:00
-            // boundary is the earliest supported wrap-up time, so the card is
-            // visible regardless of the CI wall-clock hour.
-            field.press(forDuration: 0.8)
-            if app.menuItems["Select All"].waitForExistence(timeout: 2) {
-                app.menuItems["Select All"].tap()
-                field.typeText("03:00")
+            if attempt < 3 { app.swipeUp() }
+        }
+
+        if field == nil {
+            // If WebKit exposes only the real HTML label, tapping it is still
+            // a normal user action. The picker/control must become observable
+            // afterwards; a static label is never used as the value source.
+            let labels = exactLabelElements(label).filter { $0.elementType == .staticText && $0.isHittable }
+            if labels.count == 1 {
+                labels[0].tap()
+                field = labeledControls(label).first(where: { $0.isHittable })
             }
         }
 
-        let normalized = String(describing: field.value ?? "")
-            .replacingOccurrences(of: " ", with: "")
+        guard let target = field else {
+            captureFailureEvidence("wrap-up-time-control")
+            XCTFail("Evening wrap-up time control was not exposed as a unique non-static control")
+            return
+        }
+
+        target.tap()
+        let picker = app.pickerWheels.firstMatch
+        if picker.waitForExistence(timeout: 8) {
+            let wheels = app.pickerWheels.allElementsBoundByIndex
+            let before = pickerState(wheels)
+            var adjustedHour = false
+            var adjustedMinute = false
+            var adjustedPeriod = false
+            for wheel in wheels {
+                let labelAndValue = "\(wheel.label) \(String(describing: wheel.value))".lowercased()
+                if labelAndValue.contains("hour") {
+                    wheel.adjust(toPickerWheelValue: "3")
+                    adjustedHour = true
+                } else if labelAndValue.contains("minute") {
+                    wheel.adjust(toPickerWheelValue: "00")
+                    adjustedMinute = true
+                } else if labelAndValue.contains("am") || labelAndValue.contains("pm") || labelAndValue.contains("meridiem") {
+                    wheel.adjust(toPickerWheelValue: "AM")
+                    adjustedPeriod = true
+                }
+            }
+            // WebKit can expose value-only wheels. Do not let recognizing only
+            // AM/PM suppress the required hour/minute changes.
+            if !(adjustedHour && adjustedMinute && adjustedPeriod) {
+                guard wheels.count >= 3 else {
+                    captureFailureEvidence("wrap-up-time-picker-shape")
+                    XCTFail("Time picker did not expose hour, minute, and period wheels")
+                    return
+                }
+                let ordered = wheels
+                if !adjustedHour { ordered[0].adjust(toPickerWheelValue: "3") }
+                if !adjustedMinute { ordered[1].adjust(toPickerWheelValue: "00") }
+                if !adjustedPeriod { ordered[2].adjust(toPickerWheelValue: "AM") }
+            }
+            let after = pickerState(wheels)
+            writeEvidence("wrap-up-time-picker.txt", text: "before=\(before)\nafter=\(after)\n")
+            if app.buttons["Done"].exists { app.buttons["Done"].tap() }
+        } else {
+            // A WebKit text input may omit native wheels. Use only its normal
+            // edit menu; never inject state or JavaScript.
+            guard target.elementType == .textField || target.elementType == .other else {
+                captureFailureEvidence("wrap-up-time-no-picker")
+                XCTFail("Time control exposed no picker and was not editable")
+                return
+            }
+            target.press(forDuration: 0.8)
+            guard app.menuItems["Select All"].waitForExistence(timeout: 2) else {
+                captureFailureEvidence("wrap-up-time-edit-menu")
+                XCTFail("Time control exposed no picker or normal edit menu")
+                return
+            }
+            app.menuItems["Select All"].tap()
+            target.typeText("03:00")
+        }
+
+        let actual = uniqueTimeValueControl() ?? target
+        let normalized = normalizeTime(String(describing: actual.value ?? ""))
+        writeEvidence("wrap-up-time-value.txt", text: "elementType=\(actual.elementType.rawValue)\nlabel=\(actual.label)\nvalue=\(String(describing: actual.value))\nnormalized=\(normalized)\n")
+        guard normalized.contains("03:00") || normalized.contains("3:00am") else {
+            captureFailureEvidence("wrap-up-time-postcondition")
+            XCTFail("Evening wrap-up time did not settle at 03:00 (value: \(normalized))")
+            return
+        }
+    }
+
+    private func exactLabelElements(_ label: String) -> [XCUIElement] {
+        let predicate = NSPredicate(format: "label == %@", label)
+        return app.descendants(matching: .any).matching(predicate).allElementsBoundByIndex
+    }
+
+    private func labeledControls(_ label: String) -> [XCUIElement] {
+        exactLabelElements(label).filter { $0.elementType != .staticText }
+    }
+
+    private func uniqueTimeValueControl() -> XCUIElement? {
+        let controls = app.descendants(matching: .any).allElementsBoundByIndex.filter { element in
+            guard element.elementType != .staticText,
+                  element.elementType != .pickerWheel,
+                  element.elementType != .datePicker else { return false }
+            let text = "\(element.label) \(String(describing: element.value))"
+            return text.range(of: #"(?i)\b\d{1,2}:\d{2}\s*(am|pm)?\b"#, options: .regularExpression) != nil
+        }
+        return controls.count == 1 ? controls[0] : nil
+    }
+
+    private func pickerState(_ wheels: [XCUIElement]) -> String {
+        wheels.enumerated().map { index, wheel in
+            "\(index):label=\(wheel.label),value=\(String(describing: wheel.value))"
+        }.joined(separator: "|")
+    }
+
+    private func normalizeTime(_ value: String) -> String {
+        value.components(separatedBy: .whitespacesAndNewlines).joined()
+            .replacingOccurrences(of: ".", with: "")
             .lowercased()
-        XCTAssertTrue(
-            normalized.contains("03:00") || normalized.contains("3:00am"),
-            "Evening wrap-up time did not settle at 03:00 (value: \(normalized))"
-        )
+    }
+
+    private func writeEvidence(_ filename: String, text: String) {
+        let url = outputRoot.appendingPathComponent(filename)
+        try? text.write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    private func captureFailureEvidence(_ name: String) {
+        let prefix = "failure-\(name)"
+        let screenshotURL = outputRoot.appendingPathComponent("\(prefix).png")
+        let screenshot = XCUIScreen.main.screenshot()
+        try? screenshot.pngRepresentation.write(to: screenshotURL, options: .atomic)
+        let axURL = outputRoot.appendingPathComponent("\(prefix)-ax.txt")
+        let ax = app.debugDescription
+        try? ax.write(to: axURL, atomically: true, encoding: .utf8)
+        let wrapURL = outputRoot.appendingPathComponent("\(prefix)-wrap-elements.txt")
+        let keywordElements = app.descendants(matching: .any).allElementsBoundByIndex.filter { element in
+            let text = "\(element.label) \(element.identifier) \(String(describing: element.value))".lowercased()
+            return text.contains("wrap") || text.contains("time")
+        }
+        let inventory = keywordElements.enumerated().map { index, element in
+            "\(index):type=\(element.elementType.rawValue),hittable=\(element.isHittable),label=\(element.label),identifier=\(element.identifier),value=\(String(describing: element.value)),frame=\(element.frame)"
+        }.joined(separator: "\n")
+        try? inventory.write(to: wrapURL, atomically: true, encoding: .utf8)
+        attach(screenshotURL, name: prefix)
+        attach(axURL, name: "\(prefix)-ax")
+        attach(wrapURL, name: "\(prefix)-wrap-elements")
+    }
+
+    private func attach(_ url: URL, name: String) {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        let attachment = XCTAttachment(contentsOfFile: url)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     private func capture(_ name: String) throws {

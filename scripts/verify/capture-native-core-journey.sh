@@ -148,6 +148,21 @@ run_journey() {
   test_status=$?
   set -e
 
+  # XCTest attachments are the durable failure evidence when the journey
+  # stops before a screen PNG is written. Export them even for a failing
+  # xcodebuild result; xcresulttool may use generated filenames, so the
+  # exported directory and its manifest are preserved as-is.
+  xcresult_attachment_dir="$output_dir/xcresult-attachments"
+  mkdir -p "$xcresult_attachment_dir"
+  if [[ -d "$output_dir/FaithfulJourney.xcresult" ]] && command -v xcrun >/dev/null 2>&1; then
+    if ! xcrun xcresulttool export attachments \
+      --path "$output_dir/FaithfulJourney.xcresult" \
+      --output-path "$xcresult_attachment_dir" \
+      >"$output_dir/xcresult-attachments.log" 2>&1; then
+      echo "xcresult attachment export failed; see xcresult-attachments.log" >&2
+    fi
+  fi
+
   app_identity_status=0
   app_path="$DERIVED_DATA/Build/Products/Debug-iphonesimulator/App.app"
   app_bundle_id="missing"
