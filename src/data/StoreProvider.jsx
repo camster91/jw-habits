@@ -32,6 +32,7 @@ const foregroundCallbacks = new Set();
 // deferred replacement keeps the old snapshot visible until its workspace
 // transaction commits, so lifecycle callbacks cannot publish staged data.
 let pendingReplacement = null;
+let nextProviderId = 1;
 
 /**
  * Set while a provider is loaded: returns the latest `{store, update, today}`.
@@ -225,11 +226,22 @@ export function StoreProvider({ children }) {
   const [newerStore, setNewerStore] = useState(null);
   const [unreadableStore, setUnreadableStore] = useState(null);
   const [recoveryAttempt, setRecoveryAttempt] = useState(0);
+  const [recoveryRequired, setRecoveryRequired] = useState(false);
   const storeRef = useRef(null);
   const todayRef = useRef(null);
   const readOnlyRef = useRef(false);
+  const recoveryRequiredRef = useRef(false);
   const timerRef = useRef(null);
   const readyRef = useRef(false);
+  const mountedRef = useRef(true);
+  const providerIdRef = useRef(null);
+  if (providerIdRef.current === null) providerIdRef.current = nextProviderId++;
+
+  const markRecoveryRequired = useCallback((error) => {
+    recoveryRequiredRef.current = true;
+    if (mountedRef.current) setRecoveryRequired(true);
+    console.error('Could not restore routines after a backup replacement:', error);
+  }, []);
 
   const restoreUnreadable = useCallback(
     async (replacement) => {
@@ -263,7 +275,7 @@ export function StoreProvider({ children }) {
   );
 
   const persist = useCallback((next) => {
-    if (readOnlyRef.current) return;
+    if (readOnlyRef.current || recoveryRequiredRef.current) return;
     durableSet(STORE_KEY, JSON.stringify(next)).catch((error) => {
       console.warn('Could not save your data:', error);
     });
@@ -271,7 +283,12 @@ export function StoreProvider({ children }) {
 
   const update = useCallback(
     (fn) => {
+      if (!mountedRef.current || recoveryRequiredRef.current) return;
       if (pendingReplacement) {
+        if (pendingReplacement.owner !== providerIdRef.current) {
+          markRecoveryRequired(new Error('Another app session is recovering stored routines.'));
+          return;
+        }
         pendingReplacement.updates.push(fn);
         return;
       }
@@ -281,7 +298,7 @@ export function StoreProvider({ children }) {
       persist(next);
       if (readyRef.current) notifyChange(next, { update, today: todayRef.current });
     },
-    [persist]
+    [markRecoveryRequired, persist]
   );
 
   // Backup replacement acknowledges the durable write, unlike routine edits.
@@ -290,62 +307,132 @@ export function StoreProvider({ children }) {
   // workspace write succeeds, or aborts silently on rollback.
   const replace = useCallback(
     async (next, { deferNotification = false } = {}) => {
-      if (pendingReplacement)
+      if (!mountedRef.current || recoveryRequiredRef.current)
+        throw new Error('Saving is paused; stored data was not replaced.');
+      if (pendingReplacement) {
+        if (pendingReplacement.owner !== providerIdRef.current)
+          markRecoveryRequired(new Error('Another app session is recovering stored routines.'));
         throw new Error('Saving is paused while another replacement is in progress.');
+      }
       if (readOnlyRef.current) throw new Error('Saving is paused; stored data was not replaced.');
       if (!validateStore(next).ok) throw new Error('Invalid routine data');
       const previous = storeRef.current;
-      await durableSet(STORE_KEY, JSON.stringify(next));
-      if (!deferNotification) {
-        storeRef.current = next;
-        setStore(next);
-        if (readyRef.current) notifyChange(next, { update, today: todayRef.current });
-        return null;
-      }
-
       const transaction = {
+        owner: providerIdRef.current,
         previous,
         next,
         updates: [],
         late: new Set(),
         foregroundRequested: false,
-        state: 'pending',
+        state: 'writing',
+        writeSucceeded: false,
+        writeError: null,
+        cancelRequested: false,
+        disposeRequested: false,
+        writeSettled: null,
+        restorePromise: null,
       };
       pendingReplacement = transaction;
-      return {
-        commit() {
-          if (transaction.state !== 'pending' || pendingReplacement !== transaction) return false;
-          transaction.state = 'committed';
-          pendingReplacement = null;
-          storeRef.current = transaction.next;
-          setStore(transaction.next);
-          if (readyRef.current) notifyChange(transaction.next, { update, today: todayRef.current });
-          const queued = transaction.updates.splice(0);
-          for (const fn of queued) update(fn);
-          flushDeferredForeground(transaction, true);
-          return true;
-        },
-        async abort() {
-          if (transaction.state !== 'pending' || pendingReplacement !== transaction) return false;
-          transaction.state = 'aborting';
-          try {
-            await durableSet(STORE_KEY, JSON.stringify(transaction.previous));
-          } catch (error) {
-            transaction.state = 'pending';
-            throw error;
-          }
-          transaction.state = 'aborted';
-          pendingReplacement = null;
-          const queued = transaction.updates.splice(0);
-          for (const fn of queued) update(fn);
-          // The old snapshot was already published; only late registrations
-          // need their initial run after a failed import.
-          flushDeferredForeground(transaction, false);
-          return true;
-        },
+      const replay = () => {
+        const disposed = transaction.disposeRequested || !mountedRef.current;
+        if (disposed) {
+          transaction.updates.length = 0;
+          transaction.late.clear();
+          return;
+        }
+        const queued = transaction.updates.splice(0);
+        for (const fn of queued) update(fn);
+        // A foreground event held during the write still needs to run against
+        // the restored snapshot, never against the failed candidate.
+        flushDeferredForeground(transaction, true);
       };
+      const restore = () => {
+        if (!transaction.restorePromise) {
+          transaction.state = 'aborting';
+          transaction.restorePromise = durableSet(
+            STORE_KEY,
+            JSON.stringify(transaction.previous)
+          ).then(
+            () => {
+              transaction.state = 'aborted';
+              if (pendingReplacement === transaction) pendingReplacement = null;
+              if (!transaction.disposeRequested && mountedRef.current) {
+                recoveryRequiredRef.current = false;
+                setRecoveryRequired(false);
+              }
+              replay();
+              return true;
+            },
+            (error) => {
+              // Do not release the fence when the previous bytes cannot be
+              // restored. The visible app must stop accepting edits until a
+              // reload/recovery action can establish a known durable value.
+              transaction.state = 'recovery-required';
+              transaction.restorePromise = null;
+              markRecoveryRequired(error);
+              throw error;
+            }
+          );
+        }
+        return transaction.restorePromise;
+      };
+      transaction.commit = () => {
+        if (
+          transaction.state !== 'pending' ||
+          pendingReplacement !== transaction ||
+          transaction.disposeRequested ||
+          !mountedRef.current
+        )
+          return false;
+        transaction.state = 'committed';
+        pendingReplacement = null;
+        storeRef.current = transaction.next;
+        setStore(transaction.next);
+        if (readyRef.current) notifyChange(transaction.next, { update, today: todayRef.current });
+        replay();
+        return true;
+      };
+      transaction.abort = async ({ dispose = false } = {}) => {
+        if (dispose) transaction.disposeRequested = true;
+        if (transaction.state === 'writing') {
+          transaction.cancelRequested = true;
+          await transaction.writeSettled;
+          if (transaction.state === 'writing') await restore();
+          return true;
+        }
+        if (
+          transaction.state === 'pending' ||
+          transaction.state === 'aborting' ||
+          transaction.state === 'recovery-required'
+        )
+          return restore();
+        return false;
+      };
+      transaction.writeSettled = durableSet(STORE_KEY, JSON.stringify(next)).then(
+        () => {
+          transaction.writeSucceeded = true;
+        },
+        (error) => {
+          transaction.writeError = error;
+        }
+      );
+      await transaction.writeSettled;
+      if (!transaction.writeSucceeded) {
+        await restore();
+        throw transaction.writeError;
+      }
+      if (transaction.cancelRequested || transaction.disposeRequested) {
+        await restore();
+        return null;
+      }
+      transaction.state = 'pending';
+      if (!deferNotification) {
+        if (!transaction.commit()) throw new Error('The replacement ended before it could commit.');
+        return null;
+      }
+      return { commit: transaction.commit, abort: transaction.abort };
     },
-    [update]
+    [markRecoveryRequired, update]
   );
 
   // Recompute today and re-arm the 03:00 timer from the current clock, so a
@@ -369,13 +456,15 @@ export function StoreProvider({ children }) {
 
   const runForeground = useCallback(() => {
     if (pendingReplacement) {
-      pendingReplacement.foregroundRequested = true;
+      if (pendingReplacement.owner === providerIdRef.current)
+        pendingReplacement.foregroundRequested = true;
       return;
     }
     for (const callback of [...foregroundCallbacks]) runCallback(callback, getArgs());
   }, [getArgs]);
 
   useEffect(() => {
+    mountedRef.current = true;
     let cancelled = false;
     loadStore().then(({ store: stored, persisted, readOnly, newer, unreadable }) => {
       if (cancelled) return;
@@ -391,7 +480,13 @@ export function StoreProvider({ children }) {
       // Both return the same object when nothing changed, so a clean store is not rewritten.
       // Prune against the provider's app day (non-regressing, like refreshDay), not the raw clock.
       const loaded = pruneAgendas(cleanReferences(stored), computeToday(stored.lastSeenDay));
-      readOnlyRef.current = readOnly;
+      const fencedByAnotherProvider =
+        pendingReplacement && pendingReplacement.owner !== providerIdRef.current;
+      if (fencedByAnotherProvider) {
+        recoveryRequiredRef.current = true;
+        setRecoveryRequired(true);
+      }
+      readOnlyRef.current = readOnly || fencedByAnotherProvider;
       storeRef.current = loaded;
       setStore(loaded);
       if (!persisted || loaded !== stored) persist(loaded);
@@ -399,11 +494,13 @@ export function StoreProvider({ children }) {
     });
     return () => {
       cancelled = true;
+      mountedRef.current = false;
       readyRef.current = false;
       clearTimeout(timerRef.current);
-      if (pendingReplacement) {
-        pendingReplacement.state = 'aborted';
-        pendingReplacement = null;
+      if (pendingReplacement?.owner === providerIdRef.current) {
+        void pendingReplacement.abort({ dispose: true }).catch((error) => {
+          console.error('Could not restore routines after the app session closed:', error);
+        });
       }
       if (latestArgs === getArgs) latestArgs = null;
     };
@@ -429,10 +526,11 @@ export function StoreProvider({ children }) {
       update,
       replace,
       today,
-      savingPaused: readOnlyRef.current,
+      savingPaused: readOnlyRef.current || recoveryRequired,
+      recoveryRequired,
       recoveryFocus: recoveryAttempt,
     }),
-    [store, update, replace, today, recoveryAttempt]
+    [store, update, replace, today, recoveryAttempt, recoveryRequired]
   );
   if (newerStore) return <UpdateRequired raw={newerStore.raw} />;
   if (unreadableStore)

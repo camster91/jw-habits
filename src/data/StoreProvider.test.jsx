@@ -545,6 +545,145 @@ describe('backup replacement notifications (#318)', () => {
     off();
   });
 
+  it('fences lifecycle, edits and overlapping replacements before the initial write resolves', async () => {
+    const heard = vi.fn();
+    const late = vi.fn();
+    const offHeard = onStoreChange(heard);
+    await mount();
+    heard.mockClear();
+    const originalSet = Preferences.set;
+    let rejectCandidate;
+    const candidateHeld = new Promise((_, reject) => {
+      rejectCandidate = reject;
+    });
+    vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      if (key === STORE_KEY && JSON.parse(value).log.length === 30) {
+        await candidateHeld;
+        throw new Error('candidate write failed');
+      }
+      return originalSet({ key, value });
+    });
+
+    const replacement = latest.replace(imported(), { deferNotification: true });
+    act(() => lifecycle.handler({ isActive: true }));
+    const offLate = onForeground(late);
+    act(() => latest.update((s) => ({ ...s, tone: 'quiet' })));
+    await expect(latest.replace(imported(), { deferNotification: true })).rejects.toThrow(
+      'another replacement'
+    );
+    await flush();
+    expect(latest.store.log).toEqual([]);
+    expect(late).not.toHaveBeenCalled();
+    expect(heard).not.toHaveBeenCalled();
+
+    rejectCandidate();
+    await expect(replacement).rejects.toThrow('candidate write failed');
+    await flush();
+    expect(latest.store.tone).toBe('quiet');
+    expect(JSON.parse(prefs.get(STORE_KEY)).log).toEqual([]);
+    expect(JSON.parse(prefs.get(STORE_KEY)).tone).toBe('quiet');
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(late).toHaveBeenCalledTimes(1);
+    expect(late.mock.calls[0][0].store.log).toEqual([]);
+    offHeard();
+    offLate();
+  });
+
+  it('waits for an ordinary routine persist already in flight before staging the candidate', async () => {
+    await mount();
+    const originalSet = Preferences.set;
+    const writes = [];
+    let releasePrior;
+    const priorHeld = new Promise((resolve) => {
+      releasePrior = resolve;
+    });
+    let held = false;
+    vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      const parsed = JSON.parse(value);
+      if (key === STORE_KEY && parsed.tone === 'quiet' && !held) {
+        held = true;
+        await priorHeld;
+      }
+      if (key === STORE_KEY) writes.push(parsed);
+      return originalSet({ key, value });
+    });
+
+    act(() => latest.update((s) => ({ ...s, tone: 'quiet' })));
+    await Promise.resolve();
+    const replacement = latest.replace(imported(), { deferNotification: true });
+    await Promise.resolve();
+    expect(writes).toEqual([]);
+    releasePrior();
+    const transaction = await replacement;
+    expect(writes[0].tone).toBe('quiet');
+    expect(writes[1].log).toHaveLength(30);
+    expect(transaction.commit()).toBe(true);
+  });
+
+  it('restores and rejects a stale commit when the provider unmounts during the initial write', async () => {
+    const view = await mount();
+    const before = prefs.get(STORE_KEY);
+    const originalSet = Preferences.set;
+    let releaseCandidate;
+    const candidateHeld = new Promise((resolve) => {
+      releaseCandidate = resolve;
+    });
+    vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      if (key === STORE_KEY && JSON.parse(value).log.length === 30) {
+        await candidateHeld;
+      }
+      return originalSet({ key, value });
+    });
+
+    const replacement = latest.replace(imported(), { deferNotification: true });
+    view.unmount();
+    releaseCandidate();
+    await expect(replacement).resolves.toBeNull();
+    await flush();
+    expect(prefs.get(STORE_KEY)).toBe(before);
+    await mount();
+    expect(latest.store.log).toEqual([]);
+  });
+
+  it('does not let a superseded commit publish after pending workspace disposal', async () => {
+    const view = await mount();
+    const before = prefs.get(STORE_KEY);
+    const transaction = await latest.replace(imported(), { deferNotification: true });
+    view.unmount();
+    await flush();
+    expect(transaction.commit()).toBe(false);
+    expect(prefs.get(STORE_KEY)).toBe(before);
+    await mount();
+    expect(latest.store.log).toEqual([]);
+  });
+
+  it('surfaces recovery-required when restoring the previous bytes fails', async () => {
+    await mount();
+    const transaction = await latest.replace(imported(), { deferNotification: true });
+    vi.spyOn(Preferences, 'set').mockRejectedValueOnce(new Error('restore failed'));
+    await act(async () => {
+      await expect(transaction.abort()).rejects.toThrow('restore failed');
+    });
+    await flush();
+    expect(latest.savingPaused).toBe(true);
+    expect(latest.recoveryRequired).toBe(true);
+    const tone = latest.store.tone;
+    act(() => latest.update((s) => ({ ...s, tone: 'blocked' })));
+    expect(latest.store.tone).toBe(tone);
+    expect(transaction.commit()).toBe(false);
+
+    const set = vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      prefs.set(key, value);
+    });
+    await act(async () => {
+      await expect(transaction.abort()).resolves.toBe(true);
+    });
+    await flush();
+    expect(latest.savingPaused).toBe(false);
+    expect(latest.recoveryRequired).toBe(false);
+    set.mockRestore();
+  });
+
   it('does not publish a superseded snapshot after rollback or overwrite the restored store', async () => {
     const heard = vi.fn();
     const off = onStoreChange(heard);
