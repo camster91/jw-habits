@@ -386,6 +386,9 @@ export function StoreProvider({ children }) {
           return false;
         transaction.state = 'committed';
         pendingReplacement = null;
+        const committedToday = computeToday(transaction.next.lastSeenDay);
+        todayRef.current = committedToday;
+        setToday(committedToday);
         storeRef.current = transaction.next;
         setStore(transaction.next);
         if (readyRef.current) notifyChange(transaction.next, { update, today: todayRef.current });
@@ -442,7 +445,11 @@ export function StoreProvider({ children }) {
       const t = computeToday(storeRef.current.lastSeenDay);
       todayRef.current = t;
       setToday(t);
-      if (t !== storeRef.current.lastSeenDay) update((s) => ({ ...s, lastSeenDay: t }));
+      if (t !== storeRef.current.lastSeenDay)
+        update((s) => {
+          const next = computeToday(s.lastSeenDay);
+          return next === s.lastSeenDay ? s : { ...s, lastSeenDay: next };
+        });
       clearTimeout(timerRef.current);
       timerRef.current = setTimeout(refresh, msUntilNextRollover());
     },

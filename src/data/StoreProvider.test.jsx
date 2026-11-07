@@ -620,6 +620,50 @@ describe('backup replacement notifications (#318)', () => {
     expect(transaction.commit()).toBe(true);
   });
 
+  it('recomputes the effective app day before notifying subscribers of an imported future day', async () => {
+    const heard = vi.fn();
+    const offHeard = onStoreChange(heard);
+    await mount();
+    heard.mockClear();
+    const transaction = await latest.replace(
+      { ...imported(), lastSeenDay: '2026-10-07' },
+      { deferNotification: true }
+    );
+    expect(latest.today).toBe('2026-10-06');
+    await act(async () => {
+      expect(transaction.commit()).toBe(true);
+    });
+    await flush();
+    expect(latest.today).toBe('2026-10-07');
+    expect(heard).toHaveBeenCalledWith(
+      expect.objectContaining({ lastSeenDay: '2026-10-07' }),
+      expect.objectContaining({ today: '2026-10-07' })
+    );
+    const foreground = vi.fn();
+    const offForeground = onForeground(foreground);
+    await flush();
+    expect(foreground).toHaveBeenCalledWith(expect.objectContaining({ today: '2026-10-07' }));
+    offForeground();
+    offHeard();
+  });
+
+  it('does not replay a staged refresh with a stale lastSeenDay over the imported day', async () => {
+    await mount();
+    const transaction = await latest.replace(
+      { ...imported(), lastSeenDay: '2026-10-08' },
+      { deferNotification: true }
+    );
+    vi.setSystemTime(new Date(2026, 9, 7, 10, 0));
+    act(() => lifecycle.handler({ isActive: true }));
+    expect(latest.today).toBe('2026-10-07');
+    await act(async () => {
+      expect(transaction.commit()).toBe(true);
+    });
+    await flush();
+    expect(latest.store.lastSeenDay).toBe('2026-10-08');
+    expect(latest.today).toBe('2026-10-08');
+  });
+
   it('restores and rejects a stale commit when the provider unmounts during the initial write', async () => {
     const view = await mount();
     const before = prefs.get(STORE_KEY);
