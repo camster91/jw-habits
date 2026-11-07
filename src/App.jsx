@@ -31,13 +31,32 @@ function routerBasename() {
 }
 
 function Screens() {
-  const { store, savingPaused } = useStore();
+  const { store, savingPaused, recoveryFocus } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const openSettings = () => setSettingsOpen(true);
 
   const { accent, theme, onboardingDone } = store;
   // Apply the stored appearance before newly loaded screens paint.
   useLayoutEffect(() => applyTheme({ accent, theme }), [accent, theme]);
+  // Recovery unmounts the focused safety screen. Announce the destination
+  // heading once, without changing focus on an ordinary first launch.
+  useLayoutEffect(() => {
+    if (!recoveryFocus) return;
+    const focusHeading = () => {
+      const heading = document.querySelector('main h1');
+      if (!heading) return false;
+      heading.setAttribute('tabindex', '-1');
+      heading.focus();
+      return true;
+    };
+    if (focusHeading()) return;
+    // A restored route may be lazy-loaded; wait for its real heading.
+    const observer = new MutationObserver(() => {
+      if (focusHeading()) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [recoveryFocus]);
 
   const withTabs = (screen) => (
     <>

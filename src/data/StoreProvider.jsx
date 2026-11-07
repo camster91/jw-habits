@@ -1,8 +1,8 @@
 /**
  * Loads the store from durable storage (upgrading a v2 or v3 value to v4), exposes it through `useStore`, and
- * persists every change. Nothing in here throws out to React: bad storage
- * falls back to a migrated or default store, and write failures are warned
- * about while the in-memory state stays current.
+ * persists every change. Unreadable stored routines stay untouched behind a
+ * recovery screen; absent data can migrate or start fresh. Write failures are
+ * warned about while the in-memory state stays current.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import i18n from 'i18next';
@@ -15,6 +15,8 @@ import { upgradeStore } from '../domain/upgrade.js';
 import { appLifecycle } from '../utils/native.js';
 import { durableGet, durableSet, safeGetItem } from '../utils/safeStorage.js';
 import UpdateRequired from '../components/UpdateRequired.jsx';
+import DamagedData from '../components/DamagedData.jsx';
+import { repairStore } from '../domain/repair.js';
 
 export const STORE_KEY = 'jw-habits-v2';
 /** The original v2 text, kept once, the first time a v2 value is upgraded. */
@@ -155,9 +157,12 @@ async function loadStore() {
     let result = { ok: false };
     let upgraded = false;
     let backupKey = null;
+    let candidate = null;
     try {
       const parsed = JSON.parse(raw);
+      candidate = parsed;
       const current = upgradeStore(parsed, today);
+      candidate = current;
       upgraded = current !== parsed;
       backupKey = BACKUP_KEYS[parsed?.version] ?? null;
       result = validateStore(current);
@@ -175,13 +180,14 @@ async function loadStore() {
       const backedUp = backupKey !== null && (await keepBackup(raw, backupKey));
       return { store: result.store, persisted: false, readOnly: !backedUp };
     }
-    console.warn('Stored data failed validation; keeping a copy and starting over.');
+    console.warn('Stored data could not be read; preserving it for recovery.');
+    let repair = null;
     try {
-      await durableSet(`${STORE_KEY}-corrupt-${Date.now()}`, raw);
-    } catch (error) {
-      readOnly = true;
-      console.warn('Could not keep a copy of the unreadable data; not saving this session:', error);
+      repair = repairStore(candidate, today, locale);
+    } catch {
+      // An unrecognised shape must remain exportable without guessing a repair.
     }
+    return { unreadable: { raw, repair } };
   }
   let store = null;
   try {
@@ -196,11 +202,44 @@ export function StoreProvider({ children }) {
   const [store, setStore] = useState(null);
   const [today, setToday] = useState(null);
   const [newerStore, setNewerStore] = useState(null);
+  const [unreadableStore, setUnreadableStore] = useState(null);
+  const [recoveryAttempt, setRecoveryAttempt] = useState(0);
   const storeRef = useRef(null);
   const todayRef = useRef(null);
   const readOnlyRef = useRef(false);
   const timerRef = useRef(null);
   const readyRef = useRef(false);
+
+  const restoreUnreadable = useCallback(
+    async (replacement) => {
+      if (!unreadableStore || !validateStore(replacement).ok)
+        throw new Error('That backup cannot restore your routines.');
+      const original = unreadableStore.raw;
+      if ((await durableGet(STORE_KEY)) !== original)
+        throw new Error('Your stored data changed. Reload before restoring a backup.');
+
+      // Retain the original on-device as well as offering its file export.
+      // Never replace an older recovery copy when timestamps collide.
+      let kept = false;
+      const stamp = Date.now();
+      for (let offset = 0; offset < 20 && !kept; offset += 1) {
+        const key = `${STORE_KEY}-corrupt-${stamp + offset}`;
+        const existing = await durableGet(key);
+        if (existing === original) kept = true;
+        else if (existing == null) {
+          await durableSet(key, original);
+          kept = true;
+        }
+      }
+      if (!kept) throw new Error('Could not preserve your original data. Nothing was replaced.');
+      if ((await durableGet(STORE_KEY)) !== original)
+        throw new Error('Your stored data changed. Reload before restoring a backup.');
+      await durableSet(STORE_KEY, JSON.stringify(replacement));
+      setUnreadableStore(null);
+      setRecoveryAttempt((attempt) => attempt + 1);
+    },
+    [unreadableStore]
+  );
 
   const persist = useCallback((next) => {
     if (readOnlyRef.current) return;
@@ -254,10 +293,14 @@ export function StoreProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadStore().then(({ store: stored, persisted, readOnly, newer }) => {
+    loadStore().then(({ store: stored, persisted, readOnly, newer, unreadable }) => {
       if (cancelled) return;
       if (newer) {
         setNewerStore(newer);
+        return;
+      }
+      if (unreadable) {
+        setUnreadableStore(unreadable);
         return;
       }
       // Drop references to deleted plans/steps and agenda weeks out of range.
@@ -276,7 +319,7 @@ export function StoreProvider({ children }) {
       clearTimeout(timerRef.current);
       if (latestArgs === getArgs) latestArgs = null;
     };
-  }, [persist, refreshDay, runForeground, getArgs]);
+  }, [persist, refreshDay, runForeground, getArgs, recoveryAttempt]);
 
   const loaded = store !== null && today !== null;
   useEffect(() => {
@@ -293,10 +336,25 @@ export function StoreProvider({ children }) {
   }, [loaded, refreshDay, runForeground, getArgs]);
 
   const value = useMemo(
-    () => ({ store, update, replace, today, savingPaused: readOnlyRef.current }),
-    [store, update, replace, today]
+    () => ({
+      store,
+      update,
+      replace,
+      today,
+      savingPaused: readOnlyRef.current,
+      recoveryFocus: recoveryAttempt,
+    }),
+    [store, update, replace, today, recoveryAttempt]
   );
   if (newerStore) return <UpdateRequired raw={newerStore.raw} />;
+  if (unreadableStore)
+    return (
+      <DamagedData
+        raw={unreadableStore.raw}
+        repair={unreadableStore.repair}
+        onRestore={restoreUnreadable}
+      />
+    );
   if (!loaded) return null;
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

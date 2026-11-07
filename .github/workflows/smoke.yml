@@ -54,6 +54,16 @@ jobs:
         run: SPAWN_PREVIEW=1 node scripts/verify/smoke.cjs
         env:
           CI: true
+          RECOVERY_EVIDENCE_DIR: artifacts/recovery
+
+      - name: Preserve routine recovery evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: routine-recovery-${{ github.run_id }}
+          path: artifacts/recovery/
+          retention-days: 14
+          if-no-files-found: warn
 
       # Journeys drive the real UI (Settings -> saved link -> row -> reload)
       # rather than seeding localStorage directly. Exits non-zero on failure.
@@ -89,6 +99,7 @@ jobs:
     env:
       PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
       CI: true
+      RECOVERY_EVIDENCE_DIR: artifacts/recovery
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -110,3 +121,12 @@ jobs:
           done
           node scripts/verify/journeys.cjs
           node scripts/verify/accessibility.cjs
+
+      - name: Preserve recovery compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: routine-recovery-${{ matrix.browser }}-${{ github.run_id }}
+          path: artifacts/recovery/
+          retention-days: 14
+          if-no-files-found: warn

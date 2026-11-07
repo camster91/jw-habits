@@ -184,6 +184,16 @@ export function durableRemove(key) {
   });
 }
 
+/** List this app's durable keys so saved recovery copies remain reachable. */
+export async function durableKeys() {
+  if (isNative) {
+    const { keys } = await Preferences.keys();
+    return keys;
+  }
+  if (typeof localStorage === 'undefined') throw new Error('Device storage is unavailable');
+  return Object.keys(localStorage);
+}
+
 /**
  * Best-effort write for diagnostics (error logs): no eviction and no
  * `jw-storage-full` event, so a full quota stays invisible to the user.

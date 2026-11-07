@@ -5,7 +5,11 @@ import { StoreContext } from '../../data/useStore.js';
 import { defaultStore } from '../../domain/store.js';
 import { saveBackup } from '../../utils/backup.js';
 import BackupSection from './BackupSection.jsx';
-vi.mock('../../utils/safeStorage.js', () => ({ durableGet: vi.fn(), durableSet: vi.fn() }));
+vi.mock('../../utils/safeStorage.js', () => ({
+  durableGet: vi.fn(),
+  durableSet: vi.fn(),
+  durableKeys: async () => [],
+}));
 vi.mock('../../utils/backup.js', () => ({
   saveBackup: vi.fn(),
   isShareCancel: (e) => e.message === 'cancel',

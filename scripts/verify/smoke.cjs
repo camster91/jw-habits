@@ -6,7 +6,7 @@
 //
 //   S1: a first run renders onboarding with no console errors
 //   S2: a v1 install (old jw- keys) is migrated and its check-in survives
-//   S3: an unreadable v2 store is kept aside and the app starts fresh
+//   S3: unreadable routines stay untouched until explicit repair or fresh start
 //   S4: a check-in does not carry into the next app day
 //   S5: the app day rolls over at 03:00, not midnight
 //   S6: nothing leaves the origin (no third-party content)
@@ -63,6 +63,7 @@ async function open(browser, at) {
 const pressed = (page, name) => lib.routineButton(page, name).getAttribute('aria-pressed');
 
 async function runSmoke(browser) {
+  const { validateStore } = await import('../../src/domain/store.js');
   // Release UI language must match document speech even with legacy detection preferences.
   for (const locale of ['es-ES', 'fr-FR']) {
     const { ctx, page, errors } = await lib.openPage(browser, { at: DAY1, locale });
@@ -124,31 +125,106 @@ async function runSmoke(browser) {
     await ctx.close();
   }
 
-  // ---- S3: an unreadable v2 store is kept aside, the app starts fresh ----
-  {
-    const { ctx, page } = await lib.openPage(browser, {
+  // S3: unreadable primary bytes must survive until an explicit valid restore.
+  // Corruption is an isolated fixture: healthy history is made through UI.
+  for (const [variant, width] of [['invalid-field', 1280], ['malformed', 375], ['empty', 375]]) {
+    const { ctx, page, errors } = await lib.openPage(browser, {
       at: DAY1,
-      viewport: { width: 375, height: 812 },
+      viewport: { width, height: 900 },
     });
-    await page.goto(BASE_URL);
-    await page.evaluate(
-      (key) => localStorage.setItem(key, '{not json'),
-      lib.STORE_KEY,
-    );
-    await page.reload({ waitUntil: 'networkidle' });
-    await page.waitForTimeout(500);
-    const result = await page.evaluate((key) => {
-      const keys = Object.keys(localStorage);
-      const corrupt = keys.find((k) => k.startsWith(key + '-corrupt-'));
-      return { corrupt: corrupt ? localStorage.getItem(corrupt) : null };
-    }, lib.STORE_KEY);
-    const onboarding = await page.getByTestId('onboarding').isVisible();
-    record(
-      'S3: Unreadable store is preserved under -corrupt- and onboarding starts',
-      result.corrupt === '{not json' && onboarding,
-      `copy=${JSON.stringify(result.corrupt)} onboarding=${onboarding}`,
-    );
-    await ctx.close();
+    try {
+      await lib.go(page, BASE_URL);
+      await lib.onboardSkip(page);
+      await lib.hold(page, lib.routineButton(page, 'Daily text'));
+      const healthy = await lib.storeWhere(page, (store) => store.log.length > 0);
+      if (!healthy?.log.length) throw new Error('Healthy synthetic history was not saved');
+      const original = variant === 'empty' ? '' : variant === 'malformed'
+        ? '  {unreadable synthetic data'
+        : JSON.stringify({ ...healthy, labels: { ...healthy.labels, dailyText: 123 } });
+      const workspaceKey = 'faithful-days-workspace-v1';
+      const workspace = JSON.stringify({
+        version: 1, revision: 0, notes: [{
+          id: 'recovery-fixture-note', title: 'Synthetic note', body: 'Isolated recovery fixture',
+          tags: [], links: [], context: null, createdOn: '2026-10-06', updatedOn: '2026-10-06',
+        }], meetings: [], assignments: [],
+      }, null, 2);
+      await page.evaluate(({ key, original, workspaceKey, workspace }) => {
+        localStorage.setItem(key, original);
+        localStorage.setItem(workspaceKey, workspace);
+      }, { key: lib.STORE_KEY, original, workspaceKey, workspace });
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.getByRole('heading', { name: 'Some saved data could not be read', exact: true }).waitFor();
+      const primary = () => page.evaluate((key) => localStorage.getItem(key), lib.STORE_KEY);
+      if (await primary() !== original) throw new Error('Startup replaced unreadable original bytes');
+      if (process.env.RECOVERY_EVIDENCE_DIR) {
+        const fs = require('node:fs');
+        const dir = process.env.RECOVERY_EVIDENCE_DIR;
+        fs.mkdirSync(dir, { recursive: true });
+        await page.screenshot({ path: require('node:path').join(dir, `${variant}-${width}.png`), fullPage: true });
+      }
+      const downloading = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Save a copy of your data', exact: true }).click();
+      const download = await downloading;
+      const bytes = require('node:fs').readFileSync(await download.path());
+      if (!bytes.equals(Buffer.from(original, 'utf8'))) throw new Error('Original download bytes changed');
+      if (await primary() !== original) throw new Error('Export changed original storage');
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.getByRole('heading', { name: 'Some saved data could not be read', exact: true }).waitFor();
+      if (await primary() !== original) throw new Error('Reload replaced unreadable original bytes');
+      if (variant === 'invalid-field') {
+        await page.getByRole('button', { name: 'Repair and continue', exact: true }).click();
+      } else {
+        await page.getByRole('button', { name: 'Start fresh…', exact: true }).click();
+        if (await primary() !== original) throw new Error('Fresh-start prompt changed storage');
+        await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+        if (await primary() !== original) throw new Error('Cancelled fresh start changed storage');
+        await page.getByRole('button', { name: 'Start fresh…', exact: true }).click();
+        await page.getByRole('button', { name: 'Start fresh', exact: true }).click();
+        await page.getByTestId('onboarding').waitFor();
+        const fresh = await lib.readStore(page);
+        if (fresh.onboardingDone !== false || !validateStore(fresh).ok)
+          throw new Error('Start fresh did not create valid, unfinished onboarding');
+        await lib.onboardSkip(page);
+      }
+      await page.getByTestId('today').waitFor();
+      const restored = await lib.readStore(page);
+      if (!validateStore(restored).ok) throw new Error('Recovery produced invalid routine data');
+      if (variant === 'invalid-field' && restored.labels.dailyText !== healthy.labels.dailyText)
+        throw new Error('Repair did not reset the invalid routine name');
+      const kept = await page.evaluate(({ key, workspaceKey }) => ({
+        originals: Object.keys(localStorage).filter((name) => name.startsWith(key + '-corrupt-')).map((name) => localStorage.getItem(name)),
+        workspace: localStorage.getItem(workspaceKey),
+      }), { key: lib.STORE_KEY, workspaceKey });
+      await page.getByRole('button', { name: 'Settings', exact: true }).click();
+      const savedCopies = page.getByRole('region', { name: 'Saved routine recovery copies', exact: true });
+      await savedCopies.waitFor();
+      const savedDownloading = page.waitForEvent('download');
+      await savedCopies.getByRole('button', { name: 'Save original routines copy', exact: true }).click();
+      const savedBytes = require('node:fs').readFileSync(await (await savedDownloading).path());
+      if (!savedBytes.equals(Buffer.from(original, 'utf8'))) throw new Error('Settings copy bytes changed');
+      const passed = JSON.stringify(restored.log) === JSON.stringify(variant === 'invalid-field' ? healthy.log : []) && kept.originals.includes(original)
+        && kept.workspace === workspace && errors.length === 0;
+      if (process.env.RECOVERY_EVIDENCE_DIR) {
+        const fs = require('node:fs');
+        const sha256 = (value) => require('node:crypto').createHash('sha256').update(value).digest('hex');
+        fs.writeFileSync(path.join(process.env.RECOVERY_EVIDENCE_DIR, `${variant}-${width}.json`), JSON.stringify({
+          fixture: 'isolated synthetic routines and notes', variant, width, passed,
+          browser: process.env.PLAYWRIGHT_BROWSER || 'chromium',
+          githubRun: process.env.GITHUB_RUN_ID || null, checkedOutSha: process.env.GITHUB_SHA || null,
+          originalBytes: Buffer.byteLength(original), originalSha256: sha256(original),
+          downloadedSha256: sha256(bytes), settingsDownloadSha256: sha256(savedBytes),
+          retainedOriginal: kept.originals.includes(original), workspaceUnchanged: kept.workspace === workspace,
+          expectedHistoryEntries: variant === 'invalid-field' ? healthy.log.length : 0,
+          actualHistoryEntries: restored.log.length, consoleErrors: errors,
+        }, null, 2) + '\n');
+      }
+      record(`S3 ${variant}: exact original download and confirmed recovery (${width}px)`, passed,
+        `exportBytes=${bytes.length} history=${restored.log.length} workspaceKept=${kept.workspace === workspace}`);
+    } catch (error) {
+      record(`S3 ${variant}: preserve and restore original data`, false, String(error.message).slice(0, 200));
+    } finally {
+      await ctx.close();
+    }
   }
 
   // ---- S4 + S5 + S7 share one install: check in on Tue 6 Oct at 10:00 ----

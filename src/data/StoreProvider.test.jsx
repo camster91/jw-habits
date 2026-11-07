@@ -131,24 +131,33 @@ describe('StoreProvider persistence', () => {
     expect(JSON.parse(prefs.get(STORE_KEY)).log).toHaveLength(1);
   });
 
-  it('keeps a copy of an invalid stored value, warns once, and starts fresh', async () => {
+  it('blocks an invalid stored value without resetting, migrating or starting native callbacks', async () => {
+    vi.mocked(migrateV1).mockClear();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     prefs.set(STORE_KEY, '{"version":2,"nonsense":true}');
-    await mount();
-    const copies = [...prefs.keys()].filter((k) => k.startsWith(`${STORE_KEY}-corrupt-`));
-    expect(copies).toEqual([`${STORE_KEY}-corrupt-${Date.now()}`]);
-    expect(prefs.get(copies[0])).toBe('{"version":2,"nonsense":true}');
-    expect(latest.store.onboardingDone).toBe(false);
+    const view = await mount();
+    expect(view.getByRole('heading', { name: 'Some saved data could not be read' })).toBeVisible();
+    expect(prefs.get(STORE_KEY)).toBe('{"version":2,"nonsense":true}');
+    expect([...prefs.keys()]).toEqual([STORE_KEY]);
+    expect(latest).toBeUndefined();
+    expect(lifecycle.handler).toBeNull();
+    expect(migrateV1).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
-  it('treats unparseable text the same way and never throws', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    prefs.set(STORE_KEY, 'not json');
-    await mount();
-    expect(latest.store.version).toBe(4);
-    expect([...prefs.keys()].some((k) => k.includes('-corrupt-'))).toBe(true);
-  });
+  it.each(['not json', ''])(
+    'offers the exact unreadable original, including empty bytes: %j',
+    async (raw) => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      prefs.set(STORE_KEY, raw);
+      const view = await mount();
+      fireEvent.click(view.getByRole('button', { name: 'Save a copy of your data' }));
+      await flush();
+      expect(backup).toHaveBeenCalledWith(raw, expect.any(String), expect.any(String));
+      expect(prefs.get(STORE_KEY)).toBe(raw);
+      expect([...prefs.keys()]).toEqual([STORE_KEY]);
+    }
+  );
 
   it('warns but keeps in-memory state when a save fails', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -159,6 +168,148 @@ describe('StoreProvider persistence', () => {
     await flush();
     expect(latest.store.labels.dailyText).toBe('Hope');
     expect(warn).toHaveBeenCalled();
+  });
+});
+
+describe('explicit routines recovery (#315)', () => {
+  const workspaceKey = 'faithful-days-workspace-v1';
+  const history = [{ routine: 'dailyText', day: '2026-10-05', value: true }];
+  const original = () =>
+    JSON.stringify({
+      ...defaultStore('2026-10-06', 'en'),
+      onboardingDone: true,
+      tone: 'loud',
+      log: [...history, { routine: 'unknown', day: '2026-10-05', value: true }],
+    });
+  const repairButton = (view) =>
+    view.getByRole('button', { name: 'Repair and continue', exact: true });
+
+  it('repairs only after a choice, retaining healthy history, original bytes, older copies and workspace', async () => {
+    const raw = original();
+    prefs.set(STORE_KEY, raw);
+    prefs.set(workspaceKey, 'unchanged private notes');
+    const oldCopy = `${STORE_KEY}-corrupt-${Date.now()}`;
+    prefs.set(oldCopy, 'older recovery copy');
+    const foreground = vi.fn();
+    const off = onForeground(foreground);
+    try {
+      const view = await mount();
+      expect(view.getByText(/Keeps 1 check-in/)).toBeVisible();
+      expect(prefs.get(STORE_KEY)).toBe(raw);
+      expect(foreground).not.toHaveBeenCalled();
+      fireEvent.click(repairButton(view));
+      await flush();
+      await flush();
+      expect(latest.store.log).toEqual(history);
+      expect(JSON.parse(prefs.get(STORE_KEY)).log).toEqual(history);
+      expect(prefs.get(oldCopy)).toBe('older recovery copy');
+      const created = [...prefs.keys()].filter(
+        (key) => key.startsWith(`${STORE_KEY}-corrupt-`) && key !== oldCopy
+      );
+      expect(created).toHaveLength(1);
+      expect(prefs.get(created[0])).toBe(raw);
+      expect(prefs.get(workspaceKey)).toBe('unchanged private notes');
+      expect(foreground).toHaveBeenCalledTimes(1);
+    } finally {
+      off();
+    }
+  });
+
+  it('requires confirmation for Start fresh and preserves originals when the confirmation is cancelled', async () => {
+    const raw = original();
+    prefs.set(STORE_KEY, raw);
+    const write = vi.spyOn(Preferences, 'set');
+    const view = await mount();
+    fireEvent.click(view.getByRole('button', { name: 'Start fresh…', exact: true }));
+    fireEvent.click(view.getByRole('button', { name: 'Cancel', exact: true }));
+    expect(write).not.toHaveBeenCalled();
+    expect(prefs.get(STORE_KEY)).toBe(raw);
+    fireEvent.click(view.getByRole('button', { name: 'Start fresh…', exact: true }));
+    fireEvent.click(view.getByRole('button', { name: 'Start fresh', exact: true }));
+    await flush();
+    await flush();
+    expect(latest.store.log).toEqual([]);
+    expect(latest.store.onboardingDone).toBe(false);
+    expect(
+      [...prefs.keys()]
+        .filter((key) => key.startsWith(`${STORE_KEY}-corrupt-`))
+        .map((key) => prefs.get(key))
+    ).toEqual([raw]);
+  });
+
+  it('keeps the original primary value when its recovery copy cannot be written', async () => {
+    const raw = original();
+    prefs.set(STORE_KEY, raw);
+    const write = vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('full'));
+    const view = await mount();
+    fireEvent.click(repairButton(view));
+    await flush();
+    expect(view.getByRole('status')).toHaveTextContent('Restore could not be confirmed');
+    expect(write).not.toHaveBeenCalledWith(expect.objectContaining({ key: STORE_KEY }));
+    expect(prefs.get(STORE_KEY)).toBe(raw);
+    expect(latest).toBeUndefined();
+  });
+
+  it('retains the recovery copy if writing the replacement fails', async () => {
+    const raw = original();
+    prefs.set(STORE_KEY, raw);
+    vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      if (key === STORE_KEY) throw new Error('primary write failed');
+      prefs.set(key, value);
+    });
+    const view = await mount();
+    fireEvent.click(repairButton(view));
+    await flush();
+    await flush();
+    expect(view.getByRole('status')).toHaveTextContent('Restore could not be confirmed');
+    expect(prefs.get(STORE_KEY)).toBe(raw);
+    expect(
+      [...prefs.keys()]
+        .filter((key) => key.startsWith(`${STORE_KEY}-corrupt-`))
+        .map((key) => prefs.get(key))
+    ).toEqual([raw]);
+  });
+
+  it('reuses an identical existing copy without rewriting it', async () => {
+    const raw = original();
+    prefs.set(STORE_KEY, raw);
+    const key = `${STORE_KEY}-corrupt-${Date.now()}`;
+    prefs.set(key, raw);
+    const write = vi.spyOn(Preferences, 'set');
+    const view = await mount();
+    fireEvent.click(repairButton(view));
+    await flush();
+    await flush();
+    expect(latest.store.log).toEqual(history);
+    expect(write).not.toHaveBeenCalledWith(expect.objectContaining({ key }));
+    expect(prefs.get(key)).toBe(raw);
+  });
+
+  it('does not overwrite existing copies when recovery-key candidates are exhausted', async () => {
+    const raw = original();
+    prefs.set(STORE_KEY, raw);
+    for (let i = 0; i < 20; i++)
+      prefs.set(`${STORE_KEY}-corrupt-${Date.now() + i}`, `older copy ${i}`);
+    const write = vi.spyOn(Preferences, 'set');
+    const view = await mount();
+    fireEvent.click(repairButton(view));
+    for (let i = 0; i < 5; i++) await flush();
+    expect(view.getByRole('status')).toHaveTextContent('Restore could not be confirmed');
+    expect(write).not.toHaveBeenCalled();
+    expect(prefs.get(STORE_KEY)).toBe(raw);
+  });
+
+  it('refuses to replace a primary value changed since the recovery screen loaded', async () => {
+    prefs.set(STORE_KEY, original());
+    const view = await mount();
+    const changed = JSON.stringify(defaultStore('2026-10-06', 'en'));
+    prefs.set(STORE_KEY, changed);
+    const write = vi.spyOn(Preferences, 'set');
+    fireEvent.click(repairButton(view));
+    await flush();
+    expect(view.getByRole('status')).toHaveTextContent('Restore could not be confirmed');
+    expect(write).not.toHaveBeenCalled();
+    expect(prefs.get(STORE_KEY)).toBe(changed);
   });
 });
 
@@ -414,16 +565,15 @@ describe('storage failures never overwrite stored data', () => {
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
-  it('does not persist when the corrupt copy cannot be kept', async () => {
+  it('does not attempt a startup write for unreadable routines even when storage is full', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     prefs.set(STORE_KEY, 'garbage');
-    vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('full'));
-    await mount();
-    act(() => latest.update((s) => ({ ...s, labels: { dailyText: 'Changed' } })));
-    await flush();
-    expect(latest.store.labels.dailyText).toBe('Changed');
+    const write = vi.spyOn(Preferences, 'set').mockRejectedValue(new Error('full'));
+    const view = await mount();
+    expect(view.getByRole('heading', { name: 'Some saved data could not be read' })).toBeVisible();
+    expect(write).not.toHaveBeenCalled();
     expect(prefs.get(STORE_KEY)).toBe('garbage');
-    expect(warn).toHaveBeenCalledTimes(2);
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -515,15 +665,16 @@ describe('upgrading a stored v2 value', () => {
     expect(warn).toHaveBeenCalledTimes(1);
   });
 
-  it('sets a v2 value that fails validation aside as corrupt, without a backup', async () => {
+  it('keeps invalid v2 bytes in place behind recovery, without migrating or replacing them', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const raw = JSON.stringify({ ...JSON.parse(v2Raw('Daniel')), tone: 'loud' });
     prefs.set(STORE_KEY, raw);
-    await mount();
-    expect(latest.store.onboardingDone).toBe(false);
+    const view = await mount();
+    expect(view.getByRole('heading', { name: 'Some saved data could not be read' })).toBeVisible();
+    expect(prefs.get(STORE_KEY)).toBe(raw);
     expect(prefs.has(BACKUP_KEY)).toBe(false);
     const copies = [...prefs.keys()].filter((k) => k.includes('-corrupt-'));
-    expect(copies.map((k) => prefs.get(k))).toEqual([raw]);
+    expect(copies).toEqual([]);
   });
 
   it('blocks an unknown newer store without replacing or copying its raw bytes', async () => {
@@ -670,15 +821,16 @@ describe('upgrading a stored v3 value', () => {
     expect(prefs.has(V3_BACKUP_KEY)).toBe(false);
   });
 
-  it('sets a v3 value that fails validation aside as corrupt, without a backup', async () => {
+  it('keeps invalid v3 bytes in place behind recovery, without migrating or replacing them', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const raw = JSON.stringify({ ...JSON.parse(v3Raw()), tone: 'loud' });
     prefs.set(STORE_KEY, raw);
-    await mount();
-    expect(latest.store.onboardingDone).toBe(false);
+    const view = await mount();
+    expect(view.getByRole('heading', { name: 'Some saved data could not be read' })).toBeVisible();
+    expect(prefs.get(STORE_KEY)).toBe(raw);
     expect(prefs.has(V3_BACKUP_KEY)).toBe(false);
     const copies = [...prefs.keys()].filter((k) => k.includes('-corrupt-'));
-    expect(copies.map((k) => prefs.get(k))).toEqual([raw]);
+    expect(copies).toEqual([]);
   });
 
   it('loads a stored v4 value as is without any backup', async () => {

@@ -1,6 +1,6 @@
 # CLAUDE.md — Faithful Days
 
-**Last audited against source: 2026-10-28.**
+**Last audited against source: 2026-11-07.**
 If you change anything in this doc, bump the date. If you change anything in `src/`, re-check this doc.
 
 ## What this is
@@ -142,7 +142,7 @@ they ship in real installs, so renaming them silently discards user history.
 | `jw-habits-v2` | one JSON store (`version: 4`; the key keeps its v2 name) | Everything: `schedule[]`, `log[]`, `reading`, `anchors`, `labels`, `links`, `whatsNew`, `onboardingDone`, from v3 `plans`, `activePlan`, `familyAgendas`, `badges`, `showGameLayer`, `showShare`, and from v4 `events[]` (the Dates card), `backup.lastExportAt`, `reminders.events` and `reminders.backup` |
 | `jw-habits-v3-backup` | raw string | The v3 value, written once before the first load upgrades it to v4 (`domain/upgrade.js`) |
 | `jw-habits-v2-backup` | raw string | The original v2 value, written once before a v2 store is upgraded to v3 |
-| `jw-habits-v2-corrupt-<ms>` | raw string | An unreadable `jw-habits-v2` kept aside before starting fresh |
+| `jw-habits-v2-corrupt-<ms>` | raw string | Original unreadable `jw-habits-v2` retained before an explicit repair or fresh start; exportable from Settings |
 | `jw-daily-habits-state`, `jw-bible-reading-days`, `jw-user-settings` | v1 shapes | Read once by `migrateV1`; never written or deleted (rollback) |
 | `jw-error-logs` | `ErrorLog[]` (last 20, at most 7 days) | Dev error capture |
 | `fd-wrapup-dismissed`, `fd-celebrated` | session storage, an app day | Wrap-up dismissed / haptic already fired |
@@ -187,6 +187,13 @@ Reading and writing the store goes through the `domain/` functions; keep them pu
   Browser durable reads propagate errors instead of treating them as missing data.
   A failed startup read or upgrade backup pauses saving for the session and shows an
   explicit warning; the original stored value is never replaced in that state.
+  Invalid routine bytes instead open `DamagedData`: exact export, a preview of what Repair
+  keeps/resets, and a separately confirmed Start fresh. Nothing writes on startup in this
+  state. Explicit repair/fresh writes preserve the original under a non-overwritten
+  `jw-habits-v2-corrupt-<ms>` key before replacing the primary; failure leaves recovery
+  available. Settings lists these retained routine copies and exports even empty originals.
+  Notes/preparation stay separate. This is the phone-only single-app-writer contract:
+  pre-write comparisons detect observed changes but do not claim an atomic cross-tab CAS.
 - **Newer stored schemas block startup.** `UpdateRequired` offers a byte-exact raw
   export and asks the user to update the app. The provider does not initialize routines,
   cleanup, rollover or foreground callbacks, and leaves the primary stored value intact.
