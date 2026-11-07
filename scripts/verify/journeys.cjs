@@ -14,6 +14,7 @@
 //   J7  the wrap-up card at 21:00
 //   J8  no console errors or third-party requests across all of the above
 //   J-dates  add a big date on Plans, see the Coming up line on Today
+//   J11-recovery  unreadable workspace: export routines and original bytes
 //   J-report  the ministry report card on the 3rd: see it, hide it, reload
 //
 // Run:
@@ -22,7 +23,18 @@
 //
 // Exits 1 if any journey fails.
 
-const { launchBrowser, openPage, go, hold, storeWhere, onboardSkip, routineButton } = require('./lib.cjs');
+const fs = require('node:fs');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
+const {
+  launchBrowser,
+  openPage,
+  go,
+  hold,
+  storeWhere,
+  onboardSkip,
+  routineButton,
+} = require('./lib.cjs');
 
 const BASE = process.env.JOURNEYS_BASE_URL || `http://localhost:${process.env.PORT || 4173}`;
 const MORNING = new Date(2026, 9, 6, 10, 0); // Tuesday 6 Oct 2026, 10:00
@@ -400,6 +412,169 @@ const closeSettings = async (page) => {
         await closeSettings(page);
       }, sink);
   }
+
+  // J11-recovery: a malformed workspace must not block a routines-only export
+  // or the exact original bytes. This uses only isolated, fabricated storage;
+  // every export is triggered through the rendered Settings -> Backup UI.
+  await journey(
+    'J11-recovery unreadable workspace backup recovery',
+    browser,
+    { at: MORNING },
+    async (page) => {
+      await onboardSkip(page);
+      const sentinel = '2026-10-01T12:00:00.000Z';
+      const malformed = '{"broken": notes';
+      const fixture = await page.evaluate(
+        ({ sentinel: lastExportAt, malformed: workspaceRaw }) => {
+          const store = JSON.parse(localStorage.getItem('jw-habits-v2'));
+          const healthy = {
+            ...store,
+            log: [{ routine: 'dailyText', day: '2026-10-06', value: true }],
+            backup: { lastExportAt },
+          };
+          const routinesRaw = JSON.stringify(healthy);
+          localStorage.setItem('jw-habits-v2', routinesRaw);
+          localStorage.setItem('faithful-days-workspace-v1', workspaceRaw);
+          return { routinesRaw, workspaceRaw };
+        },
+        { sentinel, malformed }
+      );
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.getByTestId('today').waitFor();
+      await openSettings(page);
+      const dialog = page.getByRole('dialog');
+      await dialog.getByRole('button', { name: 'Save original notes data', exact: true }).waitFor();
+
+      const evidenceDir = path.resolve(process.env.JOURNEYS_EVIDENCE_DIR || 'store-screenshots');
+      fs.mkdirSync(evidenceDir, { recursive: true });
+      const screenshotPath = path.join(
+        evidenceDir,
+        'faithful-backup-recovery-unreadable-workspace.png'
+      );
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+
+      const routinesDownloading = page.waitForEvent('download');
+      await dialog.getByRole('button', { name: 'Export a backup', exact: true }).click();
+      const routinesDownload = await routinesDownloading;
+      const routinesPath = await routinesDownload.path();
+      if (!routinesPath) throw new Error('Routines download did not expose a file path');
+      const routinesBytes = fs.readFileSync(routinesPath);
+      const routinesExport = JSON.parse(routinesBytes.toString('utf8'));
+      step(
+        'J11-recovery routines export is nonempty and excludes unreadable workspace',
+        routinesBytes.length > 0 &&
+          routinesExport.version === 4 &&
+          !Object.hasOwn(routinesExport, 'workspace')
+      );
+      step(
+        'J11-recovery routines history is retained in the downloaded file',
+        routinesExport.log.length === 1 &&
+          routinesExport.log[0].routine === 'dailyText' &&
+          routinesExport.log[0].value === true
+      );
+
+      const rawDownloading = page.waitForEvent('download');
+      await dialog.getByRole('button', { name: 'Save original notes data', exact: true }).click();
+      const rawDownload = await rawDownloading;
+      const rawPath = await rawDownload.path();
+      if (!rawPath) throw new Error('Original notes download did not expose a file path');
+      const rawBytes = fs.readFileSync(rawPath);
+      step(
+        'J11-recovery original malformed workspace bytes are nonempty and exact',
+        rawBytes.length > 0 && rawBytes.toString('utf8') === fixture.workspaceRaw
+      );
+
+      const afterMalformed = await page.evaluate(() => ({
+        workspaceRaw: localStorage.getItem('faithful-days-workspace-v1'),
+        routines: JSON.parse(localStorage.getItem('jw-habits-v2')),
+      }));
+      step(
+        'J11-recovery malformed workspace storage is unchanged',
+        afterMalformed.workspaceRaw === fixture.workspaceRaw
+      );
+      step(
+        'J11-recovery healthy routine history remains stored',
+        afterMalformed.routines.log.length === 1 &&
+          afterMalformed.routines.log[0].routine === 'dailyText'
+      );
+      step(
+        'J11-recovery partial export does not stamp a complete backup',
+        afterMalformed.routines.backup.lastExportAt === sentinel
+      );
+
+      // Empty original bytes are a valid recovery payload, not “missing data”.
+      await page.evaluate(() => localStorage.setItem('faithful-days-workspace-v1', ''));
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.getByTestId('today').waitFor();
+      await openSettings(page);
+      const emptyDialog = page.getByRole('dialog');
+      await emptyDialog
+        .getByRole('button', { name: 'Save original notes data', exact: true })
+        .waitFor();
+      const emptyDownloading = page.waitForEvent('download');
+      await emptyDialog
+        .getByRole('button', { name: 'Save original notes data', exact: true })
+        .click();
+      const emptyDownload = await emptyDownloading;
+      const emptyPath = await emptyDownload.path();
+      if (!emptyPath) throw new Error('Empty original notes download did not expose a file path');
+      const emptyBytes = fs.readFileSync(emptyPath);
+      step(
+        'J11-recovery empty original workspace is a real zero-byte download',
+        emptyBytes.length === 0
+      );
+
+      const afterEmpty = await page.evaluate(() => ({
+        workspaceRaw: localStorage.getItem('faithful-days-workspace-v1'),
+        routines: JSON.parse(localStorage.getItem('jw-habits-v2')),
+      }));
+      step(
+        'J11-recovery empty workspace storage remains unchanged',
+        afterEmpty.workspaceRaw === ''
+      );
+      step(
+        'J11-recovery empty export keeps healthy history and complete-backup stamp untouched',
+        afterEmpty.routines.log.length === 1 && afterEmpty.routines.backup.lastExportAt === sentinel
+      );
+
+      let sourceCommit = 'unknown';
+      try {
+        sourceCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+      } catch {
+        /* The journey still proves the UI contract if git metadata is absent. */
+      }
+      fs.writeFileSync(
+        path.join(evidenceDir, 'faithful-backup-recovery-provenance.json'),
+        JSON.stringify(
+          {
+            test: 'J11-recovery unreadable workspace backup recovery',
+            sourceCommit,
+            browser: process.env.PLAYWRIGHT_BROWSER || 'chromium',
+            candidateRef: process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF || 'local',
+            fixture: {
+              workspaceKey: 'faithful-days-workspace-v1',
+              routinesKey: 'jw-habits-v2',
+              malformedBytes: Buffer.byteLength(fixture.workspaceRaw),
+              emptyBytes: 0,
+              sentinelLastExportAt: sentinel,
+            },
+            evidence: {
+              screenshot: path.basename(screenshotPath),
+              routinesSuggestedFilename: routinesDownload.suggestedFilename(),
+              routinesBytes: routinesBytes.length,
+              malformedSuggestedFilename: rawDownload.suggestedFilename(),
+              malformedBytes: rawBytes.length,
+              emptySuggestedFilename: emptyDownload.suggestedFilename(),
+              emptyBytes: emptyBytes.length,
+            },
+          },
+          null,
+          2
+        ) + '\n'
+      );
+    },
+    sink
+  );
 
   // J-report: on the 3rd the report card shows last month's totals; hiding it
   // survives a reload (the dismissed month is kept in localStorage).
