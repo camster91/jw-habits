@@ -28,6 +28,10 @@ export const V3_BACKUP_KEY = 'jw-habits-v3-backup';
 const BACKUP_KEYS = { 2: BACKUP_KEY, 3: V3_BACKUP_KEY };
 
 const foregroundCallbacks = new Set();
+// At most one backup replacement can be in flight in the phone-only app. A
+// deferred replacement keeps the old snapshot visible until its workspace
+// transaction commits, so lifecycle callbacks cannot publish staged data.
+let pendingReplacement = null;
 
 /**
  * Set while a provider is loaded: returns the latest `{store, update, today}`.
@@ -54,7 +58,12 @@ export function onForeground(callback) {
   foregroundCallbacks.add(callback);
   if (latestArgs) {
     queueMicrotask(() => {
-      if (foregroundCallbacks.has(callback) && latestArgs) runCallback(callback, latestArgs());
+      if (!foregroundCallbacks.has(callback) || !latestArgs) return;
+      if (pendingReplacement) {
+        pendingReplacement.late.add(callback);
+        return;
+      }
+      runCallback(callback, latestArgs());
     });
   }
   return () => {
@@ -88,6 +97,18 @@ function notifyChange(store, extra) {
     } catch (error) {
       console.warn('A store-change callback failed:', error);
     }
+  }
+}
+
+function flushDeferredForeground(transaction, includeRequested) {
+  const callbacks =
+    includeRequested && transaction.foregroundRequested
+      ? [...foregroundCallbacks]
+      : [...transaction.late];
+  transaction.late.clear();
+  transaction.foregroundRequested = false;
+  for (const callback of callbacks) {
+    if (foregroundCallbacks.has(callback) && latestArgs) runCallback(callback, latestArgs());
   }
 }
 
@@ -250,6 +271,10 @@ export function StoreProvider({ children }) {
 
   const update = useCallback(
     (fn) => {
+      if (pendingReplacement) {
+        pendingReplacement.updates.push(fn);
+        return;
+      }
       const next = fn(storeRef.current);
       storeRef.current = next;
       setStore(next);
@@ -260,24 +285,65 @@ export function StoreProvider({ children }) {
   );
 
   // Backup replacement acknowledges the durable write, unlike routine edits.
-  // A combined workspace+routines import can defer dependent services until
-  // the workspace write has also succeeded. The callback is idempotent so a
-  // caller cannot publish a candidate and then publish it again on cleanup.
+  // A combined workspace+routines import stages the routine bytes while the
+  // old snapshot remains visible. Its transaction commits only after the
+  // workspace write succeeds, or aborts silently on rollback.
   const replace = useCallback(
     async (next, { deferNotification = false } = {}) => {
+      if (pendingReplacement)
+        throw new Error('Saving is paused while another replacement is in progress.');
       if (readOnlyRef.current) throw new Error('Saving is paused; stored data was not replaced.');
       if (!validateStore(next).ok) throw new Error('Invalid routine data');
+      const previous = storeRef.current;
       await durableSet(STORE_KEY, JSON.stringify(next));
-      storeRef.current = next;
-      setStore(next);
-      let notified = false;
-      const commitNotification = () => {
-        if (notified || !readyRef.current) return;
-        notified = true;
-        notifyChange(next, { update, today: todayRef.current });
+      if (!deferNotification) {
+        storeRef.current = next;
+        setStore(next);
+        if (readyRef.current) notifyChange(next, { update, today: todayRef.current });
+        return null;
+      }
+
+      const transaction = {
+        previous,
+        next,
+        updates: [],
+        late: new Set(),
+        foregroundRequested: false,
+        state: 'pending',
       };
-      if (!deferNotification) commitNotification();
-      return commitNotification;
+      pendingReplacement = transaction;
+      return {
+        commit() {
+          if (transaction.state !== 'pending' || pendingReplacement !== transaction) return false;
+          transaction.state = 'committed';
+          pendingReplacement = null;
+          storeRef.current = transaction.next;
+          setStore(transaction.next);
+          if (readyRef.current) notifyChange(transaction.next, { update, today: todayRef.current });
+          const queued = transaction.updates.splice(0);
+          for (const fn of queued) update(fn);
+          flushDeferredForeground(transaction, true);
+          return true;
+        },
+        async abort() {
+          if (transaction.state !== 'pending' || pendingReplacement !== transaction) return false;
+          transaction.state = 'aborting';
+          try {
+            await durableSet(STORE_KEY, JSON.stringify(transaction.previous));
+          } catch (error) {
+            transaction.state = 'pending';
+            throw error;
+          }
+          transaction.state = 'aborted';
+          pendingReplacement = null;
+          const queued = transaction.updates.splice(0);
+          for (const fn of queued) update(fn);
+          // The old snapshot was already published; only late registrations
+          // need their initial run after a failed import.
+          flushDeferredForeground(transaction, false);
+          return true;
+        },
+      };
     },
     [update]
   );
@@ -302,6 +368,10 @@ export function StoreProvider({ children }) {
   );
 
   const runForeground = useCallback(() => {
+    if (pendingReplacement) {
+      pendingReplacement.foregroundRequested = true;
+      return;
+    }
     for (const callback of [...foregroundCallbacks]) runCallback(callback, getArgs());
   }, [getArgs]);
 
@@ -331,6 +401,10 @@ export function StoreProvider({ children }) {
       cancelled = true;
       readyRef.current = false;
       clearTimeout(timerRef.current);
+      if (pendingReplacement) {
+        pendingReplacement.state = 'aborted';
+        pendingReplacement = null;
+      }
       if (latestArgs === getArgs) latestArgs = null;
     };
   }, [persist, refreshDay, runForeground, getArgs, recoveryAttempt]);

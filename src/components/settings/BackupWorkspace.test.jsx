@@ -18,13 +18,22 @@ vi.mock('../../utils/backup.js', () => ({
   isShareCancel: (e) => e.message === 'cancel',
 }));
 const today = '2026-10-08';
-let store, workspace, replace, save, update, onReplaced, rawExport, commitNotification;
+let store,
+  workspace,
+  replace,
+  save,
+  update,
+  onReplaced,
+  rawExport,
+  commitNotification,
+  abortReplacement;
 beforeEach(() => {
   vi.resetAllMocks();
   store = defaultStore(today, 'en');
   workspace = emptyWorkspace();
-  commitNotification = vi.fn();
-  replace = vi.fn(async () => commitNotification);
+  commitNotification = vi.fn(() => true);
+  abortReplacement = vi.fn(async () => true);
+  replace = vi.fn(async () => ({ commit: commitNotification, abort: abortReplacement }));
   update = vi.fn();
   save = vi.fn(async (fn, before) => {
     await before(workspace);
@@ -71,6 +80,7 @@ describe('combined backup replacement', () => {
     );
     expect(replace).toHaveBeenCalledWith(next, { deferNotification: true });
     expect(commitNotification).toHaveBeenCalledTimes(1);
+    expect(abortReplacement).not.toHaveBeenCalled();
     expect(workspace.revision).toBe(10);
   });
   it('legacy import explicitly retains notes and preparation', async () => {
@@ -113,11 +123,9 @@ describe('combined backup replacement', () => {
     await screen.findByText('Replace');
     fireEvent.click(screen.getByText('Replace'));
     await screen.findByText(/workspace full/);
-    expect(replace.mock.calls).toEqual([
-      [next, { deferNotification: true }],
-      [store, { deferNotification: true }],
-    ]);
+    expect(replace.mock.calls).toEqual([[next, { deferNotification: true }]]);
     expect(commitNotification).not.toHaveBeenCalled();
+    expect(abortReplacement).toHaveBeenCalledTimes(1);
     expect(onReplaced).not.toHaveBeenCalled();
   });
   it('reports failure even when rollback also fails', async () => {
@@ -125,7 +133,10 @@ describe('combined backup replacement', () => {
       await before(workspace);
       throw new Error('workspace full');
     });
-    replace.mockResolvedValueOnce().mockRejectedValueOnce(new Error('rollback full'));
+    replace.mockResolvedValueOnce({
+      commit: commitNotification,
+      abort: vi.fn().mockRejectedValue(new Error('rollback full')),
+    });
     renderBackup();
     importFile(exportBundle(store, workspace));
     await screen.findByText('Replace');

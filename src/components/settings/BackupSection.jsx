@@ -100,8 +100,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
 
   const replace = async () => {
     setBusy(true);
-    let routinesReplaced = false;
-    let commitNotification = null;
+    let stagedReplacement = null;
     try {
       if (workspaceState) {
         if (!workspaceState.ready)
@@ -110,21 +109,21 @@ export default function BackupSection({ onReplaced = () => {} }) {
           (current) => pending.workspace ?? current,
           async (current) => {
             await durableSet('faithful-days-before-import', exportBundle(store, current));
-            commitNotification = await replaceStore(pending.store, { deferNotification: true });
-            routinesReplaced = true;
+            stagedReplacement = await replaceStore(pending.store, { deferNotification: true });
           }
         );
       } else if (replaceStore) await replaceStore(pending.store);
       else update(() => pending.store);
-      commitNotification?.();
+      if (stagedReplacement && !stagedReplacement.commit())
+        throw new Error('The imported data changed before the workspace commit completed.');
       setPending(null);
       onReplaced();
     } catch (error) {
       // Multi-key writes are not atomic. Recover the previous routines when
       // the workspace write fails, and retain the recovery bundle regardless.
-      if (routinesReplaced) {
+      if (stagedReplacement) {
         try {
-          await replaceStore(store, { deferNotification: true });
+          await stagedReplacement.abort();
         } catch {
           /* recovery bundle remains */
         }

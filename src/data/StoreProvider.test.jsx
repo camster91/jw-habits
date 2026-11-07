@@ -476,12 +476,13 @@ describe('backup replacement notifications (#318)', () => {
     })),
   });
 
-  it('defers real reminder, widget and badge subscribers until the replacement commits', async () => {
+  it('defers real subscribers and lifecycle work until the replacement commits', async () => {
     const { registerBadgeAwards } = await import('../native/badgeAwards.js');
     const { registerReminderSync } = await import('../native/reminders.js');
     const { registerWidgetBridge } = await import('../native/widgetBridge.js');
     const heard = vi.fn();
     const offHeard = onStoreChange(heard);
+    const late = vi.fn();
     const off = [registerBadgeAwards(), registerReminderSync(), registerWidgetBridge()];
     await mount();
     await flush();
@@ -491,21 +492,27 @@ describe('backup replacement notifications (#318)', () => {
     notifications.schedule.mockClear();
     widget.setSnapshot.mockClear();
 
-    let commitNotification;
+    let stagedReplacement;
     await act(async () => {
-      commitNotification = await latest.replace(imported(), { deferNotification: true });
+      stagedReplacement = await latest.replace(imported(), { deferNotification: true });
     });
+    await flush();
+    act(() => lifecycle.handler({ isActive: true }));
+    const offLate = onForeground(late);
     await flush();
     expect(notifications.schedule).not.toHaveBeenCalled();
     expect(widget.setSnapshot).not.toHaveBeenCalled();
     expect(latest.store.badges.dailyText30).toBeUndefined();
+    expect(late).not.toHaveBeenCalled();
 
-    commitNotification();
-    commitNotification();
+    expect(stagedReplacement.commit()).toBe(true);
+    expect(stagedReplacement.commit()).toBe(false);
     await flush();
     // One notification is the committed import; the second is the real badge
     // subscriber's dated-award update. A duplicate commit would add a third.
     expect(heard).toHaveBeenCalledTimes(2);
+    expect(late).toHaveBeenCalledTimes(1);
+    expect(late.mock.calls[0][0].store.log).toHaveLength(30);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
@@ -515,6 +522,7 @@ describe('backup replacement notifications (#318)', () => {
     expect(latest.store.badges.dailyText30).toBe('2026-10-06');
     off.forEach((unsubscribe) => unsubscribe());
     offHeard();
+    offLate();
   });
 
   it('publishes a standalone valid replacement immediately and publishes nothing on failure', async () => {
@@ -535,6 +543,39 @@ describe('backup replacement notifications (#318)', () => {
     expect(heard).not.toHaveBeenCalled();
     expect(latest.store.tone).toBe('quiet');
     off();
+  });
+
+  it('does not publish a superseded snapshot after rollback or overwrite the restored store', async () => {
+    const heard = vi.fn();
+    const off = onStoreChange(heard);
+    const late = vi.fn();
+    await mount();
+    heard.mockClear();
+    let stagedReplacement;
+    await act(async () => {
+      stagedReplacement = await latest.replace(imported(), { deferNotification: true });
+    });
+    act(() => latest.update((s) => ({ ...s, tone: 'quiet' })));
+    const offLate = onForeground(late);
+    await flush();
+    expect(latest.store.log).toEqual([]);
+    expect(JSON.parse(prefs.get(STORE_KEY)).log).toHaveLength(30);
+    expect(late).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await expect(stagedReplacement.abort()).resolves.toBe(true);
+    });
+    await flush();
+    expect(stagedReplacement.commit()).toBe(false);
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(latest.store.tone).toBe('quiet');
+    const restored = JSON.parse(prefs.get(STORE_KEY));
+    expect(restored.log).toEqual([]);
+    expect(restored.tone).toBe('quiet');
+    expect(late).toHaveBeenCalledTimes(1);
+    expect(late.mock.calls[0][0].store.log).toEqual([]);
+    off();
+    offLate();
   });
 });
 
