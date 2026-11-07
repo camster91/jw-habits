@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { StoreContext } from '../../data/useStore.js';
 import { WorkspaceContext } from '../../data/useWorkspace.js';
-import { defaultStore } from '../../domain/store.js';
+import { defaultStore, exportJson } from '../../domain/store.js';
 import { emptyWorkspace, exportBundle } from '../../domain/workspace.js';
 import { durableGet, durableSet } from '../../utils/safeStorage.js';
 import { saveBackup } from '../../utils/backup.js';
