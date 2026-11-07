@@ -443,7 +443,8 @@ const closeSettings = async (page) => {
       await page.getByTestId('today').waitFor();
       await openSettings(page);
       const dialog = page.getByRole('dialog');
-      await dialog.getByRole('button', { name: 'Save original notes data', exact: true }).waitFor();
+      const backupRegion = dialog.getByRole('region', { name: 'Backup', exact: true });
+      await backupRegion.getByRole('button', { name: 'Save original notes data', exact: true }).waitFor();
 
       const evidenceDir = path.resolve(process.env.JOURNEYS_EVIDENCE_DIR || 'store-screenshots');
       fs.mkdirSync(evidenceDir, { recursive: true });
@@ -451,10 +452,11 @@ const closeSettings = async (page) => {
         evidenceDir,
         'faithful-backup-recovery-unreadable-workspace.png'
       );
+      await backupRegion.scrollIntoViewIfNeeded();
       await page.screenshot({ path: screenshotPath, fullPage: true });
 
       const routinesDownloading = page.waitForEvent('download');
-      await dialog.getByRole('button', { name: 'Export a backup', exact: true }).click();
+      await backupRegion.getByRole('button', { name: 'Export a backup', exact: true }).click();
       const routinesDownload = await routinesDownloading;
       const routinesPath = await routinesDownload.path();
       if (!routinesPath) throw new Error('Routines download did not expose a file path');
@@ -474,7 +476,7 @@ const closeSettings = async (page) => {
       );
 
       const rawDownloading = page.waitForEvent('download');
-      await dialog.getByRole('button', { name: 'Save original notes data', exact: true }).click();
+      await backupRegion.getByRole('button', { name: 'Save original notes data', exact: true }).click();
       const rawDownload = await rawDownloading;
       const rawPath = await rawDownload.path();
       if (!rawPath) throw new Error('Original notes download did not expose a file path');
