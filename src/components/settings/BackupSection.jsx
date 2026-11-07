@@ -101,6 +101,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
   const replace = async () => {
     setBusy(true);
     let routinesReplaced = false;
+    let commitNotification = null;
     try {
       if (workspaceState) {
         if (!workspaceState.ready)
@@ -109,12 +110,13 @@ export default function BackupSection({ onReplaced = () => {} }) {
           (current) => pending.workspace ?? current,
           async (current) => {
             await durableSet('faithful-days-before-import', exportBundle(store, current));
-            await replaceStore(pending.store);
+            commitNotification = await replaceStore(pending.store, { deferNotification: true });
             routinesReplaced = true;
           }
         );
       } else if (replaceStore) await replaceStore(pending.store);
       else update(() => pending.store);
+      commitNotification?.();
       setPending(null);
       onReplaced();
     } catch (error) {
@@ -122,7 +124,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
       // the workspace write fails, and retain the recovery bundle regardless.
       if (routinesReplaced) {
         try {
-          await replaceStore(store);
+          await replaceStore(store, { deferNotification: true });
         } catch {
           /* recovery bundle remains */
         }

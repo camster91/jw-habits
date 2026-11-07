@@ -6,6 +6,16 @@ import i18n from 'i18next';
 const prefs = vi.hoisted(() => new Map());
 const lifecycle = vi.hoisted(() => ({ handler: null, unsubscribed: 0 }));
 const backup = vi.hoisted(() => vi.fn());
+const notifications = vi.hoisted(() => ({
+  getPending: vi.fn(async () => ({ notifications: [] })),
+  cancel: vi.fn(async () => {}),
+  checkPermissions: vi.fn(async () => ({ display: 'granted' })),
+  schedule: vi.fn(async () => {}),
+}));
+const widget = vi.hoisted(() => ({
+  setSnapshot: vi.fn(async () => {}),
+  drainQueue: vi.fn(async () => ({ items: [] })),
+}));
 
 vi.mock('../utils/backup.js', () => ({
   saveBackup: backup,
@@ -25,6 +35,8 @@ vi.mock('../utils/native.js', () => ({
     },
   },
 }));
+vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: notifications }));
+vi.mock('@capacitor/core', () => ({ registerPlugin: () => widget }));
 vi.mock('../domain/migrateV1.js', async () => {
   const actual = await vi.importActual('../domain/migrateV1.js');
   return { migrateV1: vi.fn(actual.migrateV1) };
@@ -79,6 +91,12 @@ beforeEach(() => {
   lifecycle.unsubscribed = 0;
   backup.mockReset();
   backup.mockResolvedValue(undefined);
+  notifications.getPending.mockReset().mockResolvedValue({ notifications: [] });
+  notifications.cancel.mockReset().mockResolvedValue(undefined);
+  notifications.checkPermissions.mockReset().mockResolvedValue({ display: 'granted' });
+  notifications.schedule.mockReset().mockResolvedValue(undefined);
+  widget.setSnapshot.mockReset().mockResolvedValue(undefined);
+  widget.drainQueue.mockReset().mockResolvedValue({ items: [] });
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
   vi.setSystemTime(new Date(2026, 9, 6, 10, 0));
 });
@@ -443,6 +461,80 @@ describe('onStoreChange', () => {
     expect(good).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledTimes(2);
     offs.forEach((off) => off());
+  });
+});
+
+describe('backup replacement notifications (#318)', () => {
+  const imported = () => ({
+    ...defaultStore('2026-10-01', 'en'),
+    onboardingDone: true,
+    anchors: { dailyText: { time: '20:00', phrase: null } },
+    log: Array.from({ length: 30 }, (_, i) => ({
+      routine: 'dailyText',
+      day: `2026-09-${String(i + 1).padStart(2, '0')}`,
+      value: true,
+    })),
+  });
+
+  it('defers real reminder, widget and badge subscribers until the replacement commits', async () => {
+    const { registerBadgeAwards } = await import('../native/badgeAwards.js');
+    const { registerReminderSync } = await import('../native/reminders.js');
+    const { registerWidgetBridge } = await import('../native/widgetBridge.js');
+    const heard = vi.fn();
+    const offHeard = onStoreChange(heard);
+    const off = [registerBadgeAwards(), registerReminderSync(), registerWidgetBridge()];
+    await mount();
+    await flush();
+    notifications.getPending.mockClear();
+    notifications.cancel.mockClear();
+    notifications.checkPermissions.mockClear();
+    notifications.schedule.mockClear();
+    widget.setSnapshot.mockClear();
+
+    let commitNotification;
+    await act(async () => {
+      commitNotification = await latest.replace(imported(), { deferNotification: true });
+    });
+    await flush();
+    expect(notifications.schedule).not.toHaveBeenCalled();
+    expect(widget.setSnapshot).not.toHaveBeenCalled();
+    expect(latest.store.badges.dailyText30).toBeUndefined();
+
+    commitNotification();
+    commitNotification();
+    await flush();
+    // One notification is the committed import; the second is the real badge
+    // subscriber's dated-award update. A duplicate commit would add a third.
+    expect(heard).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    await flush();
+    expect(notifications.schedule).toHaveBeenCalled();
+    expect(widget.setSnapshot).toHaveBeenCalled();
+    expect(latest.store.badges.dailyText30).toBe('2026-10-06');
+    off.forEach((unsubscribe) => unsubscribe());
+    offHeard();
+  });
+
+  it('publishes a standalone valid replacement immediately and publishes nothing on failure', async () => {
+    const heard = vi.fn();
+    const off = onStoreChange(heard);
+    await mount();
+    await act(async () => {
+      await latest.replace({ ...latest.store, tone: 'quiet' });
+    });
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(heard.mock.calls[0][0].tone).toBe('quiet');
+
+    heard.mockClear();
+    vi.spyOn(Preferences, 'set').mockRejectedValueOnce(new Error('disk full'));
+    await act(async () => {
+      await expect(latest.replace(imported())).rejects.toThrow('disk full');
+    });
+    expect(heard).not.toHaveBeenCalled();
+    expect(latest.store.tone).toBe('quiet');
+    off();
   });
 });
 

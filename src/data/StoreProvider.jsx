@@ -260,13 +260,27 @@ export function StoreProvider({ children }) {
   );
 
   // Backup replacement acknowledges the durable write, unlike routine edits.
-  const replace = useCallback(async (next) => {
-    if (readOnlyRef.current) throw new Error('Saving is paused; stored data was not replaced.');
-    if (!validateStore(next).ok) throw new Error('Invalid routine data');
-    await durableSet(STORE_KEY, JSON.stringify(next));
-    storeRef.current = next;
-    setStore(next);
-  }, []);
+  // A combined workspace+routines import can defer dependent services until
+  // the workspace write has also succeeded. The callback is idempotent so a
+  // caller cannot publish a candidate and then publish it again on cleanup.
+  const replace = useCallback(
+    async (next, { deferNotification = false } = {}) => {
+      if (readOnlyRef.current) throw new Error('Saving is paused; stored data was not replaced.');
+      if (!validateStore(next).ok) throw new Error('Invalid routine data');
+      await durableSet(STORE_KEY, JSON.stringify(next));
+      storeRef.current = next;
+      setStore(next);
+      let notified = false;
+      const commitNotification = () => {
+        if (notified || !readyRef.current) return;
+        notified = true;
+        notifyChange(next, { update, today: todayRef.current });
+      };
+      if (!deferNotification) commitNotification();
+      return commitNotification;
+    },
+    [update]
+  );
 
   // Recompute today and re-arm the 03:00 timer from the current clock, so a
   // resume after suspension or a timezone change never leaves a stale timer.

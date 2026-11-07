@@ -18,12 +18,13 @@ vi.mock('../../utils/backup.js', () => ({
   isShareCancel: (e) => e.message === 'cancel',
 }));
 const today = '2026-10-08';
-let store, workspace, replace, save, update, onReplaced, rawExport;
+let store, workspace, replace, save, update, onReplaced, rawExport, commitNotification;
 beforeEach(() => {
   vi.resetAllMocks();
   store = defaultStore(today, 'en');
   workspace = emptyWorkspace();
-  replace = vi.fn(async () => {});
+  commitNotification = vi.fn();
+  replace = vi.fn(async () => commitNotification);
   update = vi.fn();
   save = vi.fn(async (fn, before) => {
     await before(workspace);
@@ -68,7 +69,8 @@ describe('combined backup replacement', () => {
       'faithful-days-before-import',
       exportBundle(store, emptyWorkspace())
     );
-    expect(replace).toHaveBeenCalledWith(next);
+    expect(replace).toHaveBeenCalledWith(next, { deferNotification: true });
+    expect(commitNotification).toHaveBeenCalledTimes(1);
     expect(workspace.revision).toBe(10);
   });
   it('legacy import explicitly retains notes and preparation', async () => {
@@ -80,6 +82,15 @@ describe('combined backup replacement', () => {
     fireEvent.click(screen.getByText('Replace'));
     await waitFor(() => expect(onReplaced).toHaveBeenCalled());
     expect(workspace).toEqual(emptyWorkspace());
+  });
+  it('cancelling the replacement confirmation publishes nothing', async () => {
+    renderBackup();
+    importFile(exportBundle({ ...store, tone: 'quiet' }, workspace));
+    await screen.findByText('Replace');
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(replace).not.toHaveBeenCalled();
+    expect(commitNotification).not.toHaveBeenCalled();
+    expect(onReplaced).not.toHaveBeenCalled();
   });
   it('does not replace either store when the recovery copy cannot be saved', async () => {
     durableSet.mockRejectedValueOnce(new Error('recovery full'));
@@ -102,7 +113,11 @@ describe('combined backup replacement', () => {
     await screen.findByText('Replace');
     fireEvent.click(screen.getByText('Replace'));
     await screen.findByText(/workspace full/);
-    expect(replace.mock.calls).toEqual([[next], [store]]);
+    expect(replace.mock.calls).toEqual([
+      [next, { deferNotification: true }],
+      [store, { deferNotification: true }],
+    ]);
+    expect(commitNotification).not.toHaveBeenCalled();
     expect(onReplaced).not.toHaveBeenCalled();
   });
   it('reports failure even when rollback also fails', async () => {
@@ -117,6 +132,7 @@ describe('combined backup replacement', () => {
     fireEvent.click(screen.getByText('Replace'));
     await screen.findByText(/pre-import backup is retained/);
     expect(onReplaced).not.toHaveBeenCalled();
+    expect(commitNotification).not.toHaveBeenCalled();
   });
   it('unreadable workspace still exports routines, offers original notes bytes and pauses import (#316)', async () => {
     rawExport.mockResolvedValueOnce('{"broken": notes');
