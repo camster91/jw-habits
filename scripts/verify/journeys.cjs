@@ -48,14 +48,17 @@ const step = (name, ok, detail) => {
 
 /** Run one journey; a thrown error (a missing element, a timeout) is a FAIL. */
 async function journey(name, browser, opts, body, sink) {
-  const session = await openPage(browser, opts);
+  const { expectedErrors = [], ...pageOpts } = opts;
+  const session = await openPage(browser, pageOpts);
   try {
     await go(session.page, BASE);
     await body(session.page);
   } catch (e) {
     step(name, false, String(e.message).split('\n')[0]);
   }
-  sink.errors.push(...session.errors);
+  sink.errors.push(
+    ...session.errors.filter((error) => !expectedErrors.some((pattern) => pattern.test(error)))
+  );
   sink.external.push(...session.external);
   await session.ctx.close();
 }
@@ -598,7 +601,13 @@ const closeSettings = async (page) => {
   await journey(
     'J13-import-recovery failed combined import remains recoverable',
     browser,
-    { at: MORNING },
+    {
+      at: MORNING,
+      // This journey deliberately forces the routine rollback to fail; the
+      // provider must report that error while the aggregate J8 check ignores
+      // only this exact, expected fault-injection message.
+      expectedErrors: [/Could not restore routines after a backup replacement:/],
+    },
     async (page) => {
       await onboardSkip(page);
       await openSettings(page);
