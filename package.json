@@ -64,7 +64,7 @@
         "react": "19.3.0",
         "react-dom": "19.3.0",
         "react-i18next": "^17.0.11",
-        "react-router-dom": "^7.18.2"
+        "react-router-dom": "^7.18.5"
     },
     "devDependencies": {
         "@axe-core/playwright": "^4.13.0",
