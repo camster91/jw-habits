@@ -126,6 +126,13 @@ run_journey() {
   echo "Running normal onboarding/navigation journey on $label ($udid)"
 
   set +e
+  # xcodebuild strips ordinary shell variables before launching XCTest. The
+  # TEST_RUNNER_ prefix is Apple's supported way to pass concrete metadata to
+  # the test runner process (the prefix is removed before XCTest reads it).
+  TEST_RUNNER_EXPECTED_COMMIT="$EXPECTED_COMMIT" \
+  TEST_RUNNER_JOURNEY_OUTPUT_ROOT="$output_dir" \
+  TEST_RUNNER_JOURNEY_DEVICE_LABEL="$label" \
+  TEST_RUNNER_JOURNEY_DEVICE_UDID="$udid" \
   xcodebuild \
     -project "$project_root/ios/App/App.xcodeproj" \
     -scheme FaithfulJourney \
