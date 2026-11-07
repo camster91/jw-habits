@@ -155,6 +155,10 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         let screenshot = XCUIScreen.main.screenshot()
         let imageURL = outputRoot.appendingPathComponent("journey-\(name).png")
         try screenshot.pngRepresentation.write(to: imageURL, options: .atomic)
+        let attachment = XCTAttachment(contentsOfFile: imageURL)
+        attachment.name = "journey-\(name)"
+        attachment.lifetime = .keepAlways
+        add(attachment)
 
         let metadata: [String: Any] = [
             "screen": name,
