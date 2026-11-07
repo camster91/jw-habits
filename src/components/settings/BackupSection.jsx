@@ -8,6 +8,7 @@ import { isShareCancel, saveBackup } from '../../utils/backup.js';
 import { useWorkspace } from '../../data/useWorkspace.js';
 import { exportBundle, importBundle } from '../../domain/workspace.js';
 import { durableGet, durableSet } from '../../utils/safeStorage.js';
+import SavedRoutineCopies from './SavedRoutineCopies.jsx';
 
 /**
  * Export everything as a dated JSON file, or import one. An import is only
@@ -172,6 +173,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
           Export pre-import backup
         </button>
       )}
+      <SavedRoutineCopies />
       {pending && (
         <div
           role="group"
