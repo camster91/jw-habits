@@ -30,11 +30,11 @@ if [[ ! -d "$SOURCE_ROOT/ios/App/App.xcodeproj" || ! -d "$SOURCE_ROOT/ios/App/Ap
 fi
 
 wrapup_source="$(git -C "$SOURCE_ROOT" show "$EXPECTED_COMMIT:src/domain/wrapup.js")"
-if ! printf '%s\n' "$wrapup_source" | rg -Fq 'const ROLLOVER_MINUTES = 3 * 60;'; then
+if ! printf '%s\n' "$wrapup_source" | grep -Fq 'const ROLLOVER_MINUTES = 3 * 60;'; then
   echo "Expected 03:00 rollover source proof is missing" >&2
   exit 1
 fi
-if ! printf '%s\n' "$wrapup_source" | rg -Fq 'if (at >= ROLLOVER_MINUTES) return local >= at || local < ROLLOVER_MINUTES;'; then
+if ! printf '%s\n' "$wrapup_source" | grep -Fq 'if (at >= ROLLOVER_MINUTES) return local >= at || local < ROLLOVER_MINUTES;'; then
   echo "Expected pre-03:00/post-03:00 wrap-up source proof is missing" >&2
   exit 1
 fi
@@ -168,7 +168,7 @@ run_journey() {
     case "$screen" in
       onboarding) token='welcome to faithful days,get started,your routines stay' ;;
       today) token='today,your day in review' ;;
-      wrap-up) token='your day in review,show routines' ;;
+      wrap-up) token='your day in review,hide routines' ;;
       plans) token='plans,personal study' ;;
       progress) token='progress,bible books' ;;
     esac

@@ -41,11 +41,13 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         XCTAssertTrue(waitForHeading("Today"), "Today route heading did not appear after completing onboarding")
         try capture("today")
 
-        // Keep the card visible but expand the normal Today list, yielding a
-        // distinct real-app wrap-up frame without any state injection.
-        if app.buttons["Show routines"].waitForExistence(timeout: 3) {
-            app.buttons["Show routines"].tap()
-        }
+        // Expand the normal Today list, yielding a distinct real-app wrap-up
+        // frame without any state injection; the changed label proves the
+        // card actually expanded before capture.
+        let showRoutines = app.buttons["Show routines"]
+        XCTAssertTrue(showRoutines.waitForExistence(timeout: 15), "Wrap-up card did not expose Show routines")
+        showRoutines.tap()
+        XCTAssertTrue(app.buttons["Hide routines"].waitForExistence(timeout: 5), "Wrap-up routines did not expand")
         XCTAssertTrue(waitForText("Your day in review"), "Wrap-up card did not appear")
         try capture("wrap-up")
 
