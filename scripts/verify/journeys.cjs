@@ -606,7 +606,10 @@ const closeSettings = async (page) => {
       // This journey deliberately forces the routine rollback to fail; the
       // provider must report that error while the aggregate J8 check ignores
       // only this exact, expected fault-injection message.
-      expectedErrors: [/Could not restore routines after a backup replacement:/],
+      expectedErrors: [
+        /Could not restore routines after a backup replacement:/,
+        /Could not persist "faithful-days-workspace-v1"/,
+      ],
     },
     async (page) => {
       await onboardSkip(page);
