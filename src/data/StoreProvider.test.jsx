@@ -664,6 +664,61 @@ describe('backup replacement notifications (#318)', () => {
     expect(latest.today).toBe('2026-10-08');
   });
 
+  it('captures the pre-import snapshot before its recovery-copy write can yield', async () => {
+    await mount();
+    const before = latest.store;
+    let releaseCopy;
+    const copyHeld = new Promise((resolve) => {
+      releaseCopy = resolve;
+    });
+    let retained = null;
+    let replacement;
+    await act(async () => {
+      replacement = latest.replace(
+        { ...imported(), tone: 'quiet' },
+        {
+          deferNotification: true,
+          beforeWrite: async (previous) => {
+            retained = JSON.stringify(previous);
+            await copyHeld;
+          },
+        }
+      );
+      await Promise.resolve();
+    });
+    act(() => latest.update((s) => ({ ...s, tone: 'scripture' })));
+    expect(JSON.parse(retained ?? '{}')).toEqual(before);
+    await act(async () => {
+      releaseCopy();
+      const transaction = await replacement;
+      expect(transaction.commit()).toBe(true);
+    });
+    await flush();
+    expect(latest.store.tone).toBe('scripture');
+    expect(JSON.parse(prefs.get(STORE_KEY)).tone).toBe('scripture');
+    expect(JSON.parse(retained)).toEqual(before);
+  });
+
+  it('does not write the candidate when the pre-import recovery copy fails', async () => {
+    await mount();
+    const before = prefs.get(STORE_KEY);
+    let replacement;
+    await act(async () => {
+      replacement = latest.replace(
+        { ...imported(), tone: 'quiet' },
+        {
+          deferNotification: true,
+          beforeWrite: async () => {
+            throw new Error('recovery copy failed');
+          },
+        }
+      );
+      await expect(replacement).rejects.toThrow('recovery copy failed');
+    });
+    expect(prefs.get(STORE_KEY)).toBe(before);
+    expect(latest.store.tone).toBe('warm');
+  });
+
   it('restores and rejects a stale commit when the provider unmounts during the initial write', async () => {
     const view = await mount();
     const before = prefs.get(STORE_KEY);

@@ -684,6 +684,7 @@ const closeSettings = async (page) => {
 
       // The recovery notice intentionally sits above the modal after the
       // rollback failure, so close through the dialog's normal Escape action.
+      await dialog.getByRole('button', { name: 'Close', exact: true }).focus();
       await page.keyboard.press('Escape');
       console.log('[J13] Escape sent; waiting for Settings to close');
       await dialog.waitFor({ state: 'detached' });

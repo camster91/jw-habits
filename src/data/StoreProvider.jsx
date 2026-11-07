@@ -306,7 +306,7 @@ export function StoreProvider({ children }) {
   // old snapshot remains visible. Its transaction commits only after the
   // workspace write succeeds, or aborts silently on rollback.
   const replace = useCallback(
-    async (next, { deferNotification = false } = {}) => {
+    async (next, { deferNotification = false, beforeWrite } = {}) => {
       if (!mountedRef.current || recoveryRequiredRef.current)
         throw new Error('Saving is paused; stored data was not replaced.');
       if (pendingReplacement) {
@@ -324,11 +324,13 @@ export function StoreProvider({ children }) {
         updates: [],
         late: new Set(),
         foregroundRequested: false,
-        state: 'writing',
+        state: 'preparing',
         writeSucceeded: false,
         writeError: null,
+        prepareError: null,
         cancelRequested: false,
         disposeRequested: false,
+        prepareSettled: null,
         writeSettled: null,
         restorePromise: null,
       };
@@ -376,6 +378,17 @@ export function StoreProvider({ children }) {
         }
         return transaction.restorePromise;
       };
+      const releaseWithoutRestore = () => {
+        if (transaction.state === 'aborted' || transaction.state === 'committed') return false;
+        transaction.state = 'aborted';
+        if (pendingReplacement === transaction) pendingReplacement = null;
+        if (!transaction.disposeRequested && mountedRef.current) {
+          recoveryRequiredRef.current = false;
+          setRecoveryRequired(false);
+        }
+        replay();
+        return true;
+      };
       transaction.commit = () => {
         if (
           transaction.state !== 'pending' ||
@@ -397,10 +410,10 @@ export function StoreProvider({ children }) {
       };
       transaction.abort = async ({ dispose = false } = {}) => {
         if (dispose) transaction.disposeRequested = true;
-        if (transaction.state === 'writing') {
+        if (transaction.state === 'preparing') {
           transaction.cancelRequested = true;
-          await transaction.writeSettled;
-          if (transaction.state === 'writing') await restore();
+          await transaction.prepareSettled;
+          if (transaction.state === 'preparing') releaseWithoutRestore();
           return true;
         }
         if (
@@ -411,6 +424,24 @@ export function StoreProvider({ children }) {
           return restore();
         return false;
       };
+      transaction.prepareSettled = Promise.resolve()
+        .then(() => beforeWrite?.(previous))
+        .then(
+          () => {},
+          (error) => {
+            transaction.prepareError = error;
+          }
+        );
+      await transaction.prepareSettled;
+      if (transaction.prepareError) {
+        releaseWithoutRestore();
+        throw transaction.prepareError;
+      }
+      if (transaction.cancelRequested || transaction.disposeRequested) {
+        releaseWithoutRestore();
+        return null;
+      }
+      transaction.state = 'writing';
       transaction.writeSettled = durableSet(STORE_KEY, JSON.stringify(next)).then(
         () => {
           transaction.writeSucceeded = true;

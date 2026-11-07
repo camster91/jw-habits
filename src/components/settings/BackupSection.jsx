@@ -108,8 +108,11 @@ export default function BackupSection({ onReplaced = () => {} }) {
         await workspaceState.save(
           (current) => pending.workspace ?? current,
           async (current) => {
-            await durableSet('faithful-days-before-import', exportBundle(store, current));
-            stagedReplacement = await replaceStore(pending.store, { deferNotification: true });
+            stagedReplacement = await replaceStore(pending.store, {
+              deferNotification: true,
+              beforeWrite: (previous) =>
+                durableSet('faithful-days-before-import', exportBundle(previous, current)),
+            });
           }
         );
       } else if (replaceStore) await replaceStore(pending.store);

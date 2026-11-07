@@ -33,7 +33,10 @@ beforeEach(() => {
   workspace = emptyWorkspace();
   commitNotification = vi.fn(() => true);
   abortReplacement = vi.fn(async () => true);
-  replace = vi.fn(async () => ({ commit: commitNotification, abort: abortReplacement }));
+  replace = vi.fn(async (next, options = {}) => {
+    await options.beforeWrite?.(store);
+    return { commit: commitNotification, abort: abortReplacement };
+  });
   update = vi.fn();
   save = vi.fn(async (fn, before) => {
     await before(workspace);
@@ -78,7 +81,10 @@ describe('combined backup replacement', () => {
       'faithful-days-before-import',
       exportBundle(store, emptyWorkspace())
     );
-    expect(replace).toHaveBeenCalledWith(next, { deferNotification: true });
+    expect(replace).toHaveBeenCalledWith(
+      next,
+      expect.objectContaining({ deferNotification: true, beforeWrite: expect.any(Function) })
+    );
     expect(commitNotification).toHaveBeenCalledTimes(1);
     expect(abortReplacement).not.toHaveBeenCalled();
     expect(workspace.revision).toBe(10);
@@ -109,7 +115,7 @@ describe('combined backup replacement', () => {
     await screen.findByText('Replace');
     fireEvent.click(screen.getByText('Replace'));
     await screen.findByText(/recovery full/);
-    expect(replace).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledTimes(1);
     expect(onReplaced).not.toHaveBeenCalled();
   });
   it('rolls routines back when the workspace fails and retains a recovery bundle', async () => {
@@ -123,7 +129,11 @@ describe('combined backup replacement', () => {
     await screen.findByText('Replace');
     fireEvent.click(screen.getByText('Replace'));
     await screen.findByText(/workspace full/);
-    expect(replace.mock.calls).toEqual([[next, { deferNotification: true }]]);
+    expect(replace.mock.calls).toHaveLength(1);
+    expect(replace.mock.calls[0][0]).toEqual(next);
+    expect(replace.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ deferNotification: true, beforeWrite: expect.any(Function) })
+    );
     expect(commitNotification).not.toHaveBeenCalled();
     expect(abortReplacement).toHaveBeenCalledTimes(1);
     expect(onReplaced).not.toHaveBeenCalled();
