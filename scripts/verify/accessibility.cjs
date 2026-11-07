@@ -46,6 +46,7 @@ async function scan(page, label) {
       await page.goto(BASE,{waitUntil:'networkidle'});
       await page.getByTestId('coming-up').waitFor();
       await scan(page,`${theme} Today coming up`);
+      const healthyRaw=await page.evaluate(()=>localStorage.getItem('jw-habits-v2'));
       const newerRaw=JSON.stringify({version:5,theme,futureNotes:['Synthetic private note']},null,2);
       await page.evaluate(raw=>localStorage.setItem('jw-habits-v2',raw),newerRaw);
       await page.goto(BASE,{waitUntil:'networkidle'});
@@ -63,6 +64,32 @@ async function scan(page, label) {
       await page.getByRole('heading',{name:'Update Faithful Days to open your data'}).waitFor();
       if(await page.evaluate(()=>localStorage.getItem('jw-habits-v2'))!==newerRaw) {
         failures++; console.error(`${theme} newer-data reload changed raw bytes`);
+      }
+      for (const variant of ['invalid-field','empty']) {
+        const invalid=JSON.parse(healthyRaw);
+        invalid.labels.dailyText=123;
+        const raw=variant==='empty'?'':JSON.stringify(invalid);
+        await page.evaluate(value=>localStorage.setItem('jw-habits-v2',value),raw);
+        await page.reload({waitUntil:'networkidle'});
+        await page.getByRole('heading',{name:'Some saved data could not be read',exact:true}).waitFor();
+        await page.waitForFunction(()=>document.activeElement?.matches('main h1'));
+        await scan(page,`${theme} ${variant} damaged-data recovery`);
+        const fresh=page.getByRole('button',{name:'Start fresh…',exact:true});
+        await fresh.click();
+        await page.waitForFunction(()=>document.activeElement?.id==='fresh-confirm');
+        await scan(page,`${theme} ${variant} fresh confirmation`);
+        await page.getByRole('button',{name:'Cancel',exact:true}).click();
+        await page.waitForFunction(()=>document.activeElement?.textContent==='Start fresh…');
+        if(variant==='invalid-field') {
+          await page.getByRole('button',{name:'Repair and continue',exact:true}).click();
+          await page.getByTestId('today').waitFor();
+        } else {
+          await fresh.click();
+          await page.getByRole('button',{name:'Start fresh',exact:true}).click();
+          await page.getByTestId('onboarding').waitFor();
+        }
+        await page.waitForFunction(()=>document.activeElement?.matches('main h1'));
+        await scan(page,`${theme} ${variant} recovery destination`);
       }
       await ctx.close();
     }

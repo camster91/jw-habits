@@ -52,10 +52,14 @@ export default function DamagedData({ raw, repair, onRestore }) {
   const [confirmFresh, setConfirmFresh] = useState(false);
   const headingRef = useRef(null);
   const confirmRef = useRef(null);
+  const freshRef = useRef(null);
+  const wasConfirming = useRef(false);
 
   useEffect(() => headingRef.current?.focus(), []);
   useEffect(() => {
     if (confirmFresh) confirmRef.current?.focus();
+    else if (wasConfirming.current) freshRef.current?.focus();
+    wasConfirming.current = confirmFresh;
   }, [confirmFresh]);
 
   const replaceWith = async (next) => {
@@ -150,6 +154,7 @@ export default function DamagedData({ raw, repair, onRestore }) {
           </div>
         ) : (
           <button
+            ref={freshRef}
             type="button"
             className="btn h-auto min-h-11 max-w-full whitespace-normal"
             disabled={busy}

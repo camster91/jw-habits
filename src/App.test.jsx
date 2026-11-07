@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import { defaultStore } from './domain/store.js';
 import { ACCENTS, accentText, applyTheme } from './theme/theme.js';
 
@@ -45,6 +45,32 @@ beforeEach(() => {
 });
 
 describe('App shell', () => {
+  it.each(['repair', 'fresh'])('moves recovery focus into the %s destination', async (choice) => {
+    if (choice === 'repair') seed({ onboardingDone: true, labels: { dailyText: 123 } });
+    else localStorage.setItem(STORE_KEY, '');
+    renderApp();
+    const heading = await screen.findByRole('heading', {
+      name: 'Some saved data could not be read',
+    });
+    expect(heading).toHaveFocus();
+    if (choice === 'repair') {
+      fireEvent.click(screen.getByRole('button', { name: 'Repair and continue' }));
+      const today = await screen.findByTestId('today');
+      await waitFor(() => expect(within(today).getByRole('heading', { level: 1 })).toHaveFocus());
+    } else {
+      fireEvent.click(screen.getByRole('button', { name: 'Start fresh…' }));
+      expect(screen.getByText('Replace your routine history on this device?')).toHaveFocus();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.getByRole('button', { name: 'Start fresh…' })).toHaveFocus();
+      fireEvent.click(screen.getByRole('button', { name: 'Start fresh…' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Start fresh', exact: true }));
+      const onboarding = await screen.findByTestId('onboarding');
+      await waitFor(() =>
+        expect(within(onboarding).getByRole('heading', { level: 1 })).toHaveFocus()
+      );
+    }
+  });
+
   it('shows onboarding until it is done', async () => {
     seed({ onboardingDone: false });
     renderApp();

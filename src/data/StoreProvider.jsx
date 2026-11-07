@@ -336,8 +336,15 @@ export function StoreProvider({ children }) {
   }, [loaded, refreshDay, runForeground, getArgs]);
 
   const value = useMemo(
-    () => ({ store, update, replace, today, savingPaused: readOnlyRef.current }),
-    [store, update, replace, today]
+    () => ({
+      store,
+      update,
+      replace,
+      today,
+      savingPaused: readOnlyRef.current,
+      recoveryFocus: recoveryAttempt,
+    }),
+    [store, update, replace, today, recoveryAttempt]
   );
   if (newerStore) return <UpdateRequired raw={newerStore.raw} />;
   if (unreadableStore)

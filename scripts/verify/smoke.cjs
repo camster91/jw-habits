@@ -63,6 +63,7 @@ async function open(browser, at) {
 const pressed = (page, name) => lib.routineButton(page, name).getAttribute('aria-pressed');
 
 async function runSmoke(browser) {
+  const { validateStore } = await import('../../src/domain/store.js');
   // Release UI language must match document speech even with legacy detection preferences.
   for (const locale of ['es-ES', 'fr-FR']) {
     const { ctx, page, errors } = await lib.openPage(browser, { at: DAY1, locale });
@@ -179,10 +180,17 @@ async function runSmoke(browser) {
         if (await primary() !== original) throw new Error('Cancelled fresh start changed storage');
         await page.getByRole('button', { name: 'Start fresh…', exact: true }).click();
         await page.getByRole('button', { name: 'Start fresh', exact: true }).click();
+        await page.getByTestId('onboarding').waitFor();
+        const fresh = await lib.readStore(page);
+        if (fresh.onboardingDone !== false || !validateStore(fresh).ok)
+          throw new Error('Start fresh did not create valid, unfinished onboarding');
         await lib.onboardSkip(page);
       }
       await page.getByTestId('today').waitFor();
       const restored = await lib.readStore(page);
+      if (!validateStore(restored).ok) throw new Error('Recovery produced invalid routine data');
+      if (variant === 'invalid-field' && restored.labels.dailyText !== healthy.labels.dailyText)
+        throw new Error('Repair did not reset the invalid routine name');
       const kept = await page.evaluate(({ key, workspaceKey }) => ({
         originals: Object.keys(localStorage).filter((name) => name.startsWith(key + '-corrupt-')).map((name) => localStorage.getItem(name)),
         workspace: localStorage.getItem(workspaceKey),
