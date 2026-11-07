@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars -- JSX harness */
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { durableGet, durableKeys } from '../../utils/safeStorage.js';

@@ -6,7 +6,7 @@
 //
 //   S1: a first run renders onboarding with no console errors
 //   S2: a v1 install (old jw- keys) is migrated and its check-in survives
-//   S3: an unreadable v2 store is kept aside and the app starts fresh
+//   S3: unreadable routines stay untouched until explicit repair or fresh start
 //   S4: a check-in does not carry into the next app day
 //   S5: the app day rolls over at 03:00, not midnight
 //   S6: nothing leaves the origin (no third-party content)
@@ -125,7 +125,7 @@ async function runSmoke(browser) {
   }
 
   // S3: unreadable primary bytes must survive until an explicit valid restore.
-  // Corruption is an isolated fixture: the healthy backup is made through UI.
+  // Corruption is an isolated fixture: healthy history is made through UI.
   for (const [variant, width] of [['invalid-field', 1280], ['malformed', 375], ['empty', 375]]) {
     const { ctx, page, errors } = await lib.openPage(browser, {
       at: DAY1,
@@ -167,6 +167,9 @@ async function runSmoke(browser) {
       const bytes = require('node:fs').readFileSync(await download.path());
       if (!bytes.equals(Buffer.from(original, 'utf8'))) throw new Error('Original download bytes changed');
       if (await primary() !== original) throw new Error('Export changed original storage');
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.getByRole('heading', { name: 'Some saved data could not be read', exact: true }).waitFor();
+      if (await primary() !== original) throw new Error('Reload replaced unreadable original bytes');
       if (variant === 'invalid-field') {
         await page.getByRole('button', { name: 'Repair and continue', exact: true }).click();
       } else {
@@ -191,9 +194,23 @@ async function runSmoke(browser) {
       await savedCopies.getByRole('button', { name: 'Save original routines copy', exact: true }).click();
       const savedBytes = require('node:fs').readFileSync(await (await savedDownloading).path());
       if (!savedBytes.equals(Buffer.from(original, 'utf8'))) throw new Error('Settings copy bytes changed');
-      record(`S3 ${variant}: exact original download and confirmed recovery (${width}px)`,
-        JSON.stringify(restored.log) === JSON.stringify(variant === 'invalid-field' ? healthy.log : []) && kept.originals.includes(original)
-          && kept.workspace === workspace && errors.length === 0,
+      const passed = JSON.stringify(restored.log) === JSON.stringify(variant === 'invalid-field' ? healthy.log : []) && kept.originals.includes(original)
+        && kept.workspace === workspace && errors.length === 0;
+      if (process.env.RECOVERY_EVIDENCE_DIR) {
+        const fs = require('node:fs');
+        const sha256 = (value) => require('node:crypto').createHash('sha256').update(value).digest('hex');
+        fs.writeFileSync(path.join(process.env.RECOVERY_EVIDENCE_DIR, `${variant}-${width}.json`), JSON.stringify({
+          fixture: 'isolated synthetic routines and notes', variant, width, passed,
+          browser: process.env.PLAYWRIGHT_BROWSER || 'chromium',
+          githubRun: process.env.GITHUB_RUN_ID || null, checkedOutSha: process.env.GITHUB_SHA || null,
+          originalBytes: Buffer.byteLength(original), originalSha256: sha256(original),
+          downloadedSha256: sha256(bytes), settingsDownloadSha256: sha256(savedBytes),
+          retainedOriginal: kept.originals.includes(original), workspaceUnchanged: kept.workspace === workspace,
+          expectedHistoryEntries: variant === 'invalid-field' ? healthy.log.length : 0,
+          actualHistoryEntries: restored.log.length, consoleErrors: errors,
+        }, null, 2) + '\n');
+      }
+      record(`S3 ${variant}: exact original download and confirmed recovery (${width}px)`, passed,
         `exportBytes=${bytes.length} history=${restored.log.length} workspaceKept=${kept.workspace === workspace}`);
     } catch (error) {
       record(`S3 ${variant}: preserve and restore original data`, false, String(error.message).slice(0, 200));
