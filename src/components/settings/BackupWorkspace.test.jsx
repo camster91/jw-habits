@@ -159,11 +159,13 @@ describe('combined backup replacement', () => {
     rawExport.mockResolvedValueOnce('raw bytes');
     saveBackup.mockRejectedValueOnce(new Error('cancel'));
     fireEvent.click(screen.getByText('Save original notes data'));
-    await waitFor(() => expect(saveBackup).toHaveBeenCalledWith(
-      'raw bytes',
-      `faithful-days-notes-original-${today}.json`,
-      'Faithful Days original notes data'
-    ));
+    await waitFor(() =>
+      expect(saveBackup).toHaveBeenCalledWith(
+        'raw bytes',
+        `faithful-days-notes-original-${today}.json`,
+        'Faithful Days original notes data'
+      )
+    );
     expect(screen.queryByText('Could not read the original notes data to export it.')).toBeNull();
   });
   it('exports the recovery copy and handles missing copies or read failures', async () => {
