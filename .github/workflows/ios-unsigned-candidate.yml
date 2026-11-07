@@ -1,0 +1,143 @@
+name: iOS unsigned device candidate
+
+on:
+  pull_request:
+    paths: [.github/workflows/ios-unsigned-candidate.yml]
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number override; empty uses the committed App build number'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-unsigned-candidate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    name: Unsigned iPhoneOS app and widget archive
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      BUILD_INPUT: ${{ inputs.build_number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Resolve source and app/widget identity
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          xcodebuild -version | tee artifacts/xcode-version.txt
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+          project = pathlib.Path('ios/App/App.xcodeproj/project.pbxproj').read_text()
+          versions = set(re.findall(r'MARKETING_VERSION = ([0-9.]+);', project))
+          builds = set(re.findall(r'CURRENT_PROJECT_VERSION = ([0-9]+);', project))
+          version = json.loads(pathlib.Path('package.json').read_text())['version']
+          assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version), 'Invalid package version'
+          assert versions == {version} and len(builds) == 1, 'App/widget source versions differ'
+          build = os.environ['BUILD_INPUT'] or next(iter(builds))
+          assert re.fullmatch(r'[1-9][0-9]{0,8}', build), 'Invalid build number'
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          expected = os.environ['EXPECTED_HEAD']
+          assert source == expected, 'Checkout differs from requested source'
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f'CANDIDATE_VERSION={version}\nCANDIDATE_BUILD={build}\nSOURCE_COMMIT={source}\n')
+          pathlib.Path('artifacts/source-identity.json').write_text(json.dumps({
+              'sourceCommit': source, 'sourceVersion': version,
+              'sourceBuild': next(iter(builds)), 'candidateBuild': build,
+              'buildOverride': build not in builds, 'signing': 'unsigned',
+              'storeUpload': False, 'physicalAcceptance': False,
+          }, indent=2) + '\n')
+          PY
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npx --no-install cap sync ios
+      - name: Archive app and embedded widget without signing
+        run: |
+          set -euo pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/FaithfulDays.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/faithful-device-build" \
+            archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            MARKETING_VERSION="$CANDIDATE_VERSION" CURRENT_PROJECT_VERSION="$CANDIDATE_BUILD" \
+            2>&1 | tee artifacts/archive.log
+      - name: Verify embedded identity and unchanged web bundle
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, plistlib, subprocess
+          archive = pathlib.Path(os.environ['RUNNER_TEMP']) / 'FaithfulDays.xcarchive'
+          apps = list((archive / 'Products/Applications').glob('*.app'))
+          assert len(apps) == 1, 'Expected exactly one app'
+          app = apps[0]
+          widget = app / 'PlugIns/FaithfulDaysWidget.appex'
+          identities = []
+          for bundle, identifier in [(app, 'ca.ashbi.habittracker'), (widget, 'ca.ashbi.habittracker.FaithfulDaysWidget')]:
+              info = plistlib.loads((bundle / 'Info.plist').read_bytes())
+              assert info['CFBundleIdentifier'] == identifier, 'Unexpected bundle identifier'
+              assert info['CFBundleShortVersionString'] == os.environ['CANDIDATE_VERSION'], 'Version mismatch'
+              assert str(info['CFBundleVersion']) == os.environ['CANDIDATE_BUILD'], 'Build mismatch'
+              assert info['DTPlatformName'] == 'iphoneos' and info['CFBundleSupportedPlatforms'] == ['iPhoneOS'], 'Not an iPhoneOS artifact'
+              executable = bundle / info['CFBundleExecutable']
+              assert executable.is_file(), 'Missing native executable'
+              arch = subprocess.check_output(['lipo', '-archs', str(executable)], text=True).strip()
+              assert arch == 'arm64', f'Unexpected device architecture: {arch}'
+              identities.append({'bundleIdentifier': identifier, 'version': info['CFBundleShortVersionString'],
+                                 'build': str(info['CFBundleVersion']), 'platform': info['DTPlatformName'],
+                                 'architecture': arch, 'executableSha256': hashlib.sha256(executable.read_bytes()).hexdigest()})
+          dist = pathlib.Path('dist')
+          embedded = app / 'public'
+          assert (embedded / 'index.html').is_file(), 'Native app has no bundled entry page'
+          web_files = []
+          for source in sorted(dist.rglob('*')):
+              if not source.is_file():
+                  continue
+              relative = source.relative_to(dist)
+              target = embedded / relative
+              digest = hashlib.sha256(source.read_bytes()).hexdigest()
+              assert target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == digest, f'Web bundle differs: {relative}'
+              web_files.append({'path': str(relative), 'sha256': digest})
+          record = json.loads(pathlib.Path('artifacts/source-identity.json').read_text())
+          record.update({'bundles': identities, 'webFiles': web_files,
+                         'workflowRun': os.environ['GITHUB_RUN_ID'], 'xcode': pathlib.Path('artifacts/xcode-version.txt').read_text().strip()})
+          pathlib.Path('artifacts/candidate-provenance.json').write_text(json.dumps(record, indent=2) + '\n')
+          PY
+          ditto -c -k --keepParent "$RUNNER_TEMP/FaithfulDays.xcarchive" artifacts/FaithfulDays-unsigned.xcarchive.zip
+          shasum -a 256 artifacts/FaithfulDays-unsigned.xcarchive.zip > artifacts/SHA256SUMS
+          echo 'Unsigned iPhoneOS app/widget archive verified. Signing, store upload and physical acceptance remain separate.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve verified unsigned candidate
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: faithful-days-ios-unsigned-${{ github.run_id }}
+          path: |
+            artifacts/FaithfulDays-unsigned.xcarchive.zip
+            artifacts/candidate-provenance.json
+            artifacts/source-identity.json
+            artifacts/SHA256SUMS
+          retention-days: 7
+          if-no-files-found: error
+      - name: Preserve archive diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: faithful-days-ios-archive-diagnostics-${{ github.run_id }}
+          path: |
+            artifacts/archive.log
+            artifacts/xcode-version.txt
+            artifacts/source-identity.json
+          retention-days: 7
+          if-no-files-found: warn
