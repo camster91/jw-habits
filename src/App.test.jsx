@@ -63,7 +63,7 @@ describe('App shell', () => {
     seed({ onboardingDone: true });
     window.history.pushState({}, '', '/share?text=hello');
     renderApp();
-    expect(await screen.findByTestId('row-dailyText')).toBeInTheDocument();
+    expect(await screen.findByTestId('today')).toBeInTheDocument();
   });
 
   it('shows Progress on /progress', async () => {
