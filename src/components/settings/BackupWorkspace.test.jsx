@@ -14,7 +14,7 @@ vi.mock('../../utils/backup.js', () => ({
   isShareCancel: (e) => e.message === 'cancel',
 }));
 const today = '2026-10-08';
-let store, workspace, replace, save, onReplaced;
+let store, workspace, replace, save, onReplaced, rawExport;
 beforeEach(() => {
   vi.resetAllMocks();
   store = defaultStore(today, 'en');
@@ -24,12 +24,13 @@ beforeEach(() => {
     await before(workspace);
     workspace = fn(workspace);
   });
+  rawExport = vi.fn(async () => null);
   onReplaced = vi.fn();
 });
-function renderBackup(ready = true) {
+function renderBackup(ready = true, error = '') {
   return render(
     <StoreContext.Provider value={{ store, today, replace, update: vi.fn() }}>
-      <WorkspaceContext.Provider value={{ workspace, ready, save }}>
+      <WorkspaceContext.Provider value={{ workspace, ready, error, save, rawExport }}>
         <BackupSection onReplaced={onReplaced} />
       </WorkspaceContext.Provider>
     </StoreContext.Provider>
@@ -112,16 +113,58 @@ describe('combined backup replacement', () => {
     await screen.findByText(/pre-import backup is retained/);
     expect(onReplaced).not.toHaveBeenCalled();
   });
-  it('unreadable workspace blocks export/import and keeps stored routines', async () => {
-    renderBackup(false);
+  it('unreadable workspace still exports routines, offers original notes bytes and pauses import (#316)', async () => {
+    rawExport.mockResolvedValueOnce('{"broken": notes');
+    renderBackup(false, 'cannot be read');
     fireEvent.click(screen.getByText('Export a backup'));
-    await screen.findByText(/couldn't be saved/);
-    expect(saveBackup).not.toHaveBeenCalled();
+    await screen.findByText(/Routines exported\. Notes and preparation could not be read/);
+    expect(saveBackup).toHaveBeenCalledWith(
+      exportJson(store),
+      `faithful-days-routines-${today}.json`,
+      expect.any(String)
+    );
+    fireEvent.click(screen.getByText('Save original notes data'));
+    await screen.findByText('Original notes data copy offered.');
+    expect(saveBackup).toHaveBeenLastCalledWith(
+      '{"broken": notes',
+      `faithful-days-notes-original-${today}.json`,
+      expect.any(String)
+    );
     importFile(exportBundle(store, workspace));
     await screen.findByText('Replace');
     fireEvent.click(screen.getByText('Replace'));
     await screen.findByText(/import is paused/);
     expect(replace).not.toHaveBeenCalled();
+  });
+  it('reports routines export failure and preserves cancellation semantics when workspace is unreadable', async () => {
+    renderBackup(false, 'cannot be read');
+    saveBackup.mockRejectedValueOnce(new Error('disk full'));
+    fireEvent.click(screen.getByText('Export a backup'));
+    await screen.findByText("The backup couldn't be saved. Please try again.");
+
+    saveBackup.mockRejectedValueOnce(new Error('cancel'));
+    fireEvent.click(screen.getByText('Export a backup'));
+    await waitFor(() => expect(saveBackup).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText("The backup couldn't be saved. Please try again.")).toBeNull();
+  });
+  it('reports empty, read-failure and cancellation outcomes for original notes export', async () => {
+    renderBackup(false, 'cannot be read');
+    fireEvent.click(screen.getByText('Save original notes data'));
+    await screen.findByText('There is no saved notes data to export.');
+
+    rawExport.mockRejectedValueOnce(new Error('read failed'));
+    fireEvent.click(screen.getByText('Save original notes data'));
+    await screen.findByText('Could not read the original notes data to export it.');
+
+    rawExport.mockResolvedValueOnce('raw bytes');
+    saveBackup.mockRejectedValueOnce(new Error('cancel'));
+    fireEvent.click(screen.getByText('Save original notes data'));
+    await waitFor(() => expect(saveBackup).toHaveBeenCalledWith(
+      'raw bytes',
+      `faithful-days-notes-original-${today}.json`,
+      'Faithful Days original notes data'
+    ));
+    expect(screen.queryByText('Could not read the original notes data to export it.')).toBeNull();
   });
   it('exports the recovery copy and handles missing copies or read failures', async () => {
     renderBackup();
