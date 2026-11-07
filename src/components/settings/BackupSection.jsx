@@ -25,6 +25,9 @@ export default function BackupSection({ onReplaced = () => {} }) {
   const confirmId = useId();
   const confirmRef = useRef(null);
   const exportRef = useRef(null);
+  const workspaceUnreadable = Boolean(
+    workspaceState && !workspaceState.ready && workspaceState.error
+  );
 
   useEffect(() => {
     if (pending) confirmRef.current?.focus();
@@ -32,6 +35,27 @@ export default function BackupSection({ onReplaced = () => {} }) {
 
   const exportNow = async () => {
     setStatus(null);
+    // Keep the routines export available when notes or preparation cannot be
+    // read. It is intentionally not recorded as a complete backup because
+    // the workspace bytes are missing from this file.
+    if (workspaceUnreadable) {
+      try {
+        await saveBackup(
+          exportJson(store),
+          `faithful-days-routines-${today}.json`,
+          t('fd.settings.backup.shareTitle')
+        );
+        setStatus({
+          error: false,
+          text: 'Routines exported. Notes and preparation could not be read, so they are not in this file. Save their original data below.',
+        });
+      } catch (error) {
+        if (isShareCancel(error)) return;
+        console.warn('Export did not complete:', error);
+        setStatus({ error: true, text: t('fd.settings.backup.exportError') });
+      }
+      return;
+    }
     try {
       await saveBackup(
         workspaceState
@@ -121,6 +145,29 @@ export default function BackupSection({ onReplaced = () => {} }) {
     }
   };
 
+  // Offer the unreadable workspace bytes exactly as stored for support or a
+  // later app version. This never parses, repairs or rewrites the raw value.
+  const exportOriginalNotes = async () => {
+    setStatus(null);
+    try {
+      const raw = await workspaceState.rawExport();
+      if (raw === null || raw === undefined) {
+        setStatus({ error: false, text: 'There is no saved notes data to export.' });
+        return;
+      }
+      await saveBackup(
+        raw,
+        `faithful-days-notes-original-${today}.json`,
+        'Faithful Days original notes data'
+      );
+      setStatus({ error: false, text: 'Original notes data copy offered.' });
+    } catch (error) {
+      if (isShareCancel(error)) return;
+      console.warn('Original notes export did not complete:', error);
+      setStatus({ error: true, text: 'Could not read the original notes data to export it.' });
+    }
+  };
+
   const cancel = () => {
     setPending(null);
     exportRef.current?.focus();
@@ -168,9 +215,22 @@ export default function BackupSection({ onReplaced = () => {} }) {
         </label>
       </div>
       {workspaceState && (
-        <button className="btn min-h-11" disabled={busy} onClick={exportRecovery}>
-          Export pre-import backup
-        </button>
+        <>
+          {workspaceUnreadable && (
+            <div className="space-y-2 rounded-2xl border border-base-300 p-3">
+              <p className="text-sm">
+                Some saved notes and preparation data could not be read. Save the original copy
+                before changing anything.
+              </p>
+              <button type="button" className="btn min-h-11" onClick={exportOriginalNotes}>
+                Save original notes data
+              </button>
+            </div>
+          )}
+          <button className="btn min-h-11" disabled={busy} onClick={exportRecovery}>
+            Export pre-import backup
+          </button>
+        </>
       )}
       {pending && (
         <div
