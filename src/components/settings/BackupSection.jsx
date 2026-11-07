@@ -151,7 +151,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
     setStatus(null);
     try {
       const raw = await workspaceState.rawExport();
-      if (!raw) {
+      if (raw === null || raw === undefined) {
         setStatus({ error: false, text: 'There is no saved notes data to export.' });
         return;
       }

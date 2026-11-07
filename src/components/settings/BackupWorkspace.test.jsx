@@ -14,12 +14,13 @@ vi.mock('../../utils/backup.js', () => ({
   isShareCancel: (e) => e.message === 'cancel',
 }));
 const today = '2026-10-08';
-let store, workspace, replace, save, onReplaced, rawExport;
+let store, workspace, replace, save, update, onReplaced, rawExport;
 beforeEach(() => {
   vi.resetAllMocks();
   store = defaultStore(today, 'en');
   workspace = emptyWorkspace();
   replace = vi.fn(async () => {});
+  update = vi.fn();
   save = vi.fn(async (fn, before) => {
     await before(workspace);
     workspace = fn(workspace);
@@ -29,7 +30,7 @@ beforeEach(() => {
 });
 function renderBackup(ready = true, error = '') {
   return render(
-    <StoreContext.Provider value={{ store, today, replace, update: vi.fn() }}>
+    <StoreContext.Provider value={{ store, today, replace, update }}>
       <WorkspaceContext.Provider value={{ workspace, ready, error, save, rawExport }}>
         <BackupSection onReplaced={onReplaced} />
       </WorkspaceContext.Provider>
@@ -123,6 +124,7 @@ describe('combined backup replacement', () => {
       `faithful-days-routines-${today}.json`,
       expect.any(String)
     );
+    expect(update).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Save original notes data'));
     await screen.findByText('Original notes data copy offered.');
     expect(saveBackup).toHaveBeenLastCalledWith(
@@ -130,6 +132,7 @@ describe('combined backup replacement', () => {
       `faithful-days-notes-original-${today}.json`,
       expect.any(String)
     );
+    expect(durableSet).not.toHaveBeenCalled();
     importFile(exportBundle(store, workspace));
     await screen.findByText('Replace');
     fireEvent.click(screen.getByText('Replace'));
@@ -151,6 +154,15 @@ describe('combined backup replacement', () => {
     renderBackup(false, 'cannot be read');
     fireEvent.click(screen.getByText('Save original notes data'));
     await screen.findByText('There is no saved notes data to export.');
+
+    rawExport.mockResolvedValueOnce('');
+    fireEvent.click(screen.getByText('Save original notes data'));
+    await screen.findByText('Original notes data copy offered.');
+    expect(saveBackup).toHaveBeenLastCalledWith(
+      '',
+      `faithful-days-notes-original-${today}.json`,
+      'Faithful Days original notes data'
+    );
 
     rawExport.mockRejectedValueOnce(new Error('read failed'));
     fireEvent.click(screen.getByText('Save original notes data'));
