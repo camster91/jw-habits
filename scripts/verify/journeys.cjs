@@ -684,9 +684,7 @@ const closeSettings = async (page) => {
         return { previousRoutines, previousWorkspace };
       });
       await backupRegion.getByRole('button', { name: 'Replace', exact: true }).click();
-      console.log('[J13] replace clicked; waiting for failure status');
       await backupRegion.getByRole('alert').waitFor();
-      console.log('[J13] failure status rendered');
       const afterFailure = await page.evaluate(() => ({
         retained: window.__importRecoveryFixture.retained,
         recovery: localStorage.getItem('faithful-days-before-import'),
@@ -716,14 +714,11 @@ const closeSettings = async (page) => {
       // rollback failure, so close through the dialog's normal Escape action.
       await dialog.getByRole('button', { name: 'Close', exact: true }).focus();
       await page.keyboard.press('Escape');
-      console.log('[J13] Escape sent; waiting for Settings to close');
       await dialog.waitFor({ state: 'detached' });
-      console.log('[J13] Settings closed; waiting for global recovery notice');
       const notice = page
         .getByRole('alert')
         .filter({ hasText: 'The last import could not be completed safely.' });
       await notice.waitFor();
-      console.log('[J13] global recovery notice rendered');
       step(
         'J13 global recovery notice appears after closing Settings',
         (await notice
@@ -736,7 +731,6 @@ const closeSettings = async (page) => {
       await page.screenshot({ path: screenshotPath, fullPage: true });
 
       await notice.getByRole('button', { name: 'Open backup settings', exact: true }).click();
-      console.log('[J13] Settings reopened; waiting for pre-import export');
       const reopened = page.getByRole('dialog');
       const reopenedBackup = reopened.getByRole('region', { name: 'Backup', exact: true });
       await reopenedBackup
