@@ -5,10 +5,10 @@ set -euo pipefail
 # This is a CI-only harness: it copies the Xcode project into RUN_ROOT, adds
 # an ephemeral UI-test target, and never changes the app checkout or storage.
 
-EXPECTED_COMMIT="${EXPECTED_COMMIT:-ff02bed994d0707ef9533fd75e1b487c62faf696}"
+EXPECTED_COMMIT="${EXPECTED_COMMIT:-655f4c6c1ec0fe957e404532e5804d34d3844596}"
 BUNDLE_ID="ca.ashbi.habittracker"
 APP_VERSION="5.3.0"
-APP_BUILD="533"
+APP_BUILD="534"
 SOURCE_ROOT="${SOURCE_ROOT:-$PWD}"
 HARNESS_ROOT="${HARNESS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-${GITHUB_WORKSPACE:-$PWD}/artifacts/ios-native-core-journey}"
@@ -229,12 +229,12 @@ path.write_text(json.dumps({
     "app": "Faithful Days",
     "bundleId": "ca.ashbi.habittracker",
     "version": "5.3.0",
-    "build": "533",
+    "build": "534",
     "status": "passed" if sys.argv[4] == "0" else "failed",
     "sourceCommit": sys.argv[2],
     "runtimeId": sys.argv[3],
     "captureMethod": "XCTest XCUIApplication normal onboarding/navigation journey",
-    "builtAppIdentityValidation": "each device provenance reads App.app/Info.plist and requires ca.ashbi.habittracker 5.3.0 (533)",
+    "builtAppIdentityValidation": "each device provenance reads App.app/Info.plist and requires ca.ashbi.habittracker 5.3.0 (534)",
     "wrapUpBoundaryProof": "src/domain/wrapup.js at sourceCommit proves configured 03:00 covers local time before and at/after the 03:00 rollover",
     "screens": ["onboarding", "today", "wrap-up", "plans", "notes", "progress"],
     "devices": {

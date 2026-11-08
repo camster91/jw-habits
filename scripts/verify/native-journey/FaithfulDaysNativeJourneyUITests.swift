@@ -485,7 +485,7 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
             "bundleId": bundleID,
             "sourceCommit": sourceCommit,
             "appVersion": "5.3.0",
-            "appBuild": "533",
+            "appBuild": "534",
             "captureMethod": "XCTest XCUIApplication normal user journey",
             "deviceLabel": deviceLabel,
             "deviceUdid": deviceUdid,

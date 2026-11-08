@@ -22,7 +22,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 40
     env:
-      EXPECTED_COMMIT: ff02bed994d0707ef9533fd75e1b487c62faf696
+      EXPECTED_COMMIT: 655f4c6c1ec0fe957e404532e5804d34d3844596
     steps:
       - name: Check out the screenshot harness
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -35,7 +35,7 @@ jobs:
       - name: Check out the exact signed-candidate source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ff02bed994d0707ef9533fd75e1b487c62faf696
+          ref: 655f4c6c1ec0fe957e404532e5804d34d3844596
           path: candidate
           fetch-depth: 1
           persist-credentials: false
