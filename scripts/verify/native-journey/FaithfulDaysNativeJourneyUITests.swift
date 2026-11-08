@@ -188,9 +188,12 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
             target.typeText("03:00")
         }
 
-        let actual = uniqueTimeValueControl() ?? target
-        let normalized = normalizeTime(String(describing: actual.value ?? ""))
-        writeEvidence("wrap-up-time-value.txt", text: "elementType=\(actual.elementType.rawValue)\nlabel=\(actual.label)\nvalue=\(String(describing: actual.value))\nnormalized=\(normalized)\n")
+        // Keep the postcondition scoped to the exact non-static control that
+        // was selected by its real label. A broad WebKit descendant scan can
+        // retain stale element indexes immediately after the native picker
+        // closes, so it is not safe for value verification.
+        let normalized = normalizeTime(String(describing: target.value ?? ""))
+        writeEvidence("wrap-up-time-value.txt", text: "elementType=\(target.elementType.rawValue)\nlabel=\(target.label)\nvalue=\(String(describing: target.value))\nnormalized=\(normalized)\n")
         guard normalized.contains("03:00") || normalized.contains("3:00am") else {
             captureFailureEvidence("wrap-up-time-postcondition")
             XCTFail("Evening wrap-up time did not settle at 03:00 (value: \(normalized))")
@@ -205,17 +208,6 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
 
     private func labeledControls(_ label: String) -> [XCUIElement] {
         exactLabelElements(label).filter { $0.elementType != .staticText }
-    }
-
-    private func uniqueTimeValueControl() -> XCUIElement? {
-        let controls = app.descendants(matching: .any).allElementsBoundByIndex.filter { element in
-            guard element.elementType != .staticText,
-                  element.elementType != .pickerWheel,
-                  element.elementType != .datePicker else { return false }
-            let text = "\(element.label) \(String(describing: element.value))"
-            return text.range(of: #"(?i)\b\d{1,2}:\d{2}\s*(am|pm)?\b"#, options: .regularExpression) != nil
-        }
-        return controls.count == 1 ? controls[0] : nil
     }
 
     private func pickerState(_ wheels: [XCUIElement]) -> String {
@@ -244,14 +236,8 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         let ax = app.debugDescription
         try? ax.write(to: axURL, atomically: true, encoding: .utf8)
         let wrapURL = outputRoot.appendingPathComponent("\(prefix)-wrap-elements.txt")
-        let keywordElements = app.descendants(matching: .any).allElementsBoundByIndex.filter { element in
-            let text = "\(element.label) \(element.identifier) \(String(describing: element.value))".lowercased()
-            return text.contains("wrap") || text.contains("time")
-        }
-        let inventory = keywordElements.enumerated().map { index, element in
-            "\(index):type=\(element.elementType.rawValue),hittable=\(element.isHittable),label=\(element.label),identifier=\(element.identifier),value=\(String(describing: element.value)),frame=\(element.frame)"
-        }.joined(separator: "\n")
-        try? inventory.write(to: wrapURL, atomically: true, encoding: .utf8)
+        let selectorEvidence = "lookup=\(name)\nexactLabel=Evening wrap-up time\n"
+        try? selectorEvidence.write(to: wrapURL, atomically: true, encoding: .utf8)
         attach(screenshotURL, name: prefix)
         attach(axURL, name: "\(prefix)-ax")
         attach(wrapURL, name: "\(prefix)-wrap-elements")
