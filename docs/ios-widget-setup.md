@@ -4,6 +4,14 @@ The `FaithfulDaysWidget` extension is embedded in `App.xcodeproj`. Its two Swift
 
 Use Node 22, `npm ci`, `npm run build`, `npx cap sync ios` on macOS. The Native compile workflow builds the App and embedded extension without signing on an iOS simulator. Compilation alone does not verify widget interaction.
 
+The iOS unsigned-device workflow records the committed App and widget entitlement
+paths, SHA-256 hashes and expected App Group in `candidate-provenance.json`. This
+is source provenance only: an unsigned archive cannot prove runtime entitlements
+or signing. Before any store upload, the signed export must independently verify
+the code signatures and embedded provisioning-profile entitlements for both
+`App.app` and `FaithfulDaysWidget.appex`, including
+`group.ca.ashbi.habittracker`.
+
 Remaining account/device steps:
 
 1. Register `ca.ashbi.habittracker` and `ca.ashbi.habittracker.FaithfulDaysWidget` in the Apple team and enable the shared App Group for both.

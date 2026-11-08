@@ -2,7 +2,11 @@ name: iOS unsigned device candidate
 
 on:
   pull_request:
-    paths: [.github/workflows/ios-unsigned-candidate.yml]
+    paths:
+      - .github/workflows/ios-unsigned-candidate.yml
+      - scripts/verify/ios_unsigned_provenance.py
+      - ios/App/App/App.entitlements
+      - ios/App/FaithfulDaysWidget/FaithfulDaysWidget.entitlements
   workflow_dispatch:
     inputs:
       build_number:
@@ -62,6 +66,8 @@ jobs:
           PY
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Test source entitlement verifier
+        run: python3 scripts/verify/test_ios_unsigned_provenance.py
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npx --no-install cap sync ios
@@ -75,6 +81,12 @@ jobs:
             archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             MARKETING_VERSION="$CANDIDATE_VERSION" CURRENT_PROJECT_VERSION="$CANDIDATE_BUILD" \
             2>&1 | tee artifacts/archive.log
+      - name: Verify source entitlement provenance
+        run: |
+          set -euo pipefail
+          python3 scripts/verify/ios_unsigned_provenance.py \
+            --source-root . \
+            --output artifacts/source-entitlements.json
       - name: Verify embedded identity and unchanged web bundle
         run: |
           set -euo pipefail
@@ -112,13 +124,16 @@ jobs:
               assert target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == digest, f'Web bundle differs: {relative}'
               web_files.append({'path': str(relative), 'sha256': digest})
           record = json.loads(pathlib.Path('artifacts/source-identity.json').read_text())
+          source_entitlements = json.loads(pathlib.Path('artifacts/source-entitlements.json').read_text())
+          assert source_entitlements['expectedAppGroup'] == 'group.ca.ashbi.habittracker'
           record.update({'bundles': identities, 'webFiles': web_files,
+                         'sourceEntitlements': source_entitlements,
                          'workflowRun': os.environ['GITHUB_RUN_ID'], 'xcode': pathlib.Path('artifacts/xcode-version.txt').read_text().strip()})
           pathlib.Path('artifacts/candidate-provenance.json').write_text(json.dumps(record, indent=2) + '\n')
           PY
           ditto -c -k --keepParent "$RUNNER_TEMP/FaithfulDays.xcarchive" artifacts/FaithfulDays-unsigned.xcarchive.zip
           shasum -a 256 artifacts/FaithfulDays-unsigned.xcarchive.zip > artifacts/SHA256SUMS
-          echo 'Unsigned iPhoneOS app/widget archive verified. Signing, store upload and physical acceptance remain separate.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Unsigned iPhoneOS app/widget archive and source entitlement provenance verified. The unsigned archive is not runtime entitlement or signing proof; a signed export must verify both code signatures and embedded profiles before upload.' >> "$GITHUB_STEP_SUMMARY"
       - name: Preserve verified unsigned candidate
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -127,6 +142,7 @@ jobs:
             artifacts/FaithfulDays-unsigned.xcarchive.zip
             artifacts/candidate-provenance.json
             artifacts/source-identity.json
+            artifacts/source-entitlements.json
             artifacts/SHA256SUMS
           retention-days: 7
           if-no-files-found: error
