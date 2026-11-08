@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/ios-unsigned-candidate.yml
       - scripts/verify/ios_unsigned_provenance.py
+      - scripts/verify/test_ios_unsigned_provenance.py
       - ios/App/App/App.entitlements
       - ios/App/FaithfulDaysWidget/FaithfulDaysWidget.entitlements
   workflow_dispatch:
@@ -68,6 +69,12 @@ jobs:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Test source entitlement verifier
         run: python3 scripts/verify/test_ios_unsigned_provenance.py
+      - name: Verify source entitlement provenance
+        run: |
+          set -euo pipefail
+          python3 scripts/verify/ios_unsigned_provenance.py \
+            --source-root . \
+            --output artifacts/source-entitlements.json
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npx --no-install cap sync ios
@@ -81,12 +88,6 @@ jobs:
             archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             MARKETING_VERSION="$CANDIDATE_VERSION" CURRENT_PROJECT_VERSION="$CANDIDATE_BUILD" \
             2>&1 | tee artifacts/archive.log
-      - name: Verify source entitlement provenance
-        run: |
-          set -euo pipefail
-          python3 scripts/verify/ios_unsigned_provenance.py \
-            --source-root . \
-            --output artifacts/source-entitlements.json
       - name: Verify embedded identity and unchanged web bundle
         run: |
           set -euo pipefail
