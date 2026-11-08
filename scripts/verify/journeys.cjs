@@ -658,7 +658,9 @@ const closeSettings = async (page) => {
         const workspaceKey = 'faithful-days-workspace-v1';
         const recoveryKey = 'faithful-days-before-import';
         const previousRoutines = localStorage.getItem(routinesKey);
-        const previousWorkspace = localStorage.getItem(workspaceKey);
+        const previousWorkspace =
+          localStorage.getItem(workspaceKey) ||
+          JSON.stringify({ version: 1, revision: 0, notes: [], meetings: [], assignments: [] });
         const originalSetItem = Storage.prototype.setItem;
         window.__importRecoveryFixture = {
           previousRoutines,
