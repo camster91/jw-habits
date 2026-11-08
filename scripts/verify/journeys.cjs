@@ -449,7 +449,7 @@ const closeSettings = async (page) => {
       const backupRegion = dialog.getByRole('region', { name: 'Backup', exact: true });
       await backupRegion.getByRole('button', { name: 'Save original notes data', exact: true }).waitFor();
 
-      const evidenceDir = path.resolve(process.env.JOURNEYS_EVIDENCE_DIR || 'store-screenshots');
+      const evidenceDir = path.resolve(process.env.JOURNEYS_EVIDENCE_DIR || process.env.RECOVERY_EVIDENCE_DIR || 'store-screenshots');
       fs.mkdirSync(evidenceDir, { recursive: true });
       const screenshotPath = path.join(
         evidenceDir,
@@ -725,7 +725,7 @@ const closeSettings = async (page) => {
           .getByRole('button', { name: 'Open backup settings', exact: true })
           .count()) === 1
       );
-      const evidenceDir = path.resolve(process.env.JOURNEYS_EVIDENCE_DIR || 'store-screenshots');
+      const evidenceDir = path.resolve(process.env.JOURNEYS_EVIDENCE_DIR || process.env.RECOVERY_EVIDENCE_DIR || 'store-screenshots');
       fs.mkdirSync(evidenceDir, { recursive: true });
       const screenshotPath = path.join(evidenceDir, 'faithful-import-recovery-required.png');
       await page.screenshot({ path: screenshotPath, fullPage: true });
