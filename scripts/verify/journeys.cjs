@@ -650,14 +650,19 @@ const closeSettings = async (page) => {
         )
         .waitFor();
 
+      // Let any routine export/persistence work settle before taking the
+      // baseline used for the byte-preserving recovery assertion.
+      await page.waitForTimeout(250);
       const injected = await page.evaluate(() => {
         const routinesKey = 'jw-habits-v2';
         const workspaceKey = 'faithful-days-workspace-v1';
         const recoveryKey = 'faithful-days-before-import';
         const previousRoutines = localStorage.getItem(routinesKey);
+        const previousWorkspace = localStorage.getItem(workspaceKey);
         const originalSetItem = Storage.prototype.setItem;
         window.__importRecoveryFixture = {
           previousRoutines,
+          previousWorkspace,
           retained: null,
           workspaceFailures: 0,
           rollbackFailures: 0,
@@ -674,7 +679,7 @@ const closeSettings = async (page) => {
           }
           return originalSetItem.call(this, key, value);
         };
-        return { previousRoutines };
+        return { previousRoutines, previousWorkspace };
       });
       await backupRegion.getByRole('button', { name: 'Replace', exact: true }).click();
       console.log('[J13] replace clicked; waiting for failure status');
@@ -693,6 +698,17 @@ const closeSettings = async (page) => {
         throw new Error('Synthetic rollback unexpectedly rewrote the prior routines');
       if (afterFailure.workspaceFailures < 1 || afterFailure.rollbackFailures < 1)
         throw new Error('The browser did not exercise both targeted failure paths');
+      const retainedBundle = JSON.parse(afterFailure.retained);
+      const routinesMatch =
+        JSON.stringify(retainedBundle.routines) ===
+        JSON.stringify(JSON.parse(injected.previousRoutines));
+      const workspaceMatch =
+        JSON.stringify(retainedBundle.workspace) ===
+        JSON.stringify(JSON.parse(injected.previousWorkspace));
+      step('J13 retained routines match the exact pre-replace snapshot', routinesMatch);
+      step('J13 retained workspace matches the exact pre-replace snapshot', workspaceMatch);
+      if (!routinesMatch || !workspaceMatch)
+        throw new Error('Retained pre-import bundle did not match the pre-replace snapshots');
 
       // The recovery notice intentionally sits above the modal after the
       // rollback failure, so close through the dialog's normal Escape action.
@@ -759,6 +775,16 @@ const closeSettings = async (page) => {
       } catch {
         /* The rendered proof remains useful without local git metadata. */
       }
+      let pullRequestHeadCommit = null;
+      try {
+        const eventPath = process.env.GITHUB_EVENT_PATH;
+        if (eventPath) {
+          const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
+          pullRequestHeadCommit = event.pull_request?.head?.sha || null;
+        }
+      } catch {
+        /* Local runs have no GitHub event payload. */
+      }
       fs.writeFileSync(
         path.join(evidenceDir, 'faithful-import-recovery-provenance.json'),
         JSON.stringify(
@@ -766,6 +792,7 @@ const closeSettings = async (page) => {
             test: 'J13-import-recovery failed combined import remains recoverable',
             checkedOutCommit: sourceCommit,
             candidateHeadCommit: process.env.GITHUB_SHA || sourceCommit,
+            pullRequestHeadCommit,
             browser: process.env.PLAYWRIGHT_BROWSER || 'chromium',
             workflowRunId: process.env.GITHUB_RUN_ID || null,
             fixture:
@@ -783,7 +810,10 @@ const closeSettings = async (page) => {
               downloadedBytes: downloaded.length,
               downloadedSha256: sha256(downloaded),
               exactMatch: downloaded.equals(retained),
+              retainedRoutinesMatch: routinesMatch,
+              retainedWorkspaceMatch: workspaceMatch,
               routinesBeforeImportSha256: sha256(Buffer.from(injected.previousRoutines, 'utf8')),
+              workspaceBeforeImportSha256: sha256(Buffer.from(injected.previousWorkspace, 'utf8')),
               routinesAfterFailureSha256: sha256(Buffer.from(afterFailure.routines, 'utf8')),
               blockedEdit: afterEdit === beforeEdit,
             },
