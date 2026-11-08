@@ -26,12 +26,22 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         try FileManager.default.createDirectory(at: outputRoot, withIntermediateDirectories: true)
     }
 
+    override func tearDown() {
+        // XCTest's automatic failure diagnostics do not reliably preserve a
+        // raw app screenshot or the WebKit accessibility tree for every
+        // assertion. Keep both artifacts for every test outcome so a failed
+        // native journey is reviewable without rerunning it just to collect
+        // state. This is evidence-only; it does not assert or alter app state.
+        captureFinalStateEvidence()
+        super.tearDown()
+    }
+
     func testCoreJourney() throws {
         let getStarted = app.buttons["Get started"]
         XCTAssertTrue(getStarted.waitForExistence(timeout: 30), "Real onboarding UI did not expose Get started")
         XCTAssertTrue(waitForHeading("Welcome to Faithful Days"), "Onboarding heading did not appear before first capture")
         try capture("onboarding")
-        getStarted.tap()
+        guard advanceFromWelcome() else { return }
         tapButton("Next") // week
         tapButton("Next") // reading
         tapButton("Next") // rhythm
@@ -62,6 +72,73 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         assertActiveTab("Progress")
         XCTAssertTrue(waitForText("Bible books"), "Current Progress Bible map is not visible")
         try capture("progress")
+    }
+
+    private func advanceFromWelcome() -> Bool {
+        // Re-query after the onboarding capture so the tap cannot use the
+        // pre-capture WebKit element if its remote process refreshed.
+        let getStarted = app.buttons["Get started"]
+        guard getStarted.waitForExistence(timeout: 8), getStarted.isHittable else {
+            captureFailureEvidence("onboarding-start-control")
+            XCTFail("Get started was not available and hittable after onboarding capture")
+            return false
+        }
+
+        getStarted.tap()
+        if waitForStepTwo(timeout: 8) { return true }
+
+        // A single ordinary retry is allowed only when the strict Step 1
+        // state remains visible and Step 2 is still absent. Never retry from
+        // an unknown screen or by injecting state.
+        let stepOneVisible = app.staticTexts["Welcome to Faithful Days"].exists
+            && app.buttons["Get started"].exists
+        let stepTwoAbsent = !app.staticTexts["Your routines"].exists
+            && !app.buttons["Next"].exists
+        guard stepOneVisible && stepTwoAbsent else {
+            captureFailureEvidence("onboarding-step-transition")
+            XCTFail("Onboarding did not expose Step 2 and was not still on strict Step 1")
+            return false
+        }
+
+        writeEvidence("onboarding-retry-required.txt", text: "retry-required=true\nreason=step-1-remained-after-first-tap\n")
+        captureStateEvidence(
+            "onboarding-retry-before",
+            details: "retry-required=true\nstate=step-1\n"
+        )
+
+        let retry = app.buttons["Get started"]
+        guard retry.waitForExistence(timeout: 5), retry.isHittable else {
+            captureStateEvidence(
+                "onboarding-retry-after",
+                details: "retry-required=true\nretry-attempted=false\nretry-failure=control-not-hittable\n"
+            )
+            writeEvidence("onboarding-retry-required.txt", text: "retry-required=true\nretry-attempted=false\nretry-succeeded=false\n")
+            XCTFail("Get started was not available and hittable for the one permitted retry")
+            return false
+        }
+
+        retry.tap()
+        let succeeded = waitForStepTwo(timeout: 8)
+        captureStateEvidence(
+            "onboarding-retry-after",
+            details: "retry-required=true\nretry-attempted=true\nretry-succeeded=\(succeeded)\n"
+        )
+        writeEvidence(
+            "onboarding-retry-required.txt",
+            text: "retry-required=true\nretry-attempted=true\nretry-succeeded=\(succeeded)\n"
+        )
+        guard succeeded else {
+            XCTFail("The one permitted Get started retry did not expose Step 2 and Next")
+            return false
+        }
+        return true
+    }
+
+    private func waitForStepTwo(timeout: TimeInterval) -> Bool {
+        let heading = app.staticTexts["Your routines"]
+        let headingAppeared = heading.waitForExistence(timeout: timeout)
+        let nextAppeared = app.buttons["Next"].waitForExistence(timeout: headingAppeared ? 5 : 1)
+        return headingAppeared && nextAppeared
     }
 
     private func tapTab(_ label: String) {
@@ -108,9 +185,14 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         // Search by the exact label, exclude static text, and use normal
         // native swipes when the Rhythm form is below the first viewport.
         for attempt in 0...3 {
-            let controls = labeledControls(label)
-            if let hittable = controls.first(where: { $0.isHittable }) {
-                field = hittable
+            let controls = timeValueControls(label)
+            if controls.count > 1 {
+                captureFailureEvidence("wrap-up-time-control-ambiguous")
+                XCTFail("Evening wrap-up time exposed multiple value-bearing controls (count: \(controls.count))")
+                return
+            }
+            if let control = controls.first, control.isHittable {
+                field = control
                 break
             }
             if attempt < 3 { app.swipeUp() }
@@ -123,7 +205,13 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
             let labels = exactLabelElements(label).filter { $0.elementType == .staticText && $0.isHittable }
             if labels.count == 1 {
                 labels[0].tap()
-                field = labeledControls(label).first(where: { $0.isHittable })
+                let controls = timeValueControls(label)
+                guard controls.count == 1 else {
+                    captureFailureEvidence("wrap-up-time-control-after-label")
+                    XCTFail("Evening wrap-up time did not expose one value-bearing control after label tap (count: \(controls.count))")
+                    return
+                }
+                if controls[0].isHittable { field = controls[0] }
             }
         }
 
@@ -188,13 +276,19 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
             target.typeText("03:00")
         }
 
-        // Keep the postcondition scoped to the exact non-static control that
-        // was selected by its real label. A broad WebKit descendant scan can
-        // retain stale element indexes immediately after the native picker
-        // closes, so it is not safe for value verification.
-        let normalized = normalizeTime(String(describing: target.value ?? ""))
-        writeEvidence("wrap-up-time-value.txt", text: "elementType=\(target.elementType.rawValue)\nlabel=\(target.label)\nvalue=\(String(describing: target.value))\nnormalized=\(normalized)\n")
-        guard normalized.contains("03:00") || normalized.contains("3:00am") else {
+        // The label has a separate parent/container node with an empty value.
+        // Re-select the unique exact-label control whose value is time-shaped;
+        // do not use a broad WebKit descendant scan that can retain stale
+        // indexes after the native picker closes.
+        let verifiedControls = timeValueControls(label)
+        guard verifiedControls.count == 1, let verified = verifiedControls.first else {
+            captureFailureEvidence("wrap-up-time-postcondition")
+            XCTFail("Evening wrap-up time did not expose one value-bearing control (count: \(verifiedControls.count))")
+            return
+        }
+        let normalized = normalizeTime(String(describing: verified.value ?? ""))
+        writeEvidence("wrap-up-time-value.txt", text: "elementType=\(verified.elementType.rawValue)\nlabel=\(verified.label)\nvalue=\(String(describing: verified.value))\nnormalized=\(normalized)\n")
+        guard isAcceptedWrapUpTime(normalized) else {
             captureFailureEvidence("wrap-up-time-postcondition")
             XCTFail("Evening wrap-up time did not settle at 03:00 (value: \(normalized))")
             return
@@ -206,8 +300,12 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         return app.descendants(matching: .any).matching(predicate).allElementsBoundByIndex
     }
 
-    private func labeledControls(_ label: String) -> [XCUIElement] {
-        exactLabelElements(label).filter { $0.elementType != .staticText }
+    private func timeValueControls(_ label: String) -> [XCUIElement] {
+        exactLabelElements(label).filter { element in
+            guard element.elementType != .staticText else { return false }
+            let value = normalizeTime(String(describing: element.value ?? ""))
+            return value.range(of: #"\d{1,2}:\d{2}"#, options: .regularExpression) != nil
+        }
     }
 
     private func pickerState(_ wheels: [XCUIElement]) -> String {
@@ -222,13 +320,25 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
             .lowercased()
     }
 
+    private func isAcceptedWrapUpTime(_ normalized: String) -> Bool {
+        guard !normalized.contains("pm") else { return false }
+        return normalized.range(
+            of: #"^(?:03:00|3:00)(?:am(?:,focused)?)?$"#,
+            options: .regularExpression
+        ) != nil
+    }
+
     private func writeEvidence(_ filename: String, text: String) {
         let url = outputRoot.appendingPathComponent(filename)
         try? text.write(to: url, atomically: true, encoding: .utf8)
     }
 
     private func captureFailureEvidence(_ name: String) {
-        let prefix = "failure-\(name)"
+        let labelDetail = name.contains("wrap-up-time") ? "exactLabel=Evening wrap-up time\n" : ""
+        captureStateEvidence("failure-\(name)", details: "lookup=\(name)\n\(labelDetail)")
+    }
+
+    private func captureStateEvidence(_ prefix: String, details: String) {
         let screenshotURL = outputRoot.appendingPathComponent("\(prefix).png")
         let screenshot = XCUIScreen.main.screenshot()
         try? screenshot.pngRepresentation.write(to: screenshotURL, options: .atomic)
@@ -236,11 +346,37 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         let ax = app.debugDescription
         try? ax.write(to: axURL, atomically: true, encoding: .utf8)
         let wrapURL = outputRoot.appendingPathComponent("\(prefix)-wrap-elements.txt")
-        let selectorEvidence = "lookup=\(name)\nexactLabel=Evening wrap-up time\n"
-        try? selectorEvidence.write(to: wrapURL, atomically: true, encoding: .utf8)
+        try? details.write(to: wrapURL, atomically: true, encoding: .utf8)
         attach(screenshotURL, name: prefix)
         attach(axURL, name: "\(prefix)-ax")
         attach(wrapURL, name: "\(prefix)-wrap-elements")
+    }
+
+    private func captureFinalStateEvidence() {
+        guard app != nil else { return }
+        let screenshot = XCUIScreen.main.screenshot()
+        let ax = app.debugDescription
+
+        let screenshotAttachment = XCTAttachment(screenshot: screenshot)
+        screenshotAttachment.name = "final-app-state"
+        screenshotAttachment.lifetime = .keepAlways
+        add(screenshotAttachment)
+
+        let axAttachment = XCTAttachment(string: ax)
+        axAttachment.name = "final-app-state-ax"
+        axAttachment.lifetime = .keepAlways
+        add(axAttachment)
+
+        guard let outputRoot else { return }
+        try? screenshot.pngRepresentation.write(
+            to: outputRoot.appendingPathComponent("final-app-state.png"),
+            options: .atomic
+        )
+        try? ax.write(
+            to: outputRoot.appendingPathComponent("final-app-state-ax.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
     }
 
     private func attach(_ url: URL, name: String) {
