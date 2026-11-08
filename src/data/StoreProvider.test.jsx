@@ -6,6 +6,16 @@ import i18n from 'i18next';
 const prefs = vi.hoisted(() => new Map());
 const lifecycle = vi.hoisted(() => ({ handler: null, unsubscribed: 0 }));
 const backup = vi.hoisted(() => vi.fn());
+const notifications = vi.hoisted(() => ({
+  getPending: vi.fn(async () => ({ notifications: [] })),
+  cancel: vi.fn(async () => {}),
+  checkPermissions: vi.fn(async () => ({ display: 'granted' })),
+  schedule: vi.fn(async () => {}),
+}));
+const widget = vi.hoisted(() => ({
+  setSnapshot: vi.fn(async () => {}),
+  drainQueue: vi.fn(async () => ({ items: [] })),
+}));
 
 vi.mock('../utils/backup.js', () => ({
   saveBackup: backup,
@@ -25,6 +35,8 @@ vi.mock('../utils/native.js', () => ({
     },
   },
 }));
+vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: notifications }));
+vi.mock('@capacitor/core', () => ({ registerPlugin: () => widget }));
 vi.mock('../domain/migrateV1.js', async () => {
   const actual = await vi.importActual('../domain/migrateV1.js');
   return { migrateV1: vi.fn(actual.migrateV1) };
@@ -79,6 +91,12 @@ beforeEach(() => {
   lifecycle.unsubscribed = 0;
   backup.mockReset();
   backup.mockResolvedValue(undefined);
+  notifications.getPending.mockReset().mockResolvedValue({ notifications: [] });
+  notifications.cancel.mockReset().mockResolvedValue(undefined);
+  notifications.checkPermissions.mockReset().mockResolvedValue({ display: 'granted' });
+  notifications.schedule.mockReset().mockResolvedValue(undefined);
+  widget.setSnapshot.mockReset().mockResolvedValue(undefined);
+  widget.drainQueue.mockReset().mockResolvedValue({ items: [] });
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
   vi.setSystemTime(new Date(2026, 9, 6, 10, 0));
 });
@@ -443,6 +461,359 @@ describe('onStoreChange', () => {
     expect(good).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledTimes(2);
     offs.forEach((off) => off());
+  });
+});
+
+describe('backup replacement notifications (#318)', () => {
+  const imported = () => ({
+    ...defaultStore('2026-10-01', 'en'),
+    onboardingDone: true,
+    anchors: { dailyText: { time: '20:00', phrase: null } },
+    log: Array.from({ length: 30 }, (_, i) => ({
+      routine: 'dailyText',
+      day: `2026-09-${String(i + 1).padStart(2, '0')}`,
+      value: true,
+    })),
+  });
+
+  it('defers real subscribers and lifecycle work until the replacement commits', async () => {
+    const { registerBadgeAwards } = await import('../native/badgeAwards.js');
+    const { registerReminderSync } = await import('../native/reminders.js');
+    const { registerWidgetBridge } = await import('../native/widgetBridge.js');
+    const heard = vi.fn();
+    const offHeard = onStoreChange(heard);
+    const late = vi.fn();
+    const off = [registerBadgeAwards(), registerReminderSync(), registerWidgetBridge()];
+    await mount();
+    await flush();
+    notifications.getPending.mockClear();
+    notifications.cancel.mockClear();
+    notifications.checkPermissions.mockClear();
+    notifications.schedule.mockClear();
+    widget.setSnapshot.mockClear();
+
+    let stagedReplacement;
+    await act(async () => {
+      stagedReplacement = await latest.replace(imported(), { deferNotification: true });
+    });
+    await flush();
+    act(() => lifecycle.handler({ isActive: true }));
+    const offLate = onForeground(late);
+    await flush();
+    expect(notifications.schedule).not.toHaveBeenCalled();
+    expect(widget.setSnapshot).not.toHaveBeenCalled();
+    expect(latest.store.badges.dailyText30).toBeUndefined();
+    expect(late).not.toHaveBeenCalled();
+
+    expect(stagedReplacement.commit()).toBe(true);
+    expect(stagedReplacement.commit()).toBe(false);
+    await flush();
+    // One notification is the committed import; the second is the real badge
+    // subscriber's dated-award update. A duplicate commit would add a third.
+    expect(heard).toHaveBeenCalledTimes(2);
+    expect(late).toHaveBeenCalledTimes(1);
+    expect(late.mock.calls[0][0].store.log).toHaveLength(30);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    await flush();
+    expect(notifications.schedule).toHaveBeenCalled();
+    expect(widget.setSnapshot).toHaveBeenCalled();
+    expect(latest.store.badges.dailyText30).toBe('2026-10-06');
+    off.forEach((unsubscribe) => unsubscribe());
+    offHeard();
+    offLate();
+  });
+
+  it('publishes a standalone valid replacement immediately and publishes nothing on failure', async () => {
+    const heard = vi.fn();
+    const off = onStoreChange(heard);
+    await mount();
+    await act(async () => {
+      await latest.replace({ ...latest.store, tone: 'quiet' });
+    });
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(heard.mock.calls[0][0].tone).toBe('quiet');
+
+    heard.mockClear();
+    vi.spyOn(Preferences, 'set').mockRejectedValueOnce(new Error('disk full'));
+    await act(async () => {
+      await expect(latest.replace(imported())).rejects.toThrow('disk full');
+    });
+    expect(heard).not.toHaveBeenCalled();
+    expect(latest.store.tone).toBe('quiet');
+    off();
+  });
+
+  it('fences lifecycle, edits and overlapping replacements before the initial write resolves', async () => {
+    const heard = vi.fn();
+    const late = vi.fn();
+    const offHeard = onStoreChange(heard);
+    await mount();
+    heard.mockClear();
+    const originalSet = Preferences.set;
+    let rejectCandidate;
+    const candidateHeld = new Promise((_, reject) => {
+      rejectCandidate = reject;
+    });
+    vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      if (key === STORE_KEY && JSON.parse(value).log.length === 30) {
+        await candidateHeld;
+        throw new Error('candidate write failed');
+      }
+      return originalSet({ key, value });
+    });
+
+    const replacement = latest.replace(imported(), { deferNotification: true });
+    act(() => lifecycle.handler({ isActive: true }));
+    const offLate = onForeground(late);
+    act(() => latest.update((s) => ({ ...s, tone: 'quiet' })));
+    await expect(latest.replace(imported(), { deferNotification: true })).rejects.toThrow(
+      'another replacement'
+    );
+    await flush();
+    expect(latest.store.log).toEqual([]);
+    expect(late).not.toHaveBeenCalled();
+    expect(heard).not.toHaveBeenCalled();
+
+    rejectCandidate();
+    await expect(replacement).rejects.toThrow('candidate write failed');
+    await flush();
+    expect(latest.store.tone).toBe('quiet');
+    expect(JSON.parse(prefs.get(STORE_KEY)).log).toEqual([]);
+    expect(JSON.parse(prefs.get(STORE_KEY)).tone).toBe('quiet');
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(late).toHaveBeenCalledTimes(1);
+    expect(late.mock.calls[0][0].store.log).toEqual([]);
+    offHeard();
+    offLate();
+  });
+
+  it('waits for an ordinary routine persist already in flight before staging the candidate', async () => {
+    await mount();
+    const originalSet = Preferences.set;
+    const writes = [];
+    let releasePrior;
+    const priorHeld = new Promise((resolve) => {
+      releasePrior = resolve;
+    });
+    let held = false;
+    vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      const parsed = JSON.parse(value);
+      if (key === STORE_KEY && parsed.tone === 'quiet' && !held) {
+        held = true;
+        await priorHeld;
+      }
+      if (key === STORE_KEY) writes.push(parsed);
+      return originalSet({ key, value });
+    });
+
+    act(() => latest.update((s) => ({ ...s, tone: 'quiet' })));
+    await Promise.resolve();
+    const replacement = latest.replace(imported(), { deferNotification: true });
+    await Promise.resolve();
+    expect(writes).toEqual([]);
+    releasePrior();
+    const transaction = await replacement;
+    expect(writes[0].tone).toBe('quiet');
+    expect(writes[1].log).toHaveLength(30);
+    expect(transaction.commit()).toBe(true);
+  });
+
+  it('recomputes the effective app day before notifying subscribers of an imported future day', async () => {
+    const heard = vi.fn();
+    const offHeard = onStoreChange(heard);
+    await mount();
+    heard.mockClear();
+    const transaction = await latest.replace(
+      { ...imported(), lastSeenDay: '2026-10-07' },
+      { deferNotification: true }
+    );
+    expect(latest.today).toBe('2026-10-06');
+    await act(async () => {
+      expect(transaction.commit()).toBe(true);
+    });
+    await flush();
+    expect(latest.today).toBe('2026-10-07');
+    expect(heard).toHaveBeenCalledWith(
+      expect.objectContaining({ lastSeenDay: '2026-10-07' }),
+      expect.objectContaining({ today: '2026-10-07' })
+    );
+    const foreground = vi.fn();
+    const offForeground = onForeground(foreground);
+    await flush();
+    expect(foreground).toHaveBeenCalledWith(expect.objectContaining({ today: '2026-10-07' }));
+    offForeground();
+    offHeard();
+  });
+
+  it('does not replay a staged refresh with a stale lastSeenDay over the imported day', async () => {
+    await mount();
+    const transaction = await latest.replace(
+      { ...imported(), lastSeenDay: '2026-10-08' },
+      { deferNotification: true }
+    );
+    vi.setSystemTime(new Date(2026, 9, 7, 10, 0));
+    act(() => lifecycle.handler({ isActive: true }));
+    expect(latest.today).toBe('2026-10-07');
+    await act(async () => {
+      expect(transaction.commit()).toBe(true);
+    });
+    await flush();
+    expect(latest.store.lastSeenDay).toBe('2026-10-08');
+    expect(latest.today).toBe('2026-10-08');
+  });
+
+  it('captures the pre-import snapshot before its recovery-copy write can yield', async () => {
+    await mount();
+    const before = latest.store;
+    let releaseCopy;
+    const copyHeld = new Promise((resolve) => {
+      releaseCopy = resolve;
+    });
+    let retained = null;
+    let replacement;
+    await act(async () => {
+      replacement = latest.replace(
+        { ...imported(), tone: 'quiet' },
+        {
+          deferNotification: true,
+          beforeWrite: async (previous) => {
+            retained = JSON.stringify(previous);
+            await copyHeld;
+          },
+        }
+      );
+      await Promise.resolve();
+    });
+    act(() => latest.update((s) => ({ ...s, tone: 'scripture' })));
+    expect(JSON.parse(retained ?? '{}')).toEqual(before);
+    await act(async () => {
+      releaseCopy();
+      const transaction = await replacement;
+      expect(transaction.commit()).toBe(true);
+    });
+    await flush();
+    expect(latest.store.tone).toBe('scripture');
+    expect(JSON.parse(prefs.get(STORE_KEY)).tone).toBe('scripture');
+    expect(JSON.parse(retained)).toEqual(before);
+  });
+
+  it('does not write the candidate when the pre-import recovery copy fails', async () => {
+    await mount();
+    const before = prefs.get(STORE_KEY);
+    let replacement;
+    await act(async () => {
+      replacement = latest.replace(
+        { ...imported(), tone: 'quiet' },
+        {
+          deferNotification: true,
+          beforeWrite: async () => {
+            throw new Error('recovery copy failed');
+          },
+        }
+      );
+      await expect(replacement).rejects.toThrow('recovery copy failed');
+    });
+    expect(prefs.get(STORE_KEY)).toBe(before);
+    expect(latest.store.tone).toBe('warm');
+  });
+
+  it('restores and rejects a stale commit when the provider unmounts during the initial write', async () => {
+    const view = await mount();
+    const before = prefs.get(STORE_KEY);
+    const originalSet = Preferences.set;
+    let releaseCandidate;
+    const candidateHeld = new Promise((resolve) => {
+      releaseCandidate = resolve;
+    });
+    vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      if (key === STORE_KEY && JSON.parse(value).log.length === 30) {
+        await candidateHeld;
+      }
+      return originalSet({ key, value });
+    });
+
+    const replacement = latest.replace(imported(), { deferNotification: true });
+    view.unmount();
+    releaseCandidate();
+    await expect(replacement).resolves.toBeNull();
+    await flush();
+    expect(prefs.get(STORE_KEY)).toBe(before);
+    await mount();
+    expect(latest.store.log).toEqual([]);
+  });
+
+  it('does not let a superseded commit publish after pending workspace disposal', async () => {
+    const view = await mount();
+    const before = prefs.get(STORE_KEY);
+    const transaction = await latest.replace(imported(), { deferNotification: true });
+    view.unmount();
+    await flush();
+    expect(transaction.commit()).toBe(false);
+    expect(prefs.get(STORE_KEY)).toBe(before);
+    await mount();
+    expect(latest.store.log).toEqual([]);
+  });
+
+  it('surfaces recovery-required when restoring the previous bytes fails', async () => {
+    await mount();
+    const transaction = await latest.replace(imported(), { deferNotification: true });
+    vi.spyOn(Preferences, 'set').mockRejectedValueOnce(new Error('restore failed'));
+    await act(async () => {
+      await expect(transaction.abort()).rejects.toThrow('restore failed');
+    });
+    await flush();
+    expect(latest.savingPaused).toBe(true);
+    expect(latest.recoveryRequired).toBe(true);
+    const tone = latest.store.tone;
+    act(() => latest.update((s) => ({ ...s, tone: 'blocked' })));
+    expect(latest.store.tone).toBe(tone);
+    expect(transaction.commit()).toBe(false);
+
+    const set = vi.spyOn(Preferences, 'set').mockImplementation(async ({ key, value }) => {
+      prefs.set(key, value);
+    });
+    await act(async () => {
+      await expect(transaction.abort()).resolves.toBe(true);
+    });
+    await flush();
+    expect(latest.savingPaused).toBe(false);
+    expect(latest.recoveryRequired).toBe(false);
+    set.mockRestore();
+  });
+
+  it('does not publish a superseded snapshot after rollback or overwrite the restored store', async () => {
+    const heard = vi.fn();
+    const off = onStoreChange(heard);
+    const late = vi.fn();
+    await mount();
+    heard.mockClear();
+    let stagedReplacement;
+    await act(async () => {
+      stagedReplacement = await latest.replace(imported(), { deferNotification: true });
+    });
+    act(() => latest.update((s) => ({ ...s, tone: 'quiet' })));
+    const offLate = onForeground(late);
+    await flush();
+    expect(latest.store.log).toEqual([]);
+    expect(JSON.parse(prefs.get(STORE_KEY)).log).toHaveLength(30);
+    expect(late).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await expect(stagedReplacement.abort()).resolves.toBe(true);
+    });
+    await flush();
+    expect(stagedReplacement.commit()).toBe(false);
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(latest.store.tone).toBe('quiet');
+    const restored = JSON.parse(prefs.get(STORE_KEY));
+    expect(restored.log).toEqual([]);
+    expect(restored.tone).toBe('quiet');
+    expect(late).toHaveBeenCalledTimes(1);
+    expect(late.mock.calls[0][0].store.log).toEqual([]);
+    off();
+    offLate();
   });
 });
 
