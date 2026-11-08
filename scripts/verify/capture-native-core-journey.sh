@@ -186,12 +186,13 @@ run_journey() {
   fi
 
   verification_status=0
-  for screen in onboarding today wrap-up plans progress; do
+  for screen in onboarding today wrap-up plans notes progress; do
     case "$screen" in
       onboarding) token='welcome to faithful days,get started,your routines stay' ;;
       today) token='today,your day in review' ;;
       wrap-up) token='your day in review,hide routines' ;;
-      plans) token='plans,personal study' ;;
+      plans) token='plans,prepare for meetings and assignments' ;;
+      notes) token='notes,new note' ;;
       progress) token='progress,bible books' ;;
     esac
     if [[ ! -f "$output_dir/journey-$screen.png" ]]; then
@@ -235,7 +236,7 @@ path.write_text(json.dumps({
     "captureMethod": "XCTest XCUIApplication normal onboarding/navigation journey",
     "builtAppIdentityValidation": "each device provenance reads App.app/Info.plist and requires ca.ashbi.habittracker 5.3.0 (533)",
     "wrapUpBoundaryProof": "src/domain/wrapup.js at sourceCommit proves configured 03:00 covers local time before and at/after the 03:00 rollover",
-    "screens": ["onboarding", "today", "wrap-up", "plans", "progress"],
+    "screens": ["onboarding", "today", "wrap-up", "plans", "notes", "progress"],
     "devices": {
         "iphone-69": {"width": 1320, "height": 2868},
         "ipad-13": {"width": 2064, "height": 2752}

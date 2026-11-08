@@ -63,14 +63,33 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         try capture("wrap-up")
 
         tapTab("Plans")
-        XCTAssertTrue(waitForHeading("Plans"), "Plans route heading did not appear")
-        assertActiveTab("Plans")
+        assertRoute(
+            tabLabel: "Plans",
+            heading: "Plans",
+            marker: "Prepare for meetings and assignments",
+            markerRole: .link,
+            evidenceName: "plans"
+        )
         try capture("plans")
 
+        tapTab("Notes")
+        assertRoute(
+            tabLabel: "Notes",
+            heading: "Notes",
+            marker: "New note",
+            markerRole: .button,
+            evidenceName: "notes"
+        )
+        try capture("notes")
+
         tapTab("Progress")
-        XCTAssertTrue(waitForHeading("Progress"), "Progress route heading did not appear")
-        assertActiveTab("Progress")
-        XCTAssertTrue(waitForText("Bible books"), "Current Progress Bible map is not visible")
+        assertRoute(
+            tabLabel: "Progress",
+            heading: "Progress",
+            marker: "Bible books",
+            markerRole: .other,
+            evidenceName: "progress"
+        )
         try capture("progress")
     }
 
@@ -144,11 +163,13 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
     private func tapTab(_ label: String) {
         let link = app.links[label]
         if link.waitForExistence(timeout: 10) {
+            XCTAssertTrue(link.isHittable, "Bottom navigation link (\(label)) was not hittable")
             link.tap()
             return
         }
         let button = app.buttons[label]
-        XCTAssertTrue(button.waitForExistence(timeout: 5), "Tab (label) was not found")
+        XCTAssertTrue(button.waitForExistence(timeout: 5), "Bottom navigation control (\(label)) was not found")
+        XCTAssertTrue(button.isHittable, "Bottom navigation control (\(label)) was not hittable")
         button.tap()
     }
 
@@ -167,13 +188,76 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         app.staticTexts[text].waitForExistence(timeout: 15)
     }
 
-    private func assertActiveTab(_ label: String) {
-        let link = app.links[label]
-        XCTAssertTrue(link.waitForExistence(timeout: 5), "Active tab link (\(label)) was not found")
-        let value = String(describing: link.value ?? "").lowercased()
+    private enum RouteMarkerRole {
+        case link
+        case button
+        case other
+    }
+
+    private func waitForRouteHeading(_ text: String) -> Bool {
+        // In the preserved AX tree, the actual h1 is represented by one
+        // `Other` node with the exact label and value 1, with a StaticText
+        // child. This excludes the bottom-navigation StaticText duplicate.
+        let predicate = NSPredicate(format: "label == %@", text)
+        let query = app.otherElements.matching(predicate)
+        guard query.firstMatch.waitForExistence(timeout: 15) else { return false }
+        let headings = query.allElementsBoundByIndex.filter {
+            String(describing: $0.value ?? "") == "1"
+        }
+        return headings.count == 1 && headings[0].isHittable
+    }
+
+    private func waitForRouteMarker(_ marker: String, role: RouteMarkerRole) -> Bool {
+        let element: XCUIElement
+        switch role {
+        case .link:
+            element = app.links[marker]
+        case .button:
+            element = app.buttons[marker]
+        case .other:
+            element = app.otherElements[marker]
+        }
+        return element.waitForExistence(timeout: 15)
+    }
+
+    private func assertRoute(
+        tabLabel: String,
+        heading: String,
+        marker: String,
+        markerRole: RouteMarkerRole,
+        evidenceName: String
+    ) {
+        XCTAssertTrue(waitForRouteHeading(heading), "\(heading) route h1/native heading did not appear uniquely")
         XCTAssertTrue(
-            link.isSelected || value.contains("page"),
-            "Tab (\(label)) did not expose aria-current=page (value: \(value))"
+            waitForRouteMarker(marker, role: markerRole),
+            "\(heading) route marker/control did not appear: \(marker)"
+        )
+
+        // The source NavLink semantics are verified separately by browser and
+        // source tests. iOS WebKit AX may omit aria-current even when the
+        // real link is on the requested route, so missing native state is
+        // recorded as unavailable rather than misreported as a product pass.
+        let link = app.links[tabLabel]
+        XCTAssertTrue(link.waitForExistence(timeout: 5), "Bottom navigation link (\(tabLabel)) was not found")
+        XCTAssertTrue(link.isHittable, "Bottom navigation link (\(tabLabel)) was not hittable")
+
+        let rawValue = String(describing: link.value ?? "")
+        let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        // A non-empty AX value can be a URL/visited value and is not proof of
+        // current state. Only XCUI's selected flag or the known exact
+        // aria-current mapping is classified as a current-state observation;
+        // this remains observational evidence, not VoiceOver acceptance.
+        let nativeCurrentExposed = link.isSelected || value == "page"
+        let nativeCurrentState = nativeCurrentExposed ? "exposed" : "unavailable"
+        writeEvidence(
+            "route-\(evidenceName)-native-current.txt",
+            text: "tab=\(tabLabel)\nheading=\(heading)\nmarker=\(marker)\nmarkerRole=\(String(describing: markerRole))\n"
+                + "headingObservation=unique nativeAX Other node with exact label and value=1, excluding StaticText/navigation duplicates.\n"
+                + "nativeCurrentState=\(nativeCurrentState)\n"
+                + "nativeSelected=\(link.isSelected)\n"
+                + "nativeValue=\(rawValue)\n"
+                + "nativeValueInterpretation=only selected=true or exact value=page is classified as current-state observation; other values remain unavailable. This is not VoiceOver acceptance.\n"
+                + "sourceSemantics=DOM NavLink tests cover Today, Plans, and Progress; Notes uses the same NavLink source pattern but has no direct existing active-Notes assertion.\n"
         )
     }
 
