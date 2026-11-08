@@ -86,7 +86,7 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         assertRoute(
             tabLabel: "Progress",
             heading: "Progress",
-            marker: "Bible books",
+            marker: "Your garden",
             markerRole: .other,
             evidenceName: "progress"
         )

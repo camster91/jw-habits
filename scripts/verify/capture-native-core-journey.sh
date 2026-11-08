@@ -193,7 +193,7 @@ run_journey() {
       wrap-up) token='your day in review,hide routines' ;;
       plans) token='plans,prepare for meetings and assignments' ;;
       notes) token='notes,new note' ;;
-      progress) token='progress,bible books' ;;
+      progress) token='progress,your garden' ;;
     esac
     if [[ ! -f "$output_dir/journey-$screen.png" ]]; then
       verification_status=1
