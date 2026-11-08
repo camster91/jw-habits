@@ -100,7 +100,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
 
   const replace = async () => {
     setBusy(true);
-    let routinesReplaced = false;
+    let stagedReplacement = null;
     try {
       if (workspaceState) {
         if (!workspaceState.ready)
@@ -108,21 +108,25 @@ export default function BackupSection({ onReplaced = () => {} }) {
         await workspaceState.save(
           (current) => pending.workspace ?? current,
           async (current) => {
-            await durableSet('faithful-days-before-import', exportBundle(store, current));
-            await replaceStore(pending.store);
-            routinesReplaced = true;
+            stagedReplacement = await replaceStore(pending.store, {
+              deferNotification: true,
+              beforeWrite: (previous) =>
+                durableSet('faithful-days-before-import', exportBundle(previous, current)),
+            });
           }
         );
       } else if (replaceStore) await replaceStore(pending.store);
       else update(() => pending.store);
+      if (stagedReplacement && !stagedReplacement.commit())
+        throw new Error('The imported data changed before the workspace commit completed.');
       setPending(null);
       onReplaced();
     } catch (error) {
       // Multi-key writes are not atomic. Recover the previous routines when
       // the workspace write fails, and retain the recovery bundle regardless.
-      if (routinesReplaced) {
+      if (stagedReplacement) {
         try {
-          await replaceStore(store);
+          await stagedReplacement.abort();
         } catch {
           /* recovery bundle remains */
         }
@@ -136,7 +140,7 @@ export default function BackupSection({ onReplaced = () => {} }) {
   const exportRecovery = async () => {
     try {
       const raw = await durableGet('faithful-days-before-import');
-      if (!raw) {
+      if (raw === null || raw === undefined) {
         setStatus({ error: false, text: 'There is no pre-import backup on this device yet.' });
         return;
       }

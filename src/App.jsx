@@ -31,7 +31,7 @@ function routerBasename() {
 }
 
 function Screens() {
-  const { store, savingPaused, recoveryFocus } = useStore();
+  const { store, savingPaused, recoveryRequired, recoveryFocus } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const openSettings = () => setSettingsOpen(true);
 
@@ -99,7 +99,11 @@ function Screens() {
         )}
       </Routes>
       {onboardingDone && <BadgeToast />}
-      <StorageNotice onBackup={openSettings} savingPaused={savingPaused} />
+      <StorageNotice
+        onBackup={openSettings}
+        savingPaused={savingPaused}
+        recoveryRequired={recoveryRequired}
+      />
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   );

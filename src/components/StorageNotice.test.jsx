@@ -24,3 +24,12 @@ it('retains a failure that happened before the notice mounted', async () => {
   render(<StorageNotice onBackup={() => {}} />);
   expect(screen.getByRole('alert')).toHaveTextContent('could not be saved');
 });
+
+it('explains an unsafe import and keeps backup settings reachable', () => {
+  const backup = vi.fn();
+  render(<StorageNotice onBackup={backup} recoveryRequired />);
+  expect(screen.getByRole('alert')).toHaveTextContent(/last import could not be completed safely/i);
+  expect(screen.getByRole('alert')).toHaveTextContent(/pre-import backup/i);
+  fireEvent.click(screen.getByRole('button', { name: /backup/i }));
+  expect(backup).toHaveBeenCalledOnce();
+});
