@@ -5,7 +5,7 @@ set -euo pipefail
 # never resizes browser renders or uses the screenshots committed for other
 # device classes.
 
-EXPECTED_COMMIT="${EXPECTED_COMMIT:-ff02bed994d0707ef9533fd75e1b487c62faf696}"
+EXPECTED_COMMIT="${EXPECTED_COMMIT:-655f4c6c1ec0fe957e404532e5804d34d3844596}"
 BUNDLE_ID="ca.ashbi.habittracker"
 SOURCE_ROOT="${SOURCE_ROOT:-$PWD}"
 HARNESS_ROOT="${HARNESS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -180,8 +180,8 @@ app_bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$info_p
 app_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$info_plist")"
 app_build="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$info_plist")"
 xcode_version="$(xcodebuild -version | tr '\n' ' ')"
-if [[ "$app_bundle_id" != "$BUNDLE_ID" || "$app_version" != "5.3.0" || "$app_build" != "533" ]]; then
-  echo "Unexpected built app identity: $app_bundle_id $app_version ($app_build); expected $BUNDLE_ID 5.3.0 (533)" >&2
+if [[ "$app_bundle_id" != "$BUNDLE_ID" || "$app_version" != "5.3.0" || "$app_build" != "534" ]]; then
+  echo "Unexpected built app identity: $app_bundle_id $app_version ($app_build); expected $BUNDLE_ID 5.3.0 (534)" >&2
   exit 1
 fi
 

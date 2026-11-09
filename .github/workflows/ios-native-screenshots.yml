@@ -5,6 +5,8 @@ on:
     paths:
       - .github/workflows/ios-native-screenshots.yml
       - scripts/verify/capture-native-store-screenshots.sh
+      - scripts/verify/capture-native-core-journey.sh
+      - scripts/verify/native-journey/**
       - scripts/verify/verify-native-screenshot.swift
   workflow_dispatch:
 
@@ -20,7 +22,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 40
     env:
-      EXPECTED_COMMIT: ff02bed994d0707ef9533fd75e1b487c62faf696
+      EXPECTED_COMMIT: 655f4c6c1ec0fe957e404532e5804d34d3844596
     steps:
       - name: Check out the screenshot harness
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -33,7 +35,7 @@ jobs:
       - name: Check out the exact signed-candidate source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ff02bed994d0707ef9533fd75e1b487c62faf696
+          ref: 655f4c6c1ec0fe957e404532e5804d34d3844596
           path: candidate
           fetch-depth: 1
           persist-credentials: false
@@ -66,6 +68,14 @@ jobs:
           HARNESS_ROOT="$GITHUB_WORKSPACE/ci-harness" \
           OUTPUT_ROOT="$GITHUB_WORKSPACE/artifacts/ios-native-screenshots" \
           "$GITHUB_WORKSPACE/ci-harness/scripts/verify/capture-native-store-screenshots.sh"
+
+      - name: Capture current-product native core journey
+        if: always()
+        run: |
+          SOURCE_ROOT="$GITHUB_WORKSPACE/candidate" \
+          HARNESS_ROOT="$GITHUB_WORKSPACE/ci-harness" \
+          OUTPUT_ROOT="$GITHUB_WORKSPACE/artifacts/ios-native-screenshots/core-journey" \
+          "$GITHUB_WORKSPACE/ci-harness/scripts/verify/capture-native-core-journey.sh"
 
       - name: Preserve source and artifact provenance
         if: always()
