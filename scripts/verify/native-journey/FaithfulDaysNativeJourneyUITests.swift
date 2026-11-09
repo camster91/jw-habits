@@ -37,8 +37,11 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
     }
 
     func testCoreJourney() throws {
+        // A fresh simulator can report the app in the foreground while WKWebView
+        // is still an empty shell. The sibling store capture allows 90s for
+        // that first framebuffer; match it here.
         let getStarted = app.buttons["Get started"]
-        XCTAssertTrue(getStarted.waitForExistence(timeout: 30), "Real onboarding UI did not expose Get started")
+        XCTAssertTrue(getStarted.waitForExistence(timeout: 90), "Real onboarding UI did not expose Get started")
         XCTAssertTrue(waitForHeading("Welcome to Faithful Days"), "Onboarding heading did not appear before first capture")
         try capture("onboarding")
         guard advanceFromWelcome() else { return }
@@ -89,6 +92,16 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
             marker: "Your garden",
             markerRole: .other,
             evidenceName: "progress"
+        )
+        // Rubber-band at the top so WKWebView commits the route paint before
+        // the framebuffer shot. "Progress" and "Your garden" stay in the
+        // initial viewport; the Bible map below them is not the OCR target.
+        app.swipeDown()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+        XCTAssertTrue(waitForRouteHeading("Progress"), "Progress heading was not in the capture viewport")
+        XCTAssertTrue(
+            waitForVisibleMarker("Your garden", role: .other),
+            "Your garden was not in the capture viewport"
         )
         try capture("progress")
     }
@@ -207,17 +220,29 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
         return headings.count == 1 && headings[0].isHittable
     }
 
-    private func waitForRouteMarker(_ marker: String, role: RouteMarkerRole) -> Bool {
-        let element: XCUIElement
+    private func routeMarker(_ marker: String, role: RouteMarkerRole) -> XCUIElement {
         switch role {
         case .link:
-            element = app.links[marker]
+            return app.links[marker]
         case .button:
-            element = app.buttons[marker]
+            return app.buttons[marker]
         case .other:
-            element = app.otherElements[marker]
+            return app.otherElements[marker]
         }
-        return element.waitForExistence(timeout: 15)
+    }
+
+    private func waitForRouteMarker(_ marker: String, role: RouteMarkerRole) -> Bool {
+        routeMarker(marker, role: role).waitForExistence(timeout: 15)
+    }
+
+    private func waitForVisibleMarker(_ marker: String, role: RouteMarkerRole) -> Bool {
+        let element = routeMarker(marker, role: role)
+        let deadline = Date().addingTimeInterval(5)
+        while Date() < deadline {
+            if element.exists && element.isHittable { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        }
+        return element.exists && element.isHittable
     }
 
     private func assertRoute(
@@ -314,20 +339,23 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
             var adjustedMinute = false
             var adjustedPeriod = false
             for wheel in wheels {
-                let labelAndValue = "\(wheel.label) \(String(describing: wheel.value))".lowercased()
-                if labelAndValue.contains("hour") {
+                switch pickerComponent(wheel) {
+                case .hour:
                     wheel.adjust(toPickerWheelValue: "3")
                     adjustedHour = true
-                } else if labelAndValue.contains("minute") {
+                case .minute:
                     wheel.adjust(toPickerWheelValue: "00")
                     adjustedMinute = true
-                } else if labelAndValue.contains("am") || labelAndValue.contains("pm") || labelAndValue.contains("meridiem") {
+                case .period:
                     wheel.adjust(toPickerWheelValue: "AM")
                     adjustedPeriod = true
+                case .unknown:
+                    break
                 }
             }
-            // WebKit can expose value-only wheels. Do not let recognizing only
-            // AM/PM suppress the required hour/minute changes.
+            // Value-only wheels ("8 o'clock", "00 minutes", "PM") are
+            // classified above. A period match must not count as the hour
+            // or minute. Unrecognized wheels still fall back in that order.
             if !(adjustedHour && adjustedMinute && adjustedPeriod) {
                 guard wheels.count >= 3 else {
                     captureFailureEvidence("wrap-up-time-picker-shape")
@@ -390,6 +418,24 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
             let value = normalizeTime(String(describing: element.value ?? ""))
             return value.range(of: #"\d{1,2}:\d{2}"#, options: .regularExpression) != nil
         }
+    }
+
+    private enum PickerComponent {
+        case hour
+        case minute
+        case period
+        case unknown
+    }
+
+    private func pickerComponent(_ wheel: XCUIElement) -> PickerComponent {
+        let text = "\(wheel.label) \(String(describing: wheel.value))"
+            .replacingOccurrences(of: "\u{2019}", with: "'")
+            .lowercased()
+        // WebKit's time wheels say "8 o'clock" and "00 minutes", not "hour".
+        if text.contains("hour") || text.contains("clock") { return .hour }
+        if text.contains("minute") { return .minute }
+        if text.contains("am") || text.contains("pm") || text.contains("meridiem") { return .period }
+        return .unknown
     }
 
     private func pickerState(_ wheels: [XCUIElement]) -> String {
@@ -472,9 +518,35 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
     }
 
     private func capture(_ name: String) throws {
-        let screenshot = XCUIScreen.main.screenshot()
+        // XCUIScreen can replay one WKWebView frame for later route captures
+        // (the Progress PNG was byte-identical to Notes). The host takes a
+        // simctl framebuffer shot when this request file appears.
+        let request = outputRoot.appendingPathComponent("capture-request")
+        let done = outputRoot.appendingPathComponent("capture-done-\(name)")
+        if FileManager.default.fileExists(atPath: done.path) {
+            try FileManager.default.removeItem(at: done)
+        }
+        let temporary = outputRoot.appendingPathComponent(".capture-request-\(name)")
+        try Data(name.utf8).write(to: temporary, options: .atomic)
+        if FileManager.default.fileExists(atPath: request.path) {
+            try FileManager.default.removeItem(at: request)
+        }
+        try FileManager.default.moveItem(at: temporary, to: request)
+
+        let deadline = Date().addingTimeInterval(30)
+        while !FileManager.default.fileExists(atPath: done.path) {
+            if Date() >= deadline {
+                throw NSError(
+                    domain: "FaithfulJourney",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "Simulator framebuffer screenshot was not captured for \(name)"]
+                )
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        try? FileManager.default.removeItem(at: done)
+
         let imageURL = outputRoot.appendingPathComponent("journey-\(name).png")
-        try screenshot.pngRepresentation.write(to: imageURL, options: .atomic)
         let attachment = XCTAttachment(contentsOfFile: imageURL)
         attachment.name = "journey-\(name)"
         attachment.lifetime = .keepAlways
@@ -486,7 +558,7 @@ final class FaithfulDaysNativeJourneyUITests: XCTestCase {
             "sourceCommit": sourceCommit,
             "appVersion": "5.3.0",
             "appBuild": "534",
-            "captureMethod": "XCTest XCUIApplication normal user journey",
+            "captureMethod": "XCTest journey with simctl framebuffer screenshot",
             "deviceLabel": deviceLabel,
             "deviceUdid": deviceUdid,
         ]

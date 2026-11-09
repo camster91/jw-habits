@@ -81,13 +81,52 @@ if [[ -z "$iphone_type" || -z "$ipad_type" ]]; then
 fi
 
 created_devices=()
+COPIER_PID=""
 cleanup() {
+  if [[ -n "${COPIER_PID}" ]]; then
+    kill "$COPIER_PID" >/dev/null 2>&1 || true
+    wait "$COPIER_PID" 2>/dev/null || true
+    COPIER_PID=""
+  fi
   for udid in "${created_devices[@]}"; do
     xcrun simctl shutdown "$udid" >/dev/null 2>&1 || true
     xcrun simctl delete "$udid" >/dev/null 2>&1 || true
   done
 }
 trap cleanup EXIT
+
+# XCUIScreen replayed a stale WKWebView frame (Progress was byte-identical to
+# Notes). Serve the simulator framebuffer when the test drops a request file.
+serve_framebuffer_captures() {
+  local udid="$1" output_dir="$2" request name tmp
+  while true; do
+    request="$output_dir/capture-request"
+    if [[ -f "$request" ]]; then
+      name="$(tr -cd 'a-z0-9-' <"$request" || true)"
+      case "$name" in
+        onboarding|today|wrap-up|plans|notes|progress)
+          tmp="$output_dir/.journey-$name.png.tmp"
+          if xcrun simctl io "$udid" screenshot "$tmp"; then
+            mv -f "$tmp" "$output_dir/journey-$name.png"
+            rm -f "$request"
+            : >"$output_dir/capture-done-$name"
+          else
+            rm -f "$tmp"
+          fi
+          ;;
+      esac
+    fi
+    sleep 0.25
+  done
+}
+
+stop_framebuffer_captures() {
+  if [[ -n "${COPIER_PID}" ]]; then
+    kill "$COPIER_PID" >/dev/null 2>&1 || true
+    wait "$COPIER_PID" 2>/dev/null || true
+    COPIER_PID=""
+  fi
+}
 
 CREATED_UDID=""
 create_device() {
@@ -124,6 +163,8 @@ run_journey() {
     --device-label "$label" \
     --device-udid "$udid"
   echo "Running normal onboarding/navigation journey on $label ($udid)"
+  serve_framebuffer_captures "$udid" "$output_dir" &
+  COPIER_PID=$!
 
   set +e
   # xcodebuild strips ordinary shell variables before launching XCTest. The
@@ -147,6 +188,7 @@ run_journey() {
     test >"$output_dir/xcodebuild.log" 2>&1
   test_status=$?
   set -e
+  stop_framebuffer_captures
 
   # XCTest attachments are the durable failure evidence when the journey
   # stops before a screen PNG is written. Export them even for a failing
@@ -233,7 +275,7 @@ path.write_text(json.dumps({
     "status": "passed" if sys.argv[4] == "0" else "failed",
     "sourceCommit": sys.argv[2],
     "runtimeId": sys.argv[3],
-    "captureMethod": "XCTest XCUIApplication normal onboarding/navigation journey",
+    "captureMethod": "XCTest XCUIApplication normal onboarding/navigation journey; simctl framebuffer screenshots",
     "builtAppIdentityValidation": "each device provenance reads App.app/Info.plist and requires ca.ashbi.habittracker 5.3.0 (534)",
     "wrapUpBoundaryProof": "src/domain/wrapup.js at sourceCommit proves configured 03:00 covers local time before and at/after the 03:00 rollover",
     "screens": ["onboarding", "today", "wrap-up", "plans", "notes", "progress"],
